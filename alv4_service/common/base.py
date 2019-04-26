@@ -1,31 +1,34 @@
 import json
 import logging
 import os
+import shutil
 import tempfile
-import time
 
 import yaml
-import shutil
 
+from alv4_service.common.request import ServiceRequest
+from alv4_service.common.task import Task
+from assemblyline.common import exceptions
 from assemblyline.common import log as al_log
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.odm.models.service import Service
-from alv4_service.common.task import Task
-
-
-class ServiceRequest(object):
-    def __init__(self, service: ServiceBase, task: Task) -> None:
-        self._service = service
-        self.sha256 = task.sha256
-        self.sid = task.sid
 
 
 class ServiceBase(object):
-    def __init__(self):
-        al_log.init_logging(f"{self.service.name}", log_level=logging.INFO)
-        self.log = logging.getLogger(f"assemblyline.service.{self.service.name.lower()}")
+    def __init__(self, config=None):
+        # Get the default service configuration
         self.service = self._get_default_service_config()
-        self.task = None
+
+        # Start with default service config and override with anything provided
+        self.config = self.service.config
+        if config:
+            self.config.update(config)
+
+        # Initialize logging for the service
+        al_log.init_logging(f"{self.service.name}", log_level=logging.INFO)
+
+        # Initialize non-trivial members in start_service rather than __init__
+        self.log = logging.getLogger(f"assemblyline.service.{self.service.name.lower()}")
         self._working_directory = None
 
     def _cleanup_working_directory(self):
@@ -37,7 +40,7 @@ class ServiceBase(object):
         self._working_directory = None
 
     @staticmethod
-    def _get_default_service_config(self, yml_config=None):
+    def _get_default_service_config(yml_config=None):
         if yml_config is None:
             yml_config = os.path.join(os.path.dirname(__file__), "service_config.yml")
 
@@ -53,21 +56,36 @@ class ServiceBase(object):
 
         return Service(service)
 
+    def _handle_execute_failure(self, task, exception, stack_info):
+        # Clear the result, in case it caused the problem
+        task.result = None
+
+        # Clear the extracted and supplementary files
+        task.clear_extracted()
+        task.clear_supplementary()
+
+        if isinstance(exception, exceptions.RecoverableError):
+            self.log.info(f"Recoverable Service Error ({task.sid}/{task.sha256}) {exception}: {stack_info}")
+            self._save_error(task, 'FAIL_RECOVERABLE', stack_info)
+        else:
+            self.log.error(f"Nonrecoverable Service Error ({task.sid}/{task.sha256}) {exception}: {stack_info}")
+            self._save_error(task, 'FAIL_NONRECOVERABLE', stack_info)
+
     def _save_error(self, task, error_status, stack_info):
         task.error_message = stack_info
         task.error_status = error_status
 
-        error = task.as_service_error()
+        error = task.as_service_error(self.service)
         error_path = os.path.join(self.working_directory, 'result.json')
         with open(error_path, 'wb') as f:
-            json.dump(error, f)
+            json.dump(error.as_primitives(), f)
         self.log.info(f"Saving error to: {error_path}")
 
     def _save_result(self, task):
         result = task.as_service_result()
         result_path = os.path.join(self.working_directory, 'result.json')
         with open(result_path, 'wb') as f:
-            json.dump(result, f)
+            json.dump(result.as_primitives(), f)
         self.log.info(f"Saving result to: {result_path}")
 
     def _success(self, task):
@@ -75,7 +93,7 @@ class ServiceBase(object):
         self._save_result(task)
 
     def execute(self, request: ServiceRequest) -> None:
-        raise NotImplementedError("execute() not implemented.")
+        raise NotImplementedError("execute() function not implemented")
 
     def get_tool_version(self):
         return ''
@@ -84,14 +102,11 @@ class ServiceBase(object):
         self.log.info(f"Starting task: {task.sid}/{task.sha256} ({task.type})")
 
         try:
-            task.service_started = time.time()
-            task.clear_extracted()
-            task.clear_supplementary()
-
+            task.start(self.service)
             request = ServiceRequest(self, task)
             result = self.execute(request)
-            task.result = result
-            task.service_completed = time.time()
+            task.set_result(result)
+            task.done()
             self._success(task)
         except Exception as ex:
             self._handle_execute_failure()

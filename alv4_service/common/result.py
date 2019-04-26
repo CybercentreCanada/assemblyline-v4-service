@@ -1,12 +1,13 @@
-from assemblyline.odm.models.result import Tag
-from assemblyline.common.str_utils import StringTable, NamedConstants, safe_str
+from assemblyline.common.str_utils import safe_str
+from assemblyline.odm.models.heuristic import Heuristic
+from assemblyline.odm.models.result import ResultBody, Section, Tag
 
 
-class ResultSection(dict):
+class ResultSection(object):
     def __init__(self,
                  body='',
                  body_format="TEXT"):
-        super(ResultSection, self).__init__()
+        self._section = Section()
         self.body = body
         self.body_format = body_format
 
@@ -31,29 +32,51 @@ class ResultSection(dict):
         else:
             self.body = self.body + '\n' + segment
 
+    def get(self):
+        return self._section
+
     def set_body(self, body, body_format="TEXT"):
         self.body = body
         self.body_format = body_format
 
 
-class Result(dict):
-    def __init__(self,
-                 sections=None,
-                 tags=None):
-        super(Result, self).__init__()
-        self.sections = sections or []
-        self.tags = tags or []
+class Result(object):
+    def __init__(self):
+        self._result = ResultBody()
+        self.sections = []
+        self.tags = []
 
     def add_section(self, section: ResultSection, on_top: bool = False):
 
         if on_top:
-            self.sections.insert(0, section)
+            self.sections.insert(0, section.get())
         else:
-            self.sections.append(section)
+            self.sections.append(section.get())
 
-    def add_tag(self, type, value):
-
+    def add_tag(self, classification, value, context, type):
         # Check to see if tag already exists before adding
         for existing_tag in self.tags:
-            if existing_tag['type'] == tag['type'] and existing_tag['value'] == tag['value']:
+            if existing_tag.type == type and existing_tag.value == value:
                 return
+
+        tag = Tag()
+        tag.classification = classification
+        tag.value = value
+        tag.context = context
+        tag.type = type
+
+        self.tags.append(tag)
+
+    def report_heuristic(self):
+        # Check to see if heuristic already exists before adding
+        for existing_tag in self.tags:
+            if existing_tag.type == type and existing_tag.value == value:
+                return
+
+        heuristic = Heuristic()
+        # heuristic.classification =
+        # heuristic.description =
+        # heuristic.filetype =
+        # heuristic.heur_id =
+        # heuristic.name =
+
