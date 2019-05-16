@@ -1,37 +1,55 @@
 import hashlib
-import os
-import tempfile
 
 from alv4_service.common.base import ServiceBase
 from alv4_service.common.task import Task
-from assemblyline.common.digests import get_sha256_for_file
 
 
-class ServiceRequest(object):
+class ServiceRequest:
     def __init__(self, service: ServiceBase, task: Task) -> None:
         self._service = service
+        self._working_directory = None
         self.sha256 = task.sha256
         self.sid = task.sid
         self.task = task
+        self.task_hash = hashlib.md5((str(self.task.sid + self.sha256).encode('utf-8'))).hexdigest()
 
-    def add_extracted(self, name, description, sha256=None, classification=None):
 
-        return self.task.add_extracted(name, description, sha256, classification)
+    def add_extracted(self, path, name, description, classification=None):
+        """
+        Add an extracted file for additional processing.
 
-    def add_supplementary(self, name, description, sha256=None, classification=None):
+        :param path: Complete path to the extracted file
+        :param name: Display name of the extracted file
+        :param description: Descriptive text about the extracted file
+        :param classification: Classification of the extracted file (default: service classification)
+        :return: None
+        """
 
-        return self.task.add_supplementary(name, description, sha256, classification)
+        self.task.add_extracted(path, name, description, classification)
 
-    def download(self):
-        task_hash = hashlib.md5((str(self.task.sid + self.sha256).encode('utf-8'))).hexdigest()
-        file_path = os.path.join(tempfile.gettempdir(), self._service.service.name.lower(), 'received', task_hash,
-                                 self.sha256)
-        if not os.path.exists(file_path):
-            print('File not found locally, downloading again')
-        if not os.path.exists(file_path):
-            raise Exception('Download failed. Not found on local filesystem')
+    def add_supplementary(self, path, name, description, classification=None):
+        """
+        Add a supplementary file.
 
-        received_sha256 = get_sha256_for_file(file_path)
-        if received_sha256 != self.sha256:
-            raise Exception(f"SHA256 mismatch between requested and downloaded file. {self.sha256} != {received_sha256}")
-        return file_path
+        :param path: Complete path to the supplementary file
+        :param name: Display name of the supplementary file
+        :param description: Descriptive text about the supplementary file
+        :param classification: Classification of the supplementary file (default: service classification)
+        :return: None
+        """
+
+        self.task.add_supplementary(path, name, description, classification)
+
+    @property
+    def download_file(self):
+        return self.task.download_file(self._service.attributes.name.lower())
+
+    def drop(self):
+        self.task.drop()
+
+    def set_service_context(self, context):
+        self.task.set_service_context(context)
+
+    @property
+    def working_directory(self):
+        return self.task.working_directory()

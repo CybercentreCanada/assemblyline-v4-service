@@ -3,7 +3,7 @@ from assemblyline.odm.models.heuristic import Heuristic
 from assemblyline.odm.models.result import ResultBody, Section, Tag
 
 
-class ResultSection(object):
+class ResultSection:
     def __init__(self,
                  body='',
                  body_format="TEXT"):
@@ -40,7 +40,7 @@ class ResultSection(object):
         self.body_format = body_format
 
 
-class Result(object):
+class Result:
     def __init__(self):
         self._result = ResultBody()
         self.sections = []
