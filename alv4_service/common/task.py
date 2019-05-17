@@ -11,23 +11,25 @@ from assemblyline.common import log
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.error import Error
-from assemblyline.odm.models.result import Result, File
+from assemblyline.odm.models.result import Result, ResultBody, File
 
 Classification = helper.get_classification()
 
+
 class Task:
     def __init__(self, task: ServiceTask):
-        log.init_logging(log_level=logging.INFO)
+        log.init_logging(f'{task.service_name.lower()}', log_level=logging.INFO)
         self.log = logging.getLogger(f'{task.service_name.lower()}')
 
-        self._result = Result
+        self._result = Result()
         self._working_directory = None
         self.drop_file = False
         self.error_message = None
         self.error_status = None
-        self.error_type = "EXCEPTION"
+        self.error_type = 'EXCEPTION'
         self.extracted = []
         self.oversized = False
+        self.result = ResultBody()
         self.service_name = task.service_name
         self.service_tool_version = None
         self.service_version = None
@@ -123,6 +125,7 @@ class Task:
         self._result.response.service_version = self.service_version
         self._result.response.service_tool_version = self.service_tool_version
         self._result.response.milestones.service_started = time.time()
+        self._result.result = self.result
         self._result.sha256 = self.sha256
 
         if self.extracted:
@@ -148,10 +151,10 @@ class Task:
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self):
-        result = self.get_service_result()
+        result = self.get_service_result().as_primitives()
         result_path = os.path.join(self._working_directory, 'result.json')
         with open(result_path, 'wb') as f:
-            json.dump(result.as_primitives(), f)
+            json.dump(result, f)
         self.log.info(f"Saving result to: {result_path}")
 
     def set_oversized(self):
@@ -160,8 +163,8 @@ class Task:
     def set_service_context(self, context: str):
         self._result.response.service_context = context
 
-    def set_result(self, result: Result):
-        self._result.result = result or []
+    def set_result(self, result: ResultBody):
+        self.result = result
 
     def start(self, service_version, service_tool_version):
         self.service_version = service_version

@@ -1,6 +1,7 @@
 import hashlib
 
 from alv4_service.common.base import ServiceBase
+from alv4_service.common.result import ResultBody
 from alv4_service.common.task import Task
 
 
@@ -42,10 +43,18 @@ class ServiceRequest:
 
     @property
     def download_file(self):
-        return self.task.download_file(self._service.attributes.name.lower())
+        return self.task.download_file()
 
     def drop(self):
         self.task.drop()
+
+    @property
+    def result(self) -> ResultBody:
+        return self.task.result.as_primitives()
+
+    @result.setter
+    def result(self, result: ResultBody):
+        self.task.result = result
 
     def set_service_context(self, context):
         self.task.set_service_context(context)
