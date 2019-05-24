@@ -1,13 +1,13 @@
+from __future__ import annotations
+
 import hashlib
 
-from alv4_service.common.base import ServiceBase
-from alv4_service.common.result import ResultBody
 from alv4_service.common.task import Task
+from assemblyline.odm.models.result import ResultBody
 
 
 class ServiceRequest:
-    def __init__(self, service: ServiceBase, task: Task) -> None:
-        self._service = service
+    def __init__(self, task: Task) -> None:
         self._working_directory = None
         self.sha256 = task.sha256
         self.sid = task.sid

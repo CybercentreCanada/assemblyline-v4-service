@@ -7,21 +7,19 @@ ENV SERVICE_API_HOST http://localhost:5003
 RUN apt-get update && apt-get install -y \
   git \
   libfuzzy-dev \
-  python \
-  python-pip \
-  python3 \
-  python3-dev \
+  python3.7 \
+  python3.7-dev \
   python3-pip \
   supervisor
 
 # Pipy packages requirements
 RUN pip3 install assemblyline
 
-# COPY alv3_service/requirements.txt /tmp
-# RUN pip install -r /tmp/requirements.txt
+COPY alv4_service/requirements.txt /tmp
+RUN pip3 install -r /tmp/requirements.txt
 
 COPY alv4_service_client/requirements.txt /tmp
-# RUN sed -i.old -e "s/assemblyline-core//g" -e "s/assemblyline//g" /tmp/requirements.txt
+RUN sed -i.old -e "s/assemblyline-core//g" -e "s/assemblyline//g" /tmp/requirements.txt
 RUN pip3 install -r /tmp/requirements.txt
 
 # Cleanup

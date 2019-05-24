@@ -77,9 +77,9 @@ def run_service():
 
 def get_service_config(yml_config=None):
     if yml_config is None:
-        yml_config = "/etc/assemblyline/service_config.yml"
+        yml_config = '/etc/assemblyline/service_config.yml'
 
-    default_file = os.path.join(os.path.dirname(__file__), "common", "service_config.yml")
+    default_file = os.path.join(os.getcwd(), 'service_config.yml')
     if os.path.exists(default_file):
         with open(default_file, 'r') as default_fh:
             service_config = yaml.safe_load(default_fh.read())
@@ -101,8 +101,8 @@ if __name__ == '__main__':
     name = os.environ['SERVICE_PATH']
 
     svc_name = name.split(".")[-1].lower()
-    al_log.init_logging(log_level=logging.INFO)
-    log = logging.getLogger(f"assemblyline.svc.{svc_name}")
+    al_log.init_logging(svc_name, log_level=logging.INFO)
+    log = logging.getLogger(f'assemblyline.svc.{svc_name}')
 
     try:
         svc_class = load_module_by_path(name)

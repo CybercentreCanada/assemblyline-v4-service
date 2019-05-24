@@ -9,6 +9,7 @@ from alv4_service.common.task import Task
 from assemblyline.common import exceptions
 from assemblyline.common import log
 from assemblyline.common.dict_utils import recursive_update
+from assemblyline.odm.models.result import ResultBody
 from assemblyline.odm.models.service import Service
 
 
@@ -76,7 +77,7 @@ class ServiceBase:
     def _success(self, task: Task):
         task.success()
 
-    def execute(self, request: ServiceRequest) -> None:
+    def execute(self, request: ServiceRequest) -> ResultBody:
         raise NotImplementedError("execute() function not implemented")
 
     def get_tool_version(self):
@@ -89,7 +90,7 @@ class ServiceBase:
             self.task = task
             self._working_directory = task.working_directory()
             task.start(self.attributes.version, self.get_tool_version())
-            request = ServiceRequest(self, task)
+            request = ServiceRequest(task)
             result = self.execute(request)
             task.set_result(result)
             self._success(task)

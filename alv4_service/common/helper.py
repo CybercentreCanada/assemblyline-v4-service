@@ -12,12 +12,12 @@ def get_classification(yml_config=None):
         yml_config = '/etc/assemblyline/classification.yml'
 
     classification_definition = {}
-    default_file = os.path.join(os.path.dirname(__file__), 'classification.yml')
+    '''default_file = os.path.join(os.path.dirname(__file__), 'classification.yml')
     if os.path.exists(default_file):
         with open(default_file) as default_fh:
             default_yml_data = yaml.safe_load(default_fh.read())
             if default_yml_data:
-                classification_definition.update(default_yml_data)
+                classification_definition.update(default_yml_data)'''
 
     # Load modifiers from the yaml config
     if os.path.exists(yml_config):
