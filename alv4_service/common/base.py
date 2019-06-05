@@ -14,7 +14,7 @@ from assemblyline.odm.models.service import Service
 
 
 class ServiceBase:
-    def __init__(self, config=None):
+    def __init__(self, config: dict = None) -> None:
         # Get the default service attributes
         self.attributes = self._get_default_service_attributes()
 
@@ -33,17 +33,16 @@ class ServiceBase:
 
         self._working_directory = None
 
-
-    def _cleanup_working_directory(self):
-        try:
-            if self._working_directory:
-                shutil.rmtree(self._working_directory)
-        except Exception:
-            self.log.warning(f"Could not remove working directory: {self._working_directory}")
+    def _cleanup_working_directory(self) -> None:
+        # try:
+        #     if self._working_directory:
+        #         shutil.rmtree(self._working_directory)
+        # except Exception:
+        #     self.log.warning(f"Could not remove working directory: {self._working_directory}")
         self._working_directory = None
 
     @staticmethod
-    def _get_default_service_attributes(yml_config=None):
+    def _get_default_service_attributes(yml_config: str = None) -> Service:
         if yml_config is None:
             yml_config = os.path.join(os.path.dirname(__file__), 'service_config.yml')
 
@@ -59,7 +58,7 @@ class ServiceBase:
 
         return Service(service)
 
-    def _handle_execute_failure(self, task: Task, exception, stack_info):
+    def _handle_execute_failure(self, task: Task, exception, stack_info) -> None:
         # Clear the result, in case it caused the problem
         task.result = None
 
@@ -74,16 +73,16 @@ class ServiceBase:
             self.log.error(f"Nonrecoverable Service Error ({task.sid}/{task.sha256}) {exception}: {stack_info}")
             task.save_error(stack_info, recoverable=False)
 
-    def _success(self, task: Task):
+    def _success(self, task: Task) -> None:
         task.success()
 
     def execute(self, request: ServiceRequest) -> ResultBody:
         raise NotImplementedError("execute() function not implemented")
 
-    def get_tool_version(self):
+    def get_tool_version(self) -> str:
         return ''
 
-    def handle_task(self, task: Task):
+    def handle_task(self, task: Task) -> None:
         self.log.info(f"Starting task: {task.sid}/{task.sha256} ({task.type})")
 
         try:
@@ -100,7 +99,7 @@ class ServiceBase:
             self._cleanup_working_directory()
             self.task = None
 
-    def start(self):
+    def start(self) -> None:
         """
         Called at worker start.
 
@@ -108,11 +107,11 @@ class ServiceBase:
         """
         pass
 
-    def start_service(self):
+    def start_service(self) -> None:
         self.log.info(f"Starting service: {self.attributes.name}")
         self.start()
 
-    def stop(self):
+    def stop(self) -> None:
         """
         Called at worker stop.
 
@@ -120,7 +119,7 @@ class ServiceBase:
         """
         pass
 
-    def stop_service(self):
+    def stop_service(self) -> None:
         # Perform common stop routines and then invoke the child's stop().
         self.log.info(f"Stopping service: {self.attributes.name}")
         self.stop()

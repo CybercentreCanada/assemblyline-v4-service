@@ -1,21 +1,22 @@
 from __future__ import annotations
 
-import hashlib
-
+from alv4_service.common import helper
 from alv4_service.common.task import Task
 from assemblyline.odm.models.result import ResultBody
+
+CLASSIFICATION = helper.get_classification()
 
 
 class ServiceRequest:
     def __init__(self, task: Task) -> None:
         self._working_directory = None
+        self.md5 = task.md5
+        self.sha1 = task.sha1
         self.sha256 = task.sha256
         self.sid = task.sid
         self.task = task
-        self.task_hash = hashlib.md5((str(self.task.sid + self.sha256).encode('utf-8'))).hexdigest()
 
-
-    def add_extracted(self, path, name, description, classification=None):
+    def add_extracted(self, path: str, name: str, description: str, classification: CLASSIFICATION = None) -> None:
         """
         Add an extracted file for additional processing.
 
@@ -28,7 +29,7 @@ class ServiceRequest:
 
         self.task.add_extracted(path, name, description, classification)
 
-    def add_supplementary(self, path, name, description, classification=None):
+    def add_supplementary(self, path: str, name: str, description: str, classification: CLASSIFICATION = None) -> None:
         """
         Add a supplementary file.
 
@@ -42,23 +43,23 @@ class ServiceRequest:
         self.task.add_supplementary(path, name, description, classification)
 
     @property
-    def download_file(self):
+    def download_file(self) -> str:
         return self.task.download_file()
 
-    def drop(self):
+    def drop(self) -> None:
         self.task.drop()
 
     @property
-    def result(self) -> ResultBody:
+    def result(self) -> dict:
         return self.task.result.as_primitives()
 
     @result.setter
-    def result(self, result: ResultBody):
+    def result(self, result: ResultBody) -> None:
         self.task.result = result
 
-    def set_service_context(self, context):
+    def set_service_context(self, context) -> None:
         self.task.set_service_context(context)
 
     @property
-    def working_directory(self):
+    def working_directory(self) -> str:
         return self.task.working_directory()

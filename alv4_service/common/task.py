@@ -13,7 +13,7 @@ from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.error import Error
 from assemblyline.odm.models.result import Result, ResultBody, File
 
-Classification = helper.get_classification()
+CLASSIFICATION = helper.get_classification()
 
 
 class Task:
@@ -28,19 +28,19 @@ class Task:
         self.error_status = None
         self.error_type = 'EXCEPTION'
         self.extracted = []
+        self.md5 = task.fileinfo.md5
         self.oversized = False
         self.result = ResultBody()
         self.service_name = task.service_name
         self.service_tool_version = None
         self.service_version = None
+        self.sha1 = task.fileinfo.sha1
         self.sha256 = task.fileinfo.sha256
         self.sid = task.sid
         self.supplementary = []
-        self.task_hash = hashlib.md5((str(task.sid + task.fileinfo.sha256).encode('utf-8'))).hexdigest()
         self.type = task.fileinfo.type
 
-
-    def add_extracted(self, path, name, description, classification: Classification = Classification.UNRESTRICTED):
+    def add_extracted(self, path: str, name: str, description: str, classification: CLASSIFICATION = CLASSIFICATION.UNRESTRICTED):
         # Move extracted file to base of working directory
         file_path = os.path.join(self._working_directory, name)
         folder_path = os.path.dirname(path)
@@ -61,7 +61,7 @@ class Task:
 
         self.extracted.append(file)
 
-    def add_supplementary(self, path, name, description, classification: Classification = Classification.UNRESTRICTED):
+    def add_supplementary(self, path: str, name: str, description: str, classification: CLASSIFICATION = CLASSIFICATION.UNRESTRICTED):
         # Move supplementary file to base of working directory
         file_path = os.path.join(self._working_directory, name)
         folder_path = os.path.dirname(path)
@@ -82,14 +82,14 @@ class Task:
 
         self.supplementary.append(file)
 
-    def clear_extracted(self):
+    def clear_extracted(self) -> None:
         self.extracted.clear()
 
-    def clear_supplementary(self):
+    def clear_supplementary(self) -> None:
         self.supplementary.clear()
 
-    def download_file(self):
-        file_path = os.path.join(tempfile.gettempdir(), self.service_name, 'received', self.task_hash, self.sha256)
+    def download_file(self) -> str:
+        file_path = os.path.join(tempfile.gettempdir(), self.service_name, 'received', self.sha256)
         if not os.path.exists(file_path):
             raise Exception("File download failed. File not found on local filesystem.")
 
@@ -99,10 +99,10 @@ class Task:
 
         return file_path
 
-    def drop(self):
+    def drop(self) -> None:
         self._result.drop_file = True
 
-    def get_service_error(self):
+    def get_service_error(self) -> Error:
         # Initialize a default service error
         error = Error()
 
@@ -119,12 +119,11 @@ class Task:
 
         return error
 
-    def get_service_result(self):
-        self._result.classification = Classification.UNRESTRICTED  # TODO: calculate aggregate classification based on files, result sections, and tags
+    def get_service_result(self) -> Result:
+        self._result.classification = CLASSIFICATION.UNRESTRICTED  # TODO: calculate aggregate classification based on files, result sections, and tags
         self._result.response.service_name = self.service_name
         self._result.response.service_version = self.service_version
         self._result.response.service_tool_version = self.service_tool_version
-        self._result.response.milestones.service_started = time.time()
         self._result.result = self.result
         self._result.sha256 = self.sha256
 
@@ -136,7 +135,7 @@ class Task:
 
         return self._result
 
-    def save_error(self, stack_info: str, recoverable: bool):
+    def save_error(self, stack_info: str, recoverable: bool) -> None:
         self.error_message = stack_info
 
         if recoverable:
@@ -150,35 +149,37 @@ class Task:
             json.dump(error.as_primitives(), f)
         self.log.info(f"Saving error to: {error_path}")
 
-    def save_result(self):
+    def save_result(self) -> None:
         result = self.get_service_result().as_primitives()
         result_path = os.path.join(self._working_directory, 'result.json')
         with open(result_path, 'wb') as f:
             json.dump(result, f)
         self.log.info(f"Saving result to: {result_path}")
 
-    def set_oversized(self):
+    def set_oversized(self) -> None:
         self._result.oversized = True
 
-    def set_service_context(self, context: str):
+    def set_service_context(self, context: str) -> None:
         self._result.response.service_context = context
 
-    def set_result(self, result: ResultBody):
+    def set_result(self, result: ResultBody) -> None:
         self.result = result
 
-    def start(self, service_version, service_tool_version):
+    def start(self, service_version: str, service_tool_version: str) -> None:
         self.service_version = service_version
         self.service_tool_version = service_tool_version
+
+        self._result.response.milestones.service_started = time.time()
 
         self.clear_extracted()
         self.clear_supplementary()
 
-    def success(self):
+    def success(self) -> None:
         self._result.response.milestones.service_completed = time.time()
         self.save_result()
 
-    def working_directory(self):
-        temp_dir = os.path.join(tempfile.gettempdir(), self.service_name.lower(), 'completed', self.task_hash)
+    def working_directory(self) -> str:
+        temp_dir = os.path.join(tempfile.gettempdir(), self.service_name.lower(), 'completed')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:

@@ -2,12 +2,11 @@ import os
 
 import yaml
 
+from assemblyline.common.classification import Classification, InvalidDefinition
 from assemblyline.common.dict_utils import recursive_update
 
 
-def get_classification(yml_config=None):
-    from assemblyline.common.classification import Classification, InvalidDefinition
-
+def get_classification(yml_config: str = None) -> Classification:
     if yml_config is None:
         yml_config = '/etc/assemblyline/classification.yml'
 

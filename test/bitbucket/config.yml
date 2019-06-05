@@ -1,0 +1,4 @@
+logging:
+  log_to_console: false
+  log_to_file: false
+  log_to_syslog: false

@@ -1,0 +1,85 @@
+
+options:
+  max-time: 5
+
+pipelines:
+  default:
+    - parallel:
+      - step:
+          name: Build & Test 3.7
+          image: python:3.7
+          caches: &caches
+            - pip
+          script: &build_test
+            - apt update
+            - apt install -y build-essential libffi-dev libfuzzy-dev python3-dev
+            - mkdir -p /etc/assemblyline/
+            - mkdir -p /var/cache/assemblyline/
+            - cp test/bitbucket/config.yml /etc/assemblyline
+            - pip install -r test/requirements.txt
+            - pip install -e .
+            # - pytest -rsx -vv
+#      - step:
+#          name: Build & Test 3.8
+#          image: python:3.8-rc
+#          caches: *caches
+#          script: *build_test
+  tags:
+    v*:
+      - step:
+          name: Build Package
+          image: python:3.7
+          script:
+            - pip install wheel
+            - python setup.py bdist_wheel
+            - ls dist/
+          artifacts:
+            - dist/*
+      - parallel:
+        - step:
+            name: Test 3.7
+            image: python:3.7
+            script: &deploy_test
+              - rm -rf alv4_service setup.py  # Make sure we are running on the package from the prior build
+              - apt update
+              - apt install -y build-essential libffi-dev libfuzzy-dev python3-dev
+              - pip install -f dist assemblyline-service-client
+              - mkdir -p /etc/assemblyline/
+              - mkdir -p /var/cache/assemblyline/
+              - cp test/bitbucket/config.yml /etc/assemblyline
+              - pip install -r test/requirements.txt
+              #- pytest -rsx -vv
+#        - step:
+#            name: Test 3.8
+#            image: python:3.8-rc
+#            script: *deploy_test
+#            caches: *caches
+#            services: *services
+      - step:
+          name: Deploy to Test PyPI
+          image: python:3.7
+          deployment: test_pypi
+          script:
+            - pip install twine
+            - ls dist
+            - twine upload --skip-existing --repository-url $TEST_REPOSITORY_URL dist/*
+      - step:
+          name: Deploy to PyPI
+          image: python:3.7
+          trigger: manual
+          deployment: pypi
+          script:
+            - pip install twine
+            - ls dist
+            - twine upload --skip-existing dist/*
+      - step:
+          name: Deploy to Docker Hub
+          trigger: manual
+          services: [docker]
+          deployment: container
+          script:
+            - export TAG=${BITBUCKET_TAG#v}
+            - until pip install assemblyline-v4-service== 2>&1 | grep -q $TAG; do sleep 2; done
+            - docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASSWORD
+            - docker build --build-arg version=$TAG -t cccs/assemblyline-v4-service-base:$TAG -t cccs/assemblyline-v4-service-base:latest docker/v4_service_base
+            - docker push cccs/assemblyline-v4-service-base
