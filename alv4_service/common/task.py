@@ -142,7 +142,7 @@ class Task:
             sha256=self.sha256,
             drop_file=self.drop_file,
         ))
-        self.log.info(f"RESULT-TASK::{str(result.as_primitives())}")
+
         return result
 
     def save_error(self, stack_info: str, recoverable: bool) -> None:
