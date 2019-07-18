@@ -23,20 +23,14 @@ class ServiceBase:
 
         # Initialize logging for the service
         log.init_logging(f'{self.attributes.name}', log_level=logging.INFO)
-
-        # Initialize non-trivial members in start_service rather than __init__
         self.log = logging.getLogger(f'assemblyline.service.{self.attributes.name.lower()}')
 
         self.task = None
 
         self._working_directory = None
 
-    def _cleanup_working_directory(self) -> None:
-        # try:
-        #     if self._working_directory:
-        #         shutil.rmtree(self._working_directory)
-        # except Exception:
-        #     self.log.warning(f"Could not remove working directory: {self._working_directory}")
+    def _cleanup(self) -> None:
+        self.task = None
         self._working_directory = None
 
     @staticmethod
@@ -99,8 +93,7 @@ class ServiceBase:
         except Exception as ex:
             self._handle_execute_failure(ex, exceptions.get_stacktrace_info(ex))
         finally:
-            self._cleanup_working_directory()
-            self.task = None
+            self._cleanup()
 
     def start(self) -> None:
         """

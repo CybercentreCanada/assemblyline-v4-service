@@ -13,7 +13,6 @@ from watchdog.observers.api import EventQueue
 
 from al_core.server_base import ServerBase
 from assemblyline.common import version
-from assemblyline.common.dict_utils import recursive_update
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.service import Service
@@ -36,23 +35,21 @@ class FileEventHandler(PatternMatchingEventHandler):
         self.process(event)
 
 
-class FileWatcher(object):
+class FileWatcher:
     def __init__(self, queue, watch_path):
-        self.watch_path = watch_path
-        self.event_handler = None
-        self.observer = None
-        self.queue = queue
+        self._observer = None
+        self._queue = queue
+        self._watch_path = watch_path
 
     def start(self):
-        patt = ['*.json']
-        event_handler = FileEventHandler(self.queue, patterns=patt)
-        self.observer = Observer()
-        self.observer.schedule(event_handler, path=self.watch_path)
-        self.observer.daemon = True
-        self.observer.start()
+        event_handler = FileEventHandler(self._queue, patterns=['*.json'])
+        self._observer = Observer()
+        self._observer.schedule(event_handler, path=self._watch_path)
+        self._observer.daemon = True
+        self._observer.start()
 
     def stop(self):
-        self.observer.stop()
+        self._observer.stop()
         pass
 
 
@@ -97,8 +94,6 @@ class RunService(ServerBase):
 
         self.service = self.service_class(config=self.attributes.config)
         self.service.start_service()
-
-        # self.save_attributes()
 
         while self.running:
             try:
@@ -154,81 +149,6 @@ class RunService(ServerBase):
             yaml.safe_dump(data, yml_fh)
 
         return service
-
-        # # Load modifiers from the yaml config
-        # if os.path.exists(yml_config):
-        #     with open(yml_config, 'r') as yml_fh:
-        #         yml_data = yaml.safe_load(yml_fh.read())
-        #
-        #     # Remove the keys not in the Service model
-        #     if yml_data['file_required']:
-        #         self.service_file_required = yml_data['file_required']
-        #         del yml_data['file_required']
-        #     else:
-        #         self.service_file_required = True
-        #
-        #     try:
-        #         attributes = Service(yml_data)
-        #
-        #         service = self.service_class(cfg={})
-        #
-        #         all_attributes = {
-        #             'attributes': attributes.as_primitives(),
-        #             'file_required': self.service_file_required,
-        #             'tool_version': service.get_tool_version(),
-        #         }
-        #
-        #         with open(self.yml_config, 'w') as yml_fh:
-        #             yaml.safe_dump(all_attributes, yml_fh)
-        #
-        #         return attributes
-        #     except ValueError as e:
-        #         self.log.error(str(e))
-
-
-    def _get_service_attributes(self):
-        service_config_yml = os.path.join(os.path.dirname(__file__), 'service_manifest.yml')
-
-        # Load the default service config yml
-        # default_config_yml = os.path.join(os.path.dirname(__file__), 'common', 'service_manifest.yml')
-        # if os.path.exists(default_config_yml):
-        #     with open(default_config_yml, 'r') as f:
-        #         default_service_config = yaml.safe_load(f.read())
-        #         if default_service_config:
-        #             service_config.update(default_service_config)
-
-        # Initialize a default service
-        service = Service().as_primitives()
-
-        # Load modifiers from the yaml config
-        if os.path.exists(service_config_yml):
-            with open(service_config_yml) as yml_fh:
-                yml_data = yaml.safe_load(yml_fh.read())
-                if yml_data:
-                    service = recursive_update(service, yml_data)
-
-        # Load modifiers from the service config yml
-
-        # if os.path.exists(service_config_yml):
-        #     with open(service_config_yml, 'r') as f:
-        #         service_data = yaml.safe_load(f.read())
-        #         if service_data:
-        #             service_config = recursive_update(service, service_data)
-        # else:
-        #     self.log.error(f"Service config YAML not found in: {service_config_yml}")
-
-        t = (
-            version.SYSTEM_VERSION,
-            version.FRAMEWORK_VERSION,
-            service['version'],
-        )
-
-        service['version'] = self.service.get_service_version()
-        service['tool_version'] = self.service.get_tool_version()
-
-        with open(config_yml, 'w') as yml_fh:
-            yaml.safe_dump(service, yml_fh)
-
 
     def get_service_version(self) -> str:
 

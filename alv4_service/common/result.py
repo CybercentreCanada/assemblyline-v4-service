@@ -1,6 +1,7 @@
 import logging
 from typing import List
 
+from alv4_service.common.helper import get_heuristics
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import InvalidClassification
@@ -63,6 +64,11 @@ class ResultSection:
 
         if parent is not None:
             parent.add_section(self)
+
+    def _validate_heuristic(self, heuristic):
+        heuristics = get_heuristics()
+
+
 
     def add_line(self, text: str or list):
         # add_line with a list should join without newline seperator.
@@ -133,17 +139,27 @@ class ResultSection:
         self.body = body
         self.body_format = body_format
 
-    def set_heuristic(self, heur_id: str, category: str = None, score: int = 0) -> None:
+    def set_heuristic(self, heur_id: str, attack_id: str = None) -> None:
         if self.heuristic:
-            log.warning("A Heuristic already exists for this section. Setting a new Heuristic will replace the existing Heuristic.")
+            log.warning(f"A Heuristic ({self.heuristic.heur_id}) already exists for this section. "
+                        f"Setting a new Heuristic ({heur_id}) will replace the existing Heuristic.")
 
-        self._score = score
+        heuristics = get_heuristics()
+        if heur_id in [heuristic.heur_id for heuristic in heuristics]:
+            if not attack_id:
+                for heuristic in heuristics:
+                    if heur_id == heuristic.heur_id:
+                        attack_id = heuristic.attack_id
 
-        self.heuristic = Heuristic(dict(
-            heur_id=heur_id,
-            category=category,
-            score=score,
-        ))
+            hello = heuristic.attack_id if heur_id == heuristic.heur_id for heuristic in heuristics
+
+            self.heuristic = Heuristic(dict(
+                heur_id=heur_id,
+                attack_id=attack_id or ,
+                score=score or ,
+            ))
+        else:
+            log.warning(f"Invalid Heuristic. A Heuristic must be ")
 
 
 class Result:

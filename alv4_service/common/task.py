@@ -101,9 +101,6 @@ class Task:
         self.drop_file = True
 
     def get_service_error(self) -> Error:
-        if not self.error_message:
-            self.error_message = "Error message not provided"
-
         error = Error(dict(
             created=now_as_iso(),
             expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60),
@@ -192,4 +189,3 @@ class Task:
         if self._working_directory is None:
             self._working_directory = temp_dir
         return self._working_directory
-

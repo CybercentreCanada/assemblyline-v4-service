@@ -1,9 +1,11 @@
 import os
+from typing import List
 
 import yaml
 
 from assemblyline.common.classification import Classification, InvalidDefinition
 from assemblyline.common.dict_utils import recursive_update
+from assemblyline.odm.models.heuristic import Heuristic
 
 
 def get_classification() -> Classification:
@@ -34,3 +36,15 @@ def get_classification() -> Classification:
         raise InvalidDefinition("Could not find any classification definition to load.")
 
     return Classification(classification_definition)
+
+def get_heuristics() -> List[Heuristic]:
+    service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
+
+    if os.path.exists(service_manifest_yml):
+        with open(service_manifest_yml) as yml_fh:
+            yml_data = yaml.safe_load(yml_fh.read())
+            if yml_data:
+                heuristics = yml_data.get('heuristics', None)
+                if heuristics:
+                    heuristics = [Heuristic(heuristic) for heuristic in heuristics]
+                return heuristics
