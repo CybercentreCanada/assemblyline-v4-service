@@ -1,14 +1,21 @@
-from __future__ import annotations
+# from __future__ import annotations
+import logging
 
-from alv4_service.common import helper
+from alv4_service.common.result import Result
 from alv4_service.common.task import Task
-from assemblyline.odm.models.result import ResultBody
+from assemblyline.common import forge
+from assemblyline.common import log as al_log
 
-CLASSIFICATION = helper.get_classification()
+# CLASSIFICATION = helper.get_classification()
+CLASSIFICATION = forge.get_classification()
 
 
 class ServiceRequest:
     def __init__(self, task: Task) -> None:
+        # Initialize logging for the service
+        al_log.init_logging(f'{task.service_name}', log_level=logging.INFO)
+        self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
+
         self._working_directory = None
         self.md5 = task.md5
         self.sha1 = task.sha1
@@ -54,8 +61,8 @@ class ServiceRequest:
         return self.task.result.as_primitives()
 
     @result.setter
-    def result(self, result: ResultBody) -> None:
-        self.task.result = result
+    def result(self, result: Result) -> None:
+        self.task.result = result.finalize()
 
     def set_service_context(self, context) -> None:
         self.task.set_service_context(context)

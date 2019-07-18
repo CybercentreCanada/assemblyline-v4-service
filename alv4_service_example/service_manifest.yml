@@ -1,0 +1,28 @@
+name: ExampleService
+version: 1
+description: ALv4 Service Example
+
+accepts: .*
+rejects: empty|metadata/.*
+
+stage: CORE
+category: Uncategorized
+
+file_required: true
+timeout: 60
+disable_cache: false
+
+enabled: true
+install_by_default: true
+is_external: false
+licence_count: 0
+supported_platforms: [linux]
+cpu_cores: 1
+ram_mb: 1024
+
+config: {}
+
+submission_params: []
+
+docker_config:
+  image: cccs/alsvc_exampleservice:latest

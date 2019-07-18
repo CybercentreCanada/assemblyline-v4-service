@@ -1,14 +1,12 @@
 import logging
 import os
-import shutil
 
 import yaml
 
 from alv4_service.common.request import ServiceRequest
 from alv4_service.common.task import Task
-from assemblyline.common import exceptions
-from assemblyline.common import log
-from assemblyline.common.dict_utils import recursive_update
+from assemblyline.common import exceptions, log, version
+from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import ResultBody
 from assemblyline.odm.models.service import Service
 
@@ -44,57 +42,62 @@ class ServiceBase:
     @staticmethod
     def _get_default_service_attributes(yml_config: str = None) -> Service:
         if yml_config is None:
-            yml_config = os.path.join(os.path.dirname(__file__), 'service_config.yml')
-
-        # Initialize a default service
-        service = Service().as_primitives()
+            yml_config = os.path.join(os.getcwd(), 'service_manifest.yml')
 
         # Load modifiers from the yaml config
         if os.path.exists(yml_config):
             with open(yml_config) as yml_fh:
                 yml_data = yaml.safe_load(yml_fh.read())
                 if yml_data:
-                    service = recursive_update(service, yml_data)
+                    yml_data.pop('file_required', None)
+                    service = Service(yml_data)
 
-        return Service(service)
+        return service
 
-    def _handle_execute_failure(self, task: Task, exception, stack_info) -> None:
+    def _handle_execute_failure(self, exception, stack_info) -> None:
         # Clear the result, in case it caused the problem
-        task.result = None
+        self.task.result = None
 
         # Clear the extracted and supplementary files
-        task.clear_extracted()
-        task.clear_supplementary()
+        self.task.clear_extracted()
+        self.task.clear_supplementary()
 
         if isinstance(exception, exceptions.RecoverableError):
-            self.log.info(f"Recoverable Service Error ({task.sid}/{task.sha256}) {exception}: {stack_info}")
-            task.save_error(stack_info, recoverable=True)
+            self.log.info(f"Recoverable Service Error ({self.task.sid}/{self.task.sha256}) {exception}: {stack_info}")
+            self.task.save_error(stack_info, recoverable=True)
         else:
-            self.log.error(f"Nonrecoverable Service Error ({task.sid}/{task.sha256}) {exception}: {stack_info}")
-            task.save_error(stack_info, recoverable=False)
+            self.log.error(f"Nonrecoverable Service Error ({self.task.sid}/{self.task.sha256}) {exception}: {stack_info}")
+            self.task.save_error(stack_info, recoverable=False)
 
-    def _success(self, task: Task) -> None:
-        task.success()
+    def _success(self) -> None:
+        self.task.success()
 
-    def execute(self, request: ServiceRequest) -> ResultBody:
+    def execute(self, request) -> ResultBody:
         raise NotImplementedError("execute() function not implemented")
 
-    def get_tool_version(self) -> str:
-        return ''
+    def get_service_version(self) -> str:
+        t = (version.FRAMEWORK_VERSION,
+             version.SYSTEM_VERSION,
+             self.attributes.version)
+        return '.'.join([str(v) for v in t])
 
-    def handle_task(self, task: Task) -> None:
-        self.log.info(f"Starting task: {task.sid}/{task.sha256} ({task.type})")
+    def get_tool_version(self) -> str or None:
+        return None
 
+    def handle_task(self, task: ServiceTask) -> None:
         try:
-            self.task = task
-            self._working_directory = task.working_directory()
-            task.start(self.attributes.version, self.get_tool_version())
-            request = ServiceRequest(task)
-            result = self.execute(request)
-            task.set_result(result)
-            self._success(task)
+            self.task = Task(task)
+            self.log.info(f"Starting task: {self.task.sid}/{self.task.sha256} ({self.task.type})")
+            self._working_directory = self.task.working_directory()
+            self.task.start(self.attributes.version, self.get_tool_version())
+            request = ServiceRequest(self.task)
+            self.execute(request)
+
+            result = self.task.result
+            self.task.set_result(result)
+            self._success()
         except Exception as ex:
-            self._handle_execute_failure()
+            self._handle_execute_failure(ex, exceptions.get_stacktrace_info(ex))
         finally:
             self._cleanup_working_directory()
             self.task = None
