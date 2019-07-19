@@ -22,7 +22,7 @@ class ExampleService(ServiceBase):
         result.add_section(section)
 
         section = ResultSection("Section with Heuristic and Tags")
-        section.set_heuristic('heur_id_1_exampleservice', score=200)
+        section.set_heuristic('example_service_1')
         section.add_tag('av.virus_name', 'ImABadVirus')
         result.add_section(section)
 
@@ -31,12 +31,12 @@ class ExampleService(ServiceBase):
         subsection2 = ResultSection("Subsection #2")
         subsection21 = ResultSection("Subsection #2.1")
         subsection21.add_tag('network.ip', '192.168.0.2')
-        subsection2.add_section(subsection21)
+        subsection2.add_subsection(subsection21)
         subsection21a = ResultSection("Subsection #2.1.a")
         subsection21a.add_lines(["This is line #1", "This is line #2", "This is line #3"])
-        subsection21.add_section(subsection21a)
-        section.add_section(subsection1)
-        section.add_section(subsection2)
+        subsection21.add_subsection(subsection21a)
+        section.add_subsection(subsection1)
+        section.add_subsection(subsection2)
         result.add_section(section)
 
         request.result = result

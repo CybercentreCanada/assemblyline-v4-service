@@ -6,7 +6,6 @@ from alv4_service.common.task import Task
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 
-# CLASSIFICATION = helper.get_classification()
 CLASSIFICATION = forge.get_classification()
 
 
@@ -51,22 +50,52 @@ class ServiceRequest:
 
     @property
     def download_file(self) -> str:
+        """
+        Download the tasked file for analysis.
+
+        :return: File path to the downloaded file
+        """
         return self.task.download_file()
 
     def drop(self) -> None:
+        """
+        Drop the task from further processing by other remaining service(s).
+
+        :return: None
+        """
         self.task.drop()
 
     @property
     def result(self) -> dict:
+        """
+        Get the current result as set by the service.
+
+        :return: Current result as set by the service
+        """
         return self.task.result.as_primitives()
 
     @result.setter
     def result(self, result: Result) -> None:
+        """
+        Set the result.
+
+        :param result: Result object created by the service
+        """
         self.task.result = result.finalize()
 
     def set_service_context(self, context) -> None:
+        """
+        Set the service context.
+
+        :param context: Context of the service
+        """
         self.task.set_service_context(context)
 
     @property
     def working_directory(self) -> str:
+        """
+        Get the temp working directory for the current task.
+
+        :return: Temp directory path for the current task
+        """
         return self.task.working_directory()

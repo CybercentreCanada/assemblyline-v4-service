@@ -26,7 +26,6 @@ submission_params: []
 
 heuristics:
   - description: This is a Heuristic for the ExampleService.
-    category: Execution
     filetype: pdf
     heur_id: example_service_1
     name: Example Service 1

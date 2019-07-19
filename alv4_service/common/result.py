@@ -24,16 +24,6 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('JSON', 4)
 ])
 
-SCORE = NamedConstants('SCORE', [
-    ('OK', -1000),  # Not malware
-    ('NULL', 0),
-    ('LOW', 1),
-    ('MED', 10),
-    ('HIGH', 100),
-    ('VHIGH', 500),
-    ('SURE', 1000)  # Malware
-])
-
 
 class ResultSection:
     def __init__(
@@ -46,16 +36,15 @@ class ResultSection:
             tags: Tagging = None,
             parent=None,
     ):
-        self._finalized = False
+        self._finalized: bool = False
         self._parent = parent
-        self._score = None
         self._section = None
-        self.subsections = []
-        self.body = body
-        self.classification = classification
-        self.body_format = body_format
-        self.depth = 0
-        self.heuristic = heuristic
+        self.subsections: List[ResultSection] = []
+        self.body: str = body
+        self.classification: Classification = classification
+        self.body_format: BODY_FORMAT = body_format
+        self.depth: int = 0
+        self.heuristic: Heuristic or None = heuristic
         self.tags = tags or {}
 
         if isinstance(title_text, list):
@@ -65,12 +54,7 @@ class ResultSection:
         if parent is not None:
             parent.add_section(self)
 
-    def _validate_heuristic(self, heuristic):
-        heuristics = get_heuristics()
-
-
-
-    def add_line(self, text: str or list):
+    def add_line(self, text: str or list) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):
@@ -82,7 +66,7 @@ class ResultSection:
         else:
             self.body = textstr
 
-    def add_lines(self, line_list: list):
+    def add_lines(self, line_list: list) -> None:
         if not isinstance(line_list, list):
             log.warning(f"add_lines called with invalid type: {type(line_list)}. ignoring")
             return
@@ -93,21 +77,27 @@ class ResultSection:
         else:
             self.body = self.body + '\n' + segment
 
-    def add_section(self, section, on_top: bool = False) -> None:
-        if on_top:
-            self.subsections.insert(0, section)
-        else:
-            self.subsections.append(section)
-        section.parent = self
+    def add_subsection(self, subsection, on_top: bool = False) -> None:
+        """
+        Add a result subsection to another result section or subsection.
 
-    def add_tag(self, tag_type: str, value: str):
+        :param subsection: Subsection to add to another result section or subsection
+        :param on_top: Display this result section on top of other subsections
+        """
+        if on_top:
+            self.subsections.insert(0, subsection)
+        else:
+            self.subsections.append(subsection)
+        subsection.parent = self
+
+    def add_tag(self, tag_type: str, value: str) -> None:
         if tag_type not in self.tags:
             self.tags[tag_type] = []
 
         if value not in self.tags[tag_type]:
             self.tags[tag_type].append(value)
 
-    def finalize(self, depth=0):
+    def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
             raise Exception("Double finalize() on result detected.")
         self._finalized = True
@@ -127,8 +117,6 @@ class ResultSection:
             try:
                 self._parent.classification = \
                     Classification.max_classification(self.classification, self._parent.classification)
-                if self._score:
-                    self._parent.score += self._score
             except InvalidClassification as e:
                 log.error(f"Failed to finalize section due to a classification error: {str(e)}")
                 keep_me = False
@@ -140,34 +128,36 @@ class ResultSection:
         self.body_format = body_format
 
     def set_heuristic(self, heur_id: str, attack_id: str = None) -> None:
+        """
+        Set a Heuristic for a result section/subsection. A Heuristic is required to assign a score to a result section/subsection.
+
+        :param heur_id: Heuristic ID as set in the service manifest
+        :param attack_id: (optional)
+        """
         if self.heuristic:
             log.warning(f"A Heuristic ({self.heuristic.heur_id}) already exists for this section. "
                         f"Setting a new Heuristic ({heur_id}) will replace the existing Heuristic.")
 
         heuristics = get_heuristics()
-        if heur_id in [heuristic.heur_id for heuristic in heuristics]:
-            if not attack_id:
-                for heuristic in heuristics:
-                    if heur_id == heuristic.heur_id:
-                        attack_id = heuristic.attack_id
+        for heuristic in heuristics:
+            if heur_id == heuristic.heur_id:
+                self.heuristic = Heuristic(dict(
+                    heur_id=heur_id,
+                    attack_id=attack_id or heuristic.attack_id,
+                    score=heuristic.score,
+                ))
 
-            hello = heuristic.attack_id if heur_id == heuristic.heur_id for heuristic in heuristics
-
-            self.heuristic = Heuristic(dict(
-                heur_id=heur_id,
-                attack_id=attack_id or ,
-                score=score or ,
-            ))
-        else:
-            log.warning(f"Invalid Heuristic. A Heuristic must be ")
+        if not self.heuristic:
+            log.warning(f"Invalid Heuristic. A Heuristic must be added to the service manifest before using it.")
 
 
 class Result:
     def __init__(self, sections: List[ResultSection] = None) -> None:
-        self._flattened_sections = []
-        self.sections = sections or []
+        self._flattened_sections: List[Section] = []
+        self._score: int = 0
+        self.sections: List[ResultSection] = sections or []
 
-    def _append_section(self, section):
+    def _append_section(self, section: ResultSection) -> None:
         self._flattened_sections.append(Section(dict(
             body=section.body,
             classification=section.classification,
@@ -178,9 +168,11 @@ class Result:
             title_text=section.title_text,
         )))
 
-    def _flatten_sections(self, section, root=True):
+    def _flatten_sections(self, section: ResultSection, root: bool = True) -> None:
         if len(section.subsections) > 0:
-            if root: self._append_section(section)
+            if root:
+                self._append_section(section)
+
             for subsection in section.subsections:
                 self._append_section(subsection)
                 if len(subsection.subsections) > 0:
@@ -189,12 +181,18 @@ class Result:
             self._append_section(section)
 
     def add_section(self, section: ResultSection, on_top: bool = False) -> None:
+        """
+        Add a result section to the root of the result.
+
+        :param section: Section to add to the root of the result
+        :param on_top: Display this result section on top of other sections
+        """
         if on_top:
             self.sections.insert(0, section)
         else:
             self.sections.append(section)
 
-    def finalize(self):
+    def finalize(self) -> ResultBody:
         to_delete_sections = []
 
         for section in self.sections:
@@ -206,10 +204,17 @@ class Result:
         for section in to_delete_sections:
             self.sections.remove(section)
 
+        # Flatten all the sections into a flat list
         for section in self.sections:
             self._flatten_sections(section)
 
+        # Calculate the total score of all sections/subsections
+        for section in self._flattened_sections:
+            if section.heuristic:
+                self._score += section.heuristic.score
+
         result = ResultBody(dict(
+            score=self._score,
             sections=self._flattened_sections,
         ))
 
