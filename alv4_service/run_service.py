@@ -12,10 +12,9 @@ from watchdog.observers import Observer
 from watchdog.observers.api import EventQueue
 
 from al_core.server_base import ServerBase
-from assemblyline.common import version
+from alv4_service.common import helper
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.service import Service
 
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
@@ -69,7 +68,7 @@ class RunService(ServerBase):
 
         self.service = None
         self.service_class = None
-        self.attributes = None
+        self.service_config = None
         self.service_tool_version = None
         self.service_file_required = None
         self.received_folder_path = None
@@ -81,7 +80,7 @@ class RunService(ServerBase):
             self.log.error("Could not find service in path.")
             raise
 
-        self.attributes = self.get_service_attributes()
+        self.load_service_attributes()
 
         self.received_folder_path = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'received')
         if not os.path.isdir(self.received_folder_path):
@@ -92,7 +91,6 @@ class RunService(ServerBase):
         self.file_watcher.start()
         self.log.info(f"Started watching folder for tasks: {self.received_folder_path}")
 
-        self.service = self.service_class(config=self.attributes.config)
         self.service.start_service()
 
         while self.running:
@@ -119,40 +117,20 @@ class RunService(ServerBase):
 
         super().stop()
 
-    def get_service_attributes(self) -> Service:
-        service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
+    def load_service_attributes(self) -> None:
+        service_manifest_data = helper.get_service_manifest()
 
-        # Load modifiers from the yaml config
-        if os.path.exists(service_manifest_yml):
-            with open(service_manifest_yml) as yml_fh:
-                yml_data = yaml.safe_load(yml_fh.read())
-                if yml_data:
-                    self.service_file_required = yml_data.get('file_required', True)
-                    yml_data.pop('file_required', None)
-                    service = Service(yml_data)
+        self.service_config = service_manifest_data.get('config', {})
 
-        t = (
-            version.SYSTEM_VERSION,
-            version.FRAMEWORK_VERSION,
-            service['version'],
-        )
+        self.service = self.service_class(config=self.service_config)
 
-        self.service = self.service_class()
-
-        service['version'] = self.service.get_service_version()
         self.service_tool_version = self.service.get_tool_version()
 
+        self.service_file_required = service_manifest_data.get('file_required', True)
+
+        # Save a copy of the service manifest for the service client to use
         with open(self.service_manifest_yml, 'w') as yml_fh:
-            data = service.as_primitives()
-            data['tool_version'] = self.service_tool_version
-            data['file_required'] = self.service_file_required
-            yaml.safe_dump(data, yml_fh)
-
-        return service
-
-    def get_service_version(self) -> str:
-
-        return '.'.join([str(v) for v in t])
+            yaml.safe_dump(service_manifest_data, yml_fh)
 
 
 if __name__ == '__main__':
