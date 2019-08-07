@@ -25,11 +25,28 @@ config: {}
 submission_params: []
 
 heuristics:
-  - description: This is a Heuristic for the ExampleService.
+  - description: This is a Heuristic for ExampleService.
     filetype: pdf
-    heur_id: example_service_1
-    name: Example Service 1
+    heur_id: AL_EXAMPLESERVICE_1
+    name: Example Service Heuristic 1
     score: 500
+  - description: This is a Heuristic for ExampleService.
+    filetype: exe
+    heur_id: AL_EXAMPLESERVICE_2
+    name: Example Service Heuristic 2
+    score: 1000
 
 docker_config:
   image: cccs/alsvc_exampleservice:latest
+
+update_config:
+  method: run
+  sources:
+    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
+      name: sample_2mb_file
+    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_5MB.zip
+      name: sample_5mb_file
+  update_interval_seconds: 300
+  run_options:
+    image: cccs/assemblyline_dev:latest
+    command: python3 -m al_core.updater.url_update

@@ -9,7 +9,7 @@ class ExampleService(ServiceBase):
         super(ExampleService, self).__init__(config)
 
     def start(self):
-        self.log.info(f"start() from {self.attributes.name} service called")
+        self.log.info(f"start() from {self.service_name} service called")
 
     def execute(self, request):
         time.sleep(1)
