@@ -15,9 +15,6 @@ ENV AWS_REGION=us-east-1
 # Switch to root to install dependencies
 USER root
 
-RUN apt-get update && apt-get install -y \
-  supervisor
-
 # Pipy packages requirements
 RUN pip3 install \
   assemblyline \
@@ -28,8 +25,5 @@ RUN pip3 install \
 RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
-# Supervisor
-RUN mkdir -p /var/log/supervisor
-COPY stop-supervisor.sh /etc/supervisor/
-COPY supervisord.conf /etc/supervisor/conf.d/
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+COPY alv4_service/docker/v4_service_base/process_handler.sh /etc/
+CMD sh /etc/process_handler.sh

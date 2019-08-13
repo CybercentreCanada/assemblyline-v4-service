@@ -13,9 +13,6 @@ ENV AWS_REGION=us-east-1
 # Switch to root to install dependencies
 USER root
 
-RUN apt-get update && apt-get install -y \
-  supervisor
-
 COPY alv4_service/docker/v4_service_base_dev/requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
@@ -29,8 +26,5 @@ RUN rm /tmp/requirements.txt*
 RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
-# Supervisor
-RUN mkdir -p /var/log/supervisor
-COPY alv4_service/docker/v4_service_base_dev/stop-supervisor.sh /etc/supervisor/
-COPY alv4_service/docker/v4_service_base_dev/supervisord.conf /etc/supervisor/conf.d/
-ENTRYPOINT ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
+COPY alv4_service/docker/v4_service_base_dev/process_handler.sh /etc/
+CMD sh /etc/process_handler.sh
