@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Start the first process
-python2 /opt/alv4/alv3_service/alv3_service/run_service.py &
+python3 -m alv4_service.run_service &
 status=$?
 if [ ${status} -ne 0 ]; then
   echo "Failed to start run_service: $status"
@@ -9,7 +9,7 @@ if [ ${status} -ne 0 ]; then
 fi
 
 # Start the second process
-python3 /opt/alv4/alv4_service_client/al_service_client/task_handler.py &
+python3 -m al_service_client.task_handler &
 status=$?
 if [ ${status} -ne 0 ]; then
   echo "Failed to start task_handler: $status"

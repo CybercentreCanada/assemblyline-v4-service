@@ -25,5 +25,5 @@ RUN pip3 install \
 RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
-COPY alv4_service/docker/v4_service_base/process_handler.sh /etc/
+COPY process_handler.sh /etc/
 CMD sh /etc/process_handler.sh

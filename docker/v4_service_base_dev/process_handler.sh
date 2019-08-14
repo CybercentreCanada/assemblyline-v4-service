@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 # Start the first process
-python2 /opt/alv4/alv3_service/alv3_service/run_service.py &
+python3 /opt/alv4/alv4_service/alv4_service/run_service.py &
 status=$?
 if [ ${status} -ne 0 ]; then
   echo "Failed to start run_service: $status"
