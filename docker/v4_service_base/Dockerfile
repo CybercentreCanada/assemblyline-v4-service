@@ -25,5 +25,5 @@ RUN pip3 install \
 RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
-COPY process_handler.sh /etc/
-CMD sh /etc/process_handler.sh
+COPY process_handler.py /etc/
+CMD python3 /etc/process_handler.py

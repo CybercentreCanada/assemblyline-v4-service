@@ -1,4 +1,4 @@
-FROM cccs/assemblyline:latest
+FROM cccs/assemblyline_dev:latest
 
 # Setup environment varibles
 ENV PYTHONPATH /opt/alv4/alv4:/opt/alv4/alv4_service_client:/opt/alv4/alv4_service:/opt/al:/opt/al/al_services
@@ -26,5 +26,5 @@ RUN rm /tmp/requirements.txt*
 RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
-COPY alv4_service/docker/v4_service_base_dev/process_handler.sh /etc/
-CMD sh /etc/process_handler.sh
+COPY alv4_service/docker/v4_service_base_dev/process_handler.py /etc/
+CMD python3 /etc/process_handler.py
