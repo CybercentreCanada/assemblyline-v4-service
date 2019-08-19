@@ -3,7 +3,7 @@ from subprocess import Popen
 
 if __name__ == '__main__':
     # Start the two processes
-    rs_p = Popen(['python3', '-m', 'alv4_service.run_service'])
+    rs_p = Popen(['python3', '-m', 'assemblyline_v4_service.run_service'])
     th_p = Popen(['python3', '-m', 'al_service_client.task_handler'])
 
     while True:

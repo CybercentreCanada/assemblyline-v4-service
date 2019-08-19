@@ -1,15 +1,15 @@
 import logging
 from typing import List
 
-from alv4_service.common.helper import get_heuristics
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
-from assemblyline.common.str_utils import NamedConstants, StringTable, safe_str
+from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline.odm.models.heuristic import Heuristic
 from assemblyline.odm.models.result import ResultBody, Section, Heuristic
 from assemblyline.odm.models.tagging import Tagging
+from assemblyline_v4_service.common.helper import get_heuristics
 
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')

@@ -1,10 +1,10 @@
 # from __future__ import annotations
 import logging
 
-from alv4_service.common.result import Result
-from alv4_service.common.task import Task
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline_v4_service.common.result import Result
+from assemblyline_v4_service.common.task import Task
 
 CLASSIFICATION = forge.get_classification()
 

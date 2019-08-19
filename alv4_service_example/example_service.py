@@ -1,7 +1,7 @@
 import time
 
-from alv4_service.common.base import ServiceBase
-from alv4_service.common.result import Result, ResultSection
+from assemblyline_v4_service.common.base import ServiceBase
+from assemblyline_v4_service.common.result import Result, ResultSection
 
 
 class ExampleService(ServiceBase):
