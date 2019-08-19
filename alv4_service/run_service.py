@@ -11,10 +11,10 @@ from watchdog.events import PatternMatchingEventHandler
 from watchdog.observers import Observer
 from watchdog.observers.api import EventQueue
 
-from al_core.server_base import ServerBase
 from alv4_service.common import helper
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline_core.server_base import ServerBase
 
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()

@@ -49,4 +49,4 @@ update_config:
   update_interval_seconds: 300
   run_options:
     image: cccs/assemblyline_dev:latest
-    command: python3 -m al_core.updater.url_update
+    command: python3 -m assemblyline_core.updater.url_update
