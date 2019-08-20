@@ -4,7 +4,7 @@ from subprocess import Popen
 if __name__ == '__main__':
     # Start the two processes
     rs_p = Popen(['python3', '/opt/alv4/alv4_service/assemblyline_v4_service/run_service.py'])
-    th_p = Popen(['python3', '/opt/alv4/alv4_service_client/al_service_client/task_handler.py'])
+    th_p = Popen(['python3', '/opt/alv4/alv4_service_client/assemblyline_service_client/task_handler.py'])
 
     while True:
         rs_rc = rs_p.poll()
