@@ -11,16 +11,16 @@ from assemblyline_v4_service.common.task import Task
 class ServiceBase:
     def __init__(self, config: dict = None) -> None:
         # Load the service attributes from the service manifest
-        self._load_service_attributes()
+        self.service_attributes = helper.get_service_attributes()
 
         # Start with default service parameters and override with anything provided
-        self.config = self.service_config
+        self.config = self.service_attributes.config
         if config:
             self.config.update(config)
 
         # Initialize logging for the service
-        log.init_logging(f'{self.service_name}', log_level=logging.INFO)
-        self.log = logging.getLogger(f'assemblyline.service.{self.service_name.lower()}')
+        log.init_logging(f'{self.service_attributes.name}', log_level=logging.INFO)
+        self.log = logging.getLogger(f'assemblyline.service.{self.service_attributes.name.lower()}')
 
         self._task = None
 
@@ -45,22 +45,16 @@ class ServiceBase:
             self.log.error(f"Nonrecoverable Service Error ({self._task.sid}/{self._task.sha256}) {exception}: {stack_info}")
             self._task.save_error(stack_info, recoverable=False)
 
-    def _load_service_attributes(self) -> None:
-        service_manifest_data = helper.get_service_manifest()
-        self.service_config = service_manifest_data.get('config', {})
-        self.service_name = service_manifest_data.get('name')
-        self.service_version = service_manifest_data.get('version')
-
     def _success(self) -> None:
         self._task.success()
 
-    def execute(self, request) -> ResultBody:
+    def execute(self, request: ServiceRequest) -> ResultBody:
         raise NotImplementedError("execute() function not implemented")
 
     def get_service_version(self) -> str:
         t = (version.FRAMEWORK_VERSION,
              version.SYSTEM_VERSION,
-             self.service_version)
+             self.service_attributes.version)
         return '.'.join([str(v) for v in t])
 
     def get_tool_version(self) -> str or None:
@@ -93,7 +87,7 @@ class ServiceBase:
         pass
 
     def start_service(self) -> None:
-        self.log.info(f"Starting service: {self.service_name}")
+        self.log.info(f"Starting service: {self.service_attributes.name}")
         self.start()
 
     def stop(self) -> None:
@@ -106,5 +100,5 @@ class ServiceBase:
 
     def stop_service(self) -> None:
         # Perform common stop routines and then invoke the child's stop().
-        self.log.info(f"Stopping service: {self.service_name}")
+        self.log.info(f"Stopping service: {self.service_attributes.name}")
         self.stop()

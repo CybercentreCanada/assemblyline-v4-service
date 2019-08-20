@@ -48,7 +48,6 @@ class ServiceRequest:
 
         self.task.add_supplementary(path, name, description, classification)
 
-    @property
     def download_file(self) -> str:
         """
         Download the tasked file for analysis.

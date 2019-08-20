@@ -9,12 +9,13 @@ from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline.odm.models.heuristic import Heuristic
 from assemblyline.odm.models.result import ResultBody, Section, Heuristic
 from assemblyline.odm.models.tagging import Tagging
-from assemblyline_v4_service.common.helper import get_heuristics
+from assemblyline_v4_service.common.helper import get_heuristics, get_service_attributes
 
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')
 
 Classification = forge.get_classification()
+SERVICE_ATTRIBUTES = get_service_attributes()
 
 BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TEXT', 0),
@@ -30,7 +31,7 @@ class ResultSection:
             self,
             title_text: str or list,
             body: str = None,
-            classification: Classification = Classification.UNRESTRICTED,
+            classification: Classification = SERVICE_ATTRIBUTES.default_result_classification,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
             heuristic: Heuristic = None,
             tags: Tagging = None,

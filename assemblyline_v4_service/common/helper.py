@@ -6,6 +6,7 @@ import yaml
 from assemblyline.common.classification import Classification, InvalidDefinition
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.odm.models.heuristic import Heuristic
+from assemblyline.odm.models.service import Service
 
 
 def get_classification() -> Classification:
@@ -45,6 +46,16 @@ def get_heuristics() -> List[Heuristic]:
     return heuristics
 
 
+def get_service_attributes() -> Service:
+    service_manifest_data = get_service_manifest()
+
+    # Pop the 'extra' data from the service manifest
+    for x in ['file_required', 'tool_version', 'heuristics']:
+        service_manifest_data.pop(x, None)
+
+    return Service(service_manifest_data)
+
+
 def get_service_manifest() -> dict:
     service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
 
@@ -55,4 +66,3 @@ def get_service_manifest() -> dict:
                 return yml_data
     else:
         raise Exception("Service manifest YAML file not found in root folder of service.")
-
