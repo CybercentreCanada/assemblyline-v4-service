@@ -27,11 +27,9 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     keywords="assemblyline malware gc canada cse-cst cse cst cyber cccs",
-    packages=find_packages(exclude=['test/*']),
+    packages=find_packages(exclude=['test/*', 'docker/*', 'alv4_service_example/*']),
     install_requires=[
         'assemblyline',
         'watchdog',
     ],
-    package_data={
-    }
 )
