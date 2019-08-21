@@ -51,7 +51,7 @@ class FileWatcher:
 
 
 class RunService(ServerBase):
-    def __init__(self, shutdown_timeout=SHUTDOWN_SECONDS_LIMIT):
+    def __init__(self, shutdown_timeout: int = SHUTDOWN_SECONDS_LIMIT):
         super(RunService, self).__init__(f'assemblyline.service.{SERVICE_NAME}', shutdown_timeout=shutdown_timeout)
 
         self.classification_yml = '/etc/assemblyline/classification.yml'

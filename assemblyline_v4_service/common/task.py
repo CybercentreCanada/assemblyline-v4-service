@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import List
+from typing import List, Optional
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -22,21 +22,21 @@ class Task:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._classification: Classification = forge.get_classification()
-        self._service_completed: str or None = None
-        self._service_started: str or None = None
-        self._working_directory: str or None = None
+        self._service_completed: Optional[str] = None
+        self._service_started: Optional[str] = None
+        self._working_directory: Optional[str] = None
         self.drop_file: bool = False
-        self.error_message: str or None = None
-        self.error_status: str or None = None
-        self.error_type = 'EXCEPTION'
+        self.error_message: Optional[str] = None
+        self.error_status: Optional[str] = None
+        self.error_type: str = 'EXCEPTION'
         self.extracted: List[File] = []
         self.md5: str = task.fileinfo.md5
-        self.result: ResultBody or None = None
-        self.service_context: str or None = None
-        self.service_debug_info: str or None = None
+        self.result: Optional[ResultBody] = None
+        self.service_context: Optional[str] = None
+        self.service_debug_info: Optional[str] = None
         self.service_name: str = task.service_name
-        self.service_tool_version: str or None = None
-        self.service_version: str or None = None
+        self.service_tool_version: Optional[str] = None
+        self.service_version: Optional[str] = None
         self.sha1: str = task.fileinfo.sha1
         self.sha256: str = task.fileinfo.sha256
         self.sid: str = task.sid
@@ -44,7 +44,7 @@ class Task:
         self.ttl: int = task.ttl
         self.type: str = task.fileinfo.type
 
-    def add_extracted(self, path: str, name: str, description: str, classification: Classification = None):
+    def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
         # Move extracted file to base of working directory
         file_path = os.path.join(self._working_directory, name)
         folder_path = os.path.dirname(path)
@@ -62,7 +62,7 @@ class Task:
 
         self.extracted.append(file)
 
-    def add_supplementary(self, path: str, name: str, description: str, classification: Classification = None):
+    def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
         # Move supplementary file to base of working directory
         file_path = os.path.join(self._working_directory, name)
         folder_path = os.path.dirname(path)
@@ -169,7 +169,7 @@ class Task:
     def set_result(self, result: ResultBody) -> None:
         self.result = result
 
-    def start(self, service_version: str, service_tool_version: str = None) -> None:
+    def start(self, service_version: str, service_tool_version: Optional[str] = None) -> None:
         self.service_version = service_version
         self.service_tool_version = service_tool_version
 

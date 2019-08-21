@@ -1,8 +1,9 @@
-# from __future__ import annotations
 import logging
+from typing import Dict, Optional, Any
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.classification import Classification
 from assemblyline_v4_service.common.result import Result
 from assemblyline_v4_service.common.task import Task
 
@@ -22,7 +23,7 @@ class ServiceRequest:
         self.sid = task.sid
         self.task = task
 
-    def add_extracted(self, path: str, name: str, description: str, classification: CLASSIFICATION = None) -> None:
+    def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None) -> None:
         """
         Add an extracted file for additional processing.
 
@@ -35,7 +36,7 @@ class ServiceRequest:
 
         self.task.add_extracted(path, name, description, classification)
 
-    def add_supplementary(self, path: str, name: str, description: str, classification: CLASSIFICATION = None) -> None:
+    def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None) -> None:
         """
         Add a supplementary file.
 
@@ -65,7 +66,7 @@ class ServiceRequest:
         self.task.drop()
 
     @property
-    def result(self) -> dict:
+    def result(self) -> Dict[str, Any]:
         """
         Get the current result as set by the service.
 

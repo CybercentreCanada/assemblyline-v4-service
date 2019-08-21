@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import logging
-from typing import List
+from typing import List, Union, Optional
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -29,23 +31,23 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
 class ResultSection:
     def __init__(
             self,
-            title_text: str or list,
-            body: str = None,
-            classification: Classification = SERVICE_ATTRIBUTES.default_result_classification,
+            title_text: Union[str, list],
+            body: Optional[str] = None,
+            classification: Optional[Classification] = None,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
-            heuristic: Heuristic = None,
-            tags: Tagging = None,
-            parent=None,
+            heuristic: Optional[Heuristic] = None,
+            tags: Optional[Tagging] = None,
+            parent: Optional[ResultSection] = None,
     ):
         self._finalized: bool = False
         self._parent = parent
         self._section = None
         self.subsections: List[ResultSection] = []
         self.body: str = body
-        self.classification: Classification = classification
+        self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.body_format: BODY_FORMAT = body_format
         self.depth: int = 0
-        self.heuristic: Heuristic or None = heuristic
+        self.heuristic: Optional[Heuristic] = heuristic
         self.tags = tags or {}
 
         if isinstance(title_text, list):
@@ -55,7 +57,7 @@ class ResultSection:
         if parent is not None:
             parent.add_section(self)
 
-    def add_line(self, text: str or list) -> None:
+    def add_line(self, text: Union[str, list]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):
@@ -67,7 +69,7 @@ class ResultSection:
         else:
             self.body = textstr
 
-    def add_lines(self, line_list: list) -> None:
+    def add_lines(self, line_list: List[str]) -> None:
         if not isinstance(line_list, list):
             log.warning(f"add_lines called with invalid type: {type(line_list)}. ignoring")
             return
@@ -128,7 +130,7 @@ class ResultSection:
         self.body = body
         self.body_format = body_format
 
-    def set_heuristic(self, heur_id: str, attack_id: str = None) -> None:
+    def set_heuristic(self, heur_id: str, attack_id: Optional[str] = None) -> None:
         """
         Set a Heuristic for a result section/subsection. A Heuristic is required to assign a score to a result section/subsection.
 
@@ -153,7 +155,7 @@ class ResultSection:
 
 
 class Result:
-    def __init__(self, sections: List[ResultSection] = None) -> None:
+    def __init__(self, sections: Optional[List[ResultSection]] = None) -> None:
         self._flattened_sections: List[Section] = []
         self._score: int = 0
         self.sections: List[ResultSection] = sections or []
