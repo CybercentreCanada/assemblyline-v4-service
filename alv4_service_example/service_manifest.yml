@@ -17,8 +17,6 @@ install_by_default: true
 is_external: false
 licence_count: 0
 supported_platforms: [linux]
-cpu_cores: 1
-ram_mb: 1024
 
 config: {}
 
@@ -38,6 +36,8 @@ heuristics:
 
 docker_config:
   image: cccs/alsvc_exampleservice:latest
+  cpu_cores: 1.0
+  ram_mb: 1024
 
 update_config:
   method: run
