@@ -1,5 +1,5 @@
 import logging
-from typing import Optional
+from typing import Optional, Dict
 
 from assemblyline.common import exceptions, log, version
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -10,7 +10,7 @@ from assemblyline_v4_service.common.task import Task
 
 
 class ServiceBase:
-    def __init__(self, config: Optional[dict] = None) -> None:
+    def __init__(self, config: Optional[Dict] = None) -> None:
         # Load the service attributes from the service manifest
         self.service_attributes = helper.get_service_attributes()
 

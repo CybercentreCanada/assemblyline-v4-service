@@ -8,7 +8,6 @@ from assemblyline.common import log as al_log
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
-from assemblyline.odm.models.heuristic import Heuristic
 from assemblyline.odm.models.result import ResultBody, Section, Heuristic
 from assemblyline.odm.models.tagging import Tagging
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_attributes
@@ -24,14 +23,15 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('MEMORY_DUMP', 1),
     ('GRAPH_DATA', 2),
     ('URL', 3),
-    ('JSON', 4)
+    ('JSON', 4),
+    ('HEURISTIC', 5),
 ])
 
 
 class ResultSection:
     def __init__(
             self,
-            title_text: Union[str, list],
+            title_text: Union[str, List],
             body: Optional[str] = None,
             classification: Optional[Classification] = None,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
@@ -57,7 +57,7 @@ class ResultSection:
         if parent is not None:
             parent.add_section(self)
 
-    def add_line(self, text: Union[str, list]) -> None:
+    def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):

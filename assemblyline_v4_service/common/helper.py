@@ -1,5 +1,5 @@
 import os
-from typing import List
+from typing import List, Dict
 
 import yaml
 
@@ -56,7 +56,7 @@ def get_service_attributes() -> Service:
     return Service(service_manifest_data)
 
 
-def get_service_manifest() -> dict:
+def get_service_manifest() -> Dict:
     service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
 
     if os.path.exists(service_manifest_yml):
