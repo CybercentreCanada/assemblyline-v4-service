@@ -126,6 +126,9 @@ class RunService(ServerBase):
 
         self.service_file_required = service_manifest_data.get('file_required', True)
 
+        # Update the service version with the whole version
+        service_manifest_data['version'] = self.service.get_service_version()
+
         # Save a copy of the service manifest for the service client to use
         with open(self.service_manifest_yml, 'w') as yml_fh:
             yaml.safe_dump(service_manifest_data, yml_fh)

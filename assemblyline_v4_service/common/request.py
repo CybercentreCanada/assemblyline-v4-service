@@ -17,6 +17,7 @@ class ServiceRequest:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._working_directory = None
+        self.file_type = task.file_type
         self.md5 = task.md5
         self.sha1 = task.sha1
         self.sha256 = task.sha256
@@ -49,14 +50,6 @@ class ServiceRequest:
 
         self.task.add_supplementary(path, name, description, classification)
 
-    def download_file(self) -> str:
-        """
-        Download the tasked file for analysis.
-
-        :return: File path to the downloaded file
-        """
-        return self.task.download_file()
-
     def drop(self) -> None:
         """
         Drop the task from further processing by other remaining service(s).
@@ -64,6 +57,23 @@ class ServiceRequest:
         :return: None
         """
         self.task.drop()
+
+    @property
+    def file_path(self) -> str:
+        """
+        Download the tasked file for analysis.
+
+        :return: File path to the downloaded file
+        """
+        return self.task.download_file()
+
+    def get_param(self, name: str):
+        """
+        Get a submission parameter.
+
+        :return: Value of the requested submission parameter
+        """
+        return self.task.get_param(name)
 
     @property
     def result(self) -> Dict[str, Any]:

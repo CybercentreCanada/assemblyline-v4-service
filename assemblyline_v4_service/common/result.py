@@ -8,7 +8,7 @@ from assemblyline.common import log as al_log
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
-from assemblyline.odm.models.result import ResultBody, Section, Heuristic
+from assemblyline.odm.models.result import ResultBody, Section
 from assemblyline.odm.models.tagging import Tagging
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_attributes
 
@@ -24,8 +24,13 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('GRAPH_DATA', 2),
     ('URL', 3),
     ('JSON', 4),
-    ('HEURISTIC', 5),
 ])
+
+
+class Heuristic:
+    def __init__(self, heur_id: str, attack_id: Optional[str] = None):
+        self.heur_id = heur_id
+        self.attack_id = attack_id
 
 
 class ResultSection:
@@ -37,7 +42,7 @@ class ResultSection:
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
             heuristic: Optional[Heuristic] = None,
             tags: Optional[Tagging] = None,
-            parent: Optional[ResultSection] = None,
+            parent: Optional[Union[ResultSection, Result]] = None,
     ):
         self._finalized: bool = False
         self._parent = parent
@@ -47,15 +52,20 @@ class ResultSection:
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.body_format: BODY_FORMAT = body_format
         self.depth: int = 0
-        self.heuristic: Optional[Heuristic] = heuristic
         self.tags = tags or {}
 
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
         self.title_text = safe_str(title_text)
 
+        if heuristic:
+            self.set_heuristic(heuristic.heur_id, heuristic.attack_id)
+
         if parent is not None:
-            parent.add_section(self)
+            if isinstance(parent, ResultSection):
+                parent.add_subsection(self)
+            elif isinstance(parent, Result):
+                parent.add_section(self)
 
     def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
@@ -138,17 +148,16 @@ class ResultSection:
         :param attack_id: (optional)
         """
         if self.heuristic:
-            log.warning(f"A Heuristic ({self.heuristic.heur_id}) already exists for this section. "
+            log.warning(f"A Heuristic ({self.heuristic[heur_id]}) already exists for this section. "
                         f"Setting a new Heuristic ({heur_id}) will replace the existing Heuristic.")
 
         heuristics = get_heuristics()
         for heuristic in heuristics:
             if heur_id == heuristic.heur_id:
-                self.heuristic = Heuristic(dict(
+                self.heuristic = dict(
                     heur_id=heur_id,
-                    attack_id=attack_id or heuristic.attack_id,
-                    score=heuristic.score,
-                ))
+                    attack_id=attack_id,
+                )
 
         if not self.heuristic:
             log.warning(f"Invalid Heuristic. A Heuristic must be added to the service manifest before using it.")

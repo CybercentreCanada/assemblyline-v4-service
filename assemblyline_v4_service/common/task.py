@@ -3,7 +3,7 @@ import logging
 import os
 import shutil
 import tempfile
-from typing import List, Optional
+from typing import List, Optional, Any, Dict
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -30,8 +30,10 @@ class Task:
         self.error_status: Optional[str] = None
         self.error_type: str = 'EXCEPTION'
         self.extracted: List[File] = []
+        self.file_type = task.fileinfo.type
         self.md5: str = task.fileinfo.md5
         self.result: Optional[ResultBody] = None
+        self.service_config: Dict[str, Any] = task.service_config
         self.service_context: Optional[str] = None
         self.service_debug_info: Optional[str] = None
         self.service_name: str = task.service_name
@@ -99,6 +101,13 @@ class Task:
 
     def drop(self) -> None:
         self.drop_file = True
+
+    def get_param(self, name) -> Any:
+        param = self.service_config.get(name, None)
+        if param:
+            return param
+        else:
+            raise Exception(f"Service submission parameter not found: {name}")
 
     def get_service_error(self) -> Error:
         error = Error(dict(
