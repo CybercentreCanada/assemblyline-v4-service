@@ -45,7 +45,7 @@ class ResultSection:
             parent: Optional[Union[ResultSection, Result]] = None,
     ):
         self._finalized: bool = False
-        self._parent = parent
+        self.parent = parent
         self._section = None
         self.subsections: List[ResultSection] = []
         self.body: str = body
@@ -53,6 +53,7 @@ class ResultSection:
         self.body_format: BODY_FORMAT = body_format
         self.depth: int = 0
         self.tags = tags or {}
+        self.heuristic = None
 
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
@@ -90,7 +91,7 @@ class ResultSection:
         else:
             self.body = self.body + '\n' + segment
 
-    def add_subsection(self, subsection, on_top: bool = False) -> None:
+    def add_subsection(self, subsection: ResultSection, on_top: bool = False) -> None:
         """
         Add a result subsection to another result section or subsection.
 
@@ -126,10 +127,10 @@ class ResultSection:
         self.subsections = tmp_subs
 
         # At this point, all subsections are finalized and we're not deleting ourself
-        if self._parent is not None:
+        if self.parent is not None and isinstance(self.parent, ResultSection):
             try:
-                self._parent.classification = \
-                    Classification.max_classification(self.classification, self._parent.classification)
+                self.parent.classification = \
+                    Classification.max_classification(self.classification, self.parent.classification)
             except InvalidClassification as e:
                 log.error(f"Failed to finalize section due to a classification error: {str(e)}")
                 keep_me = False
