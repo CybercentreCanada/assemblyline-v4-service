@@ -30,6 +30,7 @@ setup(
     packages=find_packages(exclude=['test/*', 'docker/*', 'alv4_service_example/*']),
     install_requires=[
         'assemblyline',
+        'assemblyline-core',
         'watchdog',
     ],
 )
