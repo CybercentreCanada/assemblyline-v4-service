@@ -158,6 +158,7 @@ class ResultSection:
                 self.heuristic = dict(
                     heur_id=heur_id,
                     attack_id=attack_id,
+                    score=heuristic.score
                 )
 
         if not self.heuristic:

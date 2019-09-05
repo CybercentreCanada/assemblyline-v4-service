@@ -48,16 +48,14 @@ class Task:
 
     def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
         # Move extracted file to base of working directory
+        # TODO: this needs work
         file_path = os.path.join(self._working_directory, name)
-        folder_path = os.path.dirname(path)
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
         if not os.path.exists(file_path):
-            shutil.move(name, file_path)
+            shutil.move(path, file_path)
 
         file = File(dict(
             name=name,
-            sha256=get_sha256_for_file(path),
+            sha256=get_sha256_for_file(file_path),
             description=description,
             classification=classification,
         ))
@@ -66,16 +64,14 @@ class Task:
 
     def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
         # Move supplementary file to base of working directory
+        # TODO: this needs work
         file_path = os.path.join(self._working_directory, name)
-        folder_path = os.path.dirname(path)
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
         if not os.path.exists(file_path):
-            shutil.move(name, file_path)
+            shutil.move(path, file_path)
 
         file = File(dict(
             name=name,
-            sha256=get_sha256_for_file(path),
+            sha256=get_sha256_for_file(file_path),
             description=description,
             classification=classification,
         ))
@@ -162,7 +158,7 @@ class Task:
         error = self.get_service_error()
         error_path = os.path.join(self._working_directory, 'result.json')
         with open(error_path, 'wb') as f:
-            json.dump(error.as_primitives(), f)
+            json.dump(error.as_primitives().decode(), f)
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self) -> None:
