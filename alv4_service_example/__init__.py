@@ -1,1 +1,1 @@
-from alv4_service_example.example_service import ExampleService
+from alv4_service_example.example_service import ResultSample
