@@ -28,7 +28,6 @@ class ResultSample(ServiceBase):
 
         # run your code here...
 
-
         # ==================================================================
         # Write the results:
         #   First, create a result object where all the result sections will be saved to
@@ -68,7 +67,7 @@ class ResultSample(ServiceBase):
         # URL section: BODY_FORMAT.URL
         #     Generate a list of clickable urls using a json encoded format
         url_section = ResultSection('Example of a simple url section', body_format=BODY_FORMAT.URL,
-            body=json.dumps({"name": "Google", "url": "https://www.google.com/"}))
+                                    body=json.dumps({"name": "Google", "url": "https://www.google.com/"}))
 
         # Since urls are very important features we can tag those features in the system so they are easy to find
         #   Tags are defined by a type and a value
@@ -77,7 +76,7 @@ class ResultSample(ServiceBase):
         # You may also want to provide a list of url! Also, No need to provide a name, the url link will be displayed
         urls = [{"url": "https://google.com/"}, {"url": "https://google.ca/"}, {"url": "https://microsoft.com/"}]
         url_sub_section = ResultSection('Example of a url section with multiple links', body_format=BODY_FORMAT.URL,
-            body=json.dumps(urls))
+                                        body=json.dumps(urls))
         url_sub_section.set_heuristic("AL_RESULTSAMPLE_2")
         url_sub_section.add_tag("network.domain", "google.com")
         url_sub_section.add_tag("network.domain", "google.ca")
@@ -93,7 +92,7 @@ class ResultSample(ServiceBase):
         data = hexdump(b"This is some random text that we will format as an hexdump and you'll see "
                        b"that the hexdump formatting will be preserved by the memory dump section!")
         memdump_section = ResultSection('Example of a memory dump section', body_format=BODY_FORMAT.MEMORY_DUMP,
-            body=data)
+                                        body=data)
         result.add_section(memdump_section)
 
         # ==================================================================
