@@ -1,16 +1,14 @@
 from __future__ import annotations
 
 import logging
-from typing import List, Union, Optional
+from typing import List, Union, Optional, Dict, Any
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
-from assemblyline.odm.models.result import ResultBody, Section
-from assemblyline.odm.models.tagging import Tagging
-from assemblyline_v4_service.common.helper import get_heuristics, get_service_attributes
+from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
 
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')
@@ -41,7 +39,7 @@ class ResultSection:
             classification: Optional[Classification] = None,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
             heuristic: Optional[Heuristic] = None,
-            tags: Optional[Tagging] = None,
+            tags: Optional[Dict[str, List[str]]] = None,
             parent: Optional[Union[ResultSection, Result]] = None,
     ):
         self._finalized: bool = False
@@ -143,7 +141,8 @@ class ResultSection:
 
     def set_heuristic(self, heur_id: str, attack_id: Optional[str] = None) -> None:
         """
-        Set a Heuristic for a result section/subsection. A Heuristic is required to assign a score to a result section/subsection.
+        Set a Heuristic for a result section/subsection.
+        A Heuristic is required to assign a score to a result section/subsection.
 
         :param heur_id: Heuristic ID as set in the service manifest
         :param attack_id: (optional)
@@ -157,8 +156,7 @@ class ResultSection:
             if heur_id == heuristic.heur_id:
                 self.heuristic = dict(
                     heur_id=heur_id,
-                    attack_id=attack_id,
-                    score=heuristic.score
+                    attack_id=attack_id
                 )
 
         if not self.heuristic:
@@ -167,12 +165,12 @@ class ResultSection:
 
 class Result:
     def __init__(self, sections: Optional[List[ResultSection]] = None) -> None:
-        self._flattened_sections: List[Section] = []
+        self._flattened_sections: List[Dict[str, Any]] = []
         self._score: int = 0
         self.sections: List[ResultSection] = sections or []
 
     def _append_section(self, section: ResultSection) -> None:
-        self._flattened_sections.append(Section(dict(
+        self._flattened_sections.append(dict(
             body=section.body,
             classification=section.classification,
             body_format=section.body_format,
@@ -180,7 +178,7 @@ class Result:
             heuristic=section.heuristic,
             tags=unflatten(section.tags),
             title_text=section.title_text,
-        )))
+        ))
 
     def _flatten_sections(self, section: ResultSection, root: bool = True) -> None:
         if len(section.subsections) > 0:
@@ -206,7 +204,7 @@ class Result:
         else:
             self.sections.append(section)
 
-    def finalize(self) -> ResultBody:
+    def finalize(self) -> Dict[str, Any]:
         to_delete_sections = []
 
         for section in self.sections:
@@ -222,14 +220,9 @@ class Result:
         for section in self.sections:
             self._flatten_sections(section)
 
-        # Calculate the total score of all sections/subsections
-        for section in self._flattened_sections:
-            if section.heuristic:
-                self._score += section.heuristic.score
-
-        result = ResultBody(dict(
+        result = dict(
             score=self._score,
             sections=self._flattened_sections,
-        ))
+        )
 
         return result
