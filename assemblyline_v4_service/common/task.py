@@ -12,7 +12,6 @@ from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.error import Error
-from assemblyline.odm.models.result import Result, ResultBody, File
 
 
 class Task:
@@ -29,11 +28,11 @@ class Task:
         self.error_message: Optional[str] = None
         self.error_status: Optional[str] = None
         self.error_type: str = 'EXCEPTION'
-        self.extracted: List[File] = []
+        self.extracted: List[Dict[str, str]] = []
         self.file_type = task.fileinfo.type
         self.md5: str = task.fileinfo.md5
-        self.result: Optional[ResultBody] = None
-        self.service_config: Dict[str, Any] = task.service_config
+        self.result: Optional[Dict[str, Any]] = None
+        self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
         self.service_debug_info: Optional[str] = None
         self.service_name: str = task.service_name
@@ -42,7 +41,7 @@ class Task:
         self.sha1: str = task.fileinfo.sha1
         self.sha256: str = task.fileinfo.sha256
         self.sid: str = task.sid
-        self.supplementary: List[File] = []
+        self.supplementary: List[Dict[str, str]] = []
         self.ttl: int = task.ttl
         self.type: str = task.fileinfo.type
 
@@ -53,12 +52,12 @@ class Task:
         if not os.path.exists(file_path):
             shutil.move(path, file_path)
 
-        file = File(dict(
+        file = dict(
             name=name,
             sha256=get_sha256_for_file(file_path),
             description=description,
             classification=classification,
-        ))
+        )
 
         self.extracted.append(file)
 
@@ -69,12 +68,12 @@ class Task:
         if not os.path.exists(file_path):
             shutil.move(path, file_path)
 
-        file = File(dict(
+        file = dict(
             name=name,
             sha256=get_sha256_for_file(file_path),
             description=description,
             classification=classification,
-        ))
+        )
 
         self.supplementary.append(file)
 
@@ -98,9 +97,9 @@ class Task:
     def drop(self) -> None:
         self.drop_file = True
 
-    def get_param(self, name) -> Any:
+    def get_param(self, name: str) -> Any:
         param = self.service_config.get(name, None)
-        if param:
+        if param is not None:
             return param
         else:
             raise Exception(f"Service submission parameter not found: {name}")
@@ -122,8 +121,8 @@ class Task:
 
         return error
 
-    def get_service_result(self) -> Result:
-        result = Result(dict(
+    def get_service_result(self) -> Dict[str, Any]:
+        result = dict(
             classification=self._classification.UNRESTRICTED,  # TODO: calculate aggregate classification based on files, result sections, and tags
             created=now_as_iso(),
             expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60),
@@ -143,7 +142,7 @@ class Task:
             result=self.result,
             sha256=self.sha256,
             drop_file=self.drop_file,
-        ))
+        )
 
         return result
 
@@ -165,13 +164,13 @@ class Task:
         result = self.get_service_result()
         result_path = os.path.join(self._working_directory, 'result.json')
         with open(result_path, 'w') as f:
-            json.dump(result.as_primitives(), f)
+            json.dump(result, f)
         self.log.info(f"Saving result to: {result_path}")
 
     def set_service_context(self, context: str) -> None:
         self.service_context = context
 
-    def set_result(self, result: ResultBody) -> None:
+    def set_result(self, result: Dict[str, Any]) -> None:
         self.result = result
 
     def start(self, service_version: str, service_tool_version: Optional[str] = None) -> None:

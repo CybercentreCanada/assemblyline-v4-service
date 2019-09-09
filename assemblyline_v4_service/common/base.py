@@ -1,9 +1,8 @@
 import logging
-from typing import Optional, Dict
+from typing import Optional, Dict, Any
 
 from assemblyline.common import exceptions, log, version
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.result import ResultBody
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
@@ -49,7 +48,7 @@ class ServiceBase:
     def _success(self) -> None:
         self._task.success()
 
-    def execute(self, request: ServiceRequest) -> ResultBody:
+    def execute(self, request: ServiceRequest) -> Dict[str, Any]:
         raise NotImplementedError("execute() function not implemented")
 
     def get_service_version(self) -> str:

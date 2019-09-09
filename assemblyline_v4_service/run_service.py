@@ -55,7 +55,7 @@ class RunService(ServerBase):
         super(RunService, self).__init__(f'assemblyline.service.{SERVICE_NAME}', shutdown_timeout=shutdown_timeout)
 
         self.classification_yml = '/etc/assemblyline/classification.yml'
-        self.service_manifest_yml = '/tmp/service_manifest.yml'
+        self.service_manifest_yml = os.path.join(tempfile.gettempdir(), 'service_manifest.yml')
 
         self.status = None
 
