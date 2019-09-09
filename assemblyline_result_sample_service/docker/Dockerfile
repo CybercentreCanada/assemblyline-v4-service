@@ -4,4 +4,4 @@ ENV SERVICE_PATH alsvc_resultsample.ResultSample
 
 # Copy ResultSample service code
 WORKDIR /opt/al/al_services/alsvc_resultsample
-COPY .. .
+COPY assemblyline_result_sample_service .
