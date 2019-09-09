@@ -70,18 +70,18 @@ heuristics:
   - description: This the first Heuristic for ResultSample service.
     filetype: pdf
     heur_id: AL_RESULTSAMPLE_1
-    name: Suspicious behavior
+    name: Masks has PDF
     score: 100
     attack_id: T1001
   - description: This is second Heuristic for ResultSample service.
     filetype: exe
     heur_id: AL_RESULTSAMPLE_2
-    name: Malicious behavior
+    name: Drops an exe
     score: 1000
   - description: This is third Heuristic for ResultSample service.
     filetype: exe
     heur_id: AL_RESULTSAMPLE_3
-    name: Informational behavior
+    name: Extraction information
     score: 0
 
 # Docker configuration block which defines:
