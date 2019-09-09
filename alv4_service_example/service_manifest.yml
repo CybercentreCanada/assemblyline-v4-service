@@ -37,8 +37,6 @@ disable_cache: false
 
 # is the service enabled by default
 enabled: true
-# TODO: REMOVE, we don't need this anymore
-install_by_default: true
 # does the service make APIs call to other product not part of the assemblyline infrastructure (e.g. VirusTotal, ...)
 is_external: false
 # Number of concurrent services allowed to run at the same time
