@@ -1,7 +1,31 @@
 # Creating a new Assemblyline service
 
-## Service Manifest
-Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the Assemblyline core system must have before it can run the service. The diagram below shows all the elements that the manifest file can contain, including a brief description of each.
+## Service file structure
+An Assemblyline service has the following file structure:
+```text
+alsvc_<service name>
+├── docker
+│   └── Dockerfile
+│
+├── __init__.py
+├── <service name>.py
+└── service_manifest.yml
+```
+An overview of what each of these does:
+
+* `docker` ─ contains the Dockerfile and any other files needed to build a Docker image
+* `Dockerfile` ─ see [Dockerfile]() section for more details
+* `__init__.py` ─ 
+* `<service name>.py` ─ 
+* `service_manifest.yml` ─ see [Service manifest]() section for more details
+
+ 
+## Service manifest
+Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential
+information about the service to the Assemblyline core system, information the Assemblyline core system must have before
+it can run the service. 
+
+The diagram below shows all the elements that the manifest file can contain, including a brief description of each.
 
 ```yaml
 # Name of the service
@@ -118,5 +142,4 @@ update_config:
   run_options:
     image: cccs/assemblyline_dev:latest
     command: python3 -m assemblyline_core.updater.url_update
-
 ```
