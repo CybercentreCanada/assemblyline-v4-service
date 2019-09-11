@@ -167,5 +167,5 @@ RUN pip3 install \
     beautifulsoup4
     
 WORKDIR /opt/al/al_services/alsvc_resultsample
-    COPY assemblyline_result_sample_service .
+COPY assemblyline_result_sample_service .
 ```
