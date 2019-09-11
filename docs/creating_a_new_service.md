@@ -148,33 +148,24 @@ A Dockerfile is required to build a Docker image of the service.
 The following items must be set for all services:
 
 * All services must be based on the `cccs/assemblyline-v4-service-base:latest` image
-
-    ```
-    FROM cccs/assemblyline-v4-service-base:latest
-    ```
-    
 * An environment variable must be set for the service path
-
-    ```
-    ENV SERVICE_PATH alsvc_resultsample.ResultSample
-    ```
-    
 * Install any service requirements
+* Copy the service code into `/opt/al/al_services/alsvc_resultsample`
 
-    ```
-    RUN apt-get update && apt-get install -y \
+```dockerfile
+FROM cccs/assemblyline-v4-service-base:latest
+
+ENV SERVICE_PATH alsvc_resultsample.ResultSample
+
+RUN apt-get update && apt-get install -y \
     libssl-dev \
     p7zip-full \
     p7zip-rar
-
-    RUN pip3 install \
+    
+RUN pip3 install \
     tnefparse \
     beautifulsoup4
-   ```
-
-* Copy the service code into `/opt/al/al_services/alsvc_resultsample`
-
-    ```
-    WORKDIR /opt/al/al_services/alsvc_resultsample
+    
+WORKDIR /opt/al/al_services/alsvc_resultsample
     COPY assemblyline_result_sample_service .
-    ```
+```
