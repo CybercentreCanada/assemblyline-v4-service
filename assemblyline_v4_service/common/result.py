@@ -156,7 +156,8 @@ class ResultSection:
             if heur_id == heuristic.heur_id:
                 self.heuristic = dict(
                     heur_id=heur_id,
-                    attack_id=attack_id
+                    attack_id=attack_id or heuristic.attack_id,
+                    score=heuristic.score,
                 )
 
         if not self.heuristic:

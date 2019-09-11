@@ -2,6 +2,8 @@ import argparse
 import json
 import logging
 import os
+import shutil
+import tempfile
 
 import yaml
 
@@ -58,11 +60,26 @@ class RunService:
         self.service.start_service()
 
         LOG.info(f"Starting task with SID: {service_task.sid}")
-        working_dir = os.path.join(self.file_dir, service_task.sid)
-        self.service.handle_task(service_task, working_dir=working_dir)
+
+        # Set the working directory to a directory with same parent as input file
+        working_dir = os.path.join(self.file_dir, SERVICE_NAME.lower())
+        shutil.rmtree(working_dir)
+        if not os.path.isdir(working_dir):
+            os.makedirs(working_dir)
+
+        self.service.handle_task(service_task)
+
+        # Move the result.json and extracted/supplementary files to the working directory
+        source = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'completed')
+        files = os.listdir(source)
+        for f in files:
+            shutil.move(os.path.join(source, f), working_dir)
+
+        # Cleanup files from the original directory created by the service base
+        shutil.rmtree(source)
 
         # Validate the generated result
-        result_json = os.path.join(self.file_dir, 'result.json')
+        result_json = os.path.join(self.file_dir, SERVICE_NAME.lower(), 'result.json')
         with open(result_json, 'r') as fh:
             try:
                 Result(json.load(fh))
