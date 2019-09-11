@@ -126,8 +126,6 @@ if __name__ == '__main__':
     parser.add_argument("-d", "--debug", action="store_true", help="turn on debugging mode")
     parser.add_argument("service_path", help="python path of the service")
     parser.add_argument("file_path", help="file path of the file to be processed")
-    parser.add_argument("-o", "--output_dir", help="path to directory where 'result.json' and extracted/supplementary "
-                                                   "files should be outputted")
 
     args = parser.parse_args()
 

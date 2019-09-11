@@ -1,1 +1,0 @@
-from assemblyline_result_sample_service.result_sample import ResultSample

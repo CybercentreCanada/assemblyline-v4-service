@@ -6,32 +6,36 @@ can be used to run a single task through the service for testing.
 ## Setting up dev environment
 **NOTE:** The following environment setup has only been tested on Ubuntu 18.04.
 
-* Install required packages
-```bash
-sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
-```
-
-* Install Assemblyline v4 service package
-```bash
-pip3 install --user assemblyline-v4-service
-```
+1. Install required packages
+    ```bash
+    sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
+    ```
+2. Install Assemblyline v4 service package
+    ```bash
+    pip3 install --user assemblyline-v4-service
+    ```
+3. Add your service development directory path (ie. `/home/ubuntu/alv4_services`) to the PYTHONPATH environment variable
 
 ## Using the `run_service_once.py` script
-```text
-usage: run_service_once.py [-h] [-d] [-o OUTPUT_DIR] service_path input_dir
-
-positional arguments:
-  service_path          python path of the service
-  input_dir             path to directory where 'task.json' and the file to be
-                        scanned is located
-
-optional arguments:
-  -h, --help            show this help message and exit
-  -d, --debug           turn on debugging mode
-  -o OUTPUT_DIR, --output_dir OUTPUT_DIR
-                        path to directory where 'result.json' and
-                        extracted/supplementary files should be outputted
-```
-
+### Steps
+1. Ensure the current working directory is the root of the service directory of the service to be run
+    ```bash
+    cd alsvc_<service name>
+   ```
+2. From a terminal, run the `run_service_once` script
+    ```bash
+   python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
+   ```
+3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the
+   input file is located 
+   
 ### Example of running the ResultSample service
-```python3.7 run_service_once.py result_sample.ResultSample /tmp```
+1. Change working directory to root of the service:
+    ```bash
+   cd assemblyline_result_sample_service
+   ```
+2. From a terminal, run the `run_service_once` script
+    ```bash
+    python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
+   ```
+3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`
