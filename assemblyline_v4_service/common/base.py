@@ -60,11 +60,11 @@ class ServiceBase:
     def get_tool_version(self) -> Optional[str]:
         return None
 
-    def handle_task(self, task: ServiceTask) -> None:
+    def handle_task(self, task: ServiceTask, working_dir: Optional[str] = None) -> None:
         try:
             self._task = Task(task)
             self.log.info(f"Starting task: {self._task.sid}/{self._task.sha256} ({self._task.type})")
-            self._working_directory = self._task.working_directory()
+            self._working_directory = working_dir or self._task.working_directory()
             self._task.start(self.get_service_version(), self.get_tool_version())
 
             request = ServiceRequest(self._task)

@@ -2,20 +2,23 @@ import argparse
 import json
 import logging
 import os
-import tempfile
-import time
 
 import yaml
 
+from assemblyline.common import identify
 from assemblyline.common.importing import load_module_by_path
+from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline.odm.models.result import Result
+from assemblyline.odm.models.service import Service
 
 
 class RunService:
     def __init__(self):
         self.service = None
         self.service_class = None
-        self.received_dir = None
+        self.submission_params = None
+        self.file_dir = None
 
     def try_run(self):
         try:
@@ -26,26 +29,45 @@ class RunService:
 
         self.load_service_manifest()
 
-        self.received_dir = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'received')
-        self.received_dir = args.input_dir
-        if not os.path.isdir(self.received_dir):
-            os.makedirs(self.received_dir)
+        if not os.path.isfile(FILE_PATH):
+            LOG.info(f"File not found: {FILE_PATH}")
+            return
+
+        self.file_dir = os.path.dirname(FILE_PATH)
+
+        # Create a task.json based on input file
+        file_info = identify.fileinfo(FILE_PATH)
+
+        service_task = ServiceTask(dict(
+            sid=get_random_id(),
+            service_name=SERVICE_NAME,
+            service_config=self.submission_params,
+            fileinfo=dict(
+                magic=file_info['magic'],
+                md5=file_info['md5'],
+                mime=file_info['mime'],
+                sha1=file_info['sha1'],
+                sha256=file_info['sha256'],
+                size=file_info['size'],
+                type=file_info['type'],
+            ),
+            max_files=100,  # TODO: get the actual value
+            ttl=3600,
+        ))
 
         self.service.start_service()
 
-        task_json_path = os.path.join(self.received_dir, 'task.json')
-        if not os.path.exists(task_json_path):
-            LOG.info(f"No 'task.json' found in input directory. "
-                     f"Add 'task.json' to '{self.received_dir}' before running this script!")
-            return
+        LOG.info(f"Starting task with SID: {service_task.sid}")
+        working_dir = os.path.join(self.file_dir, service_task.sid)
+        self.service.handle_task(service_task, working_dir=working_dir)
 
-        LOG.info(f"Task found in: {task_json_path}")
-        with open(task_json_path, 'r') as f:
-            task = ServiceTask(json.load(f))
-        self.service.handle_task(task)
-
-        while os.path.exists(task_json_path):
-            time.sleep(1)
+        # Validate the generated result
+        result_json = os.path.join(self.file_dir, 'result.json')
+        with open(result_json, 'r') as fh:
+            try:
+                Result(json.load(fh))
+            except Exception as e:
+                LOG.error(f"Invalid result created: {str(e)}")
 
     def stop(self):
         self.service.stop_service()
@@ -57,9 +79,21 @@ class RunService:
             with open(service_manifest_yml) as yml_fh:
                 service_manifest_data = yaml.safe_load(yml_fh.read())
 
+            # Pop the 'extra' data from the service manifest
+            for x in ['file_required', 'tool_version', 'heuristics']:
+                service_manifest_data.pop(x, None)
+
+            # Validate the service manifest
+            try:
+                self.service = Service(service_manifest_data)
+            except Exception as e:
+                LOG.error(f"Invalid service manifest: {str(e)}")
+
             service_config = {}
             if service_manifest_data:
                 service_config = service_manifest_data.get('config', {})
+
+            self.submission_params = {x['name']: x['default'] for x in service_manifest_data.get('submission_params', [])}
 
             self.service = self.service_class(config=service_config)
         else:
@@ -70,7 +104,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true", help="turn on debugging mode")
     parser.add_argument("service_path", help="python path of the service")
-    parser.add_argument("input_dir", help="path to directory where 'task.json' and the file to be scanned is located")
+    parser.add_argument("file_path", help="file path of the file to be processed")
     parser.add_argument("-o", "--output_dir", help="path to directory where 'result.json' and extracted/supplementary "
                                                    "files should be outputted")
 
@@ -78,6 +112,7 @@ if __name__ == '__main__':
 
     SERVICE_PATH = args.service_path
     SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
+    FILE_PATH = args.file_path
 
     # create logger
     LOG = logging.getLogger(f"assemblyline.service.{SERVICE_NAME}")
