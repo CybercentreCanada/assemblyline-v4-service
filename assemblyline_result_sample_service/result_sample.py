@@ -5,8 +5,10 @@ import tempfile
 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
-# DO NOT IMPORT IN YOUR SERVICE. This are just for creating randomized results.
+
+# DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
+
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 

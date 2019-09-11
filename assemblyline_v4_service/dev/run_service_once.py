@@ -62,7 +62,8 @@ class RunService:
         LOG.info(f"Starting task with SID: {service_task.sid}")
 
         # Set the working directory to a directory with same parent as input file
-        working_dir = os.path.join(self.file_dir, SERVICE_NAME.lower())
+        working_dir = os.path.join(self.file_dir,
+                                   os.path.splitext(os.path.basename(FILE_PATH))[0] + '_' + SERVICE_NAME.lower())
         if os.path.isdir(working_dir):
             shutil.rmtree(working_dir)
         if not os.path.isdir(working_dir):
