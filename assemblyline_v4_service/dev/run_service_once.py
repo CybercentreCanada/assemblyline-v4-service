@@ -63,7 +63,8 @@ class RunService:
 
         # Set the working directory to a directory with same parent as input file
         working_dir = os.path.join(self.file_dir, SERVICE_NAME.lower())
-        shutil.rmtree(working_dir)
+        if os.path.isdir(working_dir):
+            shutil.rmtree(working_dir)
         if not os.path.isdir(working_dir):
             os.makedirs(working_dir)
 
@@ -79,12 +80,14 @@ class RunService:
         shutil.rmtree(source)
 
         # Validate the generated result
-        result_json = os.path.join(self.file_dir, SERVICE_NAME.lower(), 'result.json')
+        result_json = os.path.join(working_dir, 'result.json')
         with open(result_json, 'r') as fh:
             try:
                 Result(json.load(fh))
             except Exception as e:
                 LOG.error(f"Invalid result created: {str(e)}")
+
+        LOG.info(f"Successfully completed task. Output directory: {working_dir}")
 
     def stop(self):
         self.service.stop_service()

@@ -5,17 +5,14 @@ import tempfile
 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
-
 # DO NOT IMPORT IN YOUR SERVICE. This are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
-
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
 # DO NOT LIST HEURISTICS, BODY FORMAT and tag types LIKE THIS. This is again for the data randomizer
 HEUR_LIST = ["AL_RESULTSAMPLE_1", "AL_RESULTSAMPLE_2", "AL_RESULTSAMPLE_3", "AL_RESULTSAMPLE_4"]
 FORMAT_LIST = [BODY_FORMAT.TEXT, BODY_FORMAT.MEMORY_DUMP]
-
 
 
 class ResultSample(ServiceBase):
@@ -189,7 +186,6 @@ class ResultSample(ServiceBase):
                 embedded_result.add_section(self._create_random_section())
 
             request.result = embedded_result
-
 
     def _create_random_section(self):
         # choose a random body format

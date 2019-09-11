@@ -161,7 +161,8 @@ class ResultSection:
                 )
 
         if not self.heuristic:
-            log.warning(f"Invalid Heuristic. A Heuristic must be added to the service manifest before using it.")
+            log.warning(f"Invalid Heuristic: {heur_id}. "
+                        "A Heuristic must be added to the service manifest before using it.")
 
 
 class Result:
