@@ -67,22 +67,28 @@ submission_params:
 
 # Service heuristic blocks: List of heuristics object that define the different heuristics used in the service
 heuristics:
-  - description: This the first Heuristic for ResultSample service.
-    filetype: pdf
+  - description: This suspicious heuristic fakes making as a PDF
+    filetype: "*"
     heur_id: AL_RESULTSAMPLE_1
     name: Masks has PDF
     score: 100
-    attack_id: T1001
-  - description: This is second Heuristic for ResultSample service.
-    filetype: exe
+  - description: This malicious heuristic fakes dropping and side-loading a DLL and has an Att&ck ID associated with it
+    filetype: "*"
     heur_id: AL_RESULTSAMPLE_2
     name: Drops an exe
     score: 1000
-  - description: This is third Heuristic for ResultSample service.
-    filetype: exe
+    attack_id: T1073
+  - description: This informational heuristic fakes extracting a configuration block
+    filetype: "*"
     heur_id: AL_RESULTSAMPLE_3
-    name: Extraction information
-    score: 0
+    name: Extraction config information
+    score: 10
+  - description: This suspicious heuristic fakes decoding a configuration block and has an Att&ck ID associated with it
+    filetype: "*"
+    heur_id: AL_RESULTSAMPLE_4
+    name: Config decoding
+    score: 100
+    attack_id: T1027
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
