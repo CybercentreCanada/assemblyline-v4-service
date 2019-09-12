@@ -117,4 +117,4 @@ update_config:
   # options provided to the build or run command
   run_options:
     image: cccs/assemblyline_dev:latest
-    command: python3 -m assemblyline_core.updater.url_update
+    command: ["python3", "-m", "assemblyline_core.updater.url_update"]
