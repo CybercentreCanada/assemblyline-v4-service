@@ -46,6 +46,10 @@ class Task:
         self.type: str = task.fileinfo.type
 
     def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+        # Reject any empty extracted files
+        if os.path.getsize(path) == 0:
+            self.log.warning(f"Adding empty extracted files is not allowed. Empty file ({name}) was ignored.")
+
         # Move extracted file to base of working directory
         # TODO: this needs work
         file_path = os.path.join(self._working_directory, name)
@@ -62,6 +66,10 @@ class Task:
         self.extracted.append(file)
 
     def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+        # Reject any empty supplementary files
+        if os.path.getsize(path) == 0:
+            self.log.warning(f"Adding empty supplementary files is not allowed. Empty file ({name}) was ignored.")
+
         # Move supplementary file to base of working directory
         # TODO: this needs work
         file_path = os.path.join(self._working_directory, name)
