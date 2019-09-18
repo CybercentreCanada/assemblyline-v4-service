@@ -1,5 +1,5 @@
 import os
-from typing import List, Dict
+from typing import Dict, Union
 
 import yaml
 
@@ -38,11 +38,11 @@ def get_classification() -> Classification:
     return Classification(classification_definition)
 
 
-def get_heuristics() -> List[Heuristic]:
+def get_heuristics() -> Dict[Union[str, int], Heuristic]:
     service_manifest_data = get_service_manifest()
     heuristics = service_manifest_data.get('heuristics', None)
     if heuristics:
-        heuristics = [Heuristic(heuristic) for heuristic in heuristics]
+        heuristics = {heuristic['heur_id']: Heuristic(heuristic) for heuristic in heuristics}
     return heuristics
 
 

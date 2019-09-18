@@ -26,7 +26,7 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
 
 
 class Heuristic:
-    def __init__(self, heur_id: str, attack_id: Optional[str] = None):
+    def __init__(self, heur_id: int, attack_id: Optional[str] = None):
         self.heur_id = heur_id
         self.attack_id = attack_id
 
@@ -139,30 +139,31 @@ class ResultSection:
         self.body = body
         self.body_format = body_format
 
-    def set_heuristic(self, heur_id: str, attack_id: Optional[str] = None) -> None:
+    def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None) -> None:
         """
-        Set a Heuristic for a result section/subsection.
-        A Heuristic is required to assign a score to a result section/subsection.
+        Set a heuristic for a result section/subsection.
+        A heuristic is required to assign a score to a result section/subsection.
 
         :param heur_id: Heuristic ID as set in the service manifest
         :param attack_id: (optional)
         """
         if self.heuristic:
-            log.warning(f"A Heuristic ({self.heuristic[heur_id]}) already exists for this section. "
-                        f"Setting a new Heuristic ({heur_id}) will replace the existing Heuristic.")
+            log.warning(f"A heuristic (heuristic ID: {self.heuristic[heur_id]}) already exists for this section. "
+                        f"Setting a new heuristic (heuristic ID: {heur_id}) will replace the existing heuristic.")
 
         heuristics = get_heuristics()
-        for heuristic in heuristics:
-            if heur_id == heuristic.heur_id:
-                self.heuristic = dict(
-                    heur_id=heur_id,
-                    attack_id=attack_id or heuristic.attack_id,
-                    score=heuristic.score,
-                )
+
+        heuristic = heuristics.get(heur_id)
+        if heuristic:
+            self.heuristic = dict(
+                heur_id=heur_id,
+                attack_id=attack_id or heuristic.attack_id,
+                score=heuristic.score,
+            )
 
         if not self.heuristic:
-            log.warning(f"Invalid Heuristic: {heur_id}. "
-                        "A Heuristic must be added to the service manifest before using it.")
+            log.warning("Invalid heuristic. "
+                        f"A heuristic with ID: {heur_id}, must be added to the service manifest before using it.")
 
 
 class Result:
