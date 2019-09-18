@@ -35,6 +35,7 @@ class Task:
         self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
         self.service_debug_info: Optional[str] = None
+        self.service_default_result_classification = None
         self.service_name: str = task.service_name
         self.service_tool_version: Optional[str] = None
         self.service_version: Optional[str] = None
@@ -181,9 +182,11 @@ class Task:
     def set_result(self, result: Dict[str, Any]) -> None:
         self.result = result
 
-    def start(self, service_version: str, service_tool_version: Optional[str] = None) -> None:
+    def start(self, service_default_result_classification: Classification,
+              service_version: str, service_tool_version: Optional[str] = None) -> None:
         self.service_version = service_version
         self.service_tool_version = service_tool_version
+        self.service_default_result_classification = service_default_result_classification
 
         self._service_started = now_as_iso()
 

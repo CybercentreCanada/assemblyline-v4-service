@@ -1,12 +1,9 @@
-from __future__ import annotations
-
 import logging
 from typing import Dict, Optional, Any
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
-from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result
 from assemblyline_v4_service.common.task import Task
 
@@ -14,12 +11,11 @@ CLASSIFICATION = forge.get_classification()
 
 
 class ServiceRequest:
-    def __init__(self, service: ServiceBase, task: Task) -> None:
+    def __init__(self, task: Task) -> None:
         # Initialize logging for the service
         al_log.init_logging(f'{task.service_name}', log_level=logging.INFO)
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
-        self._service = service
         self._working_directory = None
         self.file_type = task.file_type
         self.md5 = task.md5
@@ -39,8 +35,7 @@ class ServiceRequest:
         :return: None
         """
 
-        self.task.add_extracted(path, name, description,
-                                classification or self._service.service_attributes.default_result_classification)
+        self.task.add_extracted(path, name, description, classification)
 
     def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None) -> None:
         """
@@ -53,8 +48,7 @@ class ServiceRequest:
         :return: None
         """
 
-        self.task.add_supplementary(path, name, description,
-                                    classification or self._service.service_attributes.default_result_classification)
+        self.task.add_supplementary(path, name, description, classification)
 
     def drop(self) -> None:
         """

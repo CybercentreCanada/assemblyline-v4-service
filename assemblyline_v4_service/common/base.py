@@ -67,9 +67,10 @@ class ServiceBase:
             self._task = Task(task)
             self.log.info(f"Starting task: {self._task.sid}/{self._task.sha256} ({self._task.type})")
             self._working_directory = self._task.working_directory()
-            self._task.start(self.get_service_version(), self.get_tool_version())
+            self._task.start(self.service_attributes.default_result_classification,
+                             self.get_service_version(), self.get_tool_version())
 
-            request = ServiceRequest(self, self._task)
+            request = ServiceRequest(self._task)
             self.execute(request)
 
             result = self._task.result
