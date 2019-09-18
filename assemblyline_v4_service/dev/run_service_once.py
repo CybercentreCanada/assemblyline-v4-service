@@ -2,6 +2,7 @@ import argparse
 import json
 import logging
 import os
+import pprint
 import shutil
 import tempfile
 
@@ -84,7 +85,13 @@ class RunService:
         result_json = os.path.join(working_dir, 'result.json')
         with open(result_json, 'r') as fh:
             try:
-                Result(json.load(fh))
+                result = Result(json.load(fh))
+
+                # Print the result on console if in debug mode
+                if args.debug:
+                    f"{SERVICE_NAME.upper()}-RESULT".center(60, '-')
+                    for line in pprint.pformat(result.result.as_primitives()).split('\n'):
+                        LOG.debug(line)
             except Exception as e:
                 LOG.error(f"Invalid result created: {str(e)}")
 
