@@ -70,6 +70,14 @@ class RunService:
         if not os.path.isdir(working_dir):
             os.makedirs(working_dir)
 
+        # Move the file to be processed to the original directory created by the service base
+        dest = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'received')
+        if os.path.exists(dest):
+            shutil.rmtree(dest)
+        if not os.path.exists(dest):
+            os.makedirs(dest)
+        shutil.copyfile(FILE_PATH, os.path.join(dest, service_task.fileinfo.sha256))
+
         self.service.handle_task(service_task)
 
         # Move the result.json and extracted/supplementary files to the working directory
@@ -80,6 +88,7 @@ class RunService:
 
         # Cleanup files from the original directory created by the service base
         shutil.rmtree(source)
+        shutil.rmtree(dest)
 
         # Validate the generated result
         result_json = os.path.join(working_dir, 'result.json')
