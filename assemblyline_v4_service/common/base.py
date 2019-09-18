@@ -67,7 +67,7 @@ class ServiceBase:
             self._working_directory = self._task.working_directory()
             self._task.start(self.get_service_version(), self.get_tool_version())
 
-            request = ServiceRequest(self._task)
+            request = ServiceRequest(self, self._task)
             self.execute(request)
 
             result = self._task.result

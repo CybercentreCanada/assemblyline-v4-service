@@ -165,7 +165,10 @@ RUN apt-get update && apt-get install -y \
 RUN pip3 install \
     tnefparse \
     beautifulsoup4
-    
+
+# Change to the assemblyline user
+USER assemblyline
+
 WORKDIR /opt/al/al_services/alsvc_resultsample
 COPY assemblyline_result_sample_service .
 ```
