@@ -46,13 +46,18 @@ class Task:
         self.ttl: int = task.ttl
         self.type: str = task.fileinfo.type
 
-    def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
-        # Reject any empty extracted files
+    def _add_file(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+        # Reject empty files
         if os.path.getsize(path) == 0:
-            self.log.warning(f"Adding empty extracted files is not allowed. Empty file ({name}) was ignored.")
+            self.log.warning(f"Adding empty extracted or supplementary files is not allowed. "
+                             f"Empty file ({name}) was ignored.")
+            return
 
-        # Move extracted file to base of working directory
-        # TODO: this needs work
+        # If file classification not provided, then use the default result classification
+        if not classification:
+            classification = self.service_default_result_classification
+
+        # Move file to base of working directory
         file_path = os.path.join(self._working_directory, name)
         if not os.path.exists(file_path):
             shutil.move(path, file_path)
@@ -63,26 +68,16 @@ class Task:
             description=description,
             classification=classification,
         )
+
+        return file
+
+    def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+        file = self._add_file(path, name, description, classification)
 
         self.extracted.append(file)
 
     def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
-        # Reject any empty supplementary files
-        if os.path.getsize(path) == 0:
-            self.log.warning(f"Adding empty supplementary files is not allowed. Empty file ({name}) was ignored.")
-
-        # Move supplementary file to base of working directory
-        # TODO: this needs work
-        file_path = os.path.join(self._working_directory, name)
-        if not os.path.exists(file_path):
-            shutil.move(path, file_path)
-
-        file = dict(
-            name=name,
-            sha256=get_sha256_for_file(file_path),
-            description=description,
-            classification=classification,
-        )
+        file = self._add_file(path, name, description, classification)
 
         self.supplementary.append(file)
 
