@@ -12,8 +12,7 @@ from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_ra
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
-# DO NOT LIST HEURISTICS, BODY FORMAT and tag types LIKE THIS. This is again for the data randomizer
-HEUR_LIST = ["AL_RESULTSAMPLE_1", "AL_RESULTSAMPLE_2", "AL_RESULTSAMPLE_3", "AL_RESULTSAMPLE_4"]
+# DO NOT LIST BODY FORMATS LIKE THIS. This is again for the data randomizer.
 FORMAT_LIST = [BODY_FORMAT.TEXT, BODY_FORMAT.MEMORY_DUMP]
 
 
@@ -65,7 +64,7 @@ class ResultSample(ServiceBase):
             text_section.add_lines([get_random_phrase() for _ in range(random.randint(1, 5))])
             # If the section needs to affect the score of the file you need to set a heuristics
             #   Here we will pick one at random
-            text_section.set_heuristic(random.choice(HEUR_LIST))
+            text_section.set_heuristic(random.randint(1, 4))
             # Make sure you add your section to the result
             result.add_section(text_section)
 
@@ -106,7 +105,7 @@ class ResultSample(ServiceBase):
             urls = [{"url": f"https://{host1}/"}, {"url": f"https://{host2}/"}, {"url": f"https://{ip1}/"}]
             url_sub_section = ResultSection('Example of a url section with multiple links', body_format=BODY_FORMAT.URL,
                                             body=json.dumps(urls))
-            url_sub_section.set_heuristic(random.choice(HEUR_LIST))
+            url_sub_section.set_heuristic(random.randint(1, 4))
             url_sub_section.add_tag("network.ip", ip1)
             url_sub_section.add_tag("network.domain", host1)
             url_sub_section.add_tag("network.domain", host2)
@@ -122,7 +121,7 @@ class ResultSample(ServiceBase):
                            b"that the hexdump formatting will be preserved by the memory dump section!")
             memdump_section = ResultSection('Example of a memory dump section', body_format=BODY_FORMAT.MEMORY_DUMP,
                                             body=data)
-            memdump_section.set_heuristic(random.choice(HEUR_LIST))
+            memdump_section.set_heuristic(random.randint(1, 4))
             result.add_section(memdump_section)
 
             # ==================================================================
@@ -209,7 +208,7 @@ class ResultSample(ServiceBase):
 
         # set a heuristic a third of the time
         if random.choice([False, False, True]):
-            section.set_heuristic(random.choice(HEUR_LIST))
+            section.set_heuristic(random.choice(1, 4))
 
         # Create random sub-sections
         if random.choice([False, False, True]):

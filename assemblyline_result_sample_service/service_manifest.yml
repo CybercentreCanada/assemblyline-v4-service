@@ -69,23 +69,23 @@ submission_params:
 heuristics:
   - description: This suspicious heuristic fakes making as a PDF
     filetype: "*"
-    heur_id: AL_RESULTSAMPLE_1
+    heur_id: 1
     name: Masks has PDF
     score: 100
   - description: This malicious heuristic fakes dropping and side-loading a DLL and has an Att&ck ID associated with it
     filetype: "*"
-    heur_id: AL_RESULTSAMPLE_2
+    heur_id: 2
     name: Drops an exe
     score: 1000
     attack_id: T1073
   - description: This informational heuristic fakes extracting a configuration block
     filetype: "*"
-    heur_id: AL_RESULTSAMPLE_3
+    heur_id: 3
     name: Extraction config information
     score: 10
   - description: This suspicious heuristic fakes decoding a configuration block and has an Att&ck ID associated with it
     filetype: "*"
-    heur_id: AL_RESULTSAMPLE_4
+    heur_id: 4
     name: Config decoding
     score: 100
     attack_id: T1027
