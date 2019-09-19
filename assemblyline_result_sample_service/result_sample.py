@@ -208,7 +208,7 @@ class ResultSample(ServiceBase):
 
         # set a heuristic a third of the time
         if random.choice([False, False, True]):
-            section.set_heuristic(random.choice(1, 4))
+            section.set_heuristic(random.randint(1, 4))
 
         # Create random sub-sections
         if random.choice([False, False, True]):
