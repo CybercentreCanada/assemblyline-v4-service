@@ -24,7 +24,8 @@ class ServiceRequest:
         self.sid = task.sid
         self.task = task
 
-    def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None) -> None:
+    def add_extracted(self, path: str, name: str, description: str,
+                      classification: Optional[Classification] = None) -> bool:
         """
         Add an extracted file for additional processing.
 
@@ -35,9 +36,10 @@ class ServiceRequest:
         :return: None
         """
 
-        self.task.add_extracted(path, name, description, classification)
+        return self.task.add_extracted(path, name, description, classification)
 
-    def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None) -> None:
+    def add_supplementary(self, path: str, name: str, description: str,
+                          classification: Optional[Classification] = None) -> bool:
         """
         Add a supplementary file.
 
@@ -48,7 +50,7 @@ class ServiceRequest:
         :return: None
         """
 
-        self.task.add_supplementary(path, name, description, classification)
+        return self.task.add_supplementary(path, name, description, classification)
 
     def drop(self) -> None:
         """

@@ -46,7 +46,8 @@ class Task:
         self.ttl: int = task.ttl
         self.type: str = task.fileinfo.type
 
-    def _add_file(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+    def _add_file(self, path: str, name: str, description: str,
+                  classification: Optional[Classification] = None) -> Optional[Dict[str, str]]:
         # Reject empty files
         if os.path.getsize(path) == 0:
             self.log.warning(f"Adding empty extracted or supplementary files is not allowed. "
@@ -71,15 +72,25 @@ class Task:
 
         return file
 
-    def add_extracted(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+    def add_extracted(self, path: str, name: str, description: str,
+                      classification: Optional[Classification] = None) -> bool:
         file = self._add_file(path, name, description, classification)
+
+        if not file:
+            return False
 
         self.extracted.append(file)
+        return True
 
-    def add_supplementary(self, path: str, name: str, description: str, classification: Optional[Classification] = None):
+    def add_supplementary(self, path: str, name: str, description: str,
+                          classification: Optional[Classification] = None) -> bool:
         file = self._add_file(path, name, description, classification)
 
+        if not file:
+            return False
+
         self.supplementary.append(file)
+        return True
 
     def clear_extracted(self) -> None:
         self.extracted.clear()
