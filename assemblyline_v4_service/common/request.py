@@ -17,7 +17,9 @@ class ServiceRequest:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._working_directory = None
+        self.extracted = task.extracted
         self.file_type = task.file_type
+        self.max_extracted = task.max_extracted
         self.md5 = task.md5
         self.sha1 = task.sha1
         self.sha256 = task.sha256

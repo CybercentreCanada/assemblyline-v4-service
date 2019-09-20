@@ -30,6 +30,7 @@ class Task:
         self.error_type: str = 'EXCEPTION'
         self.extracted: List[Dict[str, str]] = []
         self.file_type = task.fileinfo.type
+        self.max_extracted = task.max_files
         self.md5: str = task.fileinfo.md5
         self.result: Optional[Dict[str, Any]] = None
         self.service_config: Dict[str, Any] = dict(task.service_config)
