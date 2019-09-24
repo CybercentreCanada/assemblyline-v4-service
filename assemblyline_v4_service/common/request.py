@@ -110,6 +110,24 @@ class ServiceRequest:
         self.task.set_service_context(context)
 
     @property
+    def temp_submission_data(self) -> Dict[str, Any]:
+        """
+        Get the temporary submission data as set by the service in parent task(s) and current task.
+
+        :return: Current temporary submission data
+        """
+        return self.task.temp_submission_data
+
+    @temp_submission_data.setter
+    def temp_submission_data(self, data: Dict[str, Any]) -> None:
+        """
+        Set the temporary submission data, replacing any previous data.
+
+        :param data: Temporary submission data
+        """
+        self.task.temp_submission_data = data
+
+    @property
     def working_directory(self) -> str:
         """
         Get the temp working directory for the current task.

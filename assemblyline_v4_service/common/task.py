@@ -45,6 +45,7 @@ class Task:
         self.sha256: str = task.fileinfo.sha256
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
+        self.temp_submission_data: Dict[str, Any] = {}
         self.ttl: int = task.ttl
         self.type: str = task.fileinfo.type
 
@@ -162,6 +163,7 @@ class Task:
             result=self.result,
             sha256=self.sha256,
             drop_file=self.drop_file,
+            temp_submission_data=self.temp_submission_data,
         )
 
         return result
