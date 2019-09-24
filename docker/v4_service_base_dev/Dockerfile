@@ -13,6 +13,8 @@ ENV AWS_REGION=us-east-1
 # Switch to root to install dependencies
 USER root
 
+RUN pip install awscli
+
 COPY alv4_service/docker/v4_service_base_dev/requirements.txt /tmp
 RUN pip install -r /tmp/requirements.txt
 
@@ -27,4 +29,4 @@ RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
 COPY alv4_service/docker/v4_service_base_dev/process_handler.py /etc/
-CMD python3 /etc/process_handler.py
+CMD python /etc/process_handler.py

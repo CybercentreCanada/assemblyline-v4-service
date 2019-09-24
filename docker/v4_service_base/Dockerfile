@@ -16,14 +16,15 @@ ENV AWS_REGION=us-east-1
 USER root
 
 # Pipy packages requirements
-RUN pip3 install \
+RUN pip install \
   assemblyline \
   assemblyline-service-client \
-  assemblyline-v4-service==$version
+  assemblyline-v4-service==$version \
+  awscli
 
 # Create directory for service
 RUN mkdir -p /opt/al/al_services
 RUN touch /opt/al/al_services/__init__.py
 
 COPY process_handler.py /etc/
-CMD python3 /etc/process_handler.py
+CMD python /etc/process_handler.py
