@@ -12,6 +12,7 @@ from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.error import Error
+from assemblyline_v4_service.common.request import MaxExtractedExceeded
 
 
 class Task:
@@ -75,6 +76,9 @@ class Task:
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None) -> bool:
+        if self.max_extracted and len(self.extracted) >= int(self.max_extracted):
+            raise MaxExtractedExceeded
+
         file = self._add_file(path, name, description, classification)
 
         if not file:

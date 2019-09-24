@@ -10,6 +10,10 @@ from assemblyline_v4_service.common.task import Task
 CLASSIFICATION = forge.get_classification()
 
 
+class MaxExtractedExceeded(Exception):
+    pass
+
+
 class ServiceRequest:
     def __init__(self, task: Task) -> None:
         # Initialize logging for the service
