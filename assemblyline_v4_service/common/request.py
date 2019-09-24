@@ -5,13 +5,9 @@ from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
 from assemblyline_v4_service.common.result import Result
-from assemblyline_v4_service.common.task import Task
+from assemblyline_v4_service.common.task import Task, MaxExtractedExceeded
 
 CLASSIFICATION = forge.get_classification()
-
-
-class MaxExtractedExceeded(Exception):
-    pass
 
 
 class ServiceRequest:
@@ -42,7 +38,11 @@ class ServiceRequest:
         :return: None
         """
 
-        return self.task.add_extracted(path, name, description, classification)
+        try:
+            r = self.task.add_extracted(path, name, description, classification)
+            return r
+        except MaxExtractedExceeded:
+            raise
 
     def add_supplementary(self, path: str, name: str, description: str,
                           classification: Optional[Classification] = None) -> bool:
