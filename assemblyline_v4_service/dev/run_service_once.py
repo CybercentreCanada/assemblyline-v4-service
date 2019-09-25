@@ -94,7 +94,9 @@ class RunService:
         result_json = os.path.join(working_dir, 'result.json')
         with open(result_json, 'r') as fh:
             try:
-                result = Result(json.load(fh))
+                result = json.load(fh)
+                result.pop('temp_submission_data', None)
+                result = Result(result)
 
                 # Print the result on console if in debug mode
                 if args.debug:
