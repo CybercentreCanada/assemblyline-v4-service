@@ -139,13 +139,14 @@ class ResultSection:
         self.body = body
         self.body_format = body_format
 
-    def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None) -> None:
+    def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
         """
         Set a heuristic for a result section/subsection.
         A heuristic is required to assign a score to a result section/subsection.
 
         :param heur_id: Heuristic ID as set in the service manifest
         :param attack_id: (optional)
+        :param signature: (optional)
         """
         if self.heuristic:
             log.warning(f"A heuristic (heuristic ID: {self.heuristic[heur_id]}) already exists for this section. "
@@ -158,6 +159,7 @@ class ResultSection:
             self.heuristic = dict(
                 heur_id=heur_id,
                 attack_id=attack_id or heuristic.attack_id,
+                signature=signature,
                 score=heuristic.score,
             )
 
