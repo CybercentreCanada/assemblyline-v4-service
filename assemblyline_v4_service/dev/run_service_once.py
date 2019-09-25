@@ -54,7 +54,7 @@ class RunService:
                 size=file_info['size'],
                 type=file_info['type'],
             ),
-            max_files=100,  # TODO: get the actual value
+            max_files=501,  # TODO: get the actual value
             ttl=3600,
         ))
 
