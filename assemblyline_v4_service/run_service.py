@@ -1,13 +1,8 @@
 import json
 import os
+import select
 import tempfile
-import time
-from queue import Empty
-
 import yaml
-from watchdog.events import PatternMatchingEventHandler
-from watchdog.observers import Observer
-from watchdog.observers.api import EventQueue
 
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -17,37 +12,11 @@ from assemblyline_v4_service.common import helper
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
 SHUTDOWN_SECONDS_LIMIT = 10
+TASK_FIFO_PATH = "/tmp/task.fifo"
+DONE_FIFO_PATH = "/tmp/done.fifo"
 
-
-class FileEventHandler(PatternMatchingEventHandler):
-    def __init__(self, queue, patterns):
-        PatternMatchingEventHandler.__init__(self, patterns=patterns)
-        self.queue = queue
-
-    def process(self, event):
-        if event.src_path.endswith('task.json'):
-            self.queue.put(event.src_path)
-
-    def on_created(self, event):
-        self.process(event)
-
-
-class FileWatcher:
-    def __init__(self, queue, watch_path):
-        self._observer = None
-        self._queue = queue
-        self._watch_path = watch_path
-
-    def start(self):
-        event_handler = FileEventHandler(self._queue, patterns=['*.json'])
-        self._observer = Observer()
-        self._observer.schedule(event_handler, path=self._watch_path)
-        self._observer.daemon = True
-        self._observer.start()
-
-    def stop(self):
-        self._observer.stop()
-        pass
+SUCCESS = "RESULT_FOUND"
+ERROR = "ERROR_FOUND"
 
 
 class RunService(ServerBase):
@@ -60,8 +29,6 @@ class RunService(ServerBase):
         self.status = None
 
         self.wait_start = None
-        self.queue = EventQueue()
-        self.file_watcher = None
 
         self.service = None
         self.service_class = None
@@ -69,6 +36,9 @@ class RunService(ServerBase):
         self.service_tool_version = None
         self.service_file_required = None
         self.received_folder_path = None
+        self.completed_folder_path = None
+        self.task_fifo = None
+        self.done_fifo = None
 
     def try_run(self):
         try:
@@ -83,32 +53,53 @@ class RunService(ServerBase):
         if not os.path.isdir(self.received_folder_path):
             os.makedirs(self.received_folder_path)
 
-        # Start the file watcher
-        self.file_watcher = FileWatcher(self.queue, self.received_folder_path)
-        self.file_watcher.start()
-        self.log.info(f"Started watching folder for tasks: {self.received_folder_path}")
+        self.completed_folder_path = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'completed')
+
+        # Start task receiving fifo
+        self.log.info('Waiting for receive task named pipe to be ready...')
+        if not os.path.exists(TASK_FIFO_PATH):
+            os.mkfifo(TASK_FIFO_PATH)
+        self.task_fifo = open(TASK_FIFO_PATH, "r")
+
+        # Start task completing fifo
+        self.log.info('Waiting for complete task named pipe to be ready...')
+        if not os.path.exists(DONE_FIFO_PATH):
+            os.mkfifo(DONE_FIFO_PATH)
+        self.done_fifo = open(DONE_FIFO_PATH, "w")
 
         self.service.start_service()
 
         while self.running:
             try:
-                task_json_path = self.queue.get(timeout=1)
-            except Empty:
-                continue
+                read_ready, _, _ = select.select([self.task_fifo], [], [], 1)
+                if not read_ready:
+                    continue
+            except ValueError:
+                self.log.info('Task fifo is closed. Cleaning up...')
+                return
+
+            task_json_path = self.task_fifo.readline().strip()
 
             self.log.info(f"Task found in: {task_json_path}")
             with open(task_json_path, 'r') as f:
                 task = ServiceTask(json.load(f))
             self.service.handle_task(task)
 
-            while os.path.exists(task_json_path):
-                time.sleep(1)
+            # Notify task handler that processing is done
+            if "result.json" in os.listdir(self.completed_folder_path):
+                msg = f"{json.dumps([os.path.join(self.completed_folder_path, 'result.json'), SUCCESS])}\n"
+            elif "error.json" in os.listdir(self.completed_folder_path):
+                msg = f"{json.dumps([os.path.join(self.completed_folder_path, 'error.json'), ERROR])}\n"
+            else:
+                msg = f"{json.dumps([None, ERROR])}\n"
 
-            self.queue.task_done()
+            self.done_fifo.write(msg)
+            self.done_fifo.flush()
 
     def stop(self):
-        self.file_watcher.stop()
-        self.log.info(f"Stopped watching folder for tasks: {self.received_folder_path}")
+        self.log.info("Closing named pipes...")
+        self.done_fifo.close()
+        self.task_fifo.close()
 
         self.service.stop_service()
 
