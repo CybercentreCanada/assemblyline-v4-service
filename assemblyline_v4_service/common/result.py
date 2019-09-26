@@ -225,6 +225,10 @@ class Result:
         for section in self.sections:
             self._flatten_sections(section)
 
+        for section in self._flattened_sections:
+            if section.get('heuristic') and section['heuristic'].get('heur_id'):
+                self._score += section['heuristic']['score']
+
         result = dict(
             score=self._score,
             sections=self._flattened_sections,
