@@ -98,8 +98,10 @@ class RunService(ServerBase):
 
     def stop(self):
         self.log.info("Closing named pipes...")
-        self.done_fifo.close()
-        self.task_fifo.close()
+        if self.done_fifo is not None:
+            self.done_fifo.close()
+        if self.task_fifo is not None:
+            self.task_fifo.close()
 
         self.service.stop_service()
 
