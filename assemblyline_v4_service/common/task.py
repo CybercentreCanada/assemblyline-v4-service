@@ -176,8 +176,8 @@ class Task:
 
         error = self.get_service_error()
         error_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_error.json')
-        with open(error_path, 'wb') as f:
-            json.dump(error.as_primitives().decode(), f)
+        with open(error_path, 'w') as f:
+            json.dump(error.as_primitives(), f)
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self) -> None:
