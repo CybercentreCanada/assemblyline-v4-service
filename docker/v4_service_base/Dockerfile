@@ -3,7 +3,7 @@ FROM cccs/assemblyline:latest
 ARG version
 
 # Setup environment varibles
-ENV PYTHONPATH /opt/al:/opt/al/al_services
+ENV PYTHONPATH /opt/al_service
 ENV SERVICE_API_HOST http://localhost:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 
@@ -23,8 +23,8 @@ RUN pip install \
   awscli
 
 # Create directory for service
-RUN mkdir -p /opt/al/al_services
-RUN touch /opt/al/al_services/__init__.py
+RUN mkdir -p /opt/al_service
+RUN touch /opt/al_service/__init__.py
 
 COPY process_handler.py /etc/
 CMD python /etc/process_handler.py
