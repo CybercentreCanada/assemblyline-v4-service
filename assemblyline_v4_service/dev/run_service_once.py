@@ -64,38 +64,36 @@ class RunService:
 
         # Set the working directory to a directory with same parent as input file
         working_dir = os.path.join(self.file_dir,
-                                   os.path.splitext(os.path.basename(FILE_PATH))[0] + '_' + SERVICE_NAME.lower())
+                                   f'{os.path.splitext(os.path.basename(FILE_PATH))[0]}_{SERVICE_NAME.lower()}')
         if os.path.isdir(working_dir):
             shutil.rmtree(working_dir)
         if not os.path.isdir(working_dir):
             os.makedirs(working_dir)
 
         # Move the file to be processed to the original directory created by the service base
-        dest = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'received')
-        if os.path.exists(dest):
-            shutil.rmtree(dest)
-        if not os.path.exists(dest):
-            os.makedirs(dest)
-        shutil.copyfile(FILE_PATH, os.path.join(dest, service_task.fileinfo.sha256))
+        shutil.copyfile(FILE_PATH, os.path.join(tempfile.gettempdir(), service_task.fileinfo.sha256))
 
         self.service.handle_task(service_task)
 
         # Move the result.json and extracted/supplementary files to the working directory
-        source = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'completed')
+        source = os.path.join(tempfile.gettempdir(), 'working_directory')
         files = os.listdir(source)
         for f in files:
             shutil.move(os.path.join(source, f), working_dir)
 
         # Cleanup files from the original directory created by the service base
         shutil.rmtree(source)
-        shutil.rmtree(dest)
 
         # Validate the generated result
-        result_json = os.path.join(working_dir, 'result.json')
+        result_json = os.path.join(tempfile.gettempdir(),
+                                   f'{service_task.sid}_{service_task.fileinfo.sha256}_result.json')
         with open(result_json, 'r') as fh:
             try:
                 result = json.load(fh)
                 result.pop('temp_submission_data', None)
+                for file in result['response']['extracted'] + result['response']['supplementary']:
+                    file.pop('path', None)
+
                 result = Result(result)
 
                 # Print the result on console if in debug mode

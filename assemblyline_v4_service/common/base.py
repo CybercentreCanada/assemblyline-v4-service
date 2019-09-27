@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import logging
+import os
+import tempfile
 from typing import Optional, Dict, Any
 
 from assemblyline.common import exceptions, log, version
@@ -66,7 +68,6 @@ class ServiceBase:
         try:
             self._task = Task(task)
             self.log.info(f"Starting task: {self._task.sid}/{self._task.sha256} ({self._task.type})")
-            self._working_directory = self._task.working_directory()
             self._task.start(self.service_attributes.default_result_classification,
                              self.get_service_version(), self.get_tool_version())
 
@@ -105,3 +106,12 @@ class ServiceBase:
         # Perform common stop routines and then invoke the child's stop().
         self.log.info(f"Stopping service: {self.service_attributes.name}")
         self.stop()
+
+    @property
+    def working_directory(self):
+        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
+        if not os.path.isdir(temp_dir):
+            os.makedirs(temp_dir)
+        if self._working_directory is None:
+            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+        return self._working_directory

@@ -2,6 +2,7 @@ import json
 import os
 import select
 import tempfile
+
 import yaml
 
 from assemblyline.common.importing import load_module_by_path
@@ -35,8 +36,6 @@ class RunService(ServerBase):
         self.service_config = None
         self.service_tool_version = None
         self.service_file_required = None
-        self.received_folder_path = None
-        self.completed_folder_path = None
         self.task_fifo = None
         self.done_fifo = None
 
@@ -48,12 +47,6 @@ class RunService(ServerBase):
             raise
 
         self.load_service_attributes()
-
-        self.received_folder_path = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'received')
-        if not os.path.isdir(self.received_folder_path):
-            os.makedirs(self.received_folder_path)
-
-        self.completed_folder_path = os.path.join(tempfile.gettempdir(), SERVICE_NAME.lower(), 'completed')
 
         # Start task receiving fifo
         self.log.info('Waiting for receive task named pipe to be ready...')
@@ -86,10 +79,12 @@ class RunService(ServerBase):
             self.service.handle_task(task)
 
             # Notify task handler that processing is done
-            if "result.json" in os.listdir(self.completed_folder_path):
-                msg = f"{json.dumps([os.path.join(self.completed_folder_path, 'result.json'), SUCCESS])}\n"
-            elif "error.json" in os.listdir(self.completed_folder_path):
-                msg = f"{json.dumps([os.path.join(self.completed_folder_path, 'error.json'), ERROR])}\n"
+            result_json = os.path.join(tempfile.gettempdir(), f"{task.sid}_{task.fileinfo.sha256}_result.json")
+            error_json = os.path.join(tempfile.gettempdir(), f"{task.sid}_{task.fileinfo.sha256}_error.json")
+            if os.path.exists(result_json):
+                msg = f"{json.dumps([result_json, SUCCESS])}\n"
+            elif os.path.exists(error_json):
+                msg = f"{json.dumps([error_json, ERROR])}\n"
             else:
                 msg = f"{json.dumps([None, ERROR])}\n"
 

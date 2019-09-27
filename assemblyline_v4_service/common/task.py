@@ -1,7 +1,6 @@
 import json
 import logging
 import os
-import shutil
 import tempfile
 from typing import List, Optional, Any, Dict
 
@@ -64,16 +63,12 @@ class Task:
         if not classification:
             classification = self.service_default_result_classification
 
-        # Move file to base of working directory
-        file_path = os.path.join(self._working_directory, name)
-        if not os.path.exists(file_path):
-            shutil.move(path, file_path)
-
         file = dict(
             name=name,
-            sha256=get_sha256_for_file(file_path),
+            sha256=get_sha256_for_file(path),
             description=description,
             classification=classification,
+            path=path,
         )
 
         return file
@@ -108,7 +103,7 @@ class Task:
         self.supplementary.clear()
 
     def download_file(self) -> str:
-        file_path = os.path.join(tempfile.gettempdir(), self.service_name.lower(), 'received', self.sha256)
+        file_path = os.path.join(tempfile.gettempdir(), self.sha256)
         if not os.path.exists(file_path):
             raise Exception("File download failed. File not found on local filesystem.")
 
@@ -180,14 +175,14 @@ class Task:
             self.error_status = 'FAIL_NONRECOVERABLE'
 
         error = self.get_service_error()
-        error_path = os.path.join(self._working_directory, 'result.json')
+        error_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_error.json')
         with open(error_path, 'wb') as f:
             json.dump(error.as_primitives().decode(), f)
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self) -> None:
         result = self.get_service_result()
-        result_path = os.path.join(self._working_directory, 'result.json')
+        result_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_result.json')
         with open(result_path, 'w') as f:
             json.dump(result, f)
         self.log.info(f"Saving result to: {result_path}")
@@ -213,10 +208,11 @@ class Task:
         self._service_completed = now_as_iso()
         self.save_result()
 
+    @property
     def working_directory(self) -> str:
-        temp_dir = os.path.join(tempfile.gettempdir(), self.service_name.lower(), 'completed')
+        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:
-            self._working_directory = temp_dir
+            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
