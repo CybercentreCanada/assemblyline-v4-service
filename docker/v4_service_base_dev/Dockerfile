@@ -1,7 +1,7 @@
 FROM cccs/assemblyline_dev:latest
 
 # Setup environment varibles
-ENV PYTHONPATH /opt/alv4/alv4:/opt/alv4/alv4_service_client:/opt/alv4/alv4_service:/opt/al:/opt/al/al_services
+ENV PYTHONPATH /opt/alv4/alv4:/opt/alv4/alv4_service_client:/opt/alv4/alv4_service:/opt/al_service
 ENV SERVICE_API_HOST http://localhost:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 
