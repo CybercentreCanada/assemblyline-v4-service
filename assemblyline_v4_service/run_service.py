@@ -72,6 +72,9 @@ class RunService(ServerBase):
                 return
 
             task_json_path = self.task_fifo.readline().strip()
+            if not task_json_path:
+                self.log.info('Received an empty message for Task fifo. Cleaning up...')
+                return
 
             self.log.info(f"Task found in: {task_json_path}")
             with open(task_json_path, 'r') as f:
