@@ -5,10 +5,8 @@ import tempfile
 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
-
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
-
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
 
@@ -152,7 +150,7 @@ class ResultSample(ServiceBase):
             # Re-Submitting files to the system
             #     Adding extracted files will have them resubmitted to the system for analysis
 
-            fd, temp_path = tempfile.mkstemp(dir=request.working_directory)
+            fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
             with os.fdopen(fd, "wb") as myfile:
                 myfile.write(data.encode())
             request.add_extracted(temp_path, "file.txt", "Extracted by some random magic!")
@@ -161,12 +159,12 @@ class ResultSample(ServiceBase):
             # Supplementary files
             #     Adding supplementary files will save them on the datastore for future
             #      reference but wont reprocess those files.
-            fd, temp_path = tempfile.mkstemp(dir=request.working_directory)
+            fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
             with os.fdopen(fd, "w") as myfile:
                 myfile.write(json.dumps(urls))
             request.add_supplementary(temp_path, "urls.json", "These are urls as a JSON file")
             # like embedded files, you can add more then one supplementary files
-            fd, temp_path = tempfile.mkstemp(dir=request.working_directory)
+            fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
             with os.fdopen(fd, "w") as myfile:
                 myfile.write(json.dumps(json_body))
             request.add_supplementary(temp_path, "json_body.json", "This is the json_body as a JSON file")
