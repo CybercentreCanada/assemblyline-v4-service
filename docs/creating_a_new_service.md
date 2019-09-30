@@ -155,7 +155,7 @@ The following items must be set for all services:
 ```dockerfile
 FROM cccs/assemblyline-v4-service-base:latest
 
-ENV SERVICE_PATH alsvc_resultsample.ResultSample
+ENV SERVICE_PATH result_sample.ResultSample
 
 RUN apt-get update && apt-get install -y \
     libssl-dev \
@@ -169,6 +169,6 @@ RUN pip3 install \
 # Change to the assemblyline user
 USER assemblyline
 
-WORKDIR /opt/al/al_services/alsvc_resultsample
+WORKDIR /opt/al_service
 COPY assemblyline_result_sample_service .
 ```
