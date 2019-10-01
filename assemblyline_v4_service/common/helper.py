@@ -54,9 +54,11 @@ def get_service_attributes() -> Service:
         service_manifest_data.pop(x, None)
 
     try:
-        return Service(service_manifest_data)
+        service_attributes = Service(service_manifest_data)
     except ValueError as e:
         raise ValueError(f"Service manifest yaml contains invalid parameter(s): {str(e)}")
+
+    return service_attributes
 
 
 def get_service_manifest() -> Dict:

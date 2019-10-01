@@ -26,6 +26,8 @@ class RunService:
     def try_run(self):
         try:
             self.service_class = load_module_by_path(SERVICE_PATH)
+        except ValueError:
+            raise
         except:
             LOG.error("Could not find service in path. Check your environment variables.")
             raise
