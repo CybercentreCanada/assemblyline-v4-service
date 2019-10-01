@@ -53,7 +53,10 @@ def get_service_attributes() -> Service:
     for x in ['file_required', 'tool_version', 'heuristics']:
         service_manifest_data.pop(x, None)
 
-    return Service(service_manifest_data)
+    try:
+        return Service(service_manifest_data)
+    except ValueError as e:
+        raise ValueError(f"Service manifest yaml contains invalid parameter(s): {str(e)}")
 
 
 def get_service_manifest() -> Dict:

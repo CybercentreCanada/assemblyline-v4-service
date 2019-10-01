@@ -77,6 +77,9 @@ class RunService:
 
         # Move the result.json and extracted/supplementary files to the working directory
         source = os.path.join(tempfile.gettempdir(), 'working_directory')
+        if not os.path.exists(source):
+            os.makedirs(source)
+
         files = os.listdir(source)
         for f in files:
             shutil.move(os.path.join(source, f), working_dir)
@@ -84,9 +87,13 @@ class RunService:
         # Cleanup files from the original directory created by the service base
         shutil.rmtree(source)
 
-        # Validate the generated result
         result_json = os.path.join(tempfile.gettempdir(),
                                    f'{service_task.sid}_{service_task.fileinfo.sha256}_result.json')
+
+        if not os.path.exists(result_json):
+            raise Exception("A service error occured and no result json was found.")
+
+        # Validate the generated result
         with open(result_json, 'r') as fh:
             try:
                 result = json.load(fh)
