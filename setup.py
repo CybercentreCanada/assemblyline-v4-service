@@ -31,6 +31,5 @@ setup(
     install_requires=[
         'assemblyline',
         'assemblyline-core',
-        'watchdog',
     ],
 )

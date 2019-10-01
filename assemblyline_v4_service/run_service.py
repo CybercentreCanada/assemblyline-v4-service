@@ -29,8 +29,6 @@ class RunService(ServerBase):
 
         self.status = None
 
-        self.wait_start = None
-
         self.service = None
         self.service_class = None
         self.service_config = None
