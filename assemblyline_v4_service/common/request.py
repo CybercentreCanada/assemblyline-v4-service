@@ -90,7 +90,7 @@ class ServiceRequest:
 
         :return: Current result as set by the service
         """
-        return self.task.result.as_primitives()
+        return self.task.result
 
     @result.setter
     def result(self, result: Result) -> None:
