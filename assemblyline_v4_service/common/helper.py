@@ -1,4 +1,5 @@
 import os
+import tempfile
 from typing import Dict, Union
 
 import yaml
@@ -62,7 +63,9 @@ def get_service_attributes() -> Service:
 
 
 def get_service_manifest() -> Dict:
-    service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
+    service_manifest_yml = os.path.join(tempfile.gettempdir(), 'service_manifest.yml')
+    if not os.path.exists(service_manifest_yml):
+        service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
 
     if os.path.exists(service_manifest_yml):
         with open(service_manifest_yml) as yml_fh:

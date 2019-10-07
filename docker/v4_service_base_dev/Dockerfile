@@ -25,8 +25,8 @@ RUN pip install -r /tmp/requirements.txt
 RUN rm /tmp/requirements.txt*
 
 # Create directory for service
-RUN mkdir -p /opt/al/al_services
-RUN touch /opt/al/al_services/__init__.py
+RUN mkdir -p /opt/al_service
+RUN touch /opt/al_service/__init__.py
 
 COPY alv4_service/docker/v4_service_base_dev/process_handler.py /etc/
 CMD python /etc/process_handler.py
