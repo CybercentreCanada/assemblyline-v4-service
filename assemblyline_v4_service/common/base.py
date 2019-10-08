@@ -74,8 +74,6 @@ class ServiceBase:
             request = ServiceRequest(self._task)
             self.execute(request)
 
-            result = self._task.result
-            self._task.set_result(result)
             self._success()
         except Exception as ex:
             self._handle_execute_failure(ex, exceptions.get_stacktrace_info(ex))
