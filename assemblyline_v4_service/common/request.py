@@ -84,7 +84,7 @@ class ServiceRequest:
         return self.task.get_param(name)
 
     @property
-    def result(self) -> Dict[str, Any]:
+    def result(self) -> Result:
         """
         Get the current result as set by the service.
 
@@ -99,7 +99,7 @@ class ServiceRequest:
 
         :param result: Result object created by the service
         """
-        self.task.result = result.finalize()
+        self.task.result = result
 
     def set_service_context(self, context) -> None:
         """

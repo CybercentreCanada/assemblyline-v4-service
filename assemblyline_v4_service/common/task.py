@@ -11,6 +11,7 @@ from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.error import Error
+from assemblyline_v4_service.common.result import Result
 
 
 class MaxExtractedExceeded(Exception):
@@ -35,7 +36,7 @@ class Task:
         self.file_type = task.fileinfo.type
         self.max_extracted = task.max_files
         self.md5: str = task.fileinfo.md5
-        self.result: Optional[Dict[str, Any]] = None
+        self.result: Optional[Result] = None
         self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
         self.service_debug_info: Optional[str] = None
@@ -158,7 +159,7 @@ class Task:
                 service_context=self.service_context,
                 service_debug_info=self.service_debug_info,
             ),
-            result=self.result,
+            result=self.result.finalize(),
             sha256=self.sha256,
             drop_file=self.drop_file,
             temp_submission_data=self.temp_submission_data,
@@ -189,9 +190,6 @@ class Task:
 
     def set_service_context(self, context: str) -> None:
         self.service_context = context
-
-    def set_result(self, result: Dict[str, Any]) -> None:
-        self.result = result
 
     def start(self, service_default_result_classification: Classification,
               service_version: str, service_tool_version: Optional[str] = None) -> None:
