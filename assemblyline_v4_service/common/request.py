@@ -86,9 +86,9 @@ class ServiceRequest:
     @property
     def result(self) -> Result:
         """
-        Get the current result as set by the service.
+        Get the current Result as set by the service.
 
-        :return: Current result as set by the service
+        :return: Current Result object as set by the service
         """
         return self.task.result
 
