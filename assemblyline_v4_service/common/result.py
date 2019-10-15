@@ -26,16 +26,17 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
 
 
 class Heuristic:
-    def __init__(self, heur_id: int, attack_id: Optional[str] = None):
+    def __init__(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None):
         self.heur_id = heur_id
         self.attack_id = attack_id
+        self.signature = signature
 
 
 class ResultSection:
     def __init__(
             self,
             title_text: Union[str, List],
-            body: Optional[str] = None,
+            body: Optional[str, Dict] = None,
             classification: Optional[Classification] = None,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
             heuristic: Optional[Heuristic] = None,
