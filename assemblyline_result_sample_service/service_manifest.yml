@@ -41,8 +41,6 @@ enabled: true
 is_external: false
 # Number of concurrent services allowed to run at the same time
 licence_count: 0
-# Platform that the service can run on (windows, linux, ...)
-supported_platforms: [linux]
 
 # service configuration block (dictionary of config variables)
 # NOTE: The key names can be anything and the value can be of any types
