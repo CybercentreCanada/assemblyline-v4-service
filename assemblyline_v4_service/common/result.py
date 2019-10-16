@@ -5,6 +5,7 @@ from typing import List, Union, Optional, Dict, Any
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.attack_map import attack_map
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
@@ -155,16 +156,20 @@ class ResultSection:
 
         heuristics = get_heuristics()
 
-        heuristic = heuristics.get(heur_id)
+        heuristic = heuristics.get(heur_id, None)
         if heuristic:
+            # Validate attack_id
+            if attack_id not in list(attack_map.keys()):
+                log.warning(f"Invalid attack_id for heuristic {heur_id}. Ignoring it.")
+                attack_id = None
+
             self.heuristic = dict(
                 heur_id=heur_id,
                 attack_id=attack_id or heuristic.attack_id,
                 signature=signature,
                 score=heuristic.score,
             )
-
-        if not self.heuristic:
+        else:
             log.warning("Invalid heuristic. "
                         f"A heuristic with ID: {heur_id}, must be added to the service manifest before using it.")
 

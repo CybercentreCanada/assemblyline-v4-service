@@ -4,9 +4,8 @@
 An Assemblyline service has the following file structure:
 ```text
 alsvc_<service name>
-├── docker
-│   └── Dockerfile
 │
+├── Dockerfile
 ├── <service name>.py
 └── service_manifest.yml
 ```
@@ -160,7 +159,7 @@ RUN apt-get update && apt-get install -y \
     p7zip-full \
     p7zip-rar
     
-RUN pip3 install \
+RUN pip install \
     tnefparse \
     beautifulsoup4
 
