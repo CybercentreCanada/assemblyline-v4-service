@@ -59,7 +59,7 @@ class ResultSection:
         self.title_text = safe_str(title_text)
 
         if heuristic:
-            self.set_heuristic(heuristic.heur_id, heuristic.attack_id)
+            self.set_heuristic(heuristic.heur_id, attack_id=heuristic.attack_id, signature=heuristic.signature)
 
         if parent is not None:
             if isinstance(parent, ResultSection):
