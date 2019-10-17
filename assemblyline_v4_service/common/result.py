@@ -160,7 +160,7 @@ class ResultSection:
         heuristic = heuristics.get(heur_id, None)
         if heuristic:
             # Validate attack_id
-            if attack_id not in list(attack_map.keys()):
+            if attack_id and attack_id not in list(attack_map.keys()):
                 log.warning(f"Invalid attack_id for heuristic {heur_id}. Ignoring it.")
                 attack_id = None
 
