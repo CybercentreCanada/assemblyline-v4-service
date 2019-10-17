@@ -23,6 +23,7 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('GRAPH_DATA', 2),
     ('URL', 3),
     ('JSON', 4),
+    ('KEY_VALUE', 5),
 ])
 
 

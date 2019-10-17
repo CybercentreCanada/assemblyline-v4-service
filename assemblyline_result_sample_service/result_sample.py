@@ -123,12 +123,28 @@ class ResultSample(ServiceBase):
             result.add_section(memdump_section)
 
             # ==================================================================
+            # KEY_VALUE section:
+            #     This section allows the service writer to list a bunch of key/value pairs to be displayed in the UI
+            #     while also providing easy to parse data for auto mated tools.
+            #     NB: You should definitely use this over a JSON body type since this one will be displayed correctly
+            #         in the UI for the user
+            #     The body argument must be a json dumps of a dictionary (only str, int, and booleans are allowed)
+            kv_body = {
+                "a_str": "Some string",
+                "a_bool": False,
+                "an_int": 102,
+            }
+            kv_section = ResultSection('Example of a KEY_VALUE section', body_format=BODY_FORMAT.KEY_VALUE,
+                                       body=json.dumps(kv_body))
+            result.add_section(kv_section)
+
+            # ==================================================================
             # JSON section:
             #     Re-use the JSON editor we use for administration (https://github.com/josdejong/jsoneditor)
             #     to display a tree view of JSON results.
             #     NB: Use this sparingly! As a service developer you should do your best to include important
             #     results as their own result sections.
-            #     The body argument must be a dictionary
+            #     The body argument must be a json dump of a python dictionary
             json_body = {
                 "a_str": "Some string",
                 "a_list": ["a", "b", "c"],
