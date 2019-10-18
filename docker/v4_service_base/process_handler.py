@@ -37,7 +37,6 @@ if __name__ == '__main__':
 
     signal.signal(signal.SIGUSR1, forward_signal)
     signal.signal(signal.SIGUSR2, forward_signal)
-    signal.signal(signal.SIGKILL, forward_signal)
     signal.signal(signal.SIGTERM, forward_signal)
 
     while True:
