@@ -32,6 +32,14 @@ if __name__ == '__main__':
     rs_p = Popen(['python3', '/opt/alv4/alv4_service/assemblyline_v4_service/run_service.py'])
     th_p = Popen(['python3', '/opt/alv4/alv4_service_client/assemblyline_service_client/task_handler.py'])
 
+    def forward_signal(signal_number, _frame):
+        th_p.send_signal(signal_number)
+
+    signal.signal(signal.SIGUSR1, forward_signal)
+    signal.signal(signal.SIGUSR2, forward_signal)
+    signal.signal(signal.SIGKILL, forward_signal)
+    signal.signal(signal.SIGTERM, forward_signal)
+
     while True:
         check_processes(rs_p, th_p)
 
