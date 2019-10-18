@@ -18,6 +18,7 @@ class ServiceRequest:
 
         self._working_directory = None
         self.extracted = task.extracted
+        self.file_name = task.file_name
         self.file_type = task.file_type
         self.max_extracted = task.max_extracted
         self.md5 = task.md5

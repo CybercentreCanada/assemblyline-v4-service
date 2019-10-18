@@ -33,6 +33,7 @@ class Task:
         self.error_status: Optional[str] = None
         self.error_type: str = 'EXCEPTION'
         self.extracted: List[Dict[str, str]] = []
+        self.file_name = task.filename
         self.file_type = task.fileinfo.type
         self.max_extracted = task.max_files
         self.md5: str = task.fileinfo.md5

@@ -42,6 +42,7 @@ class RunService:
 
         # Create a task.json based on input file
         file_info = identify.fileinfo(FILE_PATH)
+        file_name = os.path.basename(FILE_PATH)
 
         service_task = ServiceTask(dict(
             sid=get_random_id(),
@@ -56,6 +57,7 @@ class RunService:
                 size=file_info['size'],
                 type=file_info['type'],
             ),
+            filename=file_name,
             max_files=501,  # TODO: get the actual value
             ttl=3600,
         ))
