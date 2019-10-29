@@ -126,9 +126,13 @@ class Task:
             raise Exception(f"Service submission parameter not found: {name}")
 
     def get_service_error(self) -> Error:
+        # TODO: how do I get days_until_archive here??
+        days_until_archive = 5
+
         error = Error(dict(
+            archive_ts=now_as_iso(days_until_archive * 24 * 60 * 60),
             created=now_as_iso(),
-            expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60),
+            expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60) if self.ttl else None,
             response=dict(
                 message=self.error_message,
                 service_name=self.service_name,
@@ -143,10 +147,14 @@ class Task:
         return error
 
     def get_service_result(self) -> Dict[str, Any]:
+        # TODO: how do I get days_until_archive here??
+        days_until_archive = 5
+
         result = dict(
+            archive_ts=now_as_iso(days_until_archive * 24 * 60 * 60),
             classification=self._classification.UNRESTRICTED,  # TODO: calculate aggregate classification based on files, result sections, and tags
             created=now_as_iso(),
-            expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60),
+            expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60) if self.ttl else None,
             response=dict(
                 milestones=dict(
                     service_started=self._service_started,
