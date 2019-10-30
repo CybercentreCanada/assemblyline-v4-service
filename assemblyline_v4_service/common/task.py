@@ -52,7 +52,6 @@ class Task:
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
         self.temp_submission_data: Dict[str, Any] = {}
-        self.ttl: int = task.ttl
         self.type: str = task.fileinfo.type
 
     def _add_file(self, path: str, name: str, description: str,
