@@ -28,6 +28,7 @@ class Task:
         self._service_completed: Optional[str] = None
         self._service_started: Optional[str] = None
         self._working_directory: Optional[str] = None
+        self.deep_scan = task.deep_scan
         self.drop_file: bool = False
         self.error_message: Optional[str] = None
         self.error_status: Optional[str] = None
@@ -37,6 +38,7 @@ class Task:
         self.file_type = task.fileinfo.type
         self.max_extracted = task.max_files
         self.md5: str = task.fileinfo.md5
+        self.mime: str = task.fileinfo.mime or None
         self.result: Optional[Result] = None
         self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
@@ -125,14 +127,8 @@ class Task:
         else:
             raise Exception(f"Service submission parameter not found: {name}")
 
-    def get_service_error(self) -> Error:
-        # TODO: how do I get days_until_archive here??
-        days_until_archive = 5
-
-        error = Error(dict(
-            archive_ts=now_as_iso(days_until_archive * 24 * 60 * 60),
-            created=now_as_iso(),
-            expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60) if self.ttl else None,
+    def get_service_error(self) -> Dict[str, Any]:
+        error = dict(
             response=dict(
                 message=self.error_message,
                 service_name=self.service_name,
@@ -142,19 +138,13 @@ class Task:
             ),
             sha256=self.sha256,
             type=self.error_type,
-        ))
+        )
 
         return error
 
     def get_service_result(self) -> Dict[str, Any]:
-        # TODO: how do I get days_until_archive here??
-        days_until_archive = 5
-
         result = dict(
-            archive_ts=now_as_iso(days_until_archive * 24 * 60 * 60),
             classification=self._classification.UNRESTRICTED,  # TODO: calculate aggregate classification based on files, result sections, and tags
-            created=now_as_iso(),
-            expiry_ts=now_as_iso(self.ttl * 24 * 60 * 60) if self.ttl else None,
             response=dict(
                 milestones=dict(
                     service_started=self._service_started,
@@ -187,7 +177,7 @@ class Task:
         error = self.get_service_error()
         error_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_error.json')
         with open(error_path, 'w') as f:
-            json.dump(error.as_primitives(), f)
+            json.dump(error, f)
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self) -> None:
