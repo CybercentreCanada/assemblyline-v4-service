@@ -10,6 +10,7 @@ import yaml
 
 from assemblyline.common import identify
 from assemblyline.common.importing import load_module_by_path
+from assemblyline.common.isotime import now_as_iso
 from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
@@ -104,6 +105,11 @@ class RunService:
                 result.pop('temp_submission_data', None)
                 for file in result['response']['extracted'] + result['response']['supplementary']:
                     file.pop('path', None)
+
+                # Add timestamps for creation, archive and expiry
+                result['created'] = now_as_iso()
+                result['archive_ts'] = now_as_iso(1 * 24 * 60 * 60)
+                result['expiry_ts'] = now_as_iso(service_task.ttl * 24 * 60 * 60)
 
                 result = Result(result)
 
