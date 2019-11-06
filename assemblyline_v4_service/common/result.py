@@ -152,8 +152,8 @@ class ResultSection:
         :param signature: (optional)
         """
         if self.heuristic:
-            log.warning(f"A heuristic (heuristic ID: {self.heuristic[heur_id]}) already exists for this section. "
-                        f"Setting a new heuristic (heuristic ID: {heur_id}) will replace the existing heuristic.")
+            log.warning(f"A heuristic (ID: {self.heuristic['heur_id']}) already exists for this section. "
+                        f"Setting a new heuristic (ID: {heur_id}) will replace the existing heuristic.")
 
         heuristics = get_heuristics()
 
