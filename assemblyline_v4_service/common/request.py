@@ -76,6 +76,17 @@ class ServiceRequest:
         """
         return self.task.download_file()
 
+    @property
+    def file_contents(self):
+        """
+        Returns the content of the file for analysis.
+
+        :return: Contents of the file
+        """
+        file_path = self.file_path
+        with open(file_path, "rb") as fh:
+            return fh.read()
+
     def get_param(self, name: str):
         """
         Get a submission parameter.
@@ -127,12 +138,3 @@ class ServiceRequest:
         :param data: Temporary submission data
         """
         self.task.temp_submission_data = data
-
-    @property
-    def working_directory(self) -> str:
-        """
-        Get the temp working directory for the current task.
-
-        :return: Temp directory path for the current task
-        """
-        return self.task.working_directory()
