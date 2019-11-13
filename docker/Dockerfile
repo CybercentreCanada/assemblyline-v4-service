@@ -1,7 +1,9 @@
-FROM cccs/assemblyline_dev:latest
+FROM cccs/assemblyline:latest
+
+ARG version
 
 # Setup environment varibles
-ENV PYTHONPATH /opt/alv4/alv4:/opt/alv4/alv4_service_client:/opt/alv4/alv4_service:/opt/al_service
+ENV PYTHONPATH /opt/al_service
 ENV SERVICE_API_HOST http://localhost:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 
@@ -13,20 +15,20 @@ ENV AWS_REGION=us-east-1
 # Switch to root to install dependencies
 USER root
 
-RUN pip install awscli
+# Pipy packages requirements
+RUN pip install \
+  assemblyline \
+  assemblyline-service-client \
+  assemblyline-v4-service==$version \
+  awscli
 
-COPY alv4_service/docker/v4_service_base_dev/requirements.txt /tmp
-RUN pip install -r /tmp/requirements.txt
-
-COPY alv4_service_client/requirements.txt /tmp
-RUN pip install -r /tmp/requirements.txt
-
-# Cleanup
-RUN rm /tmp/requirements.txt*
+RUN wget -O /tmp/assemblyline-client.zip https://bitbucket.org/cse-assemblyline/assemblyline_client/get/alv4.zip
+RUN pip install /tmp/assemblyline-client.zip
+RUN rm -rf /tmp/assemblyline-client.zip
 
 # Create directory for service
 RUN mkdir -p /opt/al_service
 RUN touch /opt/al_service/__init__.py
 
-COPY alv4_service/docker/v4_service_base_dev/process_handler.py /etc/
+COPY process_handler.py /etc/
 CMD python /etc/process_handler.py
