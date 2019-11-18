@@ -81,6 +81,6 @@ pipelines:
             - until pip install assemblyline-v4-service== 2>&1 | grep -q $TAG; do sleep 2; done
             - docker login -u $DOCKER_HUB_USER -p $DOCKER_HUB_PASSWORD
             - docker build --build-arg version=$TAG -t cccs/assemblyline-v4-service-base:$TAG -t cccs/assemblyline-v4-service-base:latest docker
-            - docker build --build-arg version=$TAG -f assemblyline_result_sample_service/docker/Dockerfile -t cccs/assemblyline-service-resultsample:$TAG -t cccs/assemblyline-service-resultsample:latest .
+            - docker build --build-arg version=$TAG -f assemblyline_result_sample_service/Dockerfile -t cccs/assemblyline-service-resultsample:$TAG -t cccs/assemblyline-service-resultsample:latest .
             - docker push cccs/assemblyline-v4-service-base
             - docker push cccs/assemblyline-service-resultsample
