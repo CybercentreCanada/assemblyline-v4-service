@@ -9,12 +9,18 @@ for variable_name in ['BITBUCKET_TAG']:
     package_version = os.environ.get(variable_name, package_version)
     package_version = package_version.lstrip('v')
 
+# read the contents of your README file
+from os import path
+this_directory = path.abspath(path.dirname(__file__))
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
 
 setup(
     name="assemblyline-v4-service",
     version=package_version,
     description="Assemblyline (v4) automated malware analysis framework - v4 Service components.",
     long_description="This package provides the Assemblyline v4 service base for the Assemblyline v4 malware analysis framework.",
+    long_description_content_type='text/markdown',
     url="https://bitbucket.org/cse-assemblyline/alv4_service/",
     author="CCCS Assemblyline development team",
     author_email="assemblyline@cyber.gc.ca",
