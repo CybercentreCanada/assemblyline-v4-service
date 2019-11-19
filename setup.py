@@ -19,7 +19,7 @@ setup(
     name="assemblyline-v4-service",
     version=package_version,
     description="Assemblyline (v4) automated malware analysis framework - v4 Service components.",
-    long_description="This package provides the Assemblyline v4 service base for the Assemblyline v4 malware analysis framework.",
+    long_description=long_description,
     long_description_content_type='text/markdown',
     url="https://bitbucket.org/cse-assemblyline/alv4_service/",
     author="CCCS Assemblyline development team",
