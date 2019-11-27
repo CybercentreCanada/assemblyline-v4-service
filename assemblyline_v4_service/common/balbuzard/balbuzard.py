@@ -586,7 +586,7 @@ patfile = os.path.join(main_dir, 'patterns.py')
 # save __doc__, else it seems to be overwritten:
 d = __doc__
 #print 'patfile:', patfile
-execfile(patfile)
+exec(open(patfile).read())
 __doc__ = d
 del d
 
