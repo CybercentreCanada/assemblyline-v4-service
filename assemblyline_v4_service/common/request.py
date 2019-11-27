@@ -17,6 +17,7 @@ class ServiceRequest:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._working_directory = None
+        self.deep_scan = task.deep_scan
         self.extracted = task.extracted
         self.file_name = task.file_name
         self.file_type = task.file_type
