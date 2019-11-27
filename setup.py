@@ -38,5 +38,11 @@ setup(
         'assemblyline',
         'assemblyline-core',
         'fuzzywuzzy',
+        'python-Levenshtein',
     ],
+    package_data={
+        '': [
+            "*.xml",
+        ]
+    }
 )
