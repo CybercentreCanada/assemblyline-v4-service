@@ -122,69 +122,69 @@ def get_xml_strings():
 class PatternMatch(object):
 
     # Curated list to avoid false positives.
-    TDLS = {'ac', 'aco', 'ad', 'adac', 'ads','ae', 'aeg', 'aero', 'af', 'afl', 'ag', 'agakhan','ai', 'aig',
-                     'akdn', 'al', 'am', 'amica', 'anz', 'ao', 'apple', 'aq', 'ar', 'army', 'arpa',
-                     'at', 'au', 'aw', 'aws', 'ax', 'axa', 'az', 'ba', 'baidu', 'bbc', 'bbva', 'bcg', 'bcn',
-                     'bd', 'be', 'bf', 'bg', 'bh', 'bharti', 'bi', 'bing', 'biz', 'bj', 'blog', 'bm', 'bms', 'bn',
-                     'bnl', 'bo', 'bom', 'bot', 'br', 'bs', 'bt', 'bv', 'bw', 'by', 'bz', 'bzh', 'ca', 'cba', 'cbn',
-                     'cbre', 'ceb', 'cf', 'cfa', 'cfd', 'cg', 'ch', 'ci', 'ck', 'cl', 'cm', 'cn', 'co', 'com', 'cr',
-                     'crs', 'csc', 'cu', 'cv', 'cw', 'cx', 'cy', 'cz', 'dclk', 'dds', 'de', 'dev', 'dhl', 'dj',
-                     'dk', 'dm', 'dnp', 'do', 'docs', 'doha', 'domains', 'download', 'drive','dtv', 'dubai', 'dvag',
-                     'dz', 'ec', 'edu', 'er', 'erni', 'es', 'esq', 'et', 'eu', 'eurovision', 'eus', 'fi',
-                     'fj', 'fk', 'flickr', 'flir', 'flsmidth', 'fly', 'fm', 'fo', 'foo', 'fr', 'frl','ftr', 'ga',
-                     'gb','gbiz', 'gd', 'gdn', 'ge', 'gea', 'gl', 'gle', 'gm', 'gmail', 'gmbh', 'gmo', 'gmx', 'gn',
-                     'goog', 'google', 'gop','got', 'gov', 'gp', 'gq', 'gr', 'gs', 'gt', 'gu', 'guru', 'gw', 'gy',
-                     'hk', 'hkt', 'hm', 'hn', 'host', 'hotmail', 'hr', 'ht', 'htc', 'hu', 'icu', 'id', 'ie',
-                     'ifm', 'iinet', 'ikano', 'il', 'im', 'imamat', 'imdb', 'immo', 'immobilien', 'in','info',
-                     'ing', 'ink', 'int', 'io', 'ipiranga', 'iq', 'ir', 'is', 'ist', 'istanbul', 'it', 'itau',
-                     'itv', 'iwc', 'jaguar', 'jcb','jcp', 'je', 'jlc', 'jll', 'jm', 'jmp', 'jnj', 'jo',
-                     'jot', 'jp', 'ke', 'kfh', 'kg', 'kh', 'ki', 'kia', 'kindle', 'km', 'kn', 'kp', 'kpmg', 'kpn',
-                     'kr', 'krd', 'kw', 'ky', 'kyoto', 'kz', 'la', 'lat', 'lb', 'lc', 'lds', 'li', 'link', 'lk',
-                     'lol', 'lr', 'ls', 'lt', 'ltd', 'ltda', 'lu', 'lv', 'ly', 'ma', 'madrid', 'mba', 'mc', 'md',
-                     'me', 'med', 'meme', 'meo', 'mg', 'mh', 'microsoft', 'mil', 'mk', 'ml', 'mlb', 'mls', 'mma',
-                     'mn', 'mo', 'mobi', 'mobily', 'mov', 'mp', 'mq', 'mr', 'ms', 'mt', 'mtn', 'mtpc', 'mtr', 'mu',
-                     'mv', 'mw', 'mx', 'my', 'mz', 'na', 'navy', 'nc', 'ne', 'nec', 'net', 'netbank',
-                     'neustar', 'nexus', 'nf', 'ng', 'ngo', 'nhk', 'ni', 'nico', 'nl', 'nowruz', 'nowtv',
-                     'np', 'nr', 'nra', 'nrw', 'ntt', 'nu', 'nyc', 'nz', 'obi', 'ollo', 'om', 'ong', 'onl', 'org',
-                     'ott', 'ovh', 'pa', 'pccw', 'pe', 'pet', 'pf', 'pg', 'ph', 'pid', 'pin', 'ping', 'pk', 'pl',
-                     'pm', 'pn', 'pnc', 'pohl', 'porn', 'post', 'pr', 'pro', 'prod', 'ps', 'pt', 'pub', 'pw', 'pwc',
-                     'py', 'qa', 'qpon', 'quebec', 're', 'ren', 'rio', 'ro', 'rocher', 'rs', 'rsvp', 'ru', 'ruhr',
-                     'rw', 'rwe', 'ryukyu', 'sa', 'sap', 'sapo', 'sarl', 'sas', 'saxo', 'sb', 'sbi', 'sbs',
-                     'sc', 'sca', 'scb', 'sd', 'se', 'sew', 'sex', 'sfr', 'sg', 'sh', 'si', 'sina', 'site',
-                     'sj', 'sk', 'skype', 'sl', 'sm', 'sn', 'sncf', 'so', 'sr', 'srl', 'st', 'stc', 'stcgroup',
-                     'su', 'sv', 'sx', 'sy', 'sydney', 'symantec', 'systems', 'sz', 'tab',
-                     'taipei', 'taobao', 'tc', 'tci', 'td', 'tdk', 'tel', 'teva', 'tf', 'tg', 'th', 'thd', 'tj',
-                     'tk', 'tl', 'tm', 'tmall', 'tn', 'to', 'tokyo', 'tr', 'trv', 'tt', 'tube', 'tui', 'tunes',
-                     'tushu', 'tv', 'tw', 'tz', 'ua', 'ubs', 'ug', 'uk', 'uno', 'uol', 'ups', 'us', 'uy', 'uz',
-                     'va', 'vc', 've', 'vet', 'vg', 'vi', 'vig', 'vin', 'vip', 'vista', 'vistaprint', 'vn',
-                     'vu', 'wed', 'weibo', 'weir', 'wf', 'whoswho', 'wien', 'wiki','win', 'windows', 'wme', 'ws',
-                     'wtc', 'wtf', 'xbox', 'xerox', 'xihuan', 'xin', 'xn--11b4c3d', 'xn--1ck2e1b',
-                     'xn--1qqw23a', 'xn--30rr7y', 'xn--3bst00m', 'xn--3ds443g', 'xn--3e0b707e', 'xn--3pxu8k',
-                     'xn--42c2d9a', 'xn--45brj9c', 'xn--45q11c', 'xn--4gbrim', 'xn--55qw42g', 'xn--55qx5d',
-                     'xn--5su34j936bgsg', 'xn--5tzm5g', 'xn--6frz82g', 'xn--6qq986b3xl', 'xn--80adxhks',
-                     'xn--80ao21a', 'xn--80asehdb', 'xn--80aswg', 'xn--8y0a063a', 'xn--90a3ac', 'xn--90ae',
-                     'xn--90ais', 'xn--9dbq2a', 'xn--9et52u', 'xn--9krt00a', 'xn--b4w605ferd', 'xn--bck1b9a5dre4c',
-                     'xn--c1avg', 'xn--c2br7g', 'xn--cck2b3b', 'xn--cg4bki', 'xn--clchc0ea0b2g2a9gcd',
-                     'xn--czr694b', 'xn--czrs0t', 'xn--czru2d', 'xn--d1acj3b', 'xn--d1alf', 'xn--e1a4c',
-                     'xn--eckvdtc9d', 'xn--efvy88h', 'xn--estv75g', 'xn--fct429k', 'xn--fhbei', 'xn--fiq228c5hs',
-                     'xn--fiq64b', 'xn--fiqs8s', 'xn--fiqz9s', 'xn--fjq720a', 'xn--flw351e', 'xn--fpcrj9c3d',
-                     'xn--fzc2c9e2c', 'xn--fzys8d69uvgm', 'xn--g2xx48c', 'xn--gckr3f0f', 'xn--gecrj9c',
-                     'xn--h2brj9c', 'xn--hxt814e', 'xn--i1b6b1a6a2e', 'xn--imr513n', 'xn--io0a7i', 'xn--j1aef',
-                     'xn--j1amh', 'xn--j6w193g', 'xn--jlq61u9w7b', 'xn--jvr189m', 'xn--kcrx77d1x4a', 'xn--kprw13d',
-                     'xn--kpry57d', 'xn--kpu716f', 'xn--kput3i', 'xn--l1acc', 'xn--lgbbat1ad8j', 'xn--mgb9awbf',
-                     'xn--mgba3a3ejt', 'xn--mgba3a4f16a', 'xn--mgba7c0bbn0a', 'xn--mgbaam7a8h', 'xn--mgbab2bd',
-                     'xn--mgbayh7gpa', 'xn--mgbb9fbpob', 'xn--mgbbh1a71e', 'xn--mgbc0a9azcg', 'xn--mgbca7dzdo',
-                     'xn--mgberp4a5d4ar', 'xn--mgbpl2fh', 'xn--mgbt3dhd', 'xn--mgbtx2b', 'xn--mgbx4cd0ab',
-                     'xn--mix891f', 'xn--mk1bu44c', 'xn--mxtq1m', 'xn--ngbc5azd', 'xn--ngbe9e0a', 'xn--node',
-                     'xn--nqv7f', 'xn--nqv7fs00ema', 'xn--nyqy26a', 'xn--o3cw4h', 'xn--ogbpf8fl', 'xn--p1acf',
-                     'xn--p1ai', 'xn--pbt977c', 'xn--pgbs0dh', 'xn--pssy2u', 'xn--q9jyb4c', 'xn--qcka1pmc',
-                     'xn--qxam', 'xn--rhqv96g', 'xn--rovu88b', 'xn--s9brj9c', 'xn--ses554g', 'xn--t60b56a',
-                     'xn--tckwe', 'xn--unup4y', 'xn--vermgensberater-ctb', 'xn--vermgensberatung-pwb', 'xn--vhquv',
-                     'xn--vuq861b', 'xn--w4r85el8fhu5dnra', 'xn--w4rs40l', 'xn--wgbh1c', 'xn--wgbl6a',
-                     'xn--xhq521b', 'xn--xkc2al3hye2a', 'xn--xkc2dl3a5ee0h', 'xn--y9a3aq', 'xn--yfro4i67o',
-                     'xn--ygbi2ammx', 'xn--zfr164b', 'xperia', 'xyz', 'yahoo', 'yamaxun',
-                     'yandex', 'ye', 'yokohama', 'you', 'youtube', 'yt', 'yun', 'za', 'zappos',
-                     'zara', 'zero', 'zippo', 'zm', 'zone', 'zuerich', 'zw'}
+    TDLS = {b'ac', b'aco', b'ad', b'adac', b'ads', b'ae', b'aeg', b'aero', b'af', b'afl', b'ag', b'agakhan', b'ai',
+            b'aig', b'akdn', b'al', b'am', b'amica', b'anz', b'ao', b'apple', b'aq', b'ar', b'army', b'arpa', b'at',
+            b'au', b'aw', b'aws', b'ax', b'axa', b'az', b'ba', b'baidu', b'bbc', b'bbva', b'bcg', b'bcn', b'bd', b'be',
+            b'bf', b'bg', b'bh', b'bharti', b'bi', b'bing', b'biz', b'bj', b'blog', b'bm', b'bms', b'bn', b'bnl', b'bo',
+            b'bom', b'bot', b'br', b'bs', b'bt', b'bv', b'bw', b'by', b'bz', b'bzh', b'ca', b'cba', b'cbn', b'cbre',
+            b'ceb', b'cf', b'cfa', b'cfd', b'cg', b'ch', b'ci', b'ck', b'cl', b'cm', b'cn', b'co', b'com', b'cr',
+            b'crs', b'csc', b'cu', b'cv', b'cw', b'cx', b'cy', b'cz', b'dclk', b'dds', b'de', b'dev', b'dhl', b'dj',
+            b'dk', b'dm', b'dnp', b'do', b'docs', b'doha', b'domains', b'download', b'drive', b'dtv', b'dubai', b'dvag',
+            b'dz', b'ec', b'edu', b'er', b'erni', b'es', b'esq', b'et', b'eu', b'eurovision', b'eus', b'fi', b'fj',
+            b'fk', b'flickr', b'flir', b'flsmidth', b'fly', b'fm', b'fo', b'foo', b'fr', b'frl', b'ftr', b'ga', b'gb',
+            b'gbiz', b'gd', b'gdn', b'ge', b'gea', b'gl', b'gle', b'gm', b'gmail', b'gmbh', b'gmo', b'gmx', b'gn',
+            b'goog', b'google', b'gop', b'got', b'gov', b'gp', b'gq', b'gr', b'gs', b'gt', b'gu', b'guru', b'gw', b'gy',
+            b'hk', b'hkt', b'hm', b'hn', b'host', b'hotmail', b'hr', b'ht', b'htc', b'hu', b'icu', b'id', b'ie',
+            b'ifm', b'iinet', b'ikano', b'il', b'im', b'imamat', b'imdb', b'immo', b'immobilien', b'in', b'info',
+            b'ing', b'ink', b'int', b'io', b'ipiranga', b'iq', b'ir', b'is', b'ist', b'istanbul', b'it', b'itau',
+            b'itv', b'iwc', b'jaguar', b'jcb', b'jcp', b'je', b'jlc', b'jll', b'jm', b'jmp', b'jnj', b'jo', b'jot',
+            b'jp', b'ke', b'kfh', b'kg', b'kh', b'ki', b'kia', b'kindle', b'km', b'kn', b'kp', b'kpmg', b'kpn', b'kr',
+            b'krd', b'kw', b'ky', b'kyoto', b'kz', b'la', b'lat', b'lb', b'lc', b'lds', b'li', b'link', b'lk', b'lol',
+            b'lr', b'ls', b'lt', b'ltd', b'ltda', b'lu', b'lv', b'ly', b'ma', b'madrid', b'mba', b'mc', b'md', b'me',
+            b'med', b'meme', b'meo', b'mg', b'mh', b'microsoft', b'mil', b'mk', b'ml', b'mlb', b'mls', b'mma',
+            b'mn', b'mo', b'mobi', b'mobily', b'mov', b'mp', b'mq', b'mr', b'ms', b'mt', b'mtn', b'mtpc', b'mtr',
+            b'mu', b'mv', b'mw', b'mx', b'my', b'mz', b'na', b'navy', b'nc', b'ne', b'nec', b'net', b'netbank',
+            b'neustar', b'nexus', b'nf', b'ng', b'ngo', b'nhk', b'ni', b'nico', b'nl', b'nowruz', b'nowtv', b'np',
+            b'nr', b'nra', b'nrw', b'ntt', b'nu', b'nyc', b'nz', b'obi', b'ollo', b'om', b'ong', b'onl', b'org', b'ott',
+            b'ovh', b'pa', b'pccw', b'pe', b'pet', b'pf', b'pg', b'ph', b'pid', b'pin', b'ping', b'pk', b'pl', b'pm',
+            b'pn', b'pnc', b'pohl', b'porn', b'post', b'pr', b'pro', b'prod', b'ps', b'pt', b'pub', b'pw', b'pwc',
+            b'py', b'qa', b'qpon', b'quebec', b're', b'ren', b'rio', b'ro', b'rocher', b'rs', b'rsvp', b'ru', b'ruhr',
+            b'rw', b'rwe', b'ryukyu', b'sa', b'sap', b'sapo', b'sarl', b'sas', b'saxo', b'sb', b'sbi', b'sbs',
+            b'sc', b'sca', b'scb', b'sd', b'se', b'sew', b'sex', b'sfr', b'sg', b'sh', b'si', b'sina', b'site',
+            b'sj', b'sk', b'skype', b'sl', b'sm', b'sn', b'sncf', b'so', b'sr', b'srl', b'st', b'stc', b'stcgroup',
+            b'su', b'sv', b'sx', b'sy', b'sydney', b'symantec', b'systems', b'sz', b'tab',
+            b'taipei', b'taobao', b'tc', b'tci', b'td', b'tdk', b'tel', b'teva', b'tf', b'tg', b'th', b'thd', b'tj',
+            b'tk', b'tl', b'tm', b'tmall', b'tn', b'to', b'tokyo', b'tr', b'trv', b'tt', b'tube', b'tui', b'tunes',
+            b'tushu', b'tv', b'tw', b'tz', b'ua', b'ubs', b'ug', b'uk', b'uno', b'uol', b'ups', b'us', b'uy', b'uz',
+            b'va', b'vc', b've', b'vet', b'vg', b'vi', b'vig', b'vin', b'vip', b'vista', b'vistaprint', b'vn',
+            b'vu', b'wed', b'weibo', b'weir', b'wf', b'whoswho', b'wien', b'wiki', b'win', b'windows', b'wme', b'ws',
+            b'wtc', b'wtf', b'xbox', b'xerox', b'xihuan', b'xin', b'xn--11b4c3d', b'xn--1ck2e1b',
+            b'xn--1qqw23a', b'xn--30rr7y', b'xn--3bst00m', b'xn--3ds443g', b'xn--3e0b707e', b'xn--3pxu8k',
+            b'xn--42c2d9a', b'xn--45brj9c', b'xn--45q11c', b'xn--4gbrim', b'xn--55qw42g', b'xn--55qx5d',
+            b'xn--5su34j936bgsg', b'xn--5tzm5g', b'xn--6frz82g', b'xn--6qq986b3xl', b'xn--80adxhks',
+            b'xn--80ao21a', b'xn--80asehdb', b'xn--80aswg', b'xn--8y0a063a', b'xn--90a3ac', b'xn--90ae',
+            b'xn--90ais', b'xn--9dbq2a', b'xn--9et52u', b'xn--9krt00a', b'xn--b4w605ferd', b'xn--bck1b9a5dre4c',
+            b'xn--c1avg', b'xn--c2br7g', b'xn--cck2b3b', b'xn--cg4bki', b'xn--clchc0ea0b2g2a9gcd',
+            b'xn--czr694b', b'xn--czrs0t', b'xn--czru2d', b'xn--d1acj3b', b'xn--d1alf', b'xn--e1a4c',
+            b'xn--eckvdtc9d', b'xn--efvy88h', b'xn--estv75g', b'xn--fct429k', b'xn--fhbei', b'xn--fiq228c5hs',
+            b'xn--fiq64b', b'xn--fiqs8s', b'xn--fiqz9s', b'xn--fjq720a', b'xn--flw351e', b'xn--fpcrj9c3d',
+            b'xn--fzc2c9e2c', b'xn--fzys8d69uvgm', b'xn--g2xx48c', b'xn--gckr3f0f', b'xn--gecrj9c',
+            b'xn--h2brj9c', b'xn--hxt814e', b'xn--i1b6b1a6a2e', b'xn--imr513n', b'xn--io0a7i', b'xn--j1aef',
+            b'xn--j1amh', b'xn--j6w193g', b'xn--jlq61u9w7b', b'xn--jvr189m', b'xn--kcrx77d1x4a', b'xn--kprw13d',
+            b'xn--kpry57d', b'xn--kpu716f', b'xn--kput3i', b'xn--l1acc', b'xn--lgbbat1ad8j', b'xn--mgb9awbf',
+            b'xn--mgba3a3ejt', b'xn--mgba3a4f16a', b'xn--mgba7c0bbn0a', b'xn--mgbaam7a8h', b'xn--mgbab2bd',
+            b'xn--mgbayh7gpa', b'xn--mgbb9fbpob', b'xn--mgbbh1a71e', b'xn--mgbc0a9azcg', b'xn--mgbca7dzdo',
+            b'xn--mgberp4a5d4ar', b'xn--mgbpl2fh', b'xn--mgbt3dhd', b'xn--mgbtx2b', b'xn--mgbx4cd0ab',
+            b'xn--mix891f', b'xn--mk1bu44c', b'xn--mxtq1m', b'xn--ngbc5azd', b'xn--ngbe9e0a', b'xn--node',
+            b'xn--nqv7f', b'xn--nqv7fs00ema', b'xn--nyqy26a', b'xn--o3cw4h', b'xn--ogbpf8fl', b'xn--p1acf',
+            b'xn--p1ai', b'xn--pbt977c', b'xn--pgbs0dh', b'xn--pssy2u', b'xn--q9jyb4c', b'xn--qcka1pmc',
+            b'xn--qxam', b'xn--rhqv96g', b'xn--rovu88b', b'xn--s9brj9c', b'xn--ses554g', b'xn--t60b56a',
+            b'xn--tckwe', b'xn--unup4y', b'xn--vermgensberater-ctb', b'xn--vermgensberatung-pwb', b'xn--vhquv',
+            b'xn--vuq861b', b'xn--w4r85el8fhu5dnra', b'xn--w4rs40l', b'xn--wgbh1c', b'xn--wgbl6a',
+            b'xn--xhq521b', b'xn--xkc2al3hye2a', b'xn--xkc2dl3a5ee0h', b'xn--y9a3aq', b'xn--yfro4i67o',
+            b'xn--ygbi2ammx', b'xn--zfr164b', b'xperia', b'xyz', b'yahoo', b'yamaxun',
+            b'yandex', b'ye', b'yokohama', b'you', b'youtube', b'yt', b'yun', b'za', b'zappos',
+            b'zara', b'zero', b'zippo', b'zm', b'zone', b'zuerich', b'zw'}
 
 # --- PEStudio Patterns ------------------------------------------------------------------------------------------------
 
@@ -192,48 +192,48 @@ class PatternMatch(object):
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
-    PAT_DOMAIN = r'(?i)\b(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
-    PAT_FILECOM = r'(?i)(?:\b[a-z]?[:]?[- _A-Z0-9.\\~]{0,75}[%]?' \
-                       r'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
-                       r'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
-                       r'windir|system32|syswow64|\\user)[%]?\\[-_A-Z0-9\.\\]{1,200}\b|' \
-                       r'/home/[-_A-Z0-9\./]{0,50}|/usr/local[-_A-Z0-9\./]{0,50}|/usr/bin[-_A-Z0-9\./]{0,50}|' \
-                       r'/var/log[-_A-Z0-9\./]{0,50}|/etc/(?:shadow|group|passwd))'
-    PAT_FILEEXT = r'(?i)\b[a-z]?[:]?[- _A-Z0-9.\\~]{0,200}\w\.' \
-                       r'(?:7Z|APK|APP|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPEG|JPG|JS|JSE|LNK|LOG|MSI|' \
-                       r'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
-                       r'|XLSX|ZIP)\b'
-    PAT_FILEPDB = r'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
-    PAT_EMAIL = r'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
-    PAT_IP = r'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
-    PAT_REGIS = r'(?i)\b[- _A-Z0-9.\\]{0,25}' \
-                     r'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \
-                     r'hkey_classes_root|hkey_current_config|hkey_current_user|hkey_dyn_data|hkey_local_machine|' \
-                     r'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
-                     r'\\userinit)' \
-                     r'\\[-_A-Z0-9.\\ ]{1,200}\b'
-    PAT_URL = '(?i)(?:ftp|http|https)://' \
-                   '[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                   '(?::[0-9]{1,5})?' \
-                   '(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
-    PAT_ANYHTTP = r'(?i)http://' \
-                       r'[A-Z0-9.-]{6,}\.' \
-                       r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                       r'(?::[0-9]{1,5})?' \
-                       r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
-    PAT_ANYHTTPS = r'(?i)https://' \
-                        r'[A-Z0-9.-]{6,}\.' \
-                        r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                        r'(?::[0-9]{1,5})?' \
-                        r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
-    PAT_ANYFTP = r'(?i)ftp://' \
-                      r'[A-Z0-9.-]{6,}\.' \
-                      r'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-                      r'(?::[0-9]{1,5})?' \
-                      r'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+    PAT_DOMAIN = rb'(?i)\b(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
+    PAT_FILECOM = rb'(?i)(?:\b[a-z]?[:]?[- _A-Z0-9.\\~]{0,75}[%]?' \
+                  rb'(?:ALLUSERPROFILE|APPDATA|commonappdata|CommonProgramFiles|HOMEPATH|LOCALAPPDATA|' \
+                  rb'ProgramData|ProgramFiles|PUBLIC|SystemDrive|SystemRoot|\\TEMP|USERPROFILE|' \
+                  rb'windir|system32|syswow64|\\user)[%]?\\[-_A-Z0-9\.\\]{1,200}\b|' \
+                  rb'/home/[-_A-Z0-9\./]{0,50}|/usr/local[-_A-Z0-9\./]{0,50}|/usr/bin[-_A-Z0-9\./]{0,50}|' \
+                  rb'/var/log[-_A-Z0-9\./]{0,50}|/etc/(?:shadow|group|passwd))'
+    PAT_FILEEXT = rb'(?i)\b[a-z]?[:]?[- _A-Z0-9.\\~]{0,200}\w\.' \
+                  rb'(?:7Z|APK|APP|BAT|BIN|CLASS|CMD|DAT|DOC|DOCX|DLL|EML|EXE|JAR|JPEG|JPG|JS|JSE|LNK|LOG|MSI|' \
+                  rb'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
+                  rb'|XLSX|ZIP)\b'
+    PAT_FILEPDB = rb'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
+    PAT_EMAIL = rb'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
+    PAT_IP = rb'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
+    PAT_REGIS = rb'(?i)\b[- _A-Z0-9.\\]{0,25}' \
+                rb'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \
+                rb'hkey_classes_root|hkey_current_config|hkey_current_user|hkey_dyn_data|hkey_local_machine|' \
+                rb'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
+                rb'\\userinit)' \
+                rb'\\[-_A-Z0-9.\\ ]{1,200}\b'
+    PAT_URL = b'(?i)(?:ftp|http|https)://' \
+              b'[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+              b'(?::[0-9]{1,5})?' \
+              b'(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
+    PAT_ANYHTTP = rb'(?i)http://' \
+                  rb'[A-Z0-9.-]{6,}\.' \
+                  rb'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                  rb'(?::[0-9]{1,5})?' \
+                  rb'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+    PAT_ANYHTTPS = rb'(?i)https://' \
+                   rb'[A-Z0-9.-]{6,}\.' \
+                   rb'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                   rb'(?::[0-9]{1,5})?' \
+                   rb'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
+    PAT_ANYFTP = rb'(?i)ftp://' \
+                 rb'[A-Z0-9.-]{6,}\.' \
+                 rb'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+                 rb'(?::[0-9]{1,5})?' \
+                 rb'/[A-Z0-9/\-\.&%\$#=~\?_]{5,}[\r\n]*'
 
-    PAT_EXEDOS = r'This program cannot be run in DOS mode'
-    PAT_EXEHEADER = r'(?s)MZ.{32,1024}PE\000\000'
+    PAT_EXEDOS = rb'This program cannot be run in DOS mode'
+    PAT_EXEHEADER = rb'(?s)MZ.{32,1024}PE\000\000'
 
 # --- Find Match for IOC Regex, Return Dictionary: {[AL Tag Type:(Match Values)]} --------------------------------------
 
@@ -264,8 +264,8 @@ class PatternMatch(object):
                     if not_filtered:
                         value_extract.setdefault('NET_IP', set()).add(val)
             else:
-                like_ls = process.extract(longeststring, find_ip, limit=50)
-                final_values = filter(lambda ls: ls[1] < 99, like_ls)
+                like_ls = process.extract(str(longeststring), find_ip, limit=50)
+                final_values = list(filter(lambda ls: ls[1] < 99, like_ls))
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     not_filtered = self.ipv4_filter(val[0], bogon=bogon_ip)
@@ -285,8 +285,8 @@ class PatternMatch(object):
             elif len(find_url) == 1:
                 final_values = [(find_url[0], 100)]
             else:
-                like_ls = process.extract(longeststring, find_url, limit=50)
-                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                like_ls = process.extract(str(longeststring), find_url, limit=50)
+                final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
                 final_values.append((longeststring, 100))
 
             for val in final_values:
@@ -322,8 +322,8 @@ class PatternMatch(object):
                     if not_filtered:
                         value_extract.setdefault('NET_EMAIL', set()).add(val)
             else:
-                like_ls = process.extract(longeststring, find_email, limit=50)
-                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                like_ls = process.extract(str(longeststring), find_email, limit=50)
+                final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     not_filtered = self.email_filter(val[0])
@@ -349,8 +349,8 @@ class PatternMatch(object):
                     if not_filtered:
                         value_extract.setdefault('NET_DOMAIN_NAME', set()).add(val)
             else:
-                like_ls = process.extract(longeststring, find_domain, limit=50)
-                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                like_ls = process.extract(str(longeststring), find_domain, limit=50)
+                final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     not_filtered = self.domain_filter(val[0])
@@ -377,8 +377,8 @@ class PatternMatch(object):
                     for val in filefind_pdb:
                         value_extract.setdefault('FILE_PDB_STRING', set()).add(val)
                 else:
-                    like_ls = process.extract(longeststring, filefind_pdb, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                    like_ls = process.extract(str(longeststring), filefind_pdb, limit=50)
+                    final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
                     final_values.append((longeststring, 100))
                     for val in final_values:
                         value_extract.setdefault('FILE_PDB_STRING', set()).add(val[0])
@@ -393,8 +393,8 @@ class PatternMatch(object):
                     for val in filefind_ext:
                         value_extract.setdefault('FILE_NAME', set()).add(val)
                 else:
-                    like_ls = process.extract(longeststring, filefind_ext, limit=50)
-                    final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                    like_ls = process.extract(str(longeststring), filefind_ext, limit=50)
+                    final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
                     final_values.append((longeststring, 100))
                     for val in final_values:
                         value_extract.setdefault('FILE_NAME', set()).add(val[0])
@@ -408,8 +408,8 @@ class PatternMatch(object):
                 for val in filefind_com:
                     value_extract.setdefault('FILE_NAME', set()).add(val)
             else:
-                like_ls = process.extract(longeststring, filefind_com, limit=50)
-                final_values = filter(lambda ls: ls[1] < 95, like_ls)
+                like_ls = process.extract(str(longeststring), filefind_com, limit=50)
+                final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     value_extract.setdefault('FILE_NAME', set()).add(val[0])
@@ -428,8 +428,8 @@ class PatternMatch(object):
                 for val in regfind:
                     value_extract.setdefault('REGISTRY_KEY', set()).add(val)
             else:
-                like_ls = process.extract(longeststring, regfind, limit=50)
-                final_values = filter(lambda ls: ls[1] < 90, like_ls)
+                like_ls = process.extract(str(longeststring), regfind, limit=50)
+                final_values = list(filter(lambda ls: ls[1] < 90, like_ls))
                 final_values.append((longeststring, 100))
                 for val in final_values:
                     value_extract.setdefault('REGISTRY_KEY', set()).add(val[0])
@@ -439,7 +439,7 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_BLACKLIST.items():
             for e in i:
-                if e in value:
+                if bytes(e, 'utf8') in value:
                     final_values.append(e)
         if len(final_values) > 0:
             value_extract['PESTUDIO_BLACKLIST_STRING'] = set()
@@ -451,7 +451,7 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_API.items():
             for e in i:
-                if e in value:
+                if bytes(e, 'utf8') in value:
                     final_values.append(e)
         if len(final_values) > 0:
             value_extract['WIN_API_STRING'] = set()
@@ -463,7 +463,7 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_POWERSHELL.items():
             for e in i:
-                if e in value:
+                if bytes(e, 'utf8') in value:
                     final_values.append(e)
         if len(final_values) > 0:
             value_extract['POWERSHELL_CMDLET'] = set()
@@ -495,7 +495,8 @@ class PatternMatch(object):
                 return False
 
         # also reject IPs ending with .0 or .255
-        if ip.endswith('.0') or ip.endswith('.255'): return False
+        if ip.endswith('.0') or ip.endswith('.255'):
+            return False
 
         # BOGON IP ADDRESS RANGES:
         # source: http://www.team-cymru.org/Services/Bogons/bogon-dd.html
@@ -548,13 +549,13 @@ class PatternMatch(object):
         # false positives)
         # optionally, DNS MX query with caching?
 
-        user, domain = value.split('@', 1)
+        user, domain = value.split(b'@', 1)
         if len(user) < 3:
             return False
         if len(domain) < 5:
             return False
-        tld = domain.rsplit('.', 1)[1].lower()
-        if tld not in self.TDLS:
+        tld = domain.rsplit(b'.', 1)[1].lower()
+        if str(tld) not in self.TDLS:
             return False
 
         return True
@@ -565,13 +566,13 @@ class PatternMatch(object):
         if len(value) < 10:
             return False
         # No more than 3 domain names
-        if value.count('.') > 3:
+        if value.count(b'.') > 3:
             return False
-        uniq_char = ''.join(set(value))
+        uniq_char = ''.join(set(str(value)))
         if len(uniq_char) < 6:
             return False
-        fld = value.split('.')
-        tld = value.rsplit('.', 1)[1].lower()
+        fld = value.split(b'.')
+        tld = value.rsplit(b'.', 1)[1].lower()
         # If only two domain levels and either second level < 6 char or tld <= 2 char, or top-level not in list
         if (len(fld) <= 2 and len(fld[0]) < 6) or tld not in self.TDLS:
             return False
