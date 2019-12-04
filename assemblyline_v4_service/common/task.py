@@ -176,14 +176,14 @@ class Task:
         error = self.get_service_error()
         error_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_error.json')
         with open(error_path, 'w') as f:
-            json.dump(error, f)
+            json.dump(error, f, default=str)
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self) -> None:
         result = self.get_service_result()
         result_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_result.json')
         with open(result_path, 'w') as f:
-            json.dump(result, f)
+            json.dump(result, f, default=str)
         self.log.info(f"Saving result to: {result_path}")
 
     def set_service_context(self, context: str) -> None:

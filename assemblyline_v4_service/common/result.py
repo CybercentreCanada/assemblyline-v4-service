@@ -106,8 +106,8 @@ class ResultSection:
         subsection.parent = self
 
     def add_tag(self, tag_type: str, value: Union[str, bytes]) -> None:
-        if not isinstance(value, str):
-            value = str(value)
+        if isinstance(value, bytes):
+            value = value.decode()
 
         if tag_type not in self.tags:
             self.tags[tag_type] = []
