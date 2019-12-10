@@ -93,7 +93,7 @@ class ResultSample(ServiceBase):
 
             # Since urls are very important features we can tag those features in the system so they are easy to find
             #   Tags are defined by a type and a value
-            url_section.add_tag("network.domain", random_host)
+            url_section.add_tag("network.static.domain", random_host)
 
             # You may also want to provide a list of url!
             #   Also, No need to provide a name, the url link will be displayed
@@ -104,9 +104,9 @@ class ResultSample(ServiceBase):
             url_sub_section = ResultSection('Example of a url section with multiple links', body_format=BODY_FORMAT.URL,
                                             body=json.dumps(urls))
             url_sub_section.set_heuristic(random.randint(1, 4))
-            url_sub_section.add_tag("network.ip", ip1)
-            url_sub_section.add_tag("network.domain", host1)
-            url_sub_section.add_tag("network.domain", host2)
+            url_sub_section.add_tag("network.static.ip", ip1)
+            url_sub_section.add_tag("network.static.domain", host1)
+            url_sub_section.add_tag("network.dynamic.domain", host2)
             # Since url_sub_section is a sub-section of url_section
             # we will add it as a sub-section of url_section not to the main result itself
             url_section.add_subsection(url_sub_section)

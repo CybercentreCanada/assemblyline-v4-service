@@ -255,14 +255,14 @@ class PatternMatch(object):
             if len(longeststring) == len(value):
                 not_filtered = self.ipv4_filter(value, bogon=bogon_ip)
                 if not_filtered:
-                    value_extract.setdefault('network.ip', set()).add(value)
+                    value_extract.setdefault('network.static.ip', set()).add(value)
                 # If the complete value matches the IP regex, not interested in other regex values
                 return value_extract
             if len(find_ip) == 1:
                 for val in find_ip:
                     not_filtered = self.ipv4_filter(val, bogon=bogon_ip)
                     if not_filtered:
-                        value_extract.setdefault('network.ip', set()).add(val)
+                        value_extract.setdefault('network.static.ip', set()).add(val)
             else:
                 like_ls = process.extract(str(longeststring), find_ip, limit=50)
                 final_values = list(filter(lambda ls: ls[1] < 99, like_ls))
@@ -270,7 +270,7 @@ class PatternMatch(object):
                 for val in final_values:
                     not_filtered = self.ipv4_filter(val[0], bogon=bogon_ip)
                     if not_filtered:
-                        value_extract.setdefault('network.ip', set()).add(val[0])
+                        value_extract.setdefault('network.static.ip', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # URLs
         #print("urls")
@@ -290,7 +290,7 @@ class PatternMatch(object):
                 final_values.append((longeststring, 100))
 
             for val in final_values:
-                value_extract.setdefault('network.uri', set()).add(val[0])
+                value_extract.setdefault('network.static.uri', set()).add(val[0])
 
                 # Extract domain from URL
                 find_domain = re.findall(self.PAT_DOMAIN, val[0])
@@ -298,7 +298,7 @@ class PatternMatch(object):
                     longeststring = max(find_domain, key=len)
                     not_filtered = self.domain_filter(longeststring)
                     if not_filtered:
-                        value_extract.setdefault('network.domain', set()).add(longeststring)
+                        value_extract.setdefault('network.static.domain', set()).add(longeststring)
             if ret:
                 return value_extract
         # ------------------------------------------------------------------------------
@@ -341,13 +341,13 @@ class PatternMatch(object):
             if len(longeststring) == len(value):
                 not_filtered = self.domain_filter(value)
                 if not_filtered:
-                    value_extract.setdefault('network.domain', set()).add(value)
+                    value_extract.setdefault('network.static.domain', set()).add(value)
                     return value_extract
             if len(find_domain) == 1:
                 for val in find_domain:
                     not_filtered = self.domain_filter(val)
                     if not_filtered:
-                        value_extract.setdefault('network.domain', set()).add(val)
+                        value_extract.setdefault('network.static.domain', set()).add(val)
             else:
                 like_ls = process.extract(str(longeststring), find_domain, limit=50)
                 final_values = list(filter(lambda ls: ls[1] < 95, like_ls))
@@ -355,7 +355,7 @@ class PatternMatch(object):
                 for val in final_values:
                     not_filtered = self.domain_filter(val[0])
                     if not_filtered:
-                        value_extract.setdefault('network.domain', set()).add(val[0])
+                        value_extract.setdefault('network.static.domain', set()).add(val[0])
 
         if just_network:
             return value_extract
