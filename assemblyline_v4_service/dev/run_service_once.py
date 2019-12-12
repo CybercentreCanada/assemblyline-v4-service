@@ -5,6 +5,7 @@ import os
 import pprint
 import shutil
 import tempfile
+from typing import Union, Dict
 
 import yaml
 
@@ -106,6 +107,17 @@ class RunService:
                 for file in result['response']['extracted'] + result['response']['supplementary']:
                     file.pop('path', None)
 
+                heurs = self.load_service_manifest(return_heuristics=True)
+                if heurs:
+                    heuristics = {}
+                    for heuristic in heurs:
+                        heuristics[heuristic['heur_id']] = heuristic
+
+                    for section in result['result']['sections']:
+                        if section['heuristic']:
+                            heur_id = section['heuristic']['heur_id']
+                            section['heuristic']['name'] = heuristics[heur_id]['name']
+
                 # Add timestamps for creation, archive and expiry
                 result['created'] = now_as_iso()
                 result['archive_ts'] = now_as_iso(1 * 24 * 60 * 60)
@@ -126,12 +138,14 @@ class RunService:
     def stop(self):
         self.service.stop_service()
 
-    def load_service_manifest(self) -> None:
+    def load_service_manifest(self, return_heuristics=False) -> Union[None, Dict]:
         service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
 
         if os.path.exists(service_manifest_yml):
             with open(service_manifest_yml) as yml_fh:
                 service_manifest_data = yaml.safe_load(yml_fh.read())
+
+            heuristics = service_manifest_data.get('heuristics', None)
 
             # Pop the 'extra' data from the service manifest
             for x in ['file_required', 'tool_version', 'heuristics']:
@@ -150,6 +164,8 @@ class RunService:
             self.submission_params = {x['name']: x['default'] for x in service_manifest_data.get('submission_params', [])}
 
             self.service = self.service_class(config=service_config)
+            if return_heuristics:
+                return heuristics
         else:
             raise Exception("Service manifest YAML file not found in root folder of service.")
 
