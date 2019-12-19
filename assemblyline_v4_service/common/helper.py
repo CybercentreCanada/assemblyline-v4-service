@@ -72,5 +72,7 @@ def get_service_manifest() -> Dict:
             yml_data = yaml.safe_load(yml_fh.read())
             if yml_data:
                 return yml_data
+            else:
+                raise Exception("Service manifest is empty.")
     else:
         raise Exception("Service manifest YAML file not found in root folder of service.")

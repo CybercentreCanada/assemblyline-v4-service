@@ -38,11 +38,9 @@ class RunService(ServerBase):
         self.done_fifo = None
 
     def try_run(self):
-        service_initialized = False
-
         try:
             self.service_class = load_module_by_path(SERVICE_PATH)
-        except:
+        except Exception:
             self.log.error("Could not find service in path.")
             raise
 
@@ -60,6 +58,10 @@ class RunService(ServerBase):
             os.mkfifo(DONE_FIFO_PATH)
         self.done_fifo = open(DONE_FIFO_PATH, "w")
 
+        # Reload the service again with the new config parameters (if any) received from service server
+        self.load_service_attributes(save=False)
+        self.service.start_service()
+
         while self.running:
             try:
                 read_ready, _, _ = select.select([self.task_fifo], [], [], 1)
@@ -68,12 +70,6 @@ class RunService(ServerBase):
             except ValueError:
                 self.log.info('Task fifo is closed. Cleaning up...')
                 return
-
-            if not service_initialized:
-                # Reload the service again with the new config parameters (if any) received from service server
-                self.load_service_attributes()
-                self.service.start_service()
-                service_initialized = True
 
             task_json_path = self.task_fifo.readline().strip()
             if not task_json_path:
@@ -109,7 +105,7 @@ class RunService(ServerBase):
 
         super().stop()
 
-    def load_service_attributes(self) -> None:
+    def load_service_attributes(self, save=True) -> None:
         service_manifest_data = helper.get_service_manifest()
 
         self.service_config = service_manifest_data.get('config', {})
@@ -126,8 +122,9 @@ class RunService(ServerBase):
             service_manifest_data['version'] = self.service.get_service_version()
 
         # Save a copy of the service manifest for the service client to use
-        with open(self.service_manifest_yml, 'w') as yml_fh:
-            yaml.safe_dump(service_manifest_data, yml_fh)
+        if save:
+            with open(self.service_manifest_yml, 'w') as yml_fh:
+                yaml.safe_dump(service_manifest_data, yml_fh)
 
 
 if __name__ == '__main__':
