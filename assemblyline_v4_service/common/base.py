@@ -56,10 +56,11 @@ class ServiceBase:
         raise NotImplementedError("execute() function not implemented")
 
     def get_service_version(self) -> str:
-        t = (version.FRAMEWORK_VERSION,
-             version.SYSTEM_VERSION,
-             self.service_attributes.version)
-        return '.'.join([str(v) for v in t])
+        fw_version = f"{version.FRAMEWORK_VERSION}.{version.SYSTEM_VERSION}."
+        if self.service_attributes.version.startswith(fw_version):
+            return self.service_attributes.version
+        else:
+            return f"{fw_version}{self.service_attributes.version}"
 
     def get_tool_version(self) -> Optional[str]:
         return None
