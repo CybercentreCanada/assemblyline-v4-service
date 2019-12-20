@@ -6,6 +6,7 @@ ARG version
 ENV PYTHONPATH /opt/al_service
 ENV SERVICE_API_HOST http://localhost:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
+ENV CONTAINER_MODE true
 
 # AWS S3 credentials
 ENV AWS_ACCESS_KEY_ID=AKIAIIESFCKMSXUP6KWQ
