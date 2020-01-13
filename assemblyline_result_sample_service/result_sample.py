@@ -36,11 +36,12 @@ class ResultSample(ServiceBase):
 
         # ==================================================================
         # Check if we're scanning an embedded file
-        #   This sample service always drop an embedded file that will generate random result
+        #   This service always drop two embedded file which one generates random results and the other empty results
         #   We're making a check to see if we're scanning the embedded file.
         #   In a normal service this is not something you would do at all but since we are using this
         #   service in our unit test to test all features of our report generator, we have to do this
-        if request.sha256 != 'd729ecfb2cf40bc4af8038dac609a57f57dbe6515d35357af973677d5e66417a':
+        if request.sha256 not in ['d729ecfb2cf40bc4af8038dac609a57f57dbe6515d35357af973677d5e66417a',
+                                  'cc1d2f838445db7aec431df9ee8a871f40e7aa5e064fc056633ef8c60fab7b06']:
             # Main file results...
 
             # ==================================================================
@@ -166,10 +167,17 @@ class ResultSample(ServiceBase):
             # Re-Submitting files to the system
             #     Adding extracted files will have them resubmitted to the system for analysis
 
+            # This file will generate random results on the next run
             fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
             with os.fdopen(fd, "wb") as myfile:
                 myfile.write(data.encode())
-            request.add_extracted(temp_path, "file.txt", "Extracted by some random magic!")
+            request.add_extracted(temp_path, "file.txt", "Extracted by some magic!")
+
+            # This file will generate empty results on the next run
+            fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
+            with os.fdopen(fd, "wb") as myfile:
+                myfile.write(b"EMPTY")
+            request.add_extracted(temp_path, "empty.txt", "Extracted empty resulting file")
 
             # ==================================================================
             # Supplementary files
@@ -189,11 +197,19 @@ class ResultSample(ServiceBase):
             # Wrap-up:
             #     Save your result object back into the request
             request.result = result
+
+        # ==================================================================
+        # Empty results file
+        elif request.sha256 == 'cc1d2f838445db7aec431df9ee8a871f40e7aa5e064fc056633ef8c60fab7b06':
+            # Creating and empty result object
+            request.result = Result()
+
+        # ==================================================================
+        # Randomized results file
         else:
-            # Embedded file results...
-            #   For the embedded file results we will completely randomize the results
-            #     The content of those results do not matter since we've already showed you
-            #     all the different result sections, tagging, heuristics and file upload functions
+            # For the randomized  results file, we will completely randomize the results
+            #   The content of those results do not matter since we've already showed you
+            #   all the different result sections, tagging, heuristics and file upload functions
             embedded_result = Result()
 
             # random number of sections
