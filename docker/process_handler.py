@@ -14,7 +14,7 @@ def check_processes(service_process, task_handler_process):
     # If both processes exited, then return the highest exit code
     if rs_rc is not None and th_rc is not None:
         log.info(f"run_service: exit({rs_rc}) | task_handler: exit({th_rc})")
-        exit(max(rs_rc, th_rc))
+        exit(th_rc or rs_rc)
 
     # Check and exit if task_handler process exited
     # No point continuing to run, since even if the service process finishes something,
@@ -27,7 +27,7 @@ def check_processes(service_process, task_handler_process):
     # If the service process has crashed tell the task handler something is wrong,
     # then wait for it to exit voluntarily
     if rs_rc is not None:
-        log.info(f"run_service: exit({rs_rc})")
+        log.error(f"The service has crashed with exit code: {rs_rc}. The container will be stopped...")
         task_handler_process.send_signal(signal.SIGUSR1)
 
 
