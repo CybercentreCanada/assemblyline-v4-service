@@ -22,7 +22,7 @@ RUN pip install \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   awscli \
-  assemblyline-client=4.0.0b4
+  assemblyline-client==4.0.0b4
 
 # Create directory for service
 RUN mkdir -p /opt/al_service
