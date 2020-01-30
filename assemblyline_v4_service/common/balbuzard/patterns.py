@@ -489,13 +489,13 @@ class PatternMatch(object):
 
         # 0.0.0.0 255.0.0.0e
         # > 255
-        if ip.startswith('0'): return False
-        for x in ip.split("."):
+        if ip.startswith(b'0'): return False
+        for x in ip.split(b'.'):
             if int(x) > 255:
                 return False
 
         # also reject IPs ending with .0 or .255
-        if ip.endswith('.0') or ip.endswith('.255'):
+        if ip.endswith(b'.0') or ip.endswith(b'.255'):
             return False
 
         # BOGON IP ADDRESS RANGES:
@@ -503,7 +503,7 @@ class PatternMatch(object):
 
         if bogon is not None:
             # extract 1st and 2nd decimal number from IP as int:
-            ip_bytes = ip.split('.')
+            ip_bytes = ip.split(b'.')
             byte1 = int(ip_bytes[0])
             byte2 = int(ip_bytes[1])
             # print 'ip=%s byte1=%d byte2=%d' % (ip, byte1, byte2)
@@ -511,27 +511,27 @@ class PatternMatch(object):
             # actually we might want to see the following bogon IPs if malware uses them
             # => this should be an option
             # 10.0.0.0 255.0.0.0
-            if ip.startswith('10.'): return False
+            if ip.startswith(b'10.'): return False
             # 100.64.0.0 255.192.0.0
-            if ip.startswith('100.') and (byte2&192 == 64): return False
+            if ip.startswith(b'100.') and (byte2&192 == 64): return False
             # 127.0.0.0 255.0.0.0
-            if ip.startswith('127.'): return False
+            if ip.startswith(b'127.'): return False
             # 169.254.0.0 255.255.0.0
-            if ip.startswith('169.254.'): return False
+            if ip.startswith(b'169.254.'): return False
             # 172.16.0.0 255.240.0.0
-            if ip.startswith('172.') and (byte2&240 == 16): return False
+            if ip.startswith(b'172.') and (byte2&240 == 16): return False
             # 192.0.0.0 255.255.255.0
-            if ip.startswith('192.0.0.'): return False
+            if ip.startswith(b'192.0.0.'): return False
             # 192.0.2.0 255.255.255.0
-            if ip.startswith('192.0.2.'): return False
+            if ip.startswith(b'192.0.2.'): return False
             # 192.168.0.0 255.255.0.0
-            if ip.startswith('192.168.'): return False
+            if ip.startswith(b'192.168.'): return False
             # 198.18.0.0 255.254.0.0
-            if ip.startswith('198.') and (byte2&254 == 18): return False
+            if ip.startswith(b'198.') and (byte2&254 == 18): return False
             # 198.51.100.0 255.255.255.0
-            if ip.startswith('198.51.100.'): return False
+            if ip.startswith(b'198.51.100.'): return False
             # 203.0.113.0 255.255.255.0
-            if ip.startswith('203.0.113.'): return False
+            if ip.startswith(b'203.0.113.'): return False
             # 224.0.0.0 240.0.0.0
             if byte1&240 == 224: return False
             # 240.0.0.0 240.0.0.0
