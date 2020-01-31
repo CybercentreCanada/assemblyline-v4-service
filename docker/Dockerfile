@@ -21,11 +21,8 @@ RUN pip install \
   assemblyline \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
-  awscli
-
-RUN wget -O /tmp/assemblyline-client.zip https://bitbucket.org/cse-assemblyline/assemblyline_client/get/alv4.zip
-RUN pip install /tmp/assemblyline-client.zip
-RUN rm -rf /tmp/assemblyline-client.zip
+  awscli \
+  assemblyline-client==4.0.0b4
 
 # Create directory for service
 RUN mkdir -p /opt/al_service
