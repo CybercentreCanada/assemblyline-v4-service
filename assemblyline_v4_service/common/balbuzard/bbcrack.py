@@ -136,9 +136,9 @@ class Transform_char (Transform_string):
         (the resulting string should have the same length as data)
         """
         # for optimal speed, we build a translation table:
-        self.trans_table = ''
+        self.trans_table = bytearray()
         for i in range(256):
-            self.trans_table += self.transform_char(chr(i))
+            self.trans_table.append(self.transform_int(i))
         return data.translate(self.trans_table)
 
     def transform_char (self, char):
@@ -342,10 +342,10 @@ class Transform_SUB_INC (Transform_string):
         # here params is an integer
         #TODO: use a list comprehension + join to get better performance
         # this loop is more readable, but likely to  be much slower
-        out = ''
+        out = bytearray()
         for i in range(len(data)):
             key = (self.params + i) & 0xFF
-            out += chr((ord(data[i]) - key) & 0xFF)
+            out.append((ord(data[i]) - key) & 0xFF)
         return out
 
     @staticmethod
@@ -388,12 +388,12 @@ class Transform_XOR_Chained (Transform_string):
         #      xor transforms using translate() only
         #TODO: use a list comprehension + join to get better performance
         # this loop is more readable, but likely to  be much slower
-        if len(data) == 0: return ''
+        if len(data) == 0: return b''
         xor_key = self.params
         # 1st char is just xored with key:
-        out = chr(ord(data[0]) ^ xor_key)
+        out = bytearray((ord(data[0]) ^ xor_key,))
         for i in range(1, len(data)):
-            out += chr(ord(data[i]) ^ xor_key ^ ord(data[i-1]))
+            out.append(ord(data[i]) ^ xor_key ^ ord(data[i-1]))
         return out
 
     @staticmethod
@@ -426,14 +426,14 @@ class Transform_XOR_RChained (Transform_string):
         #      xor transforms using translate() only
         #TODO: use a list comprehension + join to get better performance
         # this loop is more readable, but likely to  be much slower
-        if len(data) == 0: return ''
-        out = ''
+        if len(data) == 0: return b''
+        out = bytearray()
         xor_key = self.params
         # all chars except last one are xored with key and next char:
         for i in range(len(data)-1):
-            out += chr(ord(data[i]) ^ xor_key ^ ord(data[i+1]))
+            out.append(ord(data[i]) ^ xor_key ^ ord(data[i+1]))
         # last char is just xored with key:
-        out += chr(ord(data[len(data)-1]) ^ xor_key)
+        out.append(ord(data[len(data)-1]) ^ xor_key)
         return out
 
     @staticmethod
@@ -469,7 +469,7 @@ class Transform_XOR_RChainedAll (Transform_string):
         #      xor transforms using translate() only
         #TODO: use a list comprehension + join to get better performance
         # this loop is more readable, but likely to  be much slower
-        if len(data) == 0: return ''
+        if len(data) == 0: return b''
         xor_key = self.params
         # transform data string to list of integers:
         l = map(ord, data)
@@ -479,8 +479,9 @@ class Transform_XOR_RChainedAll (Transform_string):
         # last char is only xored with key:
         l[len(data)-1] = l[len(data)-1] ^ xor_key
         # convert back to list of chars:
-        l = map(chr, l)
-        out = ''.join(l)
+        #l = map(chr, l)
+        #out = ''.join(l)
+        out = bytearray(l)
         return out
 
     @staticmethod
