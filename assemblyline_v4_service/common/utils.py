@@ -26,6 +26,7 @@ class alarm_clock:
         self.alarm_default = signal.getsignal(signal.SIGALRM)
 
     def __enter__(self):
+        # noinspection PyUnusedLocal
         def handler(signum, frame):
             raise TimeoutException("Timeout")
 

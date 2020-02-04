@@ -10,7 +10,6 @@ from assemblyline.common.classification import Classification
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.error import Error
 from assemblyline_v4_service.common.result import Result
 
 
@@ -112,7 +111,8 @@ class Task:
 
         received_sha256 = get_sha256_for_file(file_path)
         if received_sha256 != self.sha256:
-            raise Exception(f"SHA256 mismatch between requested and downloaded file. {self.sha256} != {received_sha256}")
+            raise Exception(f"SHA256 mismatch between requested and "
+                            f"downloaded file. {self.sha256} != {received_sha256}")
 
         return file_path
 
@@ -143,7 +143,8 @@ class Task:
 
     def get_service_result(self) -> Dict[str, Any]:
         result = dict(
-            classification=self._classification.UNRESTRICTED,  # TODO: calculate aggregate classification based on files, result sections, and tags
+            # TODO: calculate aggregate classification based on files, result sections, and tags
+            classification=self._classification.UNRESTRICTED,
             response=dict(
                 milestones=dict(
                     service_started=self._service_started,

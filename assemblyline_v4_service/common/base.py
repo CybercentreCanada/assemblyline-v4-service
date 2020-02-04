@@ -43,10 +43,12 @@ class ServiceBase:
         self._task.clear_supplementary()
 
         if isinstance(exception, exceptions.RecoverableError):
-            self.log.info(f"Recoverable Service Error ({self._task.sid}/{self._task.sha256}) {exception}: {stack_info}")
+            self.log.info(f"Recoverable Service Error "
+                          f"({self._task.sid}/{self._task.sha256}) {exception}: {stack_info}")
             self._task.save_error(stack_info, recoverable=True)
         else:
-            self.log.error(f"Nonrecoverable Service Error ({self._task.sid}/{self._task.sha256}) {exception}: {stack_info}")
+            self.log.error(f"Nonrecoverable Service Error "
+                           f"({self._task.sid}/{self._task.sha256}) {exception}: {stack_info}")
             self._task.save_error(stack_info, recoverable=False)
 
     def _success(self) -> None:
@@ -62,6 +64,7 @@ class ServiceBase:
         else:
             return f"{fw_version}{self.service_attributes.version}"
 
+    # noinspection PyMethodMayBeStatic
     def get_tool_version(self) -> Optional[str]:
         return None
 

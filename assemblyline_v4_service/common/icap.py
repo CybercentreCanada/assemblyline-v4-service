@@ -49,7 +49,7 @@ class IcapClient(object):
                 if not response or not response.startswith(ICAP_OK):
                     raise Exception(f"Unexpected OPTIONS response: {response}")
                 return response
-            except:
+            except Exception:
                 if i == (self.MAX_RETRY-1):
                     raise
             finally:
@@ -57,7 +57,7 @@ class IcapClient(object):
                     try:
                         # try to close the connection anyways
                         s.close()
-                    except:
+                    except Exception:
                         pass
 
         raise Exception("Icap server refused to respond.")
@@ -122,7 +122,7 @@ class IcapClient(object):
                     response += temp_resp
 
                 return response
-            except:
+            except Exception:
                 if i == (self.MAX_RETRY-1):
                     raise
             finally:
@@ -130,7 +130,7 @@ class IcapClient(object):
                     try:
                         # try to close the connection anyways
                         s.close()
-                    except:
+                    except Exception:
                         pass
 
         raise Exception("Icap server refused to respond.")
