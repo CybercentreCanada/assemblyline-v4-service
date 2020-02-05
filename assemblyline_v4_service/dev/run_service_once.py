@@ -69,12 +69,11 @@ class RunService:
         LOG.info(f"Starting task with SID: {service_task.sid}")
 
         # Set the working directory to a directory with same parent as input file
-        working_dir = os.path.join(self.file_dir,
-                                   f'{os.path.splitext(os.path.basename(FILE_PATH))[0]}_{SERVICE_NAME.lower()}')
+        working_dir = os.path.join(self.file_dir, f'{os.path.basename(FILE_PATH)}_{SERVICE_NAME.lower()}')
         if os.path.isdir(working_dir):
             shutil.rmtree(working_dir)
         if not os.path.isdir(working_dir):
-            os.makedirs(working_dir)
+            os.makedirs(os.path.join(working_dir, 'working_directory'))
 
         # Move the file to be processed to the original directory created by the service base
         shutil.copyfile(FILE_PATH, os.path.join(tempfile.gettempdir(), service_task.fileinfo.sha256))
@@ -88,7 +87,7 @@ class RunService:
 
         files = os.listdir(source)
         for f in files:
-            shutil.move(os.path.join(source, f), working_dir)
+            shutil.move(os.path.join(source, f), os.path.join(working_dir, 'working_directory'))
 
         # Cleanup files from the original directory created by the service base
         shutil.rmtree(source)
@@ -132,6 +131,9 @@ class RunService:
                         LOG.debug(line)
             except Exception as e:
                 LOG.error(f"Invalid result created: {str(e)}")
+
+        LOG.info(f"Moving {result_json} to the working directory: {working_dir}/result.json")
+        shutil.move(result_json, os.path.join(working_dir, 'result.json'))
 
         LOG.info(f"Successfully completed task. Output directory: {working_dir}")
 
