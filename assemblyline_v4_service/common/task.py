@@ -50,6 +50,7 @@ class Task:
         self.sha256: str = task.fileinfo.sha256
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
+        self.tags = task.tags
         self.temp_submission_data: Dict[str, Any] = {}
         self.type: str = task.fileinfo.type
 
