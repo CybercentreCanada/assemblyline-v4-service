@@ -23,6 +23,11 @@ class Task:
         al_log.init_logging(f'{task.service_name.lower()}', log_level=logging.INFO)
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
+        tags = {}
+        for t in task.tags:
+            tags.setdefault(t.type, [])
+            tags[t.type].append(t.value)
+
         self._classification: Classification = forge.get_classification()
         self._service_completed: Optional[str] = None
         self._service_started: Optional[str] = None
@@ -50,7 +55,7 @@ class Task:
         self.sha256: str = task.fileinfo.sha256
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
-        self.tags = task.tags
+        self.tags = tags
         self.temp_submission_data: Dict[str, Any] = {}
         self.type: str = task.fileinfo.type
 
