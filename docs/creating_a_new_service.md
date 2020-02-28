@@ -163,6 +163,9 @@ RUN pip install \
     tnefparse \
     beautifulsoup4
 
+# clear pip cache
+RUN rm -rf ~/.cache/pip
+
 # Change to the assemblyline user
 USER assemblyline
 

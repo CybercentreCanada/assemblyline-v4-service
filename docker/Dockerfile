@@ -24,6 +24,9 @@ RUN pip install \
   awscli \
   assemblyline-client==4.0.0b4
 
+# clear pip cache
+RUN rm -rf ~/.cache/pip
+
 # Create directory for service
 RUN mkdir -p /opt/al_service
 RUN touch /opt/al_service/__init__.py
