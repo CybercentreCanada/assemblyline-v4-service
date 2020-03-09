@@ -13,7 +13,7 @@ RUN pip install --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   awscli \
-  assemblyline-client==4.0.0b4 \
+  assemblyline-client==4.0.0b5 \
   && rm -rf ~/.cache/pip
 
 # Remove files that existed before the pip install so that our copy command below doesn't take a snapshot of
