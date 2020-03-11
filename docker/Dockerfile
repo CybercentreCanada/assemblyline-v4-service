@@ -7,18 +7,28 @@ RUN apt-get update \
   && rm -rf /var/lib/apt/lists/*
 
 # install pip packages, ase assemblyline so they go into our .local with the ones already there
-RUN pip install  --prefix /tmp/pip_install --no-warn-script-location  \
+USER assemblyline
+RUN touch /tmp/before-pip
+RUN pip install --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   awscli \
   assemblyline-client==4.0.0b5 \
   && rm -rf ~/.cache/pip
 
+# Remove files that existed before the pip install so that our copy command below doesn't take a snapshot of
+# files that already exist in the base image
+RUN find /var/lib/assemblyline/.local -type f ! -newer /tmp/before-pip -delete
+
+# Switch back to root and change the ownership of the files to be copied due to bitbucket pipeline uid nonsense
+USER root
+RUN chown root:root -R /var/lib/assemblyline/.local
+
 # Restart a new image, this time the output one
 FROM cccs/assemblyline:latest
 
 # Get the updated local dir from builder
-COPY --chown=assemblyline:assemblyline --from=builder /tmp/pip_install /var/lib/assemblyline/.local
+COPY --chown=assemblyline:assemblyline --from=builder /var/lib/assemblyline/.local /var/lib/assemblyline/.local
 
 # Setup environment varibles
 ENV PYTHONPATH /opt/al_service
