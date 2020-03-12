@@ -166,7 +166,7 @@ class Pattern (object):
         self.nocase = nocase
         if nocase:
             # transform pat to lowercase
-            self.pat_lower = map(string.lower, self.pat)
+            self.pat_lower = (x.lower for x in self.pat)
         self.single = single
         self.weight = weight
         # for profiling:

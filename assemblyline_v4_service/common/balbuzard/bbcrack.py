@@ -818,7 +818,7 @@ def bbcrack(file_data, level=1):
                     regex = pattern.name
                     smatch = match
                     if regex == 'EXE_HEAD':
-                        if not 'This program cannot be run' in data:
+                        if b'This program cannot be run' not in data:
                             continue
                         score = 100000
                         results.append((transform.shortname, regex, index, score, data))
