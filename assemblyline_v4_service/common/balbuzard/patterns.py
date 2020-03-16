@@ -454,9 +454,9 @@ class PatternMatch(object):
                 if bytes(e, 'utf8') in value:
                     final_values.append(e)
         if len(final_values) > 0:
-            value_extract['file.api_string'] = set()
+            value_extract['file.string.api'] = set()
         for val in final_values:
-            value_extract['file.api_string'].add(val)
+            value_extract['file.string.api'].add(val)
         # -----------------------------------------------------------------------------
         # Powershell Strings
         # Powershell Cmdlets added to PEStudio's strings.xml list
@@ -627,6 +627,6 @@ class PatternMatch(object):
                 if k == "topapi" or k == "lib":
                     for e in i:
                         if len(e) > 6:
-                            bbcrack_patterns.append(Pattern('file.api_string', e, nocase=True, weight=1000))
+                            bbcrack_patterns.append(Pattern('file.string.api', e, nocase=True, weight=1000))
 
         return bbcrack_patterns
