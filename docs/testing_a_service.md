@@ -9,7 +9,7 @@ can be used to run a single task through the service for testing.
 1. Install required packages
 
     ```
-    sudo apt install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
+    sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
     ```
     
 2. Install Assemblyline v4 service package
