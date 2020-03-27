@@ -163,7 +163,7 @@ RUN apt-get update && apt-get install -y \
     p7zip-full \
     p7zip-rar && rm -rf /var/lib/apt/lists/*
     
-RUN pip install \
+RUN pip install --no-cache-dir \
     tnefparse \
     beautifulsoup4
 
@@ -194,7 +194,7 @@ can be used to run a single task through the service for testing.
 2. Install Assemblyline v4 service package
 
     ```
-    pip3 install --user assemblyline-v4-service
+    pip install --no-cache-dir --user assemblyline-v4-service
     ```
     
 3. Add your service development directory path (ie. `/home/ubuntu/alv4_services`) to the PYTHONPATH environment variable

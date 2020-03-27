@@ -159,7 +159,7 @@ RUN apt-get update && apt-get install -y \
     p7zip-full \
     p7zip-rar && rm -rf /var/lib/apt/lists/*
     
-RUN pip install \
+RUN pip install --no-cache-dir \
     tnefparse \
     beautifulsoup4
 

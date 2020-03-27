@@ -9,7 +9,7 @@ RUN apt-get update \
 # install pip packages, ase assemblyline so they go into our .local with the ones already there
 USER assemblyline
 RUN touch /tmp/before-pip
-RUN pip install --user \
+RUN pip install --no-cache-dir --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   awscli \
