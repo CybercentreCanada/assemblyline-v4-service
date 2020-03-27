@@ -37,6 +37,7 @@ setup(
     install_requires=[
         'assemblyline',
         'assemblyline-core',
+        'cart',
         'fuzzywuzzy',
         'python-Levenshtein',
     ],

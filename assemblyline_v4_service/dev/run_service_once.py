@@ -5,9 +5,10 @@ import os
 import pprint
 import shutil
 import tempfile
-from typing import Union, Dict
-
 import yaml
+
+from cart import unpack_stream
+from typing import Union, Dict
 
 from assemblyline.common import identify
 from assemblyline.common.importing import load_module_by_path
@@ -30,7 +31,7 @@ class RunService:
             self.service_class = load_module_by_path(SERVICE_PATH)
         except ValueError:
             raise
-        except:
+        except Exception:
             LOG.error("Could not find service in path. Check your environment variables.")
             raise
 
@@ -42,10 +43,32 @@ class RunService:
 
         self.file_dir = os.path.dirname(FILE_PATH)
 
-        # Create a task.json based on input file
-        file_info = identify.fileinfo(FILE_PATH)
+        # Get filename and working dir
         file_name = os.path.basename(FILE_PATH)
+        working_dir = os.path.join(self.file_dir, f'{os.path.basename(FILE_PATH)}_{SERVICE_NAME.lower()}')
 
+        # Start service
+        self.service.start_service()
+
+        # Identify the file
+        file_info = identify.fileinfo(FILE_PATH)
+        if file_info['type'] == "archive/cart":
+            # This is a CART file, uncart it and recreate the file info object
+            original_temp = os.path.join(tempfile.gettempdir(), file_info['sha256'])
+            with open(FILE_PATH, 'rb') as ifile, open(original_temp, 'wb') as ofile:
+                unpack_stream(ifile, ofile)
+
+            file_info = identify.fileinfo(original_temp)
+            target_file = os.path.join(tempfile.gettempdir(), file_info['sha256'])
+            shutil.move(original_temp, target_file)
+            LOG.info(f"File was a CaRT archive, it was un-CaRTed to {target_file} for processing")
+
+        else:
+            # It not a cart, move the file to the right place to be processed
+            target_file = os.path.join(tempfile.gettempdir(), file_info['sha256'])
+            shutil.copyfile(FILE_PATH, target_file)
+
+        # Create service processing task
         service_task = ServiceTask(dict(
             sid=get_random_id(),
             service_name=SERVICE_NAME,
@@ -64,19 +87,13 @@ class RunService:
             ttl=3600,
         ))
 
-        self.service.start_service()
-
         LOG.info(f"Starting task with SID: {service_task.sid}")
 
         # Set the working directory to a directory with same parent as input file
-        working_dir = os.path.join(self.file_dir, f'{os.path.basename(FILE_PATH)}_{SERVICE_NAME.lower()}')
         if os.path.isdir(working_dir):
             shutil.rmtree(working_dir)
         if not os.path.isdir(working_dir):
             os.makedirs(os.path.join(working_dir, 'working_directory'))
-
-        # Move the file to be processed to the original directory created by the service base
-        shutil.copyfile(FILE_PATH, os.path.join(tempfile.gettempdir(), service_task.fileinfo.sha256))
 
         self.service.handle_task(service_task)
 
@@ -131,6 +148,9 @@ class RunService:
                         LOG.debug(line)
             except Exception as e:
                 LOG.error(f"Invalid result created: {str(e)}")
+
+        LOG.info(f"Cleaning up file used for temporary processing: {target_file}")
+        os.unlink(target_file)
 
         LOG.info(f"Moving {result_json} to the working directory: {working_dir}/result.json")
         shutil.move(result_json, os.path.join(working_dir, 'result.json'))
