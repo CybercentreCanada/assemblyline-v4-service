@@ -154,7 +154,7 @@ FROM cccs/assemblyline-v4-service-base:latest
 
 ENV SERVICE_PATH result_sample.ResultSample
 
-RUN apt-get update && apt-get install -y \
+RUN apt update && apt install -y \
     libssl-dev \
     p7zip-full \
     p7zip-rar && rm -rf /var/lib/apt/lists/*
