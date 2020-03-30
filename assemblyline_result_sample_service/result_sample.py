@@ -63,7 +63,10 @@ class ResultSample(ServiceBase):
             text_section.add_lines([get_random_phrase() for _ in range(random.randint(1, 5))])
             # If the section needs to affect the score of the file you need to set a heuristics
             #   Here we will pick one at random
-            text_section.set_heuristic(random.randint(1, 4))
+            #     In addition to add a heuristic, we will associated a signature with the heuristic,
+            #     we're doing this by adding the signature name to the heuristic. (Here we generating a random name)
+            text_section.set_heuristic(random.randint(1, 4),
+                                       signature=get_random_phrase(1, 4).lower().replace(" ", "_"))
             # Make sure you add your section to the result
             result.add_section(text_section)
 
