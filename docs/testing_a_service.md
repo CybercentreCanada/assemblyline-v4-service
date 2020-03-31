@@ -1,6 +1,6 @@
 # Testing an Assemblyline service
 To test an Assemblyline service in standalone mode, the
-[run_service_once.py](https://bitbucket.org/cse-assemblyline/alv4_service/src/master/dev/run_service_once.py) script
+[run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script
 can be used to run a single task through the service for testing.
 
 ## Setting up dev environment
@@ -18,7 +18,7 @@ can be used to run a single task through the service for testing.
     pip install --no-cache-dir --user assemblyline-v4-service
     ```
     
-3. Add your service development directory path (ie. `/home/ubuntu/alv4_services`) to the PYTHONPATH environment variable
+3. Add your service development directory path (ie. `/home/ubuntu/assemblyline-v4-service`) to the PYTHONPATH environment variable
 
 ## Using the `run_service_once.py` script
 ### Steps

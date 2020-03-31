@@ -21,7 +21,7 @@ setup(
     description="Assemblyline (v4) automated malware analysis framework - v4 Service components.",
     long_description=long_description,
     long_description_content_type='text/markdown',
-    url="https://bitbucket.org/cse-assemblyline/alv4_service/",
+    url="https://github.com/CybercentreCanada/assemblyline-v4-service/",
     author="CCCS Assemblyline development team",
     author_email="assemblyline@cyber.gc.ca",
     license="MIT",
