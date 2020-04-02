@@ -115,7 +115,7 @@ stages:
     - script: |
         set -xv  # Echo commands before they are run
         export TAG=${BUILD_SOURCEBRANCH#"refs/tags/v"}
-        until sudo env "PATH=$PATH" python -m pip download "assemblyline==$TAG" --pre --no-deps &> /dev/null; do sleep 2; done
+        until sudo env "PATH=$PATH" python -m pip download "assemblyline-v4-service==$TAG" --pre --no-deps &> /dev/null; do sleep 2; done
         docker build --build-arg version=$TAG -t cccs/assemblyline-v4-service-base:$TAG -t cccs/assemblyline-v4-service-base:latest docker
         docker build --build-arg version=$TAG -f assemblyline_result_sample_service/Dockerfile -t cccs/assemblyline-service-resultsample:$TAG -t cccs/assemblyline-service-resultsample:latest .
         docker push cccs/assemblyline-v4-service-base
