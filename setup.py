@@ -12,15 +12,14 @@ elif 'BUILD_SOURCEBRANCH' in os.environ:
     package_version = os.environ['BUILD_SOURCEBRANCH'][len(full_tag_prefix):]
 
 # read the contents of your README file
-from os import path
-this_directory = path.abspath(path.dirname(__file__))
-with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+this_directory = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(this_directory, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
     name="assemblyline-v4-service",
     version=package_version,
-    description="Assemblyline (v4) automated malware analysis framework - v4 Service components.",
+    description="Assemblyline 4 - Service base",
     long_description=long_description,
     long_description_content_type='text/markdown',
     url="https://github.com/CybercentreCanada/assemblyline-v4-service/",
@@ -34,7 +33,7 @@ setup(
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.7',
     ],
-    keywords="assemblyline malware gc canada cse-cst cse cst cyber cccs",
+    keywords="assemblyline automated malware analysis gc canada cse-cst cse cst cyber cccs",
     packages=find_packages(exclude=['test/*', 'docker/*', 'assemblyline_result_sample_service/*']),
     install_requires=[
         'assemblyline',
