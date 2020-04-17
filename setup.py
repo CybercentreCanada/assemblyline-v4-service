@@ -32,6 +32,7 @@ setup(
         'Topic :: Software Development :: Libraries',
         'License :: OSI Approved :: MIT License',
         'Programming Language :: Python :: 3.7',
+        'Programming Language :: Python :: 3.8',
     ],
     keywords="assemblyline automated malware analysis gc canada cse-cst cse cst cyber cccs",
     packages=find_packages(exclude=['test/*', 'docker/*', 'assemblyline_result_sample_service/*']),

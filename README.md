@@ -1,30 +1,30 @@
-# ALv4 Service Base #
+# Assemblyline 4 - Service Base
 
-This is the repo for the service base used by v4 services in ALv4.
+This repository provides the base service functionality for Assemblyline 4 services.
 
-# Creating a new Assemblyline service
+## Creating a new Assemblyline service
 
-## Service file structure
+### Service file structure
+
 An Assemblyline service has the following file structure:
 ```text
-alsvc_<service name>
+assemblyline-service-<service name>
 │
 ├── Dockerfile
 ├── <service name>.py
 └── service_manifest.yml
 ```
-An overview of what each of these does:
 
-* `docker` ─ contains the Dockerfile and any other files needed to build a Docker image
-* `Dockerfile` ─ see *Dockerfile* section below for more details
+This is overview of what each of these does:
+
+* `Dockerfile` ─ Build file for the service container, see *Dockerfile* section below for more details
 * `<service name>.py` ─ Contains main service code
-* `service_manifest.yml` ─ see *Service manifest* section below for more details
+* `service_manifest.yml` ─ Service definition file, see *Service manifest* section below for more details
 
  
-## Service manifest
-Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential
-information about the service to the Assemblyline core system, information the Assemblyline core system must have before
-it can run the service. 
+### Service manifest
+
+Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service. 
 
 The diagram below shows all the elements that the manifest file can contain, including a brief description of each.
 
@@ -143,46 +143,46 @@ update_config:
     command: python3 -m assemblyline_core.updater.url_update
 ```
 
-## Dockerfile
-A Dockerfile is required to build a Docker image of the service.
+### Dockerfile
+
+A Dockerfile is required to build the service container that will be executed in the system.
 
 The following items must be set for all services:
 
 * All services must be based on the `cccs/assemblyline-v4-service-base:latest` image
 * An environment variable must be set for the service path
 * Install any service requirements
-* Copy the service code into `/opt/al/al_services/alsvc_resultsample`
+* Copy the service code into `/opt/al/al_service/`
 
 ```dockerfile
 FROM cccs/assemblyline-v4-service-base:latest
 
+# Set the service path
 ENV SERVICE_PATH result_sample.ResultSample
 
-RUN apt-get update && apt-get install -y \
-    libssl-dev \
-    p7zip-full \
-    p7zip-rar && rm -rf /var/lib/apt/lists/*
-    
-RUN pip install --no-cache-dir \
-    tnefparse \
-    beautifulsoup4
+# By default, the base service container as the assemblyline user as the running user
+#  switch to root to perform installation of dependancies
+USER root
 
-# clear pip cache
-RUN rm -rf ~/.cache/pip
+# See that we all these operations in one line to reduce 
+#  the number of container layers and size of the container
+RUN apt-get update && apt-get install -y my_debian_apt_dependency_package && rm -rf /var/lib/apt/lists/*
+RUN pip install --no-cache-dir --user my_pip_dependency && rm -rf ~/.cache/pip
 
-# Change to the assemblyline user
+# Change to the assemblyline user to make sure your service does not run as root
 USER assemblyline
 
+# Copy the service code in the service directory
 WORKDIR /opt/al_service
 COPY assemblyline_result_sample_service .
 ```
 
-# Testing an Assemblyline service
-To test an Assemblyline service in standalone mode, the
-[run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script
-can be used to run a single task through the service for testing.
+## Testing an Assemblyline service
 
-## Setting up dev environment
+To test an Assemblyline service in standalone mode, the [run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script can be used to run a single task through the service for testing. That script does not require that you have a working version of Assemblyline installed, all you need are the Assemblyline python libraries. 
+
+### Setting up dev environment
+
 **NOTE:** The following environment setup has only been tested on Ubuntu 18.04.
 
 1. Install required packages
@@ -199,34 +199,36 @@ can be used to run a single task through the service for testing.
     
 3. Add your service development directory path (ie. `/home/ubuntu/assemblyline-v4-service`) to the PYTHONPATH environment variable
 
-## Using the `run_service_once.py` script
-### Steps
+### Using the `run_service_once.py` script
+
+#### Steps
+
 1. Ensure the current working directory is the root of the service directory of the service to be run
 
-    ```
-    cd alsvc_<service name>
+   ```
+   cd assemblyline-service-<service name>
    ```
    
 2. From a terminal, run the `run_service_once` script, where `<service path>` is the path to the service module and `<file path>` is the path of the file to be processed
 
-    ```
+   ```
    python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
    
-3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the
-   input file is located 
+3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located 
    
-### Example of running the ResultSample service
+#### Example of running the ResultSample service
+
 1. Change working directory to root of the service:
 
-    ```
+   ```
    cd assemblyline_result_sample_service
    ```
    
 2. From a terminal, run the `run_service_once` script
 
-    ```
-    python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
+   ```
+   python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
    
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`
