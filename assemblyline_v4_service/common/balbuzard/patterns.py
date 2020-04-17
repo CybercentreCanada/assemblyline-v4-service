@@ -212,10 +212,10 @@ class PatternMatch(object):
                 rb'HKLM|hkey_performance_data|hkey_users|HKPD|internet settings|\\sam|\\software|\\system|' \
                 rb'\\userinit)' \
                 rb'\\[-_A-Z0-9.\\ ]{1,200}\b'
-    PAT_URL = b'(?i)(?:ftp|http|https)://' \
-              b'[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
-              b'(?::[0-9]{1,5})?' \
-              b'(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
+    PAT_URL = rb'(?i)(?:ftp|http|https)://' \
+              rb'[A-Z0-9.-]{1,}\.(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
+              rb'(?::[0-9]{1,5})?' \
+              rb'(?:/[A-Z0-9/\-\.&%\$#=~\?_]{3,200}){0,1}'
     PAT_ANYHTTP = rb'(?i)http://' \
                   rb'[A-Z0-9.-]{6,}\.' \
                   rb'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
@@ -247,8 +247,7 @@ class PatternMatch(object):
         # IP ADDRESSES
         # Pattern_re("IP addresses", r"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}", weight=10),
         # Here I use \b to make sure there is no other digit around and to speedup search
-        #print("ips")
-        final_values = ""
+        # print("ips")
         find_ip = re.findall(self.PAT_IP, value)
         if len(find_ip) > 0:
             longeststring = max(find_ip, key=len)
@@ -273,8 +272,7 @@ class PatternMatch(object):
                         value_extract.setdefault('network.static.ip', set()).add(val[0])
         # ------------------------------------------------------------------------------
         # URLs
-        #print("urls")
-        final_values = ""
+        # print("urls")
         find_url = re.findall(self.PAT_URL, value)
         if len(find_url) > 0:
             ret = False
@@ -306,8 +304,7 @@ class PatternMatch(object):
         # r'(?i)\b[A-Z0-9._%+-]+@(?:[A-Z0-9-]+\.)+(?:[A-Z]{2}|com|org|net|edu|gov|mil|int|biz|info|mobi|name|aero|asia|jobs|museum)\b',
         # changed to catch all current TLDs registered at IANA (in combination with filter function):
         # TLD = either only chars from 2 to 12, or 'XN--' followed by up to 18 chars and digits
-        #print("emails")
-        final_values = ""
+        # print("emails")
         find_email = re.findall(self.PAT_EMAIL, value)
         if len(find_email) > 0:
             longeststring = max(find_email, key=len)
@@ -333,8 +330,7 @@ class PatternMatch(object):
         # DOMAIN NAMES
         # Old: r'(?=^.{1,254}$)(^(?:(?!\d+\.|-)[a-zA-Z0-9_\-]{1,63}(?<!-)\.?)+(?:[a-zA-Z]{2,})$)'
         # Below is taken from email regex above
-        #print("domains")
-        final_values = ""
+        # print("domains")
         find_domain = re.findall(self.PAT_DOMAIN, value)
         if len(find_domain) > 0 and len(max(find_domain, key=len)) > 11:
             longeststring = max(find_domain, key=len)
@@ -364,8 +360,7 @@ class PatternMatch(object):
         # FILENAMES
         # Check length
         # Ends with extension of interest or contains strings of interest
-        #print("files")
-        final_values = ""
+        # print("files")
         filefind_pdb = re.findall(self.PAT_FILEPDB, value)
         if len(filefind_pdb) > 0:
             if len(max(filefind_pdb, key=len)) > 6:
@@ -416,8 +411,7 @@ class PatternMatch(object):
         # ------------------------------------------------------------------------------
         # REGISTRYKEYS
         # Looks for alpha numeric characters seperated by at least two sets of '\'s
-        #print("reg")
-        final_values = ""
+        # print("reg")
         regfind = re.findall(self.PAT_REGIS, value)
         if len(regfind) > 0 and len(max(regfind, key=len)) > 15:
             longeststring = max(regfind, key=len)
@@ -475,7 +469,7 @@ class PatternMatch(object):
 # --- Filters ----------------------------------------------------------------------------------------------------------
 
     @staticmethod
-    def ipv4_filter(value, index=0, pattern=None, bogon=None):
+    def ipv4_filter(value, bogon=None, **_):
         """
         IPv4 address filter:
         - check if string length is >7 (e.g. not just 4 digits and 3 dots)
@@ -483,13 +477,11 @@ class PatternMatch(object):
         return True if OK, False otherwise.
         """
         ip = value
-        # check if string length is >7 (e.g. not just 4 digits and 3 dots)
-        #if len(ip) < 8:
-            #return False
 
         # 0.0.0.0 255.0.0.0e
         # > 255
-        if ip.startswith(b'0'): return False
+        if ip.startswith(b'0'):
+            return False
         for x in ip.split(b'.'):
             if int(x) > 255:
                 return False
@@ -511,36 +503,49 @@ class PatternMatch(object):
             # actually we might want to see the following bogon IPs if malware uses them
             # => this should be an option
             # 10.0.0.0 255.0.0.0
-            if ip.startswith(b'10.'): return False
+            if ip.startswith(b'10.'):
+                return False
             # 100.64.0.0 255.192.0.0
-            if ip.startswith(b'100.') and (byte2&192 == 64): return False
+            if ip.startswith(b'100.') and (byte2 & 192 == 64):
+                return False
             # 127.0.0.0 255.0.0.0
-            if ip.startswith(b'127.'): return False
+            if ip.startswith(b'127.'):
+                return False
             # 169.254.0.0 255.255.0.0
-            if ip.startswith(b'169.254.'): return False
+            if ip.startswith(b'169.254.'):
+                return False
             # 172.16.0.0 255.240.0.0
-            if ip.startswith(b'172.') and (byte2&240 == 16): return False
+            if ip.startswith(b'172.') and (byte2 & 240 == 16):
+                return False
             # 192.0.0.0 255.255.255.0
-            if ip.startswith(b'192.0.0.'): return False
+            if ip.startswith(b'192.0.0.'):
+                return False
             # 192.0.2.0 255.255.255.0
-            if ip.startswith(b'192.0.2.'): return False
+            if ip.startswith(b'192.0.2.'):
+                return False
             # 192.168.0.0 255.255.0.0
-            if ip.startswith(b'192.168.'): return False
+            if ip.startswith(b'192.168.'):
+                return False
             # 198.18.0.0 255.254.0.0
-            if ip.startswith(b'198.') and (byte2&254 == 18): return False
+            if ip.startswith(b'198.') and (byte2 & 254 == 18):
+                return False
             # 198.51.100.0 255.255.255.0
-            if ip.startswith(b'198.51.100.'): return False
+            if ip.startswith(b'198.51.100.'):
+                return False
             # 203.0.113.0 255.255.255.0
-            if ip.startswith(b'203.0.113.'): return False
+            if ip.startswith(b'203.0.113.'):
+                return False
             # 224.0.0.0 240.0.0.0
-            if byte1&240 == 224: return False
+            if byte1 & 240 == 224:
+                return False
             # 240.0.0.0 240.0.0.0
-            if byte1&240 == 240: return False
+            if byte1 & 240 == 240:
+                return False
 
         # otherwise it's a valid IP adress
         return True
 
-    def email_filter(self, value, index=0, pattern=None):
+    def email_filter(self, value, **_):
         # check length, e.g. longer than xy@hp.fr
         # check case? e.g. either lower, upper, or capital (but CamelCase covers
         # almost everything... the only rejected case would be starting with lower
@@ -560,7 +565,7 @@ class PatternMatch(object):
 
         return True
 
-    def domain_filter(self, value, index=0, pattern=None):
+    def domain_filter(self, value, **_):
         # check length
         # check match again tlds set
         if len(value) < 10:
@@ -579,7 +584,7 @@ class PatternMatch(object):
         return True
 
     @staticmethod
-    def str_filter(value, index=0, pattern=None):
+    def str_filter(value, **_):
         """
         String filter: avoid false positives with random case. A typical string
         should be either:
@@ -594,11 +599,12 @@ class PatternMatch(object):
         """
         # case 1: all UPPERCASE
         # case 2: all lowercase except 1st character which can be uppercase (Capitalized)
-        if value.isupper() or value[1:].islower(): return True
-        #Note: we could also use istitle() if strings are not only alphabetical.
+        if value.isupper() or value[1:].islower():
+            return True
+        # Note: we could also use istitle() if strings are not only alphabetical.
 
     @staticmethod
-    def len_filter(value, index=0, pattern=None, bogon=None):
+    def len_filter(value, **_):
         if len(value) < 10:
             return False
         return True
