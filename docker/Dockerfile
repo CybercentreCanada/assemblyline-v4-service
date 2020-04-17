@@ -6,13 +6,12 @@ RUN apt-get update \
   && apt-get install -yy build-essential libfuzzy-dev \
   && rm -rf /var/lib/apt/lists/*
 
-# install pip packages, ase assemblyline so they go into our .local with the ones already there
+# install pip packages, as assemblyline so they go into our .local with the ones already there
 USER assemblyline
 RUN touch /tmp/before-pip
 RUN pip install --no-cache-dir --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
-  awscli \
   assemblyline-client==4.0.0b5 \
   && rm -rf ~/.cache/pip
 
@@ -35,11 +34,6 @@ ENV PYTHONPATH /opt/al_service
 ENV SERVICE_API_HOST http://localhost:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 ENV CONTAINER_MODE true
-
-# AWS S3 credentials
-ENV AWS_ACCESS_KEY_ID=AKIAIIESFCKMSXUP6KWQ
-ENV AWS_SECRET_ACCESS_KEY=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
-ENV AWS_REGION=us-east-1
 
 # Create directory for service
 USER root
