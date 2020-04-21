@@ -158,15 +158,20 @@ class Pattern (object):
         filt=None):
         self.name = name
         # self.pat should always be a list of strings:
-        if isinstance(pat, str):
-            self.pat = [pat]
-        else:
-            # else we assume it's a sequence:
-            self.pat = pat
+        self.pat = []
+        if not isinstance(pat, list):
+            pat = [pat]
+
+        for p in pat:
+            if isinstance(p, bytes):
+                self.pat.append(p)
+            else:
+                self.pat.append(p.encode())
+
         self.nocase = nocase
         if nocase:
             # transform pat to lowercase
-            self.pat_lower = (x.lower for x in self.pat)
+            self.pat_lower = (x.lower() for x in self.pat)
         self.single = single
         self.weight = weight
         # for profiling:
