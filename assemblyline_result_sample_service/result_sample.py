@@ -65,8 +65,13 @@ class ResultSample(ServiceBase):
             #   Here we will pick one at random
             #     In addition to add a heuristic, we will associated a signature with the heuristic,
             #     we're doing this by adding the signature name to the heuristic. (Here we generating a random name)
-            text_section.set_heuristic(random.randint(1, 4),
-                                       signature=get_random_phrase(1, 4).lower().replace(" ", "_"))
+            text_section.set_heuristic(3, signature=get_random_phrase(1, 4).lower().replace(" ", "_"))
+            # You can attach attack ids to heuristics after they where defined
+            text_section.heuristic.add_attack_id("T1066")
+            # Same thing of the signatures, they can be added to heuristic after the fact and you can even say how
+            #   many time the signature fired
+            text_section.heuristic.add_signature_id("sig_three", frequency=2)
+            text_section.heuristic.add_signature_id("sig_two", frequency=5)
             # Make sure you add your section to the result
             result.add_section(text_section)
 
@@ -107,7 +112,9 @@ class ResultSample(ServiceBase):
             urls = [{"url": f"https://{host1}/"}, {"url": f"https://{host2}/"}, {"url": f"https://{ip1}/"}]
             url_sub_section = ResultSection('Example of a url section with multiple links', body_format=BODY_FORMAT.URL,
                                             body=json.dumps(urls))
-            url_sub_section.set_heuristic(random.randint(1, 4))
+            url_sub_section.set_heuristic(4)
+            # A heuristic can fire more then once without being associated to a signature
+            url_sub_section.heuristic.increment_frequency(random.randint(1, 3))
             url_sub_section.add_tag("network.static.ip", ip1)
             url_sub_section.add_tag("network.static.domain", host1)
             url_sub_section.add_tag("network.dynamic.domain", host2)
