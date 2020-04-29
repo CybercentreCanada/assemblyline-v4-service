@@ -55,7 +55,8 @@ class Heuristic:
                  attack_id: Optional[str] = None,
                  signature: Optional[str] = None,
                  attack_ids: Optional[List[str]] = None,
-                 signatures: Optional[Dict[(str, None), int]] = None):
+                 signatures: Optional[Dict[(str, None), int]] = None,
+                 frequency: Optional[int] = 1):
         if heur_id not in HEUR_LIST:
             raise InvalidHeuristicException(f"Invalid heuristic. A heuristic with ID: {heur_id}, must be added to "
                                             f"the service manifest before using it.")
@@ -92,7 +93,7 @@ class Heuristic:
 
         # If there are no signatures, add an empty signature with frequency of one (signatures drives the score)
         if not signatures:
-            self.signatures.setdefault(None, 1)
+            self.signatures.setdefault(None, frequency)
 
         # For each signatures, check if they are in the score_map and compute the score based of their frequency
         for sig_name, freq in self.signatures.items():
