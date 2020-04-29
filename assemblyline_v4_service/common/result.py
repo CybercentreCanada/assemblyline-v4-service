@@ -92,7 +92,7 @@ class Heuristic:
             self.signatures[signature] += 1
 
         # If there are no signatures, add an empty signature with frequency of one (signatures drives the score)
-        if not signatures:
+        if not self.signatures:
             self.signatures.setdefault(None, frequency)
 
         # For each signatures, check if they are in the score_map and compute the score based of their frequency
