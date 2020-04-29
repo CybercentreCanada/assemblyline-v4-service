@@ -27,8 +27,16 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
 ])
 
 
+class InvalidHeuristicException(Exception):
+    pass
+
+
+class DoubleHeuristicException(Exception):
+    pass
+
+
 class Heuristic:
-    def __init__(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None):
+    def __init__(self, heur_id: int, attack_id: Optional[List[str]] = None, signature: Optional[List[str]] = None):
         self.heur_id = heur_id
         self.attack_id = attack_id
         self.signature = signature
@@ -61,7 +69,10 @@ class ResultSection:
         self.title_text = safe_str(title_text)
 
         if heuristic:
-            self.set_heuristic(heuristic.heur_id, attack_id=heuristic.attack_id, signature=heuristic.signature)
+            if not isinstance(heuristic, Heuristic):
+                log.warning(f"This is not a valid Heuristic object: {str(heuristic)}")
+            else:
+                self.set_heuristic(heuristic.heur_id, attack_id=heuristic.attack_id, signature=heuristic.signature)
 
         if parent is not None:
             if isinstance(parent, ResultSection):
@@ -145,37 +156,57 @@ class ResultSection:
         self.body = body
         self.body_format = body_format
 
-    def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
+    def set_heuristic(self, heur_id: int, attack_id: Optional[List[str]] = None,
+                      signature: Optional[List[str]] = None) -> None:
         """
         Set a heuristic for a result section/subsection.
         A heuristic is required to assign a score to a result section/subsection.
 
         :param heur_id: Heuristic ID as set in the service manifest
-        :param attack_id: (optional)
-        :param signature: (optional)
+        :param attack_id: (optional) Attack ID or List of attack IDs related to this heuristic
+        :param signature: (optional) Signature Name or list of signature name related to this heuristic
         """
+
         if self.heuristic:
-            log.warning(f"A heuristic (ID: {self.heuristic['heur_id']}) already exists for this section. "
-                        f"Setting a new heuristic (ID: {heur_id}) will replace the existing heuristic.")
-
-        heuristics = get_heuristics()
-
-        heuristic = heuristics.get(heur_id, None)
-        if heuristic:
-            # Validate attack_id
-            if attack_id and attack_id not in list(attack_map.keys()):
-                log.warning(f"Invalid attack_id for heuristic {heur_id}. Ignoring it.")
-                attack_id = None
-
-            self.heuristic = dict(
-                heur_id=heur_id,
-                attack_id=attack_id or heuristic.attack_id,
-                signature=signature,
-                score=heuristic.score,
-            )
+            if heur_id != self.heuristic['heur_id']:
+                raise DoubleHeuristicException(f"The service is trying to change the heuristic "
+                                               f"of a section that already has a heuristic in place: "
+                                               f"{self.heuristic['heur_id']} -> {heur_id}")
         else:
-            log.warning("Invalid heuristic. "
-                        f"A heuristic with ID: {heur_id}, must be added to the service manifest before using it.")
+            # No Heuristics setup yet, let's load it
+            heuristics = get_heuristics()
+
+            heuristic = heuristics.get(heur_id, None)
+            if heuristic:
+                # Validate attack_id
+
+                self.heuristic = dict(
+                    heur_id=heur_id,
+                    attack_ids=heuristic.attack_id or [],
+                    signatures=[],
+                    score=heuristic.score,
+                )
+            else:
+                raise InvalidHeuristicException(f"Invalid heuristic. A heuristic with ID: {heur_id}, must be added to "
+                                                f"the service manifest before using it.")
+
+        if attack_id:
+            # Make sure attack_ids is a list
+            if isinstance(attack_id, str):
+                attack_id = [attack_id]
+
+            for a_id in attack_id:
+                if a_id in list(attack_map.keys()):
+                    self.heuristic['attack_ids'].append(a_id)
+                else:
+                    log.warning(f"Invalid attack_id '{a_id}' for heuristic '{heur_id}'. Ignoring it.")
+
+        if signature:
+            # Make sure signature is a list
+            if isinstance(signature, str):
+                signature = [signature]
+
+            self.heuristic['signatures'].extend(signature)
 
 
 class Result:
