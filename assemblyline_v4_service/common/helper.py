@@ -35,8 +35,11 @@ def get_heuristics() -> Dict[Union[str, int], Heuristic]:
     heuristics = service_manifest_data.get('heuristics', None)
     if heuristics:
         for heuristic in heuristics:
-            if 'attack_id' in heuristic and isinstance(heuristic['attack_id'], str):
-                heuristic['attack_id'] = [heuristic['attack_id']]
+            # Fix attack ID legacy values and convert them to a list
+            attack_id = heuristic.pop('attack_id', None) or []
+            if isinstance(attack_id, str):
+                attack_id = [attack_id]
+            heuristic['attack_id'] = attack_id
 
             output[heuristic['heur_id']] = Heuristic(heuristic)
     return output
