@@ -68,10 +68,32 @@ class ResultSample(ServiceBase):
             text_section.set_heuristic(3, signature="sig_one")
             # You can attach attack ids to heuristics after they where defined
             text_section.heuristic.add_attack_id("T1066")
-            # Same thing of the signatures, they can be added to heuristic after the fact and you can even say how
-            #   many time the signature fired
-            text_section.heuristic.add_signature_id("sig_three", frequency=2)
-            text_section.heuristic.add_signature_id("sig_two", frequency=5)
+            # Same thing for the signatures, they can be added to heuristic after the fact and you can even say how
+            #   many time the signature fired by setting its frequency. If you call add_signature_id twice with the
+            #   same signature, this will effectively increase the frequency of the signature.
+            text_section.heuristic.add_signature_id("sig_two", score=20, frequency=2)
+            text_section.heuristic.add_signature_id("sig_two", score=20, frequency=3)
+            text_section.heuristic.add_signature_id("sig_three")
+            text_section.heuristic.add_signature_id("sig_three")
+            text_section.heuristic.add_signature_id("sig_four", score=0)
+            # The heuristic for text_section should have the following properties
+            #   1. 1 attack ID: T1066
+            #   2. 4 signatures: sig_one, sig_two, sig_three and sig_four
+            #   3. Signature frequencies are cumulative therefor they will be as follow:
+            #      - sig_one = 1
+            #      - sig_two = 5
+            #      - sig_three = 2
+            #      - sig_four = 1
+            #   4. The score used by each heuristic is driven by the following rules: signature_score_map is higher
+            #      priority, then score value for the add_signature_id is in second place and finally the default
+            #      heuristic score is use. Therefor the score used to calculate the total score for the text_section is
+            #      as follow:
+            #      - sig_one: 10    -> heuristic default score
+            #      - sig_two: 20    -> score provided by the function add_signature_id
+            #      - sig_three: 30  -> score provided by the heuristic map
+            #      - sig_four: 40   -> score provided by the heuristic map because it's higher priority than the
+            #                          function score
+            #    5. Total section score is then: 1x10 + 5x20 + 2x30 + 1x40 = 210
             # Make sure you add your section to the result
             result.add_section(text_section)
 

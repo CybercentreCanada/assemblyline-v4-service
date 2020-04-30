@@ -47,7 +47,8 @@ def get_heuristic_primitives(heur: Heuristic):
         score=heur.score,
         attack_ids=heur.attack_ids,
         signatures=heur.signatures,
-        frequency=heur.frequency
+        frequency=heur.frequency,
+        score_map=heur.live_score_map
     )
 
 
@@ -58,12 +59,16 @@ class Heuristic:
                  attack_ids: Optional[List[str]] = None,
                  signatures: Optional[Dict[(str, None), int]] = None,
                  frequency: Optional[int] = 1):
+        # Validate heuristic
         if heur_id not in HEUR_LIST:
             raise InvalidHeuristicException(f"Invalid heuristic. A heuristic with ID: {heur_id}, must be added to "
                                             f"the service manifest before using it.")
+
+        # Set default values
         self.definition = HEUR_LIST[heur_id]
         self.heur_id = heur_id
         self.attack_ids = []
+        self.live_score_map = {}
         self.score = 0
         self.frequency = 0
 
@@ -91,7 +96,7 @@ class Heuristic:
         # If a signature is provided, add it to the map and increment its frequency
         if signature:
             self.signatures.setdefault(signature, 0)
-            self.signatures[signature] += 1
+            self.signatures[signature] += frequency
 
         # If there are no signatures, add an empty signature with frequency of one (signatures drives the score)
         if not self.signatures:
@@ -100,10 +105,8 @@ class Heuristic:
 
         # For each signatures, check if they are in the score_map and compute the score based of their frequency
         for sig_name, freq in self.signatures.items():
-            if sig_name in self.definition.signature_score_map:
-                self.score += self.definition.signature_score_map[sig_name] * freq
-            else:
-                self.score += self.definition.score * freq
+            sig_score = self.definition.signature_score_map.get(sig_name, self.definition.score)
+            self.score += sig_score * freq
 
     def add_attack_id(self, attack_id: str):
         # Check if this is a valid attack ID
@@ -115,16 +118,24 @@ class Heuristic:
         if attack_id not in self.attack_ids:
             self.attack_ids.append(attack_id)
 
-    def add_signature_id(self, signature: str, frequency: int = 1):
+    def add_signature_id(self, signature: str, score: int = None, frequency: int = 1):
         # Add the signature to the map and adds it new frequency to the old value
         self.signatures.setdefault(signature, 0)
         self.signatures[signature] += frequency
 
-        # Compute the new score based of the signature that was just added
-        if signature in self.definition.signature_score_map:
-            self.score += self.definition.signature_score_map[signature] * frequency
-        else:
-            self.score += self.definition.score * frequency
+        # If a new score is assigned to the signature save it here
+        if score is not None:
+            self.live_score_map[signature] = score
+
+        # Find which score we should use for this signature (In order of importance)
+        #   1. Heuristic's signature score map
+        #   2. Live service submitted score map
+        #   3. Heuristic's default signature
+        sig_score = self.definition.signature_score_map.get(signature,
+                                                            self.live_score_map.get(signature,
+                                                                                    self.definition.score))
+
+        self.score += sig_score * frequency
 
     def increment_frequency(self, frequency: int = 1):
         # Increment the signature less frequency of the heuristic
