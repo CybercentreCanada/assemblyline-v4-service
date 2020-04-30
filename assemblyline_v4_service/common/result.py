@@ -46,7 +46,8 @@ def get_heuristic_primitives(heur: Heuristic):
         heur_id=heur.heur_id,
         score=heur.score,
         attack_ids=heur.attack_ids,
-        signatures=heur.signatures
+        signatures=heur.signatures,
+        frequency=heur.frequency
     )
 
 
@@ -64,6 +65,7 @@ class Heuristic:
         self.heur_id = heur_id
         self.attack_ids = []
         self.score = 0
+        self.frequency = 0
 
         # Default attack_id list is either empty or received attack_ids parameter
         attack_ids = attack_ids or []
@@ -93,7 +95,8 @@ class Heuristic:
 
         # If there are no signatures, add an empty signature with frequency of one (signatures drives the score)
         if not self.signatures:
-            self.signatures.setdefault(None, frequency)
+            self.frequency = frequency
+            self.score += self.definition.score * frequency
 
         # For each signatures, check if they are in the score_map and compute the score based of their frequency
         for sig_name, freq in self.signatures.items():
@@ -124,9 +127,8 @@ class Heuristic:
             self.score += self.definition.score * frequency
 
     def increment_frequency(self, frequency: int = 1):
-        # Increment the signature less frenquency of the heuristic
-        self.signatures.setdefault(None, 0)
-        self.signatures[None] += frequency
+        # Increment the signature less frequency of the heuristic
+        self.frequency += frequency
 
         # Compute the new score based of that new frequency
         self.score += self.definition.score * frequency
