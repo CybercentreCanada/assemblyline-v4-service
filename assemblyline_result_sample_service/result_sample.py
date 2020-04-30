@@ -6,7 +6,7 @@ import tempfile
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -110,11 +110,13 @@ class ResultSample(ServiceBase):
             host2 = get_random_host()
             ip1 = get_random_ip()
             urls = [{"url": f"https://{host1}/"}, {"url": f"https://{host2}/"}, {"url": f"https://{ip1}/"}]
-            url_sub_section = ResultSection('Example of a url section with multiple links', body_format=BODY_FORMAT.URL,
-                                            body=json.dumps(urls))
-            url_sub_section.set_heuristic(4)
+
             # A heuristic can fire more then once without being associated to a signature
-            url_sub_section.heuristic.increment_frequency(random.randint(1, 3))
+            url_heuristic = Heuristic(4, frequency=len(urls))
+
+            url_sub_section = ResultSection('Example of a url section with multiple links',
+                                            body=json.dumps(urls), body_format=BODY_FORMAT.URL,
+                                            heuristic=url_heuristic)
             url_sub_section.add_tag("network.static.ip", ip1)
             url_sub_section.add_tag("network.static.domain", host1)
             url_sub_section.add_tag("network.dynamic.domain", host2)
