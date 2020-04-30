@@ -109,7 +109,14 @@ class ResultSample(ServiceBase):
             host1 = get_random_host()
             host2 = get_random_host()
             ip1 = get_random_ip()
-            urls = [{"url": f"https://{host1}/"}, {"url": f"https://{host2}/"}, {"url": f"https://{ip1}/"}]
+            ip2 = get_random_ip()
+            ip3 = get_random_ip()
+            urls = [
+                {"url": f"https://{host1}/"},
+                {"url": f"https://{host2}/"},
+                {"url": f"https://{ip1}/"},
+                {"url": f"https://{ip2}/"},
+                {"url": f"https://{ip3}/"}]
 
             # A heuristic can fire more then once without being associated to a signature
             url_heuristic = Heuristic(4, frequency=len(urls))
@@ -118,6 +125,8 @@ class ResultSample(ServiceBase):
                                             body=json.dumps(urls), body_format=BODY_FORMAT.URL,
                                             heuristic=url_heuristic)
             url_sub_section.add_tag("network.static.ip", ip1)
+            url_sub_section.add_tag("network.static.ip", ip2)
+            url_sub_section.add_tag("network.static.ip", ip3)
             url_sub_section.add_tag("network.static.domain", host1)
             url_sub_section.add_tag("network.dynamic.domain", host2)
             # Since url_sub_section is a sub-section of url_section
