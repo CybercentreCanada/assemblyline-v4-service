@@ -11,12 +11,14 @@ from cart import unpack_stream
 from typing import Union, Dict
 
 from assemblyline.common import identify
+from assemblyline.common.heuristics import service_heuristic_to_result_heuristic, InvalidHeuristicException
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
+from assemblyline_v4_service.common.helper import get_heuristics
 
 
 class RunService:
@@ -123,16 +125,23 @@ class RunService:
                 for file in result['response']['extracted'] + result['response']['supplementary']:
                     file.pop('path', None)
 
-                heurs = self.load_service_manifest(return_heuristics=True)
-                if heurs:
-                    heuristics = {}
-                    for heuristic in heurs:
-                        heuristics[heuristic['heur_id']] = heuristic
+                # Load heuristics
+                heuristics = get_heuristics()
 
-                    for section in result['result']['sections']:
-                        if section['heuristic']:
-                            heur_id = section['heuristic']['heur_id']
-                            section['heuristic']['name'] = heuristics[heur_id]['name']
+                # Transform heuristics and calculate score
+                total_score = 0
+                for section in result['result']['sections']:
+                    if section['heuristic']:
+                        heur_id = section['heuristic']['heur_id']
+
+                        try:
+                            section['heuristic'] = service_heuristic_to_result_heuristic(section['heuristic'],
+                                                                                         heuristics)
+                            total_score += section['heuristic']['score']
+                        except InvalidHeuristicException:
+                            section['heuristic'] = None
+                        section['heuristic']['name'] = heuristics[heur_id]['name']
+                result['result']['score'] = total_score
 
                 # Add timestamps for creation, archive and expiry
                 result['created'] = now_as_iso()

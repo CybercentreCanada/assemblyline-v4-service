@@ -6,7 +6,7 @@ import tempfile
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -65,8 +65,35 @@ class ResultSample(ServiceBase):
             #   Here we will pick one at random
             #     In addition to add a heuristic, we will associated a signature with the heuristic,
             #     we're doing this by adding the signature name to the heuristic. (Here we generating a random name)
-            text_section.set_heuristic(random.randint(1, 4),
-                                       signature=get_random_phrase(1, 4).lower().replace(" ", "_"))
+            text_section.set_heuristic(3, signature="sig_one")
+            # You can attach attack ids to heuristics after they where defined
+            text_section.heuristic.add_attack_id("T1066")
+            # Same thing for the signatures, they can be added to heuristic after the fact and you can even say how
+            #   many time the signature fired by setting its frequency. If you call add_signature_id twice with the
+            #   same signature, this will effectively increase the frequency of the signature.
+            text_section.heuristic.add_signature_id("sig_two", score=20, frequency=2)
+            text_section.heuristic.add_signature_id("sig_two", score=20, frequency=3)
+            text_section.heuristic.add_signature_id("sig_three")
+            text_section.heuristic.add_signature_id("sig_three")
+            text_section.heuristic.add_signature_id("sig_four", score=0)
+            # The heuristic for text_section should have the following properties
+            #   1. 1 attack ID: T1066
+            #   2. 4 signatures: sig_one, sig_two, sig_three and sig_four
+            #   3. Signature frequencies are cumulative therefor they will be as follow:
+            #      - sig_one = 1
+            #      - sig_two = 5
+            #      - sig_three = 2
+            #      - sig_four = 1
+            #   4. The score used by each heuristic is driven by the following rules: signature_score_map is higher
+            #      priority, then score value for the add_signature_id is in second place and finally the default
+            #      heuristic score is use. Therefor the score used to calculate the total score for the text_section is
+            #      as follow:
+            #      - sig_one: 10    -> heuristic default score
+            #      - sig_two: 20    -> score provided by the function add_signature_id
+            #      - sig_three: 30  -> score provided by the heuristic map
+            #      - sig_four: 40   -> score provided by the heuristic map because it's higher priority than the
+            #                          function score
+            #    5. Total section score is then: 1x10 + 5x20 + 2x30 + 1x40 = 210
             # Make sure you add your section to the result
             result.add_section(text_section)
 
@@ -104,11 +131,24 @@ class ResultSample(ServiceBase):
             host1 = get_random_host()
             host2 = get_random_host()
             ip1 = get_random_ip()
-            urls = [{"url": f"https://{host1}/"}, {"url": f"https://{host2}/"}, {"url": f"https://{ip1}/"}]
-            url_sub_section = ResultSection('Example of a url section with multiple links', body_format=BODY_FORMAT.URL,
-                                            body=json.dumps(urls))
-            url_sub_section.set_heuristic(random.randint(1, 4))
+            ip2 = get_random_ip()
+            ip3 = get_random_ip()
+            urls = [
+                {"url": f"https://{host1}/"},
+                {"url": f"https://{host2}/"},
+                {"url": f"https://{ip1}/"},
+                {"url": f"https://{ip2}/"},
+                {"url": f"https://{ip3}/"}]
+
+            # A heuristic can fire more then once without being associated to a signature
+            url_heuristic = Heuristic(4, frequency=len(urls))
+
+            url_sub_section = ResultSection('Example of a url section with multiple links',
+                                            body=json.dumps(urls), body_format=BODY_FORMAT.URL,
+                                            heuristic=url_heuristic)
             url_sub_section.add_tag("network.static.ip", ip1)
+            url_sub_section.add_tag("network.static.ip", ip2)
+            url_sub_section.add_tag("network.static.ip", ip3)
             url_sub_section.add_tag("network.static.domain", host1)
             url_sub_section.add_tag("network.dynamic.domain", host2)
             # Since url_sub_section is a sub-section of url_section

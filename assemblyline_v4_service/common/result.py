@@ -27,11 +27,122 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
 ])
 
 
+class InvalidHeuristicException(Exception):
+    pass
+
+
+class ResultAggregationException(Exception):
+    pass
+
+
+HEUR_LIST = get_heuristics()
+
+
+def get_heuristic_primitives(heur: Heuristic):
+    if heur is None:
+        return None
+
+    return dict(
+        heur_id=heur.heur_id,
+        score=heur.score,
+        attack_ids=heur.attack_ids,
+        signatures=heur.signatures,
+        frequency=heur.frequency,
+        score_map=heur.live_score_map
+    )
+
+
 class Heuristic:
-    def __init__(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None):
+    def __init__(self, heur_id: int,
+                 attack_id: Optional[str] = None,
+                 signature: Optional[str] = None,
+                 attack_ids: Optional[List[str]] = None,
+                 signatures: Optional[Dict[(str, None), int]] = None,
+                 frequency: Optional[int] = 1):
+        # Validate heuristic
+        if heur_id not in HEUR_LIST:
+            raise InvalidHeuristicException(f"Invalid heuristic. A heuristic with ID: {heur_id}, must be added to "
+                                            f"the service manifest before using it.")
+
+        # Set default values
+        self.definition = HEUR_LIST[heur_id]
         self.heur_id = heur_id
-        self.attack_id = attack_id
-        self.signature = signature
+        self.attack_ids = []
+        self.live_score_map = {}
+        self.score = 0
+        self.frequency = 0
+
+        # Default attack_id list is either empty or received attack_ids parameter
+        attack_ids = attack_ids or []
+
+        # If an attack_id is specified, append it to attack id list
+        if attack_id:
+            attack_ids.append(attack_id)
+
+        # If no attack_id are set, check heuristic definition for a default attack id
+        if not attack_ids and self.definition.attack_id:
+            attack_ids.extend(self.definition.attack_id)
+
+        # Validate that all attack_ids are in the attack_map
+        for a_id in attack_ids:
+            if a_id in attack_map:
+                self.attack_ids.append(a_id)
+            else:
+                log.warning(f"Invalid attack_id '{a_id}' for heuristic '{heur_id}'. Ignoring it.")
+
+        # Signature map is either the provided value or an empty map
+        self.signatures = signatures or {}
+
+        # If a signature is provided, add it to the map and increment its frequency
+        if signature:
+            self.signatures.setdefault(signature, 0)
+            self.signatures[signature] += frequency
+
+        # If there are no signatures, add an empty signature with frequency of one (signatures drives the score)
+        if not self.signatures:
+            self.frequency = frequency
+            self.score += self.definition.score * frequency
+
+        # For each signatures, check if they are in the score_map and compute the score based of their frequency
+        for sig_name, freq in self.signatures.items():
+            sig_score = self.definition.signature_score_map.get(sig_name, self.definition.score)
+            self.score += sig_score * freq
+
+    def add_attack_id(self, attack_id: str):
+        # Check if this is a valid attack ID
+        if attack_id not in attack_map:
+            log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self.heur_id}'. Ignoring it.")
+            return
+
+        # if its a new attack id, add it to the list
+        if attack_id not in self.attack_ids:
+            self.attack_ids.append(attack_id)
+
+    def add_signature_id(self, signature: str, score: int = None, frequency: int = 1):
+        # Add the signature to the map and adds it new frequency to the old value
+        self.signatures.setdefault(signature, 0)
+        self.signatures[signature] += frequency
+
+        # If a new score is assigned to the signature save it here
+        if score is not None:
+            self.live_score_map[signature] = score
+
+        # Find which score we should use for this signature (In order of importance)
+        #   1. Heuristic's signature score map
+        #   2. Live service submitted score map
+        #   3. Heuristic's default signature
+        sig_score = self.definition.signature_score_map.get(signature,
+                                                            self.live_score_map.get(signature,
+                                                                                    self.definition.score))
+
+        self.score += sig_score * frequency
+
+    def increment_frequency(self, frequency: int = 1):
+        # Increment the signature less frequency of the heuristic
+        self.frequency += frequency
+
+        # Compute the new score based of that new frequency
+        self.score += self.definition.score * frequency
 
 
 class ResultSection:
@@ -61,7 +172,10 @@ class ResultSection:
         self.title_text = safe_str(title_text)
 
         if heuristic:
-            self.set_heuristic(heuristic.heur_id, attack_id=heuristic.attack_id, signature=heuristic.signature)
+            if not isinstance(heuristic, Heuristic):
+                log.warning(f"This is not a valid Heuristic object: {str(heuristic)}")
+            else:
+                self.heuristic = heuristic
 
         if parent is not None:
             if isinstance(parent, ResultSection):
@@ -117,7 +231,7 @@ class ResultSection:
 
     def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
-            raise Exception("Double finalize() on result detected.")
+            raise ResultAggregationException("Double finalize() on result detected.")
         self._finalized = True
 
         keep_me = True
@@ -151,31 +265,15 @@ class ResultSection:
         A heuristic is required to assign a score to a result section/subsection.
 
         :param heur_id: Heuristic ID as set in the service manifest
-        :param attack_id: (optional)
-        :param signature: (optional)
+        :param attack_id: (optional) Attack ID related to the heuristic
+        :param signature: (optional) Signature Name that triggered the heuristic
         """
+
         if self.heuristic:
-            log.warning(f"A heuristic (ID: {self.heuristic['heur_id']}) already exists for this section. "
-                        f"Setting a new heuristic (ID: {heur_id}) will replace the existing heuristic.")
+            raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
+                                            f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
 
-        heuristics = get_heuristics()
-
-        heuristic = heuristics.get(heur_id, None)
-        if heuristic:
-            # Validate attack_id
-            if attack_id and attack_id not in list(attack_map.keys()):
-                log.warning(f"Invalid attack_id for heuristic {heur_id}. Ignoring it.")
-                attack_id = None
-
-            self.heuristic = dict(
-                heur_id=heur_id,
-                attack_id=attack_id or heuristic.attack_id,
-                signature=signature,
-                score=heuristic.score,
-            )
-        else:
-            log.warning("Invalid heuristic. "
-                        f"A heuristic with ID: {heur_id}, must be added to the service manifest before using it.")
+        self.heuristic = Heuristic(heur_id, attack_id=attack_id, signature=signature)
 
 
 class Result:
@@ -190,7 +288,7 @@ class Result:
             classification=section.classification,
             body_format=section.body_format,
             depth=section.depth,
-            heuristic=section.heuristic,
+            heuristic=get_heuristic_primitives(section.heuristic),
             tags=unflatten(section.tags),
             title_text=section.title_text,
         ))
@@ -236,8 +334,9 @@ class Result:
             self._flatten_sections(section)
 
         for section in self._flattened_sections:
-            if section.get('heuristic') and section['heuristic'].get('heur_id'):
-                self._score += section['heuristic']['score']
+            heuristic = section.get('heuristic')
+            if heuristic:
+                self._score += heuristic['score']
 
         result = dict(
             score=self._score,

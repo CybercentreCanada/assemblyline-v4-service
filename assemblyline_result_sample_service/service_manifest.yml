@@ -69,7 +69,9 @@ heuristics:
     filetype: "*"
     heur_id: 1
     name: Masks has PDF
-    score: 100
+    score: 10
+    # Even if a signature fires multiple time, this is the max score for a section
+    max_score: 1000
   - description: This malicious heuristic fakes dropping and side-loading a DLL and has an Att&ck ID associated with it
     filetype: "*"
     heur_id: 2
@@ -81,12 +83,16 @@ heuristics:
     heur_id: 3
     name: Extraction config information
     score: 10
+    # if a signature is associated to this heuristic and is present in that map it gets a different score
+    signature_score_map:
+      sig_three: 30
+      sig_four: 40
   - description: This suspicious heuristic fakes decoding a configuration block and has an Att&ck ID associated with it
     filetype: "*"
     heur_id: 4
     name: Config decoding
     score: 100
-    attack_id: T1027
+    attack_id: [T1027, T1127]
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created

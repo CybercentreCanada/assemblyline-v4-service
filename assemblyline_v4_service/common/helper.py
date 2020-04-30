@@ -31,10 +31,18 @@ def get_classification() -> Classification:
 
 def get_heuristics() -> Dict[Union[str, int], Heuristic]:
     service_manifest_data = get_service_manifest()
+    output = {}
     heuristics = service_manifest_data.get('heuristics', None)
     if heuristics:
-        heuristics = {heuristic['heur_id']: Heuristic(heuristic) for heuristic in heuristics}
-    return heuristics
+        for heuristic in heuristics:
+            # Fix attack ID legacy values and convert them to a list
+            attack_id = heuristic.pop('attack_id', None) or []
+            if isinstance(attack_id, str):
+                attack_id = [attack_id]
+            heuristic['attack_id'] = attack_id
+
+            output[heuristic['heur_id']] = Heuristic(heuristic)
+    return output
 
 
 def get_service_attributes() -> Service:
