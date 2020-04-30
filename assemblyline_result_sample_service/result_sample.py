@@ -65,7 +65,7 @@ class ResultSample(ServiceBase):
             #   Here we will pick one at random
             #     In addition to add a heuristic, we will associated a signature with the heuristic,
             #     we're doing this by adding the signature name to the heuristic. (Here we generating a random name)
-            text_section.set_heuristic(3, signature=get_random_phrase(1, 4).lower().replace(" ", "_"))
+            text_section.set_heuristic(3, signature="sig_one")
             # You can attach attack ids to heuristics after they where defined
             text_section.heuristic.add_attack_id("T1066")
             # Same thing of the signatures, they can be added to heuristic after the fact and you can even say how
