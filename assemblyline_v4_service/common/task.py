@@ -148,9 +148,22 @@ class Task:
         return error
 
     def get_service_result(self) -> Dict[str, Any]:
+        # Default result classification
+        classification = self._classification.UNRESTRICTED
+
+        # Finalise results
+        result_obj = self.result.finalize()
+
+        # Loop through results to aggregate classification
+        for section in result_obj['sections']:
+            classification = self._classification.max_classification(classification, section['classification'])
+
+        # Loop through extracted files to aggregate classification
+        for ext_file in self.extracted:
+            classification = self._classification.max_classification(classification, ext_file['classification'])
+
         result = dict(
-            # TODO: calculate aggregate classification based on files, result sections, and tags
-            classification=self._classification.UNRESTRICTED,
+            classification=classification,
             response=dict(
                 milestones=dict(
                     service_started=self._service_started,
@@ -164,7 +177,7 @@ class Task:
                 service_context=self.service_context,
                 service_debug_info=self.service_debug_info,
             ),
-            result=self.result.finalize(),
+            result=result_obj,
             sha256=self.sha256,
             drop_file=self.drop_file,
             temp_submission_data=self.temp_submission_data,
