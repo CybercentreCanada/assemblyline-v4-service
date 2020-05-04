@@ -3,6 +3,7 @@ import os
 import random
 import tempfile
 
+from assemblyline.common import forge
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
@@ -12,6 +13,8 @@ from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FO
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
 # DO NOT LIST BODY FORMATS LIKE THIS. This is again for the data randomizer.
 FORMAT_LIST = [BODY_FORMAT.TEXT, BODY_FORMAT.MEMORY_DUMP]
+
+cl_engine = forge.get_classification()
 
 
 class ResultSample(ServiceBase):
@@ -110,8 +113,9 @@ class ResultSample(ServiceBase):
                     'values': [random.random() * cmap_max for _ in range(50)]
                 }
             }
+            # The classification of a section can be set to any valid classification for your system
             section_color_map = ResultSection("Example of colormap result section", body_format=BODY_FORMAT.GRAPH_DATA,
-                                              body=json.dumps(color_map_data))
+                                              body=json.dumps(color_map_data), classification=cl_engine.RESTRICTED)
             result.add_section(section_color_map)
 
             # ==================================================================
@@ -214,7 +218,8 @@ class ResultSample(ServiceBase):
             fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
             with os.fdopen(fd, "wb") as myfile:
                 myfile.write(data.encode())
-            request.add_extracted(temp_path, "file.txt", "Extracted by some magic!")
+            request.add_extracted(temp_path, "file.txt", "Extracted by some magic!",
+                                  classification=cl_engine.RESTRICTED)
 
             # This file will generate empty results on the next run
             fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
