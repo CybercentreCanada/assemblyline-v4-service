@@ -40,6 +40,7 @@ class Task:
         self.extracted: List[Dict[str, str]] = []
         self.file_name = task.filename
         self.file_type = task.fileinfo.type
+        self.min_classification = task.fileinfo.classification.value
         self.max_extracted = task.max_files
         self.md5: str = task.fileinfo.md5
         self.mime: str = task.fileinfo.mime or None
@@ -75,7 +76,7 @@ class Task:
             name=name,
             sha256=get_sha256_for_file(path),
             description=description,
-            classification=classification,
+            classification=self._classification.max_classification(self.min_classification, classification),
             path=path,
         )
 
@@ -149,7 +150,8 @@ class Task:
 
     def get_service_result(self) -> Dict[str, Any]:
         # Default result classification
-        classification = self._classification.UNRESTRICTED
+        classification = self._classification.max_classification(self.min_classification,
+                                                                 self.service_default_result_classification)
 
         # Finalise results
         result_obj = self.result.finalize()
