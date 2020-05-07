@@ -39,11 +39,12 @@ class ResultSample(ServiceBase):
 
         # ==================================================================
         # Check if we're scanning an embedded file
-        #   This service always drop two embedded file which one generates random results and the other empty results
+        #   This service always drop 3 embedded file which two generates random results and the other empty results
         #   We're making a check to see if we're scanning the embedded file.
         #   In a normal service this is not something you would do at all but since we are using this
         #   service in our unit test to test all features of our report generator, we have to do this
         if request.sha256 not in ['d729ecfb2cf40bc4af8038dac609a57f57dbe6515d35357af973677d5e66417a',
+                                  '5ce5ae8ef56a54af2c44415800a81ecffd49a33ae8895dfe38fc1075d3f619ec',
                                   'cc1d2f838445db7aec431df9ee8a871f40e7aa5e064fc056633ef8c60fab7b06']:
             # Main file results...
 
@@ -218,7 +219,13 @@ class ResultSample(ServiceBase):
             fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
             with os.fdopen(fd, "wb") as myfile:
                 myfile.write(data.encode())
-            request.add_extracted(temp_path, "file.txt", "Extracted by some magic!",
+            request.add_extracted(temp_path, "file.txt", "Extracted by some magic!")
+
+            # Embedded files can also have their own classification!
+            fd, temp_path = tempfile.mkstemp(dir=self.working_directory)
+            with os.fdopen(fd, "wb") as myfile:
+                myfile.write(b"CLASSIFIED!!!__"+data.encode())
+            request.add_extracted(temp_path, "classified.doc", "Classified file ... don't look",
                                   classification=cl_engine.RESTRICTED)
 
             # This file will generate empty results on the next run
