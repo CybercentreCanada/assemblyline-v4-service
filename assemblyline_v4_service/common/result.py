@@ -126,7 +126,7 @@ class Heuristic:
 
         # Checking score boundaries
         if self.definition.max_score:
-            temp_score = min(self.score, self.definition.max_score)
+            temp_score = min(temp_score, self.definition.max_score)
 
         return temp_score
 
