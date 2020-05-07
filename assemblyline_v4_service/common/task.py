@@ -40,7 +40,7 @@ class Task:
         self.extracted: List[Dict[str, str]] = []
         self.file_name = task.filename
         self.file_type = task.fileinfo.type
-        self.min_classification = task.fileinfo.classification.value
+        self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.md5: str = task.fileinfo.md5
         self.mime: str = task.fileinfo.mime or None
