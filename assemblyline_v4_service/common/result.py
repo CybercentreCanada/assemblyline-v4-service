@@ -246,6 +246,9 @@ class ResultSection:
             log.error(f"Failed to finalize section, title is empty...")
             return False
 
+        if not self.body and self.body is not None:
+            self.body = None
+
         self._finalized = True
 
         keep_me = True
