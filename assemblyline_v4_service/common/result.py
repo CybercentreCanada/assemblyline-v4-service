@@ -179,8 +179,6 @@ class ResultSection:
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
         self.title_text = safe_str(title_text)
-        if not self.title_text:
-            raise ValueError("Title text cannot be empty")
 
         if heuristic:
             if not isinstance(heuristic, Heuristic):
