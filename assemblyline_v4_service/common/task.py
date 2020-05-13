@@ -87,6 +87,15 @@ class Task:
         if self.max_extracted and len(self.extracted) >= int(self.max_extracted):
             raise MaxExtractedExceeded
 
+        if not path:
+            raise ValueError("Path cannot be empty")
+
+        if not name:
+            raise ValueError("Name cannot be empty")
+
+        if not description:
+            raise ValueError("Description cannot be empty")
+
         file = self._add_file(path, name, description, classification)
 
         if not file:
@@ -97,6 +106,15 @@ class Task:
 
     def add_supplementary(self, path: str, name: str, description: str,
                           classification: Optional[Classification] = None) -> bool:
+        if not path:
+            raise ValueError("Path cannot be empty")
+
+        if not name:
+            raise ValueError("Name cannot be empty")
+
+        if not description:
+            raise ValueError("Description cannot be empty")
+
         file = self._add_file(path, name, description, classification)
 
         if not file:
