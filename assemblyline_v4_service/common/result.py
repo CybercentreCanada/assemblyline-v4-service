@@ -179,6 +179,8 @@ class ResultSection:
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
         self.title_text = safe_str(title_text)
+        if not self.title_text:
+            raise ValueError("Title text cannot be empty")
 
         if heuristic:
             if not isinstance(heuristic, Heuristic):
@@ -241,6 +243,11 @@ class ResultSection:
     def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
             raise ResultAggregationException("Double finalize() on result detected.")
+
+        if not self.title_text:
+            log.error(f"Failed to finalize section, title is empty...")
+            return False
+
         self._finalized = True
 
         keep_me = True
