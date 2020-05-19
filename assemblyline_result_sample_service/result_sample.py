@@ -212,6 +212,50 @@ class ResultSample(ServiceBase):
             result.add_section(json_section)
 
             # ==================================================================
+            # NESTED_CARDS section:
+            #     This section allows the service writer to list a bunch of dictionary objects that have nested lists of dictionaries
+            #     to be displayed in the UI
+            #     The body argument must be a list of dictionaries that have nested lists of dictionaries within them.
+            nc_body = [
+                {
+                    'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                    'children': [
+                        {
+                            'process_name': '(1234) installutil.exe',
+                            'command_line': '\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\installutil.exe /logtoconsole=false /logfile= /u \"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
+                            'children': [
+                                {
+                                    'process_name': '(1234) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
+                                    'children': []
+                                },
+                                {
+                                    'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
+                                    'children': []
+                                }
+                            ]
+                        },
+                        {
+                            'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                            'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
+                            'children': []
+                        }
+                    ]
+                },
+                {
+                    'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
+                    'children': []
+                }
+            ]
+            nc_section = ResultSection('Example of a NESTED_CARDS section',
+                                       body_format=BODY_FORMAT.NESTED_CARDS,
+                                       body=nc_body)
+            result.add_section(nc_section)
+
+            # ==================================================================
             # Re-Submitting files to the system
             #     Adding extracted files will have them resubmitted to the system for analysis
 
