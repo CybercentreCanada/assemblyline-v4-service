@@ -214,45 +214,50 @@ class ResultSample(ServiceBase):
             # ==================================================================
             # NESTED_CARDS section:
             #     This section allows the service writer to list a bunch of dictionary objects that have nested lists of dictionaries
-            #     to be displayed in the UI
-            #     The body argument must be a list of dictionaries that have nested lists of dictionaries within them.
+            #     to be displayed in the UI. Each dictionary object represents a process, and therefore each dictionary
+            #     must have be of the following format:
+            #     {
+            #       "process_name": str,
+            #       "command_line": str,
+            #       "children": [] NB: This list either is empty or contains more dictionaries that have the same structure
+            #     }
             nc_body = [
                 {
-                    'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                    'children': [
+                    "process_name": "(123) evil.exe",
+                    "command_line": "C:\\evil.exe",
+                    "children": [
                         {
-                            'process_name': '(1234) installutil.exe',
-                            'command_line': '\"C:\\\\Windows\\\\Microsoft.NET\\\\Framework\\\\v4.0.30319\\\\installutil.exe /logtoconsole=false /logfile= /u \"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
-                            'children': [
+                            "process_name": "(321) takeovercomputer.exe",
+                            "command_line": "C:\\Temp\\takeovercomputer.exe -f do_bad_stuff",
+                            "children": [
                                 {
-                                    'process_name': '(1234) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
-                                    'children': []
+                                    "process_name": "(456) evenworsethanbefore.exe",
+                                    "command_line": "C:\\Temp\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad",
+                                    "children": []
                                 },
                                 {
-                                    'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
-                                    'children': []
+                                    "process_name": "(234) badfile.exe",
+                                    "command_line": "C:\\badfile.exe -k nothing_to_see_here",
+                                    "children": []
                                 }
                             ]
                         },
                         {
-                            'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                            'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe\"\\',
-                            'children': []
+                            "process_name": "(345) benignexe.exe",
+                            "command_line": "C:\\benignexe.exe -f \"just kidding, i'm evil\"",
+                            "children": []
                         }
                     ]
                 },
                 {
-                    'process_name': '(123) 3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                    'command_line': '\"C:\\\\Users\\\\buddy\\\\AppData\\\\Local\\\\Temp\\\\3aecdd0453bf5ab10c6406193026eef8be49114135101dfc92d7d4e9aaec609d.exe',
-                    'children': []
+                    "process_name": "(987) runzeroday.exe",
+                    "command_line": "C:\\runzeroday.exe -f insert_bad_spelling",
+                    "children": []
                 }
             ]
             nc_section = ResultSection('Example of a NESTED_CARDS section',
                                        body_format=BODY_FORMAT.NESTED_CARDS,
-                                       body=nc_body)
+                                       body=json.dumps(nc_body))
             result.add_section(nc_section)
 
             # ==================================================================
