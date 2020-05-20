@@ -212,7 +212,7 @@ class ResultSample(ServiceBase):
             result.add_section(json_section)
 
             # ==================================================================
-            # NESTED_CARDS section:
+            # PROCESS_TREE section:
             #     This section allows the service writer to list a bunch of dictionary objects that have nested lists
             #     of dictionaries to be displayed in the UI. Each dictionary object represents a process, and therefore
             #     each dictionary must have be of the following format:
@@ -263,8 +263,8 @@ class ResultSample(ServiceBase):
                     "children": []
                 }
             ]
-            nc_section = ResultSection('Example of a NESTED_CARDS section',
-                                       body_format=BODY_FORMAT.NESTED_CARDS,
+            nc_section = ResultSection('Example of a PROCESS_TREE section',
+                                       body_format=BODY_FORMAT.PROCESS_TREE,
                                        body=json.dumps(nc_body))
             result.add_section(nc_section)
             
