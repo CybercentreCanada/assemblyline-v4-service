@@ -298,7 +298,7 @@ class ResultSample(ServiceBase):
                     "nested_table": {
                         "a_str": "Some string3",
                         "a_bool": False,
-                        "an_int": {
+                        "nested_table_thats_too_deep": {
                             "a_str": "Some string3",
                             "a_bool": False,
                             "an_int": 103,
