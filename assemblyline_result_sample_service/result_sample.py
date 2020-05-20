@@ -271,8 +271,9 @@ class ResultSample(ServiceBase):
             # ==================================================================
             # TABLE section:
             #     This section allows the service writer to have their content displayed in a table format in the UI
-            #     The body argument must be a list [] of dict {} objects. A dict object can have a key value pair where the
-            #     value is a flat nested dictionary, and this nested dictionary will be displayed as a nested table within a cell.
+            #     The body argument must be a list [] of dict {} objects. A dict object can have a key value pair
+            #     where the value is a flat nested dictionary, and this nested dictionary will be displayed as a nested
+            #     table within a cell.
             table_body = [
                 {
                     "a_str": "Some string1",
@@ -307,8 +308,8 @@ class ResultSample(ServiceBase):
                 },
             ]
             table_section = ResultSection('Example of a TABLE section',
-                                       body_format=BODY_FORMAT.TABLE,
-                                       body=json.dumps(table_body))
+                                          body_format=BODY_FORMAT.TABLE,
+                                          body=json.dumps(table_body))
             result.add_section(table_section)
 
             # ==================================================================
