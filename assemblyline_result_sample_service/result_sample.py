@@ -212,6 +212,63 @@ class ResultSample(ServiceBase):
             result.add_section(json_section)
 
             # ==================================================================
+            # PROCESS_TREE section:
+            #     This section allows the service writer to list a bunch of dictionary objects that have nested lists
+            #     of dictionaries to be displayed in the UI. Each dictionary object represents a process, and therefore
+            #     each dictionary must have be of the following format:
+            #     {
+            #       "process_pid": int,
+            #       "process_name": str,
+            #       "command_line": str,
+            #       "children": [] NB: This list either is empty or contains more dictionaries that have the same
+            #                          structure
+            #     }
+            nc_body = [
+                {
+                    "process_pid": 123,
+                    "process_name": "evil.exe",
+                    "command_line": "C:\\evil.exe",
+                    "children": [
+                        {
+                            "process_pid": 321,
+                            "process_name": "takeovercomputer.exe",
+                            "command_line": "C:\\Temp\\takeovercomputer.exe -f do_bad_stuff",
+                            "children": [
+                                {
+                                    "process_pid": 456,
+                                    "process_name": "evenworsethanbefore.exe",
+                                    "command_line": "C:\\Temp\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad",
+                                    "children": []
+                                },
+                                {
+                                    "process_pid": 234,
+                                    "process_name": "badfile.exe",
+                                    "command_line": "C:\\badfile.exe -k nothing_to_see_here",
+                                    "children": []
+                                }
+                            ]
+                        },
+                        {
+                            "process_pid": 345,
+                            "process_name": "benignexe.exe",
+                            "command_line": "C:\\benignexe.exe -f \"just kidding, i'm evil\"",
+                            "children": []
+                        }
+                    ]
+                },
+                {
+                    "process_pid": 987,
+                    "process_name": "runzeroday.exe",
+                    "command_line": "C:\\runzeroday.exe -f insert_bad_spelling",
+                    "children": []
+                }
+            ]
+            nc_section = ResultSection('Example of a PROCESS_TREE section',
+                                       body_format=BODY_FORMAT.PROCESS_TREE,
+                                       body=json.dumps(nc_body))
+            result.add_section(nc_section)
+            
+            # ==================================================================
             # TABLE section:
             #     This section allows the service writer to have their content displayed in a table format in the UI
             #     The body argument must be a list [] of flat dict {} objects.
