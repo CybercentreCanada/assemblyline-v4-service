@@ -217,7 +217,7 @@ class ResultSample(ServiceBase):
             #     of dictionaries to be displayed in the UI. Each dictionary object represents a process, and therefore
             #     each dictionary must have be of the following format:
             #     {
-            #       "process_pid": str,
+            #       "process_pid": int,
             #       "process_name": str,
             #       "command_line": str,
             #       "children": [] NB: This list either is empty or contains more dictionaries that have the same
@@ -267,6 +267,39 @@ class ResultSample(ServiceBase):
                                        body_format=BODY_FORMAT.NESTED_CARDS,
                                        body=json.dumps(nc_body))
             result.add_section(nc_section)
+            
+            # ==================================================================
+            # TABLE section:
+            #     This section allows the service writer to have their content displayed in a table format in the UI
+            #     The body argument must be a list [] of flat dict {} objects.
+            table_body = [
+                {
+                    "a_str": "Some string1",
+                    "extra_column_here": "confirmed",
+                    "a_bool": False,
+                    "an_int": 101,
+                },
+                {
+                    "a_str": "Some string2",
+                    "a_bool": True,
+                    "an_int": 102,
+                },
+                {
+                    "a_str": "Some string3",
+                    "a_bool": False,
+                    "an_int": 103,
+                },
+                {
+                    "a_str": "Some string4",
+                    "a_bool": None,
+                    "an_int": -1000000000000000000,
+                    "extra_column_there": "confirmed"
+                },
+            ]
+            table_section = ResultSection('Example of a TABLE section',
+                                       body_format=BODY_FORMAT.TABLE,
+                                       body=json.dumps(table_body))
+            result.add_section(table_section)
 
             # ==================================================================
             # Re-Submitting files to the system

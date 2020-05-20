@@ -24,7 +24,8 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('URL', 3),
     ('JSON', 4),
     ('KEY_VALUE', 5),
-    ('NESTED_CARDS', 6)
+    ('NESTED_CARDS', 6),
+    ('TABLE', 7),
 ])
 
 
