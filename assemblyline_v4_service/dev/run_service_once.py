@@ -10,7 +10,7 @@ import yaml
 from cart import unpack_stream
 from typing import Union, Dict
 
-from assemblyline.common import identify
+from assemblyline.common import identify, forge
 from assemblyline.common.heuristics import service_heuristic_to_result_heuristic, InvalidHeuristicException
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.common.isotime import now_as_iso
@@ -85,6 +85,7 @@ class RunService:
                 type=file_info['type'],
             ),
             filename=file_name,
+            min_classification=forge.get_classification().RESTRICTED,
             max_files=501,  # TODO: get the actual value
             ttl=3600,
         ))
