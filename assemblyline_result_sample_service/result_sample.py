@@ -213,44 +213,52 @@ class ResultSample(ServiceBase):
 
             # ==================================================================
             # NESTED_CARDS section:
-            #     This section allows the service writer to list a bunch of dictionary objects that have nested lists of dictionaries
-            #     to be displayed in the UI. Each dictionary object represents a process, and therefore each dictionary
-            #     must have be of the following format:
+            #     This section allows the service writer to list a bunch of dictionary objects that have nested lists
+            #     of dictionaries to be displayed in the UI. Each dictionary object represents a process, and therefore
+            #     each dictionary must have be of the following format:
             #     {
+            #       "process_pid": str,
             #       "process_name": str,
             #       "command_line": str,
-            #       "children": [] NB: This list either is empty or contains more dictionaries that have the same structure
+            #       "children": [] NB: This list either is empty or contains more dictionaries that have the same
+            #                          structure
             #     }
             nc_body = [
                 {
-                    "process_name": "(123) evil.exe",
+                    "process_pid": 123,
+                    "process_name": "evil.exe",
                     "command_line": "C:\\evil.exe",
                     "children": [
                         {
-                            "process_name": "(321) takeovercomputer.exe",
+                            "process_pid": 321,
+                            "process_name": "takeovercomputer.exe",
                             "command_line": "C:\\Temp\\takeovercomputer.exe -f do_bad_stuff",
                             "children": [
                                 {
-                                    "process_name": "(456) evenworsethanbefore.exe",
+                                    "process_pid": 456,
+                                    "process_name": "evenworsethanbefore.exe",
                                     "command_line": "C:\\Temp\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad",
                                     "children": []
                                 },
                                 {
-                                    "process_name": "(234) badfile.exe",
+                                    "process_pid": 234,
+                                    "process_name": "badfile.exe",
                                     "command_line": "C:\\badfile.exe -k nothing_to_see_here",
                                     "children": []
                                 }
                             ]
                         },
                         {
-                            "process_name": "(345) benignexe.exe",
+                            "process_pid": 345,
+                            "process_name": "benignexe.exe",
                             "command_line": "C:\\benignexe.exe -f \"just kidding, i'm evil\"",
                             "children": []
                         }
                     ]
                 },
                 {
-                    "process_name": "(987) runzeroday.exe",
+                    "process_pid": 987,
+                    "process_name": "runzeroday.exe",
                     "command_line": "C:\\runzeroday.exe -f insert_bad_spelling",
                     "children": []
                 }
