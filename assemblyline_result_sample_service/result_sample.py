@@ -212,6 +212,39 @@ class ResultSample(ServiceBase):
             result.add_section(json_section)
 
             # ==================================================================
+            # TABLE section:
+            #     This section allows the service writer to have their content displayed in a table format in the UI
+            #     The body argument must be a list [] of flat dict {} objects.
+            table_body = [
+                {
+                    "a_str": "Some string1",
+                    "extra_column_here": "confirmed",
+                    "a_bool": False,
+                    "an_int": 101,
+                },
+                {
+                    "a_str": "Some string2",
+                    "a_bool": True,
+                    "an_int": 102,
+                },
+                {
+                    "a_str": "Some string3",
+                    "a_bool": False,
+                    "an_int": 103,
+                },
+                {
+                    "a_str": "Some string4",
+                    "a_bool": None,
+                    "an_int": -1000000000000000000,
+                    "extra_column_there": "confirmed"
+                },
+            ]
+            table_section = ResultSection('Example of a TABLE section',
+                                       body_format=BODY_FORMAT.TABLE,
+                                       body=json.dumps(table_body))
+            result.add_section(table_section)
+
+            # ==================================================================
             # Re-Submitting files to the system
             #     Adding extracted files will have them resubmitted to the system for analysis
 
