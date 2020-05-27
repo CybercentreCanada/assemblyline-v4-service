@@ -73,6 +73,7 @@ class RunService:
         # Create service processing task
         service_task = ServiceTask(dict(
             sid=get_random_id(),
+            metadata={},
             service_name=SERVICE_NAME,
             service_config=self.submission_params,
             fileinfo=dict(

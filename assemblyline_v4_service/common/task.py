@@ -42,6 +42,7 @@ class Task:
         self.file_type = task.fileinfo.type
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
+        self.metadata = task.metadata
         self.md5: str = task.fileinfo.md5
         self.mime: str = task.fileinfo.mime or None
         self.result: Optional[Result] = None
