@@ -31,7 +31,7 @@ COPY --chown=assemblyline:assemblyline --from=builder /var/lib/assemblyline/.loc
 
 # Setup environment varibles
 ENV PYTHONPATH /opt/al_service
-ENV SERVICE_API_HOST http://localhost:5003
+ENV SERVICE_API_HOST http://al_service_server:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 ENV CONTAINER_MODE true
 
