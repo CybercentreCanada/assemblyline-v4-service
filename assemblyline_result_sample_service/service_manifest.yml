@@ -120,5 +120,5 @@ update_config:
   generates_signatures: false
   # options provided to the build or run command
   run_options:
-    image: cccs/assemblyline_dev:$SERVICE_TAG
+    image: cccs/assemblyline_dev:Latest
     command: ["python3", "-m", "assemblyline_core.updater.url_update"]
