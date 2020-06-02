@@ -1,9 +1,8 @@
 import json
 import os
 import select
+import shutil
 import tempfile
-
-import yaml
 
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -13,8 +12,6 @@ from assemblyline_v4_service.common import helper
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
 SHUTDOWN_SECONDS_LIMIT = 10
-TASK_FIFO_PATH = "/tmp/task.fifo"
-DONE_FIFO_PATH = "/tmp/done.fifo"
 
 SUCCESS = "RESULT_FOUND"
 ERROR = "ERROR_FOUND"
@@ -25,7 +22,9 @@ class RunService(ServerBase):
         super(RunService, self).__init__(f'assemblyline.service.{SERVICE_NAME}', shutdown_timeout=shutdown_timeout)
 
         self.classification_yml = '/etc/assemblyline/classification.yml'
-        self.service_manifest_yml = os.path.join(tempfile.gettempdir(), 'service_manifest.yml')
+        self.runtime_service_manifest = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml"
+        self.task_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_task.fifo"
+        self.done_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_done.fifo"
 
         self.status = None
 
@@ -44,22 +43,23 @@ class RunService(ServerBase):
             self.log.error("Could not find service in path.")
             raise
 
-        self.load_service_attributes()
+        if not os.path.exists(self.runtime_service_manifest):
+            shutil.copy(os.path.join(os.getcwd(), 'service_manifest.yml'), self.runtime_service_manifest)
 
         # Start task receiving fifo
         self.log.info('Waiting for receive task named pipe to be ready...')
-        if not os.path.exists(TASK_FIFO_PATH):
-            os.mkfifo(TASK_FIFO_PATH)
-        self.task_fifo = open(TASK_FIFO_PATH, "r")
+        if not os.path.exists(self.task_fifo_path):
+            os.mkfifo(self.task_fifo_path)
+        self.task_fifo = open(self.task_fifo_path, "r")
 
         # Start task completing fifo
         self.log.info('Waiting for complete task named pipe to be ready...')
-        if not os.path.exists(DONE_FIFO_PATH):
-            os.mkfifo(DONE_FIFO_PATH)
-        self.done_fifo = open(DONE_FIFO_PATH, "w")
+        if not os.path.exists(self.done_fifo_path):
+            os.mkfifo(self.done_fifo_path)
+        self.done_fifo = open(self.done_fifo_path, "w")
 
         # Reload the service again with the new config parameters (if any) received from service server
-        self.load_service_attributes(save=False)
+        self.load_service_attributes()
         self.service.start_service()
 
         while self.running:
@@ -105,7 +105,7 @@ class RunService(ServerBase):
 
         super().stop()
 
-    def load_service_attributes(self, save=True) -> None:
+    def load_service_attributes(self) -> None:
         service_manifest_data = helper.get_service_manifest()
 
         self.service_config = service_manifest_data.get('config', {})
@@ -115,16 +115,6 @@ class RunService(ServerBase):
         self.service_tool_version = self.service.get_tool_version()
 
         self.service_file_required = service_manifest_data.get('file_required', True)
-
-        # Update the service version with the whole version
-        service_version = service_manifest_data['version']
-        if isinstance(service_version, int) or '.' not in service_version:
-            service_manifest_data['version'] = self.service.get_service_version()
-
-        # Save a copy of the service manifest for the service client to use
-        if save:
-            with open(self.service_manifest_yml, 'w') as yml_fh:
-                yaml.safe_dump(service_manifest_data, yml_fh)
 
 
 if __name__ == '__main__':
