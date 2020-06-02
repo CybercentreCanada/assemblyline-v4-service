@@ -1,10 +1,10 @@
 import json
 import os
 import select
-import shutil
 import tempfile
 
 from assemblyline.common.importing import load_module_by_path
+from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_core.server_base import ServerBase
 from assemblyline_v4_service.common import helper
@@ -22,6 +22,7 @@ class RunService(ServerBase):
         super(RunService, self).__init__(f'assemblyline.service.{SERVICE_NAME}', shutdown_timeout=shutdown_timeout)
 
         self.classification_yml = '/etc/assemblyline/classification.yml'
+        self.service_manifest = os.path.join(os.getcwd(), 'service_manifest.yml')
         self.runtime_service_manifest = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml"
         self.task_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_task.fifo"
         self.done_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_done.fifo"
@@ -44,7 +45,13 @@ class RunService(ServerBase):
             raise
 
         if not os.path.exists(self.runtime_service_manifest):
-            shutil.copy(os.path.join(os.getcwd(), 'service_manifest.yml'), self.runtime_service_manifest)
+            # In case service tag have not been overwritten we will do it here (This is mainly use during debugging)
+            service_tag = os.environ.get("SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0").encode("utf-8")
+
+            with open(self.service_manifest, "rb") as srv_manifest:
+                with open(self.runtime_service_manifest, "wb") as runtime_manifest:
+                    for line in srv_manifest.readlines():
+                        runtime_manifest.write(line.replace(b"$SERVICE_TAG", service_tag))
 
         # Start task receiving fifo
         self.log.info('Waiting for receive task named pipe to be ready...')
@@ -101,7 +108,8 @@ class RunService(ServerBase):
         if self.task_fifo is not None:
             self.task_fifo.close()
 
-        self.service.stop_service()
+        if self.service:
+            self.service.stop_service()
 
         super().stop()
 

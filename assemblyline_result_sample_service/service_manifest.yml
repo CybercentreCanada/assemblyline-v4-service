@@ -1,7 +1,7 @@
 # Name of the service
 name: ResultSample
 # Version of the service
-version: 1
+version: $SERVICE_TAG
 # Description of the service
 description: >
   ALv4 Result example service
@@ -98,7 +98,7 @@ heuristics:
 #  - the name of the docker container that will be created
 #  - cpu and ram allocation by the container
 docker_config:
-  image: cccs/assemblyline-service-resultsample:latest
+  image: cccs/assemblyline-service-resultsample:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb: 1024
 
@@ -120,5 +120,5 @@ update_config:
   generates_signatures: false
   # options provided to the build or run command
   run_options:
-    image: cccs/assemblyline_dev:latest
+    image: cccs/assemblyline_dev:$SERVICE_TAG
     command: ["python3", "-m", "assemblyline_core.updater.url_update"]
