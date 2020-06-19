@@ -178,13 +178,24 @@ REDUCE_MAP = {
 
 
 if __name__ == "__main__":
+    from pprint import pprint
     tags = {
+        'attribution.actor': ["MALICIOUS_ACTOR"],
+        'network.static.ip': ['127.0.0.1'],
+        'av.virus_name': ["bad_virus"],
         "network.static.uri": [
             # Those fail to find similarities but should
             "https://google.com?query=allo",
             "https://google.com?query=mon",
             "https://google.com?query=coco",
-            # Those succeed
+            # Also they failed to be returned!
+        ],
+        "network.dynamic.uri": [
+            # Base 64 get detected as alphanum :(
+            "https://base64encodethis.com/path/?base64hash=c2hlemxsM3Iz",
+            "https://base64encodethis.com/path/?base64hash=YXNkZmVyamdhM2diMCBj",
+            "https://base64encodethis.com/path/?base64hash=IyQwMjN5di04ICEjIEApIGhcMmJ1cGY5NDMwYTIvNDEyMzIzNCBo"
+            # Can't seem to find the type for this !?
             "https://googlelicious.com/somepathother/?query=allo",
             "https://googlelicious.com/somepathother/?query=mon",
             "https://googlelicious.com/somepathother/?query=coco"
@@ -192,7 +203,7 @@ if __name__ == "__main__":
             "https://googlelicious.com/somepath/?rng=112431243",
             "https://googlelicious.com/somepath/?rng=124312431243",
             "https://googlelicious.com/somepath/?rng=22"
-            # FAILED similarities are not returned but should
+            # Some weird third result is found which ends with a $
         ]
     }
-    print({tag_type: REDUCE_MAP.get(tag_type, lambda x: x)(tag_values) for tag_type, tag_values in tags.items()})
+    pprint({tag_type: REDUCE_MAP.get(tag_type, lambda x: x)(tag_values) for tag_type, tag_values in tags.items()})
