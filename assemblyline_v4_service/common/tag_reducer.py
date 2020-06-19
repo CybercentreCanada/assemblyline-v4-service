@@ -30,10 +30,16 @@ def section_traverser(section: ResultSection = None) -> ResultSection:
 
 # This function is very much a work in progress. Currently the only tags that we
 # feel the need to reduce are unique uris and uri paths
-def reduce_specific_tags(tags: dict = {}) -> {}:
+def reduce_specific_tags(tags=None) -> {}:
+    if tags is None:
+        tags = {}
+
     for tag in TAGS_TO_REDUCE:
         if tag in tags:
-            if tag in ["network.dynamic.uri", "network.static.uri", "network.dynamic.uri_path", "network.static.uri_path"]:
+            if tag in ["network.dynamic.uri",
+                       "network.static.uri",
+                       "network.dynamic.uri_path",
+                       "network.static.uri_path"]:
                 tags[tag] = reduce_uri_tags(tags[tag])
             else:
                 # TODO: if other tags need to be reduced,
@@ -42,13 +48,16 @@ def reduce_specific_tags(tags: dict = {}) -> {}:
     return tags
 
 
-def reduce_uri_tags(uris: list = []) -> []:
+def reduce_uri_tags(uris=None) -> []:
     """
     The purpose of this helper function is to reduce the amount of unique uris to be tagged.
     ex. If a sample makes a hundred network calls to four unqiue domains, with only one parameter
     changing in the HTTP request each time, this should be synthesized to four uris to
     be tagged, but with a placeholder for the parameter(s) that changes in each callout.
     """
+    if uris is None:
+        uris = []
+
     parsed_uris = []
     reduced_uris = set()
     for uri in uris:
@@ -69,7 +78,8 @@ def reduce_uri_tags(uris: list = []) -> []:
 
         # We need to parse a couple of the returned params from urlparse more in-depth
         if uri_dict["query"] != "":
-            uri_dict["query"] = parse_qs(uri_dict["query"])  # note that values of keys in dict will be in lists of length 1, which we don't want
+            # note that values of keys in dict will be in lists of length 1, which we don't want
+            uri_dict["query"] = parse_qs(uri_dict["query"])
         if uri_dict["path"] != "":
             uri_dict["path"] = os.path.split(uri_dict["path"])
 
@@ -177,7 +187,7 @@ def reduce_uri_tags(uris: list = []) -> []:
                         # TODO: implement this section when the path changes
                         pass
                     else:
-                        #TODO: implement this if domains or anything else changes
+                        # TODO: implement this if domains or anything else changes
                         pass
 
                 # now it's time to rejoin the parts of the url
@@ -189,7 +199,9 @@ def reduce_uri_tags(uris: list = []) -> []:
                     comparison_uri_copy["query"][item] = comparison_uri_copy["query"][item][0]
                 comparison_uri_copy["query"] = unquote(urlencode(comparison_uri_copy["query"]))
 
-                uri_tuple = (comparison_uri_copy["scheme"], comparison_uri_copy["netloc"], comparison_uri_copy["path"], comparison_uri_copy["params"], comparison_uri_copy["query"], comparison_uri_copy["fragment"])
+                uri_tuple = (comparison_uri_copy["scheme"], comparison_uri_copy["netloc"],
+                             comparison_uri_copy["path"], comparison_uri_copy["params"],
+                             comparison_uri_copy["query"], comparison_uri_copy["fragment"])
                 url = urlunparse(uri_tuple)
                 reduced_uris.add(url)
     reduced_uris_list = list(reduced_uris)
