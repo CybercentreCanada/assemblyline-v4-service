@@ -2,50 +2,11 @@ import re
 from copy import deepcopy
 import os.path
 from urllib.parse import urlparse, parse_qs, urlunparse, urlencode, unquote
-from assemblyline_v4_service.common.result import Result, ResultSection
 
-TAGS_TO_REDUCE = ["network.dynamic.uri", "network.static.uri", "network.dynamic.uri_path", "network.static.uri_path"]
 NUMBER_REGEX = re.compile("[0-9]*")
 ALPHA_REGEX = re.compile("[a-zA-Z]*")
 ALPHANUM_REGEX = re.compile("[a-zA-Z0-9]*")
 BASE64_REGEX = re.compile("(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9+/]{3}=)?")
-
-
-# Call this function for tag reducing
-def tag_reducer(al_result: Result) -> Result:
-    for section in al_result.sections:
-        section_traverser(section)
-    return al_result
-
-
-# This function goes through each section and sends the tags to a function
-# that will reduce specific tags
-def section_traverser(section: ResultSection = None) -> ResultSection:
-    for subsection in section.subsections:
-        section_traverser(subsection)
-    if section.tags:
-        section.tags = reduce_specific_tags(section.tags)
-    return section
-
-
-# This function is very much a work in progress. Currently the only tags that we
-# feel the need to reduce are unique uris and uri paths
-def reduce_specific_tags(tags=None) -> {}:
-    if tags is None:
-        tags = {}
-
-    for tag in TAGS_TO_REDUCE:
-        if tag in tags:
-            if tag in ["network.dynamic.uri",
-                       "network.static.uri",
-                       "network.dynamic.uri_path",
-                       "network.static.uri_path"]:
-                tags[tag] = reduce_uri_tags(tags[tag])
-            else:
-                # TODO: if other tags need to be reduced,
-                #  add them to the TAGS_TO_REDUCE and the if statement here
-                pass
-    return tags
 
 
 def reduce_uri_tags(uris=None) -> []:
@@ -206,3 +167,32 @@ def reduce_uri_tags(uris=None) -> []:
                 reduced_uris.add(url)
     reduced_uris_list = list(reduced_uris)
     return reduced_uris_list
+
+
+REDUCE_MAP = {
+    "network.dynamic.uri": reduce_uri_tags,
+    "network.static.uri": reduce_uri_tags,
+    "network.dynamic.uri_path": reduce_uri_tags,
+    "network.static.uri_path": reduce_uri_tags
+}
+
+
+if __name__ == "__main__":
+    tags = {
+        "network.static.uri": [
+            # Those fail to find similarities but should
+            "https://google.com?query=allo",
+            "https://google.com?query=mon",
+            "https://google.com?query=coco",
+            # Those succeed
+            "https://googlelicious.com/somepathother/?query=allo",
+            "https://googlelicious.com/somepathother/?query=mon",
+            "https://googlelicious.com/somepathother/?query=coco"
+            # Those succeed
+            "https://googlelicious.com/somepath/?rng=112431243",
+            "https://googlelicious.com/somepath/?rng=124312431243",
+            "https://googlelicious.com/somepath/?rng=22"
+            # FAILED similarities are not returned but should
+        ]
+    }
+    print({tag_type: REDUCE_MAP.get(tag_type, lambda x: x)(tag_values) for tag_type, tag_values in tags.items()})
