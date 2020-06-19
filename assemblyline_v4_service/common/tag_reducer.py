@@ -53,6 +53,8 @@ def reduce_uri_tags(uris=None) -> []:
     # time for the smarts
     comparison_uris = deepcopy(parsed_uris)
     for parsed_uri in parsed_uris:
+        # this flag will be used to check if this uri matches any other uri ever
+        totally_unique = True
         for comparison_uri in comparison_uris:
             if parsed_uri == comparison_uri:
                 continue
@@ -114,7 +116,7 @@ def reduce_uri_tags(uris=None) -> []:
 
             # if percentage equal is > some value (say 90), then we can say that
             # urls are similar enough to reduce
-            if percentage_equal > 0.9:
+            if percentage_equal > 0.8:
                 # So that we don't overwrite details
                 comparison_uri_copy = deepcopy(comparison_uri)
                 # somehow recognize where parameters are that match and replace them.
@@ -152,21 +154,31 @@ def reduce_uri_tags(uris=None) -> []:
                         pass
 
                 # now it's time to rejoin the parts of the url
-                # turn the path back into a string
-                comparison_uri_copy["path"] = '/'.join(comparison_uri_copy["path"])
-                # turn the query back into a query string
-                # first, remove the list wrappers
-                for item in comparison_uri_copy["query"].keys():
-                    comparison_uri_copy["query"][item] = comparison_uri_copy["query"][item][0]
-                comparison_uri_copy["query"] = unquote(urlencode(comparison_uri_copy["query"]))
+                reduced_uris.add(turn_back_into_uri(comparison_uri_copy))
+                totally_unique = False
 
-                uri_tuple = (comparison_uri_copy["scheme"], comparison_uri_copy["netloc"],
-                             comparison_uri_copy["path"], comparison_uri_copy["params"],
-                             comparison_uri_copy["query"], comparison_uri_copy["fragment"])
-                url = urlunparse(uri_tuple)
-                reduced_uris.add(url)
+        # Congratulations, you are one in a million
+        if totally_unique:
+            reduced_uris.add(turn_back_into_uri(parsed_uri))
     reduced_uris_list = list(reduced_uris)
     return reduced_uris_list
+
+
+def turn_back_into_uri(uri_parts) -> str:
+    # turn the path back into a string
+    uri_parts["path"] = '/'.join(uri_parts["path"])
+    # turn the query back into a query string
+    # first, remove the list wrappers
+    for item in uri_parts["query"].keys():
+        uri_parts["query"][item] = uri_parts["query"][item][
+            0]
+    uri_parts["query"] = unquote(urlencode(uri_parts["query"]))
+
+    uri_tuple = (uri_parts["scheme"], uri_parts["netloc"],
+                 uri_parts["path"], uri_parts["params"],
+                 uri_parts["query"], uri_parts["fragment"])
+    real_url = urlunparse(uri_tuple)
+    return real_url
 
 
 REDUCE_MAP = {
@@ -184,11 +196,11 @@ if __name__ == "__main__":
         'network.static.ip': ['127.0.0.1'],
         'av.virus_name': ["bad_virus"],
         "network.static.uri": [
-            # Those fail to find similarities but should
+            # Those fail to find similarities but should     -> K: change percentage match to 80%, now similarities are found
             "https://google.com?query=allo",
             "https://google.com?query=mon",
             "https://google.com?query=coco",
-            # Also they failed to be returned!
+            # Also they failed to be returned!   -> K: now they are returned
 
             # Fail to reduce base of domain -- THIS IS GOOD!
             "https://abc.com?query=THISISATESTTHISISATEST",
