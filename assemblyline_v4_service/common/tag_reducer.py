@@ -189,6 +189,31 @@ if __name__ == "__main__":
             "https://google.com?query=mon",
             "https://google.com?query=coco",
             # Also they failed to be returned!
+
+            # Fail to reduce base of domain -- THIS IS GOOD!
+            "https://abc.com?query=THISISATESTTHISISATEST",
+            "https://def.com?query=THISISATESTTHISISATEST",
+            "https://ghi.com?query=THISISATESTTHISISATEST",
+
+            # Fail to reduce paths... Do we want this??
+            "https://hello.com/patha/?query=THISISATESTTHISISATEST",
+            "https://hello.com/pathb/?query=THISISATESTTHISISATEST",
+            "https://hello.com/pathc/?query=THISISATESTTHISISATEST",
+
+            # Fail to reduce paths that are all the same ...
+            "https://hello.com/path/?query=THISISATESTTHISISATEST1",
+            "https://hello.com/path/?query=THISISATESTTHISISATEST1",
+            "https://hello.com/path/?query=THISISATESTTHISISATEST1",
+
+            # Those succeed
+            "https://hello.com/path/?query=THISISATESTTHISISATEST1&rnd=123",
+            "https://hello.com/path/?query=THISISATESTTHISISATEST1&rnd=345",
+            "https://hello.com/path/?query=THISISATESTTHISISATEST1&rnd=567",
+
+            # Those fail to find similarities but should
+            "https://google.com?query=allo",
+            "https://google.com?query=mon",
+            "https://google.com?query=coco",
         ],
         "network.dynamic.uri": [
             # Base 64 get detected as alphanum :(
