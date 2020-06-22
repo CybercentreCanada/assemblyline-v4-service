@@ -257,20 +257,19 @@ if __name__ == "__main__":
         "network.dynamic.uri": [
             "https://base64encodethis.com/path?base64hash=c2hlemxsM3Iz",
             "https://base64encodethis.com/path?base64hash=YXNkZmVyamdhM2diMCBj",
-            "https://base64encodethis.com/path?base64hash=IyQwMjN5di04ICEjIEApIGhcMmJ1cGY5NDMwYTIvNDEyMzIzNCBo"
+            "https://base64encodethis.com/path?base64hash=IyQwMjN5di04ICEjIEApIGhcMmJ1cGY5NDMwYTIvNDEyMzIzNCBo",
             # These should be reduced to "https://base64encodethis.com/path/?base64hash=${BASE64}"
             
             # Can't seem to find the type for this !?
             "https://googlelicious.com/somepathother?query=allo",
             "https://googlelicious.com/somepathother?query=mon",
-            "https://googlelicious.com/somepathother?query=coco"
+            "https://googlelicious.com/somepathother?query=coco",
             # These should be reduced to "https://googlelicious.com/somepathother/?query=${ALPHA}"
             
             "https://googlelicious.com/somepath?rng=112431243",
             "https://googlelicious.com/somepath?rng=124312431243",
             "https://googlelicious.com/somepath?rng=22"
             # These should be reduced to "https://googlelicious.com/somepathother?rng=${NUMBER}"
-            # Some weird third result is found which ends with a $
         ]
     }
     pprint({tag_type: REDUCE_MAP.get(tag_type, lambda x: x)(tag_values) for tag_type, tag_values in tags.items()})
