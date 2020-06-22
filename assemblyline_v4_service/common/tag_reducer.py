@@ -45,6 +45,8 @@ def reduce_uri_tags(uris=None) -> []:
         if uri_dict["path"] != "":
             # converting tuple to list
             uri_dict["path"] = list(os.path.split(uri_dict["path"]))
+            # removing lone slashes
+            uri_dict["path"] = [not_slash for not_slash in uri_dict["path"] if not_slash != "/"]
 
         parsed_uris.append(uri_dict)
 
@@ -62,7 +64,6 @@ def reduce_uri_tags(uris=None) -> []:
                 continue
             equal_keys = 0
             max_list_len = 0
-            len_keys = 0
             difference = {}
             # now go through each key, and check for equality
             for key in parsed_uri.keys():
@@ -98,7 +99,7 @@ def reduce_uri_tags(uris=None) -> []:
                         comp_keys = list(comp_val.keys())
                         val_keys = list(val.keys())
                         all_keys = set(comp_keys + val_keys)
-                        len_keys = len(all_keys)
+                        val_len = len(all_keys)
 
                         for item in all_keys:
                             if val.get(item) and comp_val.get(item) and val[item] == comp_val[item]:
@@ -117,7 +118,7 @@ def reduce_uri_tags(uris=None) -> []:
                         difference[key].append(val)
                         difference[key].append(comp_val)
             # now find percentage similar
-            percentage_equal = equal_keys/(len(parsed_uri.keys())+max_list_len+len_keys)
+            percentage_equal = equal_keys/(len(parsed_uri.keys())+max_list_len+val_len)
 
             # if percentage equal is > some value (say 90), then we can say that
             # urls are similar enough to reduce
@@ -184,7 +185,7 @@ def reduce_uri_tags(uris=None) -> []:
 
 def _turn_back_into_uri(uri_parts) -> str:
     # turn the path back into a string
-    uri_parts["path"] = ''.join(uri_parts["path"])
+    uri_parts["path"] = '/'.join(uri_parts["path"])
     # turn the query back into a query string
     # first, remove the list wrappers
     for item in uri_parts["query"].keys():
@@ -259,13 +260,13 @@ if __name__ == "__main__":
             "https://base64encodethis.com/path?base64hash=YXNkZmVyamdhM2diMCBj",
             "https://base64encodethis.com/path?base64hash=IyQwMjN5di04ICEjIEApIGhcMmJ1cGY5NDMwYTIvNDEyMzIzNCBo",
             # These should be reduced to "https://base64encodethis.com/path/?base64hash=${BASE64}"
-            
+
             # Can't seem to find the type for this !?
             "https://googlelicious.com/somepathother?query=allo",
             "https://googlelicious.com/somepathother?query=mon",
             "https://googlelicious.com/somepathother?query=coco",
             # These should be reduced to "https://googlelicious.com/somepathother/?query=${ALPHA}"
-            
+
             "https://googlelicious.com/somepath?rng=112431243",
             "https://googlelicious.com/somepath?rng=124312431243",
             "https://googlelicious.com/somepath?rng=22"
