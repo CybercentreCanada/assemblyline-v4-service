@@ -119,7 +119,8 @@ heuristics:
 docker_config:
   image: cccs/assemblyline-service-resultsample:latest
   cpu_cores: 1.0
-  ram_mb: 1024
+  ram_mb_min: 128
+  ram_mb: 256
 
 # Update configuration block
 update_config:
