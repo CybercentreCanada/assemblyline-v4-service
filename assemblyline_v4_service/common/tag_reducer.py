@@ -138,7 +138,7 @@ def reduce_uri_tags(uris=None) -> []:
                             for l in val[key]:
                                 # use regex to determine the parameter type
                                 value = l[0]
-                                placeholder = get_placeholder(value)
+                                placeholder = _get_placeholder(value)
                                 placeholders.append(placeholder)
                             if len(set(placeholders)) == 1:
                                 # the same placeholder type is consistent with all values
@@ -155,10 +155,10 @@ def reduce_uri_tags(uris=None) -> []:
                                 # if / exists, pop the rest out
                                 if list_item != "/" and list_item[0] == "/":
                                     # use regex to determine the parameter type
-                                    placeholder = get_placeholder(list_item[1:])
+                                    placeholder = _get_placeholder(list_item[1:])
                                     placeholders[key].append("/"+placeholder)
                                 else:
-                                    placeholder = get_placeholder(list_item)
+                                    placeholder = _get_placeholder(list_item)
                                     placeholders[key].append(placeholder)
                         for key in placeholders.keys():
                             if len(set(placeholders[key])) == 1:
@@ -169,20 +169,20 @@ def reduce_uri_tags(uris=None) -> []:
                                 # the placeholder types vary
                                 comparison_uri_copy[item][key] = ",".join(set(placeholders[key]))
                     else:
-                        comparison_uri_copy[item] = get_placeholder(val)
+                        comparison_uri_copy[item] = _get_placeholder(val)
 
                 # now it's time to rejoin the parts of the url
-                reduced_uris.add(turn_back_into_uri(comparison_uri_copy))
+                reduced_uris.add(_turn_back_into_uri(comparison_uri_copy))
                 totally_unique = False
 
         # Congratulations, you are one in a million
         if totally_unique:
-            reduced_uris.add(turn_back_into_uri(parsed_uri))
+            reduced_uris.add(_turn_back_into_uri(parsed_uri))
     reduced_uris_list = list(reduced_uris)
     return reduced_uris_list
 
 
-def turn_back_into_uri(uri_parts) -> str:
+def _turn_back_into_uri(uri_parts) -> str:
     # turn the path back into a string
     uri_parts["path"] = ''.join(uri_parts["path"])
     # turn the query back into a query string
@@ -199,7 +199,7 @@ def turn_back_into_uri(uri_parts) -> str:
     return real_url
 
 
-def get_placeholder(val: str) -> str:
+def _get_placeholder(val: str) -> str:
     if NUMBER_REGEX.fullmatch(val):
         placeholder = "${NUMBER}"
     elif ALPHA_REGEX.fullmatch(val):
