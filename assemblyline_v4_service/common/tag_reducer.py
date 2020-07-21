@@ -63,7 +63,8 @@ def reduce_uri_tags(uris=None) -> []:
             if parsed_uri == comparison_uri:
                 continue
             equal_keys = 0
-            max_list_len = 0
+            total_list_len = 0
+            total_dict_len = 0
             difference = {}
             # now go through each key, and check for equality
             for key in parsed_uri.keys():
@@ -89,6 +90,7 @@ def reduce_uri_tags(uris=None) -> []:
                                 difference[key][item] = []
                                 difference[key][item].append(val[item])
                                 difference[key][item].append(comp_val[item])
+                        total_list_len += val_len
 
                 elif type(val) == dict:
                     val_len = len(val)
@@ -96,20 +98,22 @@ def reduce_uri_tags(uris=None) -> []:
                         equal_keys += val_len
                     else:
                         difference[key] = dict()
-                        comp_keys = list(comp_val.keys())
-                        val_keys = list(val.keys())
-                        all_keys = set(comp_keys + val_keys)
-                        val_len = len(all_keys)
+                        if comp_val != "":
+                            comp_keys = list(comp_val.keys())
+                            val_keys = list(val.keys())
+                            all_keys = set(comp_keys + val_keys)
+                            val_len = len(all_keys)
 
-                        for item in all_keys:
-                            if val.get(item) and comp_val.get(item) and val[item] == comp_val[item]:
-                                equal_keys += 1
-                            else:
-                                difference[key][item] = []
-                                if val.get(item):
-                                    difference[key][item].append(val[item])
-                                if comp_val.get(item):
-                                    difference[key][item].append(comp_val[item])
+                            for item in all_keys:
+                                if val.get(item) and comp_val.get(item) and val[item] == comp_val[item]:
+                                    equal_keys += 1
+                                else:
+                                    difference[key][item] = []
+                                    if val.get(item):
+                                        difference[key][item].append(val[item])
+                                    if comp_val.get(item):
+                                        difference[key][item].append(comp_val[item])
+                        total_dict_len += val_len
                 else:  # Not dict or a list
                     if val == comp_val:
                         equal_keys += 1
@@ -118,7 +122,12 @@ def reduce_uri_tags(uris=None) -> []:
                         difference[key].append(val)
                         difference[key].append(comp_val)
             # now find percentage similar
-            percentage_equal = equal_keys/(len(parsed_uri.keys())+max_list_len+val_len)
+            if total_dict_len > 1 and total_list_len > 1:
+                percentage_equal = equal_keys / (len(parsed_uri.keys()) - 2 + total_list_len + total_dict_len)
+            elif total_dict_len > 1 or total_list_len > 1:
+                percentage_equal = equal_keys / (len(parsed_uri.keys()) - 1 + total_list_len + total_dict_len)
+            else:
+                percentage_equal = equal_keys / (len(parsed_uri.keys()) + total_list_len + total_dict_len)
 
             # if percentage equal is > some value (say 90), then we can say that
             # urls are similar enough to reduce
@@ -180,6 +189,11 @@ def reduce_uri_tags(uris=None) -> []:
         if totally_unique:
             reduced_uris.add(_turn_back_into_uri(parsed_uri))
     reduced_uris_list = list(reduced_uris)
+    # recursive_list = reduce_uri_tags(reduced_uris_list)
+    # if len(recursive_list) < len(reduced_uris_list):
+    #     return reduced_uris_list
+    # elif
+    # if reduce_uri_tags(reduced_uris_list))
     return reduced_uris_list
 
 
@@ -188,9 +202,10 @@ def _turn_back_into_uri(uri_parts) -> str:
     uri_parts["path"] = '/'.join(uri_parts["path"])
     # turn the query back into a query string
     # first, remove the list wrappers
-    for item in uri_parts["query"].keys():
-        uri_parts["query"][item] = uri_parts["query"][item][
-            0]
+    if uri_parts["query"] != "":
+        for item in uri_parts["query"].keys():
+            uri_parts["query"][item] = uri_parts["query"][item][
+                0]
     uri_parts["query"] = unquote(urlencode(uri_parts["query"]))
 
     uri_tuple = (uri_parts["scheme"], uri_parts["netloc"],
@@ -229,32 +244,32 @@ if __name__ == "__main__":
         'attribution.actor': ["MALICIOUS_ACTOR"],
         'network.static.ip': ['127.0.0.1'],
         'av.virus_name': ["bad_virus"],
-        "network.static.uri": [
-            "https://google.com?query=allo",
-            "https://google.com?query=mon",
-            "https://google.com?query=coco",
-            # These should reduce to 'https://google.com?query=${ALPHA}'
-
-            "https://abc.com?query=THISISATESTTHISISATEST",
-            "https://def.com?query=THISISATESTTHISISATEST",
-            "https://ghi.com?query=THISISATESTTHISISATEST",
-            # These shouldn't reduce due to unique domain/hostnames
-
-            "https://hello.com/patha?query=THISISATESTTHISISATEST",
-            "https://hello.com/pathb?query=THISISATESTTHISISATEST",
-            "https://hello.com/pathc?query=THISISATESTTHISISATEST",
-            # These should reduce to "https://hello.com/${ALPHA}/?query=THISISATESTTHISISATEST"
-
-            "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
-            "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
-            "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
-            # These should reduce to "https://hello.com/path/?query=THISISATESTTHISISATEST1"
-
-            "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=123",
-            "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=345",
-            "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=567",
-            # These should reduced to "https://hello.com/path/?query=THISISATESTTHISISATEST1&rnd=${NUMBER}"
-        ],
+        # "network.static.uri": [
+        #     "https://google.com?query=allo",
+        #     "https://google.com?query=mon",
+        #     "https://google.com?query=coco",
+        #     # These should reduce to 'https://google.com?query=${ALPHA}'
+        #
+        #     "https://abc.com?query=THISISATESTTHISISATEST",
+        #     "https://def.com?query=THISISATESTTHISISATEST",
+        #     "https://ghi.com?query=THISISATESTTHISISATEST",
+        #     # These shouldn't reduce due to unique domain/hostnames
+        #
+        #     "https://hello.com/patha?query=THISISATESTTHISISATEST",
+        #     "https://hello.com/pathb?query=THISISATESTTHISISATEST",
+        #     "https://hello.com/pathc?query=THISISATESTTHISISATEST",
+        #     # These should reduce to "https://hello.com/${ALPHA}/?query=THISISATESTTHISISATEST"
+        #
+        #     "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
+        #     "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
+        #     "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
+        #     # These should reduce to "https://hello.com/path/?query=THISISATESTTHISISATEST1"
+        #
+        #     "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=123",
+        #     "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=345",
+        #     "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=567",
+        #     # These should reduced to "https://hello.com/path/?query=THISISATESTTHISISATEST1&rnd=${NUMBER}"
+        # ],
         "network.dynamic.uri": [
             "https://base64encodethis.com/path?base64hash=c2hlemxsM3Iz",
             "https://base64encodethis.com/path?base64hash=YXNkZmVyamdhM2diMCBj",
@@ -269,8 +284,34 @@ if __name__ == "__main__":
 
             "https://googlelicious.com/somepath?rng=112431243",
             "https://googlelicious.com/somepath?rng=124312431243",
-            "https://googlelicious.com/somepath?rng=22"
+            "https://googlelicious.com/somepath?rng=22",
             # These should be reduced to "https://googlelicious.com/somepathother?rng=${NUMBER}"
+
+            "https://googlelicious.com/somepath/morepath?rng=112431243&blah=blah",
+            "https://googlelicious.com/somepath/morepath?rng=124312431243&blah=blah",
+            "https://googlelicious.com/somepath/morepath?rng=22&blah=blah",
+            # These should be reduced to "https://googlelicious.com/somepath/morepath?rng=${NUMBER}&blah=blah"
+
+            "https://websitesname.ca",
+            "https://websitesname.com",
+            "https://websitesname.it",
+            # these should all be present, since urls with unique domains should not be reduced
+
+            "https://www.facebook.com/some-details-330002341217/",
+            "https://www.facebook.com/some-details-330002341218/",
+            "https://www.facebook.com/some-details-330002341219/",
+            # these should be reduced to https://www.facebook.com/${UNKNOWN_TYPE}/
+
+            "ftp://random1.vib.slx/",
+            "ftp://random2.vib.slx/",
+            "ftp://random3.vib.slx/",
+            # these should all be present, since urls with unique domains should not be reduced
+
+            "https://en.wikipedia.org/wiki/Interne0",
+            "https://en.wikipedia.org/wiki/Internet1",
+            "https://en.wikipedia.org/wiki/Internet2",
+            "https://en.wikipedia.org/wiki/Internet3",
+            # these should reduce to https://en.wikipedia.org/${ALPHA},${ALPHA_NUM}/${ALPHA},${ALPHA_NUM}
         ]
     }
     pprint({tag_type: REDUCE_MAP.get(tag_type, lambda x: x)(tag_values) for tag_type, tag_values in tags.items()})
