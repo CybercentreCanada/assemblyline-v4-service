@@ -228,22 +228,26 @@ class ResultSample(ServiceBase):
                     "process_pid": 123,
                     "process_name": "evil.exe",
                     "command_line": "C:\\evil.exe",
+                    "signatures": {},
                     "children": [
                         {
                             "process_pid": 321,
                             "process_name": "takeovercomputer.exe",
                             "command_line": "C:\\Temp\\takeovercomputer.exe -f do_bad_stuff",
+                            "signatures": {"one":250},
                             "children": [
                                 {
                                     "process_pid": 456,
                                     "process_name": "evenworsethanbefore.exe",
                                     "command_line": "C:\\Temp\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad",
+                                    "signatures": {"one":10, "two":10, "three":10},
                                     "children": []
                                 },
                                 {
                                     "process_pid": 234,
                                     "process_name": "badfile.exe",
                                     "command_line": "C:\\badfile.exe -k nothing_to_see_here",
+                                    "signatures": {"one":1000, "two":10, "three":10, "four":10, "five":10},
                                     "children": []
                                 }
                             ]
@@ -252,6 +256,7 @@ class ResultSample(ServiceBase):
                             "process_pid": 345,
                             "process_name": "benignexe.exe",
                             "command_line": "C:\\benignexe.exe -f \"just kidding, i'm evil\"",
+                            "signatures": {"one": 2000},
                             "children": []
                         }
                     ]
@@ -260,6 +265,7 @@ class ResultSample(ServiceBase):
                     "process_pid": 987,
                     "process_name": "runzeroday.exe",
                     "command_line": "C:\\runzeroday.exe -f insert_bad_spelling",
+                    "signatures": {},
                     "children": []
                 }
             ]
