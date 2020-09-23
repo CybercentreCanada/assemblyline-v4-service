@@ -33,6 +33,7 @@ class Task:
         self._service_started: Optional[str] = None
         self._working_directory: Optional[str] = None
         self.deep_scan = task.deep_scan
+        self.depth = task.depth
         self.drop_file: bool = False
         self.error_message: Optional[str] = None
         self.error_status: Optional[str] = None
