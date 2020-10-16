@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import logging
-from enum import Enum
 from typing import List, Union, Optional, Dict, Any
 
 from assemblyline.common import forge
@@ -9,7 +8,7 @@ from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
-from assemblyline.common.str_utils import safe_str
+from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
 
 al_log.init_logging('service.result')
@@ -18,15 +17,16 @@ log = logging.getLogger('assemblyline.service.result')
 Classification = forge.get_classification()
 SERVICE_ATTRIBUTES = get_service_attributes()
 
-class BODY_FORMAT(Enum):
-    TEXT = 0
-    MEMORY_DUMP = 1
-    GRAPH_DATA = 2
-    URL = 3
-    JSON = 4
-    KEY_VALUE = 5
-    PROCESS_TREE = 6
-    TABLE = 7
+BODY_FORMAT = StringTable('BODY_FORMAT', [
+    ('TEXT', 0),
+    ('MEMORY_DUMP', 1),
+    ('GRAPH_DATA', 2),
+    ('URL', 3),
+    ('JSON', 4),
+    ('KEY_VALUE', 5),
+    ('PROCESS_TREE', 6),
+    ('TABLE', 7),
+])
 
 
 class InvalidHeuristicException(Exception):
