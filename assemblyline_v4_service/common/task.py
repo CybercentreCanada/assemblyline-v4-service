@@ -59,7 +59,9 @@ class Task:
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
         self.tags = tags
-        self.temp_submission_data: Dict[str, Any] = {}
+        self.temp_submission_data: Dict[str, Any] = {
+            row.name: row.value for row in task.temporary_submission_data
+        }
         self.type: str = task.fileinfo.type
 
     def _add_file(self, path: str, name: str, description: str,
