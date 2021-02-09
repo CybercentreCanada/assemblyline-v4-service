@@ -124,6 +124,6 @@ stages:
         until sudo env "PATH=$PATH" python -m pip download "assemblyline-v4-service==$TAG" --pre --no-deps &> /dev/null; do sleep 2; done
         docker build --build-arg version=$TAG -t cccs/assemblyline-v4-service-base:$TAG -t cccs/assemblyline-v4-service-base:latest docker
         docker build --build-arg version=$TAG -f assemblyline_result_sample_service/Dockerfile -t cccs/assemblyline-service-resultsample:$TAG -t cccs/assemblyline-service-resultsample:latest .
-        docker push cccs/assemblyline-v4-service-base
-        docker push cccs/assemblyline-service-resultsample
+        docker push cccs/assemblyline-v4-service-base --all-tags
+        docker push cccs/assemblyline-service-resultsample --all-tags
       displayName: Deploy to Docker Hub
