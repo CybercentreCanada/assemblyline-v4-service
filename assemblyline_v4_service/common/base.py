@@ -23,7 +23,8 @@ class ServiceBase:
             self.config.update(config)
 
         # Initialize logging for the service
-        log.init_logging(f'{self.service_attributes.name}', log_level=logging.INFO)
+        log.init_logging(f'{self.service_attributes.name}',
+                         log_level=logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO")))
         self.log = logging.getLogger(f'assemblyline.service.{self.service_attributes.name.lower()}')
 
         self._task = None
