@@ -11,6 +11,7 @@ from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
+LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 
 class ServiceBase:
     def __init__(self, config: Optional[Dict] = None) -> None:
@@ -23,8 +24,7 @@ class ServiceBase:
             self.config.update(config)
 
         # Initialize logging for the service
-        log.init_logging(f'{self.service_attributes.name}',
-                         log_level=logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO")))
+        log.init_logging(f'{self.service_attributes.name}', log_level=LOG_LEVEL)
         self.log = logging.getLogger(f'assemblyline.service.{self.service_attributes.name.lower()}')
 
         self._task = None
