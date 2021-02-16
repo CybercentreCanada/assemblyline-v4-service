@@ -8,6 +8,7 @@ from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_core.server_base import ServerBase
 from assemblyline_v4_service.common import helper
+from assemblyline_v4_service.common.base import LOG_LEVEL
 
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
@@ -36,6 +37,8 @@ class RunService(ServerBase):
         self.service_file_required = None
         self.task_fifo = None
         self.done_fifo = None
+
+        self.log.setLevel(LOG_LEVEL)
 
     def try_run(self):
         try:
