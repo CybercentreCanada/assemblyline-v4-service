@@ -12,7 +12,7 @@ RUN touch /tmp/before-pip
 RUN pip install --no-cache-dir --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
-  assemblyline-client==4.0.0b5 \
+  assemblyline-client \
   && rm -rf ~/.cache/pip
 
 # Remove files that existed before the pip install so that our copy command below doesn't take a snapshot of
