@@ -1,6 +1,7 @@
 from typing import List
 from re import compile
 from assemblyline_v4_service.common.result import ResultSection
+from assemblyline_v4_service.common.request import ServiceRequest
 
 HOLLOWSHUNTER_EXE_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
 HOLLOWSHUNTER_SHC_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
@@ -149,7 +150,7 @@ class Ontology:
         raise NotImplementedError
 
     @staticmethod
-    def handle_artefacts(artefact_list: list) -> ResultSection:
+    def handle_artefacts(artefact_list: list, request: ServiceRequest) -> ResultSection:
         """
         Goes through each artefact in artefact_list, uploading them and adding result sections accordingly
 
@@ -165,12 +166,8 @@ class Ontology:
             Ontology._handle_artefact(artefact, artefacts_result_section)
 
             if artefact.to_be_extracted:
-                # Extract
-                # TODO: request.add_extracted(artefact.path, artefact.name, artefact.description)
-                pass
+                request.add_extracted(artefact.path, artefact.name, artefact.description)
             else:
-                # Supplementary
-                # TODO: request.add_supplementary(artefact.path, artefact.name, artefact.description)
-                pass
+                request.add_supplementary(artefact.path, artefact.name, artefact.description)
 
         return artefacts_result_section if artefacts_result_section.subsections else None

@@ -1,9 +1,33 @@
 import pytest
 import os
-from pathlib import Path
 
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
+
+
+@pytest.fixture
+def dummy_task_class():
+    class DummyTask:
+        def __init__(self):
+            self.supplementary = []
+            self.extracted = []
+    yield DummyTask
+
+
+@pytest.fixture
+def dummy_request_class(dummy_task_class):
+    class DummyRequest(dict):
+        def __init__(self):
+            super(DummyRequest, self).__init__()
+            self.task = dummy_task_class()
+
+        def add_supplementary(self, path, name, description):
+            self.task.supplementary.append({"path": path, "name": name, "description": description})
+
+        def add_extracted(self, path, name, description):
+            self.task.extracted.append({"path": path, "name": name, "description": description})
+
+    yield DummyRequest
 
 
 def check_process_equality(this, that):
@@ -70,7 +94,6 @@ def check_section_equality(this, that) -> bool:
             return False
 
     return True
-
 
 
 def setup_module():
@@ -415,9 +438,10 @@ class TestOntology:
             ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": False}], None),
         ]
     )
-    def test_handle_artefacts(artefact_list, expected_result):
+    def test_handle_artefacts(artefact_list, expected_result, dummy_request_class):
         from assemblyline_v4_service.common.dynamic_service_helper import Ontology
+        r = dummy_request_class()
         o = Ontology()
-        actual_result = o.handle_artefacts(artefact_list)
+        actual_result = o.handle_artefacts(artefact_list, r)
         assert actual_result == expected_result
 
