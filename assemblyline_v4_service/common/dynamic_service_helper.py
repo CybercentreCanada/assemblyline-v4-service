@@ -2,6 +2,7 @@ from typing import List
 from re import compile
 from assemblyline_v4_service.common.result import ResultSection
 from assemblyline_v4_service.common.request import ServiceRequest
+from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 HOLLOWSHUNTER_EXE_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
 HOLLOWSHUNTER_SHC_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
@@ -166,7 +167,11 @@ class Ontology:
             Ontology._handle_artefact(artefact, artefacts_result_section)
 
             if artefact.to_be_extracted:
-                request.add_extracted(artefact.path, artefact.name, artefact.description)
+                try:
+                    request.add_extracted(artefact.path, artefact.name, artefact.description)
+                except MaxExtractedExceeded:
+                    # To avoid errors from being raised when too many files have been extracted
+                    pass
             else:
                 request.add_supplementary(artefact.path, artefact.name, artefact.description)
 
