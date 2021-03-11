@@ -47,7 +47,7 @@ def get_xml_strings():
     pest_minlen = 6
 
     api = {}
-    blacklist = {}
+    suspicious = {}
     powershell = {}
 
     with open(path.join(path.dirname(__file__), "../pestudio/xml/strings.xml"), 'rt') as f:
@@ -55,45 +55,45 @@ def get_xml_strings():
 
     for st in tree.findall('.//agent'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('agent', set()).add(st.text)
+            suspicious.setdefault('agent', set()).add(st.text)
     for st in tree.findall('.//av'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('av', set()).add(st.text)
+            suspicious.setdefault('av', set()).add(st.text)
     for st in tree.findall('.//event'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('event', set()).add(st.text)
+            suspicious.setdefault('event', set()).add(st.text)
     for st in tree.findall('.//guid'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('guid', set()).add(st.text)
+            suspicious.setdefault('guid', set()).add(st.text)
     for st in tree.findall('.//insult'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('insult', set()).add(st.text)
+            suspicious.setdefault('insult', set()).add(st.text)
     for st in tree.findall('.//key'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('key', set()).add(st.text)
+            suspicious.setdefault('key', set()).add(st.text)
     for st in tree.findall('.//oid'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('oid', set()).add(st.text)
+            suspicious.setdefault('oid', set()).add(st.text)
     for st in tree.findall('.//os'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('os', set()).add(st.text)
+            suspicious.setdefault('os', set()).add(st.text)
     for st in tree.findall('.//priv'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('priv', set()).add(st.text)
+            suspicious.setdefault('priv', set()).add(st.text)
     for st in tree.findall('.//product'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('product', set()).add(st.text)
+            suspicious.setdefault('product', set()).add(st.text)
     for st in tree.findall('.//protocol'):
-        blacklist.setdefault('protocol', set()).add(st.text)
+        suspicious.setdefault('protocol', set()).add(st.text)
     for st in tree.findall('.//reg'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('reg', set()).add(st.text)
+            suspicious.setdefault('reg', set()).add(st.text)
     for st in tree.findall('.//sid'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('sid', set()).add(st.text)
+            suspicious.setdefault('sid', set()).add(st.text)
     for st in tree.findall('.//string'):
         if len(st.text) > pest_minlen:
-            blacklist.setdefault('string', set()).add(st.text)
+            suspicious.setdefault('string', set()).add(st.text)
     # Powershell indicator strings
     for st in tree.findall('.//powershell'):
         if len(st.text) > pest_minlen:
@@ -116,7 +116,7 @@ def get_xml_strings():
             if len(st.text) > pest_minlen:
                 api.setdefault('topapi', set()).add(st.text)
 
-    return api, blacklist, powershell
+    return api, suspicious, powershell
 
 
 class PatternMatch(object):
@@ -188,7 +188,7 @@ class PatternMatch(object):
 
 # --- PEStudio Patterns ------------------------------------------------------------------------------------------------
 
-    PEST_API, PEST_BLACKLIST, PEST_POWERSHELL = get_xml_strings()
+    PEST_API, PEST_SUSPICIOUS, PEST_POWERSHELL = get_xml_strings()
 
 # --- Regex Patterns ---------------------------------------------------------------------------------------------------
 
@@ -431,14 +431,14 @@ class PatternMatch(object):
         # PEStudio Blacklist
         # Flags strings from PEStudio's Blacklist
         final_values = []
-        for k, i in self.PEST_BLACKLIST.items():
+        for k, i in self.PEST_SUSPICIOUS.items():
             for e in i:
                 if bytes(e, 'utf8') in value:
                     final_values.append(e)
         if len(final_values) > 0:
-            value_extract['file.string.blacklisted'] = set()
+            value_extract['file.string.suspicious'] = set()
         for val in final_values:
-            value_extract['file.string.blacklisted'].add(val)
+            value_extract['file.string.suspicious'].add(val)
         # -----------------------------------------------------------------------------
         # Function/Library Strings
         # Win API strings from PEStudio's Blacklist
