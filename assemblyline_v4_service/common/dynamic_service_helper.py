@@ -9,22 +9,120 @@ HOLLOWSHUNTER_SHC_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a
 HOLLOWSHUNTER_DLL_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
 
 
-class Process:
-    def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None, timestamp: float = None):
+class Event:
+    def __init__(self, pid: int = None, timestamp: float = None, guid: str = None):
         self.pid = pid  # Same as ProcessID
-        self.ppid = ppid  # Same as ParentProcessID
-        self.image = image  # Same as Process Name
-        self.command_line = command_line
-        self.timestamp = timestamp  # Do we need this?  Also the equivalent of first_seen
+        self.timestamp = timestamp  # The equivalent of first_seen
+        self.guid = guid
 
-    def convert_process_to_dict(self):
-        return {
-            "pid": self.pid,
-            "ppid": self.ppid,
-            "image": self.image,
-            "command_line": self.command_line,
-            "timestamp": self.timestamp
-        }
+    def convert_event_to_dict(self):
+        return self.__dict__
+
+
+class ProcessEvent(Event):
+    def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None, timestamp: float = None, guid: str = None):
+        super().__init__(pid=pid, timestamp=timestamp, guid=guid)
+        self.ppid = ppid  # Same as ParentProcessID
+        self.image = image  # Same as ProcessName
+        self.command_line = command_line
+
+
+class NetworkEvent(Event):
+    def __init__(self, protocol: str = None, src_ip: str = None, src_port: int = None, domain: str = None,
+                 dest_ip: str = None, dest_port: int = None, pid: int = None, timestamp: float = None, guid: str = None):
+        super().__init__(pid=pid, timestamp=timestamp, guid=guid)
+        self.protocol = protocol
+        self.src_ip = src_ip
+        self.src_port = src_port
+        self.domain = domain
+        self.dest_ip = dest_ip
+        self.dest_port = dest_port
+
+
+class Events:
+    def __init__(self, events: List[dict] = None):
+        if events is None:
+            self.events = []
+            self.sorted_events = []
+            self.process_events = []
+            self.process_event_dicts = {}
+            self.network_events = []
+            self.network_event_dicts = {}
+        else:
+            self.events = self._validate_events(events)
+            self.sorted_events = self._sort_things_by_timestamp(self.events)
+            self.process_events = self._get_process_events(self.sorted_events)
+            self.process_event_dicts = self._convert_events_to_dict(self.process_events)
+            self.network_events = self._get_network_events(self.sorted_events)
+            self.network_event_dicts = self._convert_events_to_dict(self.network_events)
+
+    @staticmethod
+    def _validate_events(events: List[dict] = None) -> List[Event]:
+        validated_events = []
+        process_event_keys = {"pid", "ppid", "image", "command_line", "timestamp", "guid"}
+        network_event_keys = {"protocol", "src_ip", "src_port", "domain", "dest_ip", "dest_port", "pid", "timestamp", "guid"}
+        for event in events:
+            event_keys = set(event.keys())
+            if event_keys == process_event_keys:
+                validated_process_event = ProcessEvent(
+                    pid=event["pid"],
+                    ppid=event["ppid"],
+                    image=event["image"],
+                    command_line=event["command_line"],
+                    timestamp=event["timestamp"],
+                    guid=event["guid"],
+                )
+                validated_events.append(validated_process_event)
+            elif event_keys == network_event_keys:
+                validated_network_event = NetworkEvent(
+                    protocol=event["protocol"],
+                    src_ip=event["src_ip"],
+                    src_port=event["src_port"],
+                    domain=event["domain"],
+                    dest_ip=event["dest_ip"],
+                    dest_port=event["dest_port"],
+                    pid=event["pid"],
+                    timestamp=event["timestamp"],
+                    guid=event["guid"],
+                )
+                validated_events.append(validated_network_event)
+            else:
+                raise ValueError(f"The event {event} does not match the process_event format {process_event_keys} or the network_event format {network_event_keys}.")
+        return validated_events
+
+    @staticmethod
+    def _get_process_events(events: List[Event] = None) -> List[ProcessEvent]:
+        process_events = []
+        for event in events:
+            if isinstance(event, ProcessEvent):
+                process_events.append(event)
+        return process_events
+
+    @staticmethod
+    def _get_network_events(events: List[Event] = None) -> List[NetworkEvent]:
+        network_events = []
+        for event in events:
+            if isinstance(event, NetworkEvent):
+                network_events.append(event)
+        return network_events
+
+    @staticmethod
+    def _sort_things_by_timestamp(things_to_sort_by_timestamp: List = None) -> List:
+        if not things_to_sort_by_timestamp:
+            return []
+        if isinstance(things_to_sort_by_timestamp[0], dict):
+            timestamp = lambda x: x["timestamp"]
+        else:
+            timestamp = lambda x: x.timestamp
+        sorted_things = sorted(things_to_sort_by_timestamp, key=timestamp)
+        return sorted_things
+
+    @staticmethod
+    def _convert_events_to_dict(events: List) -> dict:
+        events_dict = {}
+        for event in events:
+            events_dict[event.pid] = event.convert_event_to_dict()
+        return events_dict
 
 
 class Artefact:
@@ -38,39 +136,16 @@ class Artefact:
         self.to_be_extracted = to_be_extracted
 
 
-class Ontology:
-    def __init__(self, process_list: list = None):
-        if process_list is None:
-            self.process_list = []
-        else:
-            self.process_list = self._validate_process_list(process_list)
-
-    @staticmethod
-    def _validate_process_list(process_list) -> List[Process]:
-        valid_process_list = []
-        for process in process_list:
-            valid_process = Process(
-                pid=process["pid"],
-                ppid=process["ppid"],
-                image=process["image"],
-                command_line=process["command_line"],
-                timestamp=process["timestamp"],
-            )
-            valid_process_list.append(valid_process)
-        return valid_process_list
-
-    def _convert_processes_to_dict(self) -> dict:
-        processes_dict = {}
-        for process in self.process_list:
-            processes_dict[process.pid] = process.convert_process_to_dict()
-        return processes_dict
+class SandboxOntology(Events):
+    def __init__(self, events: List[dict] = None):
+        Events.__init__(self, events=events)
 
     @staticmethod
     def _convert_processes_dict_to_tree(processes_dict: dict = None) -> List[dict]:
         root = {
             "children": [],
         }
-        sorted_processes = Ontology._sort_things_by_timestamp(list(processes_dict.values()))
+        sorted_processes = SandboxOntology._sort_things_by_timestamp(list(processes_dict.values()))
         procs_seen = []
 
         for p in sorted_processes:
@@ -82,13 +157,7 @@ class Ontology:
 
             procs_seen.append(p["pid"])
 
-        return Ontology._sort_things_by_timestamp(root["children"])
-
-    @staticmethod
-    def _sort_things_by_timestamp(things_to_sort_by_timestamp: List[dict] = None) -> List[dict]:
-        timestamp = lambda x: x["timestamp"]
-        sorted_things = sorted(things_to_sort_by_timestamp, key=timestamp)
-        return sorted_things
+        return SandboxOntology._sort_things_by_timestamp(root["children"])
 
     @staticmethod
     def _validate_artefacts(artefact_list: List[dict] = None) -> List[Artefact]:
@@ -107,7 +176,7 @@ class Ontology:
         return validated_artefacts
 
     @staticmethod
-    def _handle_artefact(artefact: Artefact = None, artefacts_result_section: ResultSection = None) -> ResultSection:
+    def _handle_artefact(artefact: Artefact = None, artefacts_result_section: ResultSection = None):
         if artefact is None:
             raise Exception("Artefact cannot be None")
 
@@ -129,20 +198,14 @@ class Ontology:
             artefacts_result_section.add_subsection(artefact_result_section)
 
     def get_process_tree(self) -> List[dict]:
-        processes_dict = self._convert_processes_to_dict()
-        process_tree = self._convert_processes_dict_to_tree(processes_dict)
+        process_tree = self._convert_processes_dict_to_tree(self.process_event_dicts)
         return process_tree
 
-    @staticmethod
-    def get_events(process_list: List[dict] = None, network_calls: List[dict] = None) -> List[dict]:
-        if process_list is None:
-            process_list = []
-        if network_calls is None:
-            network_calls = []
-
-        events = process_list + network_calls
-        sorted_events = Ontology._sort_things_by_timestamp(events)
-        return sorted_events
+    def get_events(self) -> List[dict]:
+        sorted_event_dicts = []
+        for event in self.sorted_events:
+            sorted_event_dicts.append(event.convert_event_to_dict())
+        return sorted_event_dicts
 
     def run_signatures(self) -> ResultSection:
         """
@@ -159,12 +222,12 @@ class Ontology:
         artefact_list -- list of dictionaries that each represent an artefact
         """
 
-        validated_artefacts = Ontology._validate_artefacts(artefact_list)
+        validated_artefacts = SandboxOntology._validate_artefacts(artefact_list)
 
         artefacts_result_section = ResultSection("Sandbox Artefacts")
 
         for artefact in validated_artefacts:
-            Ontology._handle_artefact(artefact, artefacts_result_section)
+            SandboxOntology._handle_artefact(artefact, artefacts_result_section)
 
             if artefact.to_be_extracted:
                 try:

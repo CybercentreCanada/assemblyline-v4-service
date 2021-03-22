@@ -15,6 +15,14 @@ def dummy_task_class():
 
 
 @pytest.fixture
+def dummy_event_class():
+    class DummyEvent:
+        def __init__(self, item):
+            self.timestamp = item["timestamp"]
+    yield DummyEvent
+
+
+@pytest.fixture
 def dummy_request_class(dummy_task_class):
     class DummyRequest(dict):
         def __init__(self):
@@ -28,14 +36,6 @@ def dummy_request_class(dummy_task_class):
             self.task.extracted.append({"path": path, "name": name, "description": description})
 
     yield DummyRequest
-
-
-def check_process_equality(this, that):
-    if this.pid == that.pid and this.ppid == that.ppid and this.image == that.image \
-            and this.command_line == that.command_line and this.timestamp == that.timestamp:
-        return True
-    else:
-        return False
 
 
 def check_artefact_equality(this, that):
@@ -107,7 +107,7 @@ def teardown_module():
         os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
-class TestProcess:
+class TestProcessEvent:
     @staticmethod
     @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp",
         [
@@ -116,8 +116,8 @@ class TestProcess:
         ]
     )
     def test_init(pid, ppid, image, command_line, timestamp):
-        from assemblyline_v4_service.common.dynamic_service_helper import Process
-        p = Process(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp)
+        from assemblyline_v4_service.common.dynamic_service_helper import ProcessEvent
+        p = ProcessEvent(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp)
         assert p.pid == pid
         assert p.ppid == ppid
         assert p.image == image
@@ -125,18 +125,53 @@ class TestProcess:
         assert p.timestamp == timestamp
 
     @staticmethod
-    @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp, expected_result",
+    @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp, guid, expected_result",
         [
-            (None, None, None, None, None,
-                {"command_line": None, "image": None, "pid": None, "ppid": None, "timestamp": None}),
-            (1, 1, "blah", "blah", 1.0,
-                {"command_line": "blah", "image": "blah", "pid": 1, "ppid": 1, "timestamp": 1.0}),
+            (None, None, None, None, None, None,
+                {"command_line": None, "image": None, "pid": None, "ppid": None, "timestamp": None, "guid": None}),
+            (1, 1, "blah", "blah", 1.0, "blah",
+                {"command_line": "blah", "image": "blah", "pid": 1, "ppid": 1, "timestamp": 1.0, "guid": "blah"}),
         ]
     )
-    def test_convert_process_to_dict(pid, ppid, image, command_line, timestamp, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import Process
-        p = Process(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp)
-        actual_result = p.convert_process_to_dict()
+    def test_convert_event_to_dict(pid, ppid, image, command_line, timestamp, guid, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import ProcessEvent
+        p = ProcessEvent(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp, guid=guid)
+        actual_result = p.convert_event_to_dict()
+        assert actual_result == expected_result
+
+
+class TestNetworkEvent:
+    @staticmethod
+    @pytest.mark.parametrize("protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp",
+        [
+            (None, None, None, None, None, None, None, None),
+            ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0),
+        ]
+    )
+    def test_init(protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp):
+        from assemblyline_v4_service.common.dynamic_service_helper import NetworkEvent
+        n = NetworkEvent(protocol=protocol, src_ip=src_ip, src_port=src_port, domain=domain, dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp)
+        assert n.protocol == protocol
+        assert n.src_port == src_port
+        assert n.domain == domain
+        assert n.dest_ip == dest_ip
+        assert n.dest_port == dest_port
+        assert n.pid == pid
+        assert n.timestamp == timestamp
+
+    @staticmethod
+    @pytest.mark.parametrize("protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp, guid, expected_result",
+        [
+            (None, None, None, None, None, None, None, None, None,
+                {"protocol": None, "src_ip": None, "src_port": None, "domain": None, "dest_ip": None, "dest_port": None, "pid": None, "timestamp": None, "guid": None}),
+            ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0, "blah",
+                {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}),
+        ]
+    )
+    def test_convert_event_to_dict(protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp, guid, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import NetworkEvent
+        n = NetworkEvent(protocol=protocol, src_ip=src_ip, src_port=src_port, domain=domain, dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp, guid=guid)
+        actual_result = n.convert_event_to_dict()
         assert actual_result == expected_result
 
 
@@ -162,49 +197,107 @@ class TestArtefact:
         assert a.to_be_extracted == to_be_extracted
 
 
-class TestOntology:
+class TestEvents:
     @staticmethod
-    @pytest.mark.parametrize("process_list, expected_process_list", [(None, []), ([], [])])
-    def test_init(process_list, expected_process_list):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-        o = Ontology(process_list=process_list)
-        assert o.process_list == expected_process_list
+    @pytest.mark.parametrize("events, expected_events, expected_sorted_events, expected_process_events, expected_network_events", [([], [], [], [], [])])
+    def test_init(events, expected_events, expected_sorted_events, expected_process_events, expected_network_events):
+        from assemblyline_v4_service.common.dynamic_service_helper import Events
+        e = Events(events=events)
+        assert e.events == expected_events
+        assert e.sorted_events == expected_sorted_events
+        assert e.process_events == expected_process_events
+        assert e.network_events == expected_network_events
 
     @staticmethod
-    @pytest.mark.parametrize("process_list",
+    @pytest.mark.parametrize("events, validated_events_num",
         [
-            [],
-            [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": "blah"}],
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], 1),
+            ([{}], 0),
         ]
     )
-    def test_validate_process_list(process_list):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology, Process
-        actual_validated_process_list = Ontology._validate_process_list(process_list)
-        for index, process in enumerate(process_list):
-            expected_process = Process(
-                pid=process["pid"],
-                ppid=process["ppid"],
-                image=process["image"],
-                command_line=process["command_line"],
-                timestamp=process["timestamp"],
-            )
-            assert check_process_equality(expected_process, actual_validated_process_list[index])
+    def test_validate_events(events, validated_events_num):
+        from assemblyline_v4_service.common.dynamic_service_helper import Events
+        if validated_events_num:
+            assert len(Events._validate_events(events)) == validated_events_num
+        else:
+            with pytest.raises(ValueError):
+                Events._validate_events(events)
 
     @staticmethod
-    @pytest.mark.parametrize("process_list, expected_result",
+    @pytest.mark.parametrize("events, validated_events_num",
         [
-            ([], {}),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], 0),
+        ]
+    )
+    def test_get_process_events(events, validated_events_num):
+        from assemblyline_v4_service.common.dynamic_service_helper import Events
+        validated_events = Events._validate_events(events)
+        assert len(Events._get_process_events(validated_events)) == validated_events_num
+
+    @staticmethod
+    @pytest.mark.parametrize("events, validated_events_num",
+        [
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], 0),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], 1),
+        ]
+    )
+    def test_get_network_events(events, validated_events_num):
+        from assemblyline_v4_service.common.dynamic_service_helper import Events
+        validated_events = Events._validate_events(events)
+        assert len(Events._get_network_events(validated_events)) == validated_events_num
+
+    @staticmethod
+    @pytest.mark.parametrize("things_to_sort_by_timestamp, expected_result",
+        [
+            (None, []),
+            ([], []),
             (
-                [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": "blah"}],
-                {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": "blah"}}
+                    [{"timestamp": 1}],
+                    [{"timestamp": 1}]
+            ),
+            (
+                    [{"timestamp": 1}, {"timestamp": 2}],
+                    [{"timestamp": 1}, {"timestamp": 2}]
+            ),
+            (
+                    [{"timestamp": 1}, {"timestamp": 1}],
+                    [{"timestamp": 1}, {"timestamp": 1}]
+            ),
+            (
+                    [{"timestamp": 2}, {"timestamp": 1}],
+                    [{"timestamp": 1}, {"timestamp": 2}]
+            ),
+            (
+                    [{"timestamp": 3}, {"timestamp": 2}, {"timestamp": 1}],
+                    [{"timestamp": 1}, {"timestamp": 2}, {"timestamp": 3}]
             ),
         ]
     )
-    def test_convert_processes_to_dict(process_list, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-        validated_process_list = Ontology(process_list)
-        actual_result = validated_process_list._convert_processes_to_dict()
-        assert actual_result == expected_result
+    def test_sort_things_by_timestamp(things_to_sort_by_timestamp, expected_result, dummy_event_class):
+        from assemblyline_v4_service.common.dynamic_service_helper import Events
+        dummy_things = []
+        dummy_results = []
+        if things_to_sort_by_timestamp is None:
+            assert Events._sort_things_by_timestamp(dummy_things) == []
+            return
+        for thing in things_to_sort_by_timestamp:
+            dummy_things.append(dummy_event_class(thing))
+        for result in expected_result:
+            dummy_results.append(dummy_event_class(result))
+        actual_result = Events._sort_things_by_timestamp(dummy_things)
+        for index, item in enumerate(actual_result):
+            assert item.__dict__ == dummy_results[index].__dict__
+
+
+class TestSandboxOntology:
+    @staticmethod
+    @pytest.mark.parametrize("events, expected_events", [([], [])])
+    def test_init(events, expected_events):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        so = SandboxOntology(events=events)
+        assert so.events == expected_events
 
     @staticmethod
     @pytest.mark.parametrize("processes_dict, expected_result",
@@ -297,40 +390,10 @@ class TestOntology:
         ]
     )
     def test_convert_processes_dict_to_tree(processes_dict, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-        actual_result = Ontology._convert_processes_dict_to_tree(processes_dict)
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        actual_result = SandboxOntology._convert_processes_dict_to_tree(processes_dict)
         assert expected_result == actual_result
 
-    @staticmethod
-    @pytest.mark.parametrize("things_to_sort_by_timestamp, expected_result",
-        [
-            ([], []),
-            (
-                    [{"timestamp": 1}],
-                    [{"timestamp": 1}]
-            ),
-            (
-                    [{"timestamp": 1}, {"timestamp": 2}],
-                    [{"timestamp": 1}, {"timestamp": 2}]
-            ),
-            (
-                    [{"timestamp": 1}, {"timestamp": 1}],
-                    [{"timestamp": 1}, {"timestamp": 1}]
-            ),
-            (
-                    [{"timestamp": 2}, {"timestamp": 1}],
-                    [{"timestamp": 1}, {"timestamp": 2}]
-            ),
-            (
-                    [{"timestamp": 3}, {"timestamp": 2}, {"timestamp": 1}],
-                    [{"timestamp": 1}, {"timestamp": 2}, {"timestamp": 3}]
-            ),
-        ]
-    )
-    def test_sort_things_by_timestamp(things_to_sort_by_timestamp, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-        actual_result = Ontology._sort_things_by_timestamp(things_to_sort_by_timestamp)
-        assert actual_result == expected_result
 
     @staticmethod
     @pytest.mark.parametrize("artefact_list",
@@ -341,8 +404,8 @@ class TestOntology:
         ]
     )
     def test_validate_artefacts(artefact_list):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology, Artefact
-        actual_validated_artefact_list = Ontology._validate_artefacts(artefact_list)
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artefact
+        actual_validated_artefact_list = SandboxOntology._validate_artefacts(artefact_list)
         if artefact_list is None:
             artefact_list = []
         for index, artefact in enumerate(artefact_list):
@@ -365,12 +428,12 @@ class TestOntology:
         ]
     )
     def test_handle_artefact(artefact, expected_result_section_title):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology, Artefact
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artefact
         from assemblyline_v4_service.common.result import ResultSection
 
         if artefact is None:
             with pytest.raises(Exception):
-                Ontology._handle_artefact(artefact, None)
+                SandboxOntology._handle_artefact(artefact, None)
             return
 
         expected_result_section = None
@@ -385,7 +448,7 @@ class TestOntology:
             description=artefact["description"],
             to_be_extracted=artefact["to_be_extracted"]
         )
-        Ontology._handle_artefact(a, parent_result_section)
+        SandboxOntology._handle_artefact(a, parent_result_section)
         if len(parent_result_section.subsections) > 0:
             actual_result_section = parent_result_section.subsections[0]
         else:
@@ -399,33 +462,34 @@ class TestOntology:
     @staticmethod
     @pytest.mark.parametrize("process_list, expected_result", [(None, []), ([], [])])
     def test_get_process_tree(process_list, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-        o = Ontology(process_list)
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        o = SandboxOntology(process_list)
         actual_result = o.get_process_tree()
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("processes, network_calls, expected_result",
+    @pytest.mark.parametrize("events, expected_result",
         [
-            (None, None, []),
-            ([], [], []),
-            ([{"pid": 1, "timestamp": 1}], [], [{"pid": 1, "timestamp": 1}]),
-            ([], [{"domain": "blah", "timestamp": 1}], [{"domain": "blah", "timestamp": 1}]),
-            ([{"pid": 1, "timestamp": 1}], [{"domain": "blah", "timestamp": 1}], [{"pid": 1, "timestamp": 1}, {"domain": "blah", "timestamp": 1}]),
-            ([{"pid": 1, "timestamp": 1}], [{"domain": "blah", "timestamp": 2}], [{"pid": 1, "timestamp": 1}, {"domain": "blah", "timestamp": 2}]),
-            ([{"pid": 1, "timestamp": 2}], [{"domain": "blah", "timestamp": 1}], [{"domain": "blah", "timestamp": 1}, {"pid": 1, "timestamp": 2}]),
+            (None, []),
+            ([], []),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}]),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 2.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 2.0, "guid": "blah"}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}, {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah"}]),
         ]
     )
-    def test_get_events(processes, network_calls, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-        actual_result = Ontology.get_events(processes, network_calls)
+    def test_get_events(events, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        so = SandboxOntology(events=events)
+        actual_result = so.get_events()
         assert actual_result == expected_result
 
     # TODO: implement this
     # @staticmethod
     # def test_run_signatures():
-    #     from assemblyline_v4_service.common.dynamic_service_helper import Ontology
-    #     o = Ontology()
+    #     from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+    #     o = SandboxOntology()
     #     actual_result = o.run_signatures()
     #     assert actual_result is True
 
@@ -439,9 +503,9 @@ class TestOntology:
         ]
     )
     def test_handle_artefacts(artefact_list, expected_result, dummy_request_class):
-        from assemblyline_v4_service.common.dynamic_service_helper import Ontology
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         r = dummy_request_class()
-        o = Ontology()
+        o = SandboxOntology()
         actual_result = o.handle_artefacts(artefact_list, r)
         assert actual_result == expected_result
 
