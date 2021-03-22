@@ -30,7 +30,7 @@ def _section_traverser(section: ResultSection = None) -> ResultSection:
     return section
 
 
-def _reduce_specific_tags(tags=None) -> {}:
+def _reduce_specific_tags(tags=None) -> dict:
     """
     This function is very much a work in progress. Currently the only tags that we
     feel the need to reduce are unique uris and uri paths

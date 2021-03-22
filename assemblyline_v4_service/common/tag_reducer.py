@@ -197,15 +197,14 @@ def reduce_uri_tags(uris=None) -> []:
     return reduced_uris_list
 
 
-def _turn_back_into_uri(uri_parts) -> str:
+def _turn_back_into_uri(uri_parts: dict) -> str:
     # turn the path back into a string
     uri_parts["path"] = '/'.join(uri_parts["path"])
     # turn the query back into a query string
     # first, remove the list wrappers
     if uri_parts["query"] != "":
         for item in uri_parts["query"].keys():
-            uri_parts["query"][item] = uri_parts["query"][item][
-                0]
+            uri_parts["query"][item] = uri_parts["query"][item][0]
     uri_parts["query"] = unquote(urlencode(uri_parts["query"]))
 
     uri_tuple = (uri_parts["scheme"], uri_parts["netloc"],
@@ -216,6 +215,9 @@ def _turn_back_into_uri(uri_parts) -> str:
 
 
 def _get_placeholder(val: str) -> str:
+    if not val:
+        return "${UNKNOWN_TYPE}"
+
     if NUMBER_REGEX.fullmatch(val):
         placeholder = "${NUMBER}"
     elif ALPHA_REGEX.fullmatch(val):
@@ -236,82 +238,3 @@ REDUCE_MAP = {
     "network.dynamic.uri_path": reduce_uri_tags,
     "network.static.uri_path": reduce_uri_tags
 }
-
-
-if __name__ == "__main__":
-    from pprint import pprint
-    tags = {
-        'attribution.actor': ["MALICIOUS_ACTOR"],
-        'network.static.ip': ['127.0.0.1'],
-        'av.virus_name': ["bad_virus"],
-        # "network.static.uri": [
-        #     "https://google.com?query=allo",
-        #     "https://google.com?query=mon",
-        #     "https://google.com?query=coco",
-        #     # These should reduce to 'https://google.com?query=${ALPHA}'
-        #
-        #     "https://abc.com?query=THISISATESTTHISISATEST",
-        #     "https://def.com?query=THISISATESTTHISISATEST",
-        #     "https://ghi.com?query=THISISATESTTHISISATEST",
-        #     # These shouldn't reduce due to unique domain/hostnames
-        #
-        #     "https://hello.com/patha?query=THISISATESTTHISISATEST",
-        #     "https://hello.com/pathb?query=THISISATESTTHISISATEST",
-        #     "https://hello.com/pathc?query=THISISATESTTHISISATEST",
-        #     # These should reduce to "https://hello.com/${ALPHA}/?query=THISISATESTTHISISATEST"
-        #
-        #     "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
-        #     "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
-        #     "https://bonjour.com/path?query=THISISATESTTHISISATEST1",
-        #     # These should reduce to "https://hello.com/path/?query=THISISATESTTHISISATEST1"
-        #
-        #     "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=123",
-        #     "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=345",
-        #     "https://hello.com/path?query=THISISATESTTHISISATEST1&rnd=567",
-        #     # These should reduced to "https://hello.com/path/?query=THISISATESTTHISISATEST1&rnd=${NUMBER}"
-        # ],
-        "network.dynamic.uri": [
-            "https://base64encodethis.com/path?base64hash=c2hlemxsM3Iz",
-            "https://base64encodethis.com/path?base64hash=YXNkZmVyamdhM2diMCBj",
-            "https://base64encodethis.com/path?base64hash=IyQwMjN5di04ICEjIEApIGhcMmJ1cGY5NDMwYTIvNDEyMzIzNCBo",
-            # These should be reduced to "https://base64encodethis.com/path/?base64hash=${BASE64}"
-
-            # Can't seem to find the type for this !?
-            "https://googlelicious.com/somepathother?query=allo",
-            "https://googlelicious.com/somepathother?query=mon",
-            "https://googlelicious.com/somepathother?query=coco",
-            # These should be reduced to "https://googlelicious.com/somepathother/?query=${ALPHA}"
-
-            "https://googlelicious.com/somepath?rng=112431243",
-            "https://googlelicious.com/somepath?rng=124312431243",
-            "https://googlelicious.com/somepath?rng=22",
-            # These should be reduced to "https://googlelicious.com/somepathother?rng=${NUMBER}"
-
-            "https://googlelicious.com/somepath/morepath?rng=112431243&blah=blah",
-            "https://googlelicious.com/somepath/morepath?rng=124312431243&blah=blah",
-            "https://googlelicious.com/somepath/morepath?rng=22&blah=blah",
-            # These should be reduced to "https://googlelicious.com/somepath/morepath?rng=${NUMBER}&blah=blah"
-
-            "https://websitesname.ca",
-            "https://websitesname.com",
-            "https://websitesname.it",
-            # these should all be present, since urls with unique domains should not be reduced
-
-            "https://www.facebook.com/some-details-330002341217/",
-            "https://www.facebook.com/some-details-330002341218/",
-            "https://www.facebook.com/some-details-330002341219/",
-            # these should be reduced to https://www.facebook.com/${UNKNOWN_TYPE}/
-
-            "ftp://random1.vib.slx/",
-            "ftp://random2.vib.slx/",
-            "ftp://random3.vib.slx/",
-            # these should all be present, since urls with unique domains should not be reduced
-
-            "https://en.wikipedia.org/wiki/Interne0",
-            "https://en.wikipedia.org/wiki/Internet1",
-            "https://en.wikipedia.org/wiki/Internet2",
-            "https://en.wikipedia.org/wiki/Internet3",
-            # these should reduce to https://en.wikipedia.org/${ALPHA},${ALPHA_NUM}/${ALPHA},${ALPHA_NUM}
-        ]
-    }
-    pprint({tag_type: REDUCE_MAP.get(tag_type, lambda x: x)(tag_values) for tag_type, tag_values in tags.items()})
