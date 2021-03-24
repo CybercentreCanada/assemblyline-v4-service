@@ -396,7 +396,6 @@ class TestSandboxOntology:
         actual_result = SandboxOntology._convert_processes_dict_to_tree(processes_dict)
         assert expected_result == actual_result
 
-
     @staticmethod
     @pytest.mark.parametrize("artefact_list",
         [
@@ -462,12 +461,50 @@ class TestSandboxOntology:
             assert check_section_equality(actual_result_section, expected_result_section)
 
     @staticmethod
+    @pytest.mark.parametrize("process_list, signatures, expected_result",
+        [
+            (None, [], {}),
+            ([], [], {}),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": [{"pid": 1, "name": "blah", "score": 1}]}}),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": [{"pid": 1, "name": "blah", "score": 1}]}}),
+        ]
+    )
+    def test_match_signatures_to_process_events(process_list, signatures, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        o = SandboxOntology(process_list)
+        if process_list and signatures and process_list[0]["pid"] != signatures[0]["pid"]:
+            with pytest.raises(Exception):
+                o._match_signatures_to_process_events(signature_dicts=signatures)
+        else:
+            actual_result = o._match_signatures_to_process_events(signature_dicts=signatures)
+            assert actual_result == expected_result
+
+    @staticmethod
     @pytest.mark.parametrize("process_list, expected_result", [(None, []), ([], [])])
     def test_get_process_tree(process_list, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
         actual_result = o.get_process_tree()
         assert actual_result == expected_result
+
+    @staticmethod
+    @pytest.mark.parametrize("process_list, signatures, expected_result",
+        [
+            (None, [], []),
+            ([], [], []),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": [{"pid": 1, "name": "blah", "score": 1}]}]),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": [{"pid": 1, "name": "blah", "score": 1}]}]),
+        ]
+    )
+    def test_get_process_tree_with_signatures(process_list, signatures, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        o = SandboxOntology(process_list)
+        if process_list and signatures and process_list[0]["pid"] != signatures[0]["pid"]:
+            with pytest.raises(Exception):
+                o.get_process_tree_with_signatures(signatures=signatures)
+        else:
+            actual_result = o.get_process_tree_with_signatures(signatures=signatures)
+            assert actual_result == expected_result
 
     @staticmethod
     @pytest.mark.parametrize("events, expected_result",
