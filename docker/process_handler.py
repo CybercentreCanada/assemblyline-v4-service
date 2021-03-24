@@ -2,10 +2,12 @@ import logging
 import signal
 import time
 
+from os import environ
 from subprocess import Popen
 
 from assemblyline.common import log as al_log
 
+LOG_LEVEL = logging.getLevelName(environ.get("LOG_LEVEL", "INFO"))
 
 def check_processes(service_process, task_handler_process):
     rs_rc = service_process.poll()
@@ -32,7 +34,7 @@ def check_processes(service_process, task_handler_process):
 
 
 if __name__ == '__main__':
-    al_log.init_logging("assemblyline.service.process_handler")
+    al_log.init_logging("assemblyline.service.process_handler", log_level=LOG_LEVEL)
 
     log = logging.getLogger("assemblyline.service.process_handler")
     # Start the two processes
