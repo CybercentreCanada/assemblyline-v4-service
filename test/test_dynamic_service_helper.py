@@ -107,6 +107,38 @@ def teardown_module():
         os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
+class TestEvent:
+    @staticmethod
+    @pytest.mark.parametrize("pid, image, timestamp, guid",
+        [
+            (None, None, None, None,),
+            (1, 1, "blah", "blah",),
+        ]
+    )
+    def test_init(pid, image, timestamp, guid):
+        from assemblyline_v4_service.common.dynamic_service_helper import Event
+        e = Event(pid, image, timestamp, guid)
+        assert e.pid == pid
+        assert e.image == image
+        assert e.timestamp == timestamp
+        assert e.guid == guid
+
+    @staticmethod
+    @pytest.mark.parametrize("pid, image, timestamp, guid, expected_result",
+        [
+            (None, None, None, None,
+                {"image": None, "pid": None, "timestamp": None, "guid": None}),
+            (1, "blah", 1.0, "blah",
+                {"image": "blah", "pid": 1, "timestamp": 1.0, "guid": "blah"}),
+        ]
+    )
+    def test_convert_event_to_dict(pid, image, timestamp, guid, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import Event
+        e = Event(pid=pid, image=image, timestamp=timestamp, guid=guid)
+        actual_result = e.convert_event_to_dict()
+        assert actual_result == expected_result
+
+
 class TestProcessEvent:
     @staticmethod
     @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp",
@@ -123,21 +155,6 @@ class TestProcessEvent:
         assert p.image == image
         assert p.command_line == command_line
         assert p.timestamp == timestamp
-
-    @staticmethod
-    @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp, guid, expected_result",
-        [
-            (None, None, None, None, None, None,
-                {"command_line": None, "image": None, "pid": None, "ppid": None, "timestamp": None, "guid": None}),
-            (1, 1, "blah", "blah", 1.0, "blah",
-                {"command_line": "blah", "image": "blah", "pid": 1, "ppid": 1, "timestamp": 1.0, "guid": "blah"}),
-        ]
-    )
-    def test_convert_event_to_dict(pid, ppid, image, command_line, timestamp, guid, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import ProcessEvent
-        p = ProcessEvent(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp, guid=guid)
-        actual_result = p.convert_event_to_dict()
-        assert actual_result == expected_result
 
 
 class TestNetworkEvent:
@@ -158,21 +175,6 @@ class TestNetworkEvent:
         assert n.dest_port == dest_port
         assert n.pid == pid
         assert n.timestamp == timestamp
-
-    @staticmethod
-    @pytest.mark.parametrize("protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp, guid, expected_result",
-        [
-            (None, None, None, None, None, None, None, None, None,
-                {"protocol": None, "src_ip": None, "src_port": None, "domain": None, "dest_ip": None, "dest_port": None, "pid": None, "timestamp": None, "guid": None}),
-            ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0, "blah",
-                {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}),
-        ]
-    )
-    def test_convert_event_to_dict(protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp, guid, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkEvent
-        n = NetworkEvent(protocol=protocol, src_ip=src_ip, src_port=src_port, domain=domain, dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp, guid=guid)
-        actual_result = n.convert_event_to_dict()
-        assert actual_result == expected_result
 
 
 class TestArtefact:
@@ -212,7 +214,7 @@ class TestEvents:
     @pytest.mark.parametrize("events, validated_events_num",
         [
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], 1),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
             ([{}], 0),
         ]
     )
@@ -228,7 +230,7 @@ class TestEvents:
     @pytest.mark.parametrize("events, validated_events_num",
         [
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], 0),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], 0),
         ]
     )
     def test_get_process_events(events, validated_events_num):
@@ -240,7 +242,7 @@ class TestEvents:
     @pytest.mark.parametrize("events, validated_events_num",
         [
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], 0),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], 1),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
         ]
     )
     def test_get_network_events(events, validated_events_num):
@@ -473,10 +475,10 @@ class TestSandboxOntology:
             (None, []),
             ([], []),
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}]),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 2.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 2.0, "guid": "blah"}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "timestamp": 1.0, "guid": "blah"}, {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah"}]),
+            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 2.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 2.0, "guid": "blah"}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}, {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah"}]),
         ]
     )
     def test_get_events(events, expected_result):

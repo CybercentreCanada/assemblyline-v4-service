@@ -10,9 +10,10 @@ HOLLOWSHUNTER_DLL_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a
 
 
 class Event:
-    def __init__(self, pid: int = None, timestamp: float = None, guid: str = None):
-        self.pid = pid  # Same as ProcessID
-        self.timestamp = timestamp  # The equivalent of first_seen
+    def __init__(self, pid: int = None, image: str = None, timestamp: float = None, guid: str = None):
+        self.pid = pid
+        self.image = image
+        self.timestamp = timestamp
         self.guid = guid
 
     def convert_event_to_dict(self):
@@ -20,17 +21,18 @@ class Event:
 
 
 class ProcessEvent(Event):
-    def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None, timestamp: float = None, guid: str = None):
-        super().__init__(pid=pid, timestamp=timestamp, guid=guid)
-        self.ppid = ppid  # Same as ParentProcessID
-        self.image = image  # Same as ProcessName
+    def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None,
+                 timestamp: float = None, guid: str = None):
+        super().__init__(pid=pid, image=image, timestamp=timestamp, guid=guid)
+        self.ppid = ppid
         self.command_line = command_line
 
 
 class NetworkEvent(Event):
     def __init__(self, protocol: str = None, src_ip: str = None, src_port: int = None, domain: str = None,
-                 dest_ip: str = None, dest_port: int = None, pid: int = None, timestamp: float = None, guid: str = None):
-        super().__init__(pid=pid, timestamp=timestamp, guid=guid)
+                 dest_ip: str = None, dest_port: int = None, pid: int = None, image: str = None,
+                 timestamp: float = None, guid: str = None):
+        super().__init__(pid=pid, image=image, timestamp=timestamp, guid=guid)
         self.protocol = protocol
         self.src_ip = src_ip
         self.src_port = src_port
@@ -60,7 +62,8 @@ class Events:
     def _validate_events(events: List[dict] = None) -> List[Event]:
         validated_events = []
         process_event_keys = {"pid", "ppid", "image", "command_line", "timestamp", "guid"}
-        network_event_keys = {"protocol", "src_ip", "src_port", "domain", "dest_ip", "dest_port", "pid", "timestamp", "guid"}
+        network_event_keys = {"protocol", "src_ip", "src_port", "domain", "dest_ip", "dest_port", "pid", "image",
+                              "timestamp", "guid"}
         for event in events:
             event_keys = set(event.keys())
             if event_keys == process_event_keys:
@@ -82,6 +85,7 @@ class Events:
                     dest_ip=event["dest_ip"],
                     dest_port=event["dest_port"],
                     pid=event["pid"],
+                    image=event["image"],
                     timestamp=event["timestamp"],
                     guid=event["guid"],
                 )
@@ -118,7 +122,7 @@ class Events:
         return sorted_things
 
     @staticmethod
-    def _convert_events_to_dict(events: List) -> dict:
+    def _convert_events_to_dict(events: List[Event]) -> dict:
         events_dict = {}
         for event in events:
             events_dict[event.pid] = event.convert_event_to_dict()
