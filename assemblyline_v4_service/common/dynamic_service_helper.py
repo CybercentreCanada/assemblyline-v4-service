@@ -273,7 +273,9 @@ class SandboxOntology(Events):
         process_tree = self._convert_processes_dict_to_tree(self.process_event_dicts)
         return process_tree
 
-    def get_process_tree_with_signatures(self, signatures: List[dict]) -> List[dict]:
+    def get_process_tree_with_signatures(self, signatures: List[dict] = None) -> List[dict]:
+        if signatures is None:
+            signatures = []
         s = Signatures(signatures=signatures)
         process_event_dicts_with_signatures = self._match_signatures_to_process_events(s.signature_dicts)
         process_tree_with_signatures = self._convert_processes_dict_to_tree(process_event_dicts_with_signatures)
