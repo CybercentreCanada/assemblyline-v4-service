@@ -10,33 +10,43 @@ HOLLOWSHUNTER_DLL_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a
 
 
 class Event:
-    def __init__(self, pid: int = None, timestamp: float = None, guid: str = None):
-        self.pid = pid  # Same as ProcessID
-        self.timestamp = timestamp  # The equivalent of first_seen
+    def __init__(self, pid: int = None, image: str = None, timestamp: float = None, guid: str = None):
+        self.pid = pid
+        self.image = image
+        self.timestamp = timestamp
         self.guid = guid
 
-    def convert_event_to_dict(self):
+    def convert_event_to_dict(self) -> dict:
         return self.__dict__
 
 
 class ProcessEvent(Event):
-    def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None, timestamp: float = None, guid: str = None):
-        super().__init__(pid=pid, timestamp=timestamp, guid=guid)
-        self.ppid = ppid  # Same as ParentProcessID
-        self.image = image  # Same as ProcessName
+    def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None,
+                 timestamp: float = None, guid: str = None):
+        super().__init__(pid=pid, image=image, timestamp=timestamp, guid=guid)
+        self.ppid = ppid
         self.command_line = command_line
+
+    @staticmethod
+    def keys() -> set:
+        return {"command_line", "guid", "image", "pid", "ppid", "timestamp"}
 
 
 class NetworkEvent(Event):
     def __init__(self, protocol: str = None, src_ip: str = None, src_port: int = None, domain: str = None,
-                 dest_ip: str = None, dest_port: int = None, pid: int = None, timestamp: float = None, guid: str = None):
-        super().__init__(pid=pid, timestamp=timestamp, guid=guid)
+                 dest_ip: str = None, dest_port: int = None, pid: int = None, image: str = None,
+                 timestamp: float = None, guid: str = None):
+        super().__init__(pid=pid, image=image, timestamp=timestamp, guid=guid)
         self.protocol = protocol
         self.src_ip = src_ip
         self.src_port = src_port
         self.domain = domain
         self.dest_ip = dest_ip
         self.dest_port = dest_port
+
+    @staticmethod
+    def keys() -> set:
+        return {"dest_ip", "dest_port", "domain", "guid", "image", "pid", "protocol", "src_ip", "src_port", "timestamp"}
 
 
 class Events:
@@ -59,8 +69,8 @@ class Events:
     @staticmethod
     def _validate_events(events: List[dict] = None) -> List[Event]:
         validated_events = []
-        process_event_keys = {"pid", "ppid", "image", "command_line", "timestamp", "guid"}
-        network_event_keys = {"protocol", "src_ip", "src_port", "domain", "dest_ip", "dest_port", "pid", "timestamp", "guid"}
+        process_event_keys = ProcessEvent.keys()
+        network_event_keys = NetworkEvent.keys()
         for event in events:
             event_keys = set(event.keys())
             if event_keys == process_event_keys:
@@ -82,6 +92,7 @@ class Events:
                     dest_ip=event["dest_ip"],
                     dest_port=event["dest_port"],
                     pid=event["pid"],
+                    image=event["image"],
                     timestamp=event["timestamp"],
                     guid=event["guid"],
                 )
@@ -118,7 +129,7 @@ class Events:
         return sorted_things
 
     @staticmethod
-    def _convert_events_to_dict(events: List) -> dict:
+    def _convert_events_to_dict(events: List[Event]) -> dict:
         events_dict = {}
         for event in events:
             events_dict[event.pid] = event.convert_event_to_dict()
@@ -134,6 +145,51 @@ class Artefact:
         self.path = path
         self.description = description
         self.to_be_extracted = to_be_extracted
+
+
+class Signature:
+    def __init__(self, pid: int = None, name: str = None, score: int = None):
+        self.pid = pid
+        self.name = name
+        self.score = score
+
+    @staticmethod
+    def keys() -> set:
+        return {"name", "pid", "score"}
+
+    def convert_signature_to_dict(self) -> dict:
+        return self.__dict__
+
+
+class Signatures:
+    def __init__(self, signatures: List[dict] = None):
+        if signatures is None:
+            signatures = []
+        self.signatures = self._validate_signatures(signatures)
+        self.signature_dicts = self._convert_signatures_to_dicts()
+
+    @staticmethod
+    def _validate_signatures(signatures: List[dict] = None) -> List[Signature]:
+        signature_keys = Signature.keys()
+        validated_signatures = []
+        for signature in signatures:
+            if set(signature.keys()) == signature_keys:
+                validated_signature = Signature(
+                    pid=signature["pid"],
+                    name=signature["name"],
+                    score=signature["score"],
+                )
+                validated_signatures.append(validated_signature)
+            else:
+                raise ValueError(f"{signature} does not match the signature format of {signature_keys}")
+        return validated_signatures
+
+    def _convert_signatures_to_dicts(self) -> List[dict]:
+        signature_dicts = []
+        for signature in self.signatures:
+            signature_dict = signature.convert_signature_to_dict()
+            signature_dicts.append(signature_dict)
+        return signature_dicts
 
 
 class SandboxOntology(Events):
@@ -197,9 +253,33 @@ class SandboxOntology(Events):
         if artefact_result_section is not None:
             artefacts_result_section.add_subsection(artefact_result_section)
 
+    def _match_signatures_to_process_events(self, signature_dicts: List[dict]) -> dict:
+        process_event_dicts_with_signatures = {}
+        copy_of_process_event_dicts = self.process_event_dicts.copy()
+        for pid, process_event_dict in copy_of_process_event_dicts.items():
+            process_event_dict["signatures"] = []
+            process_event_dicts_with_signatures[pid] = process_event_dict
+
+        for signature_dict in signature_dicts:
+            pid = signature_dict["pid"]
+            if pid not in process_event_dicts_with_signatures:
+                raise Exception(f"{signature_dict} does not match up with a PID in {process_event_dicts_with_signatures.keys()}")
+            else:
+                process_event_dicts_with_signatures[pid]["signatures"].append(signature_dict)
+
+        return process_event_dicts_with_signatures
+
     def get_process_tree(self) -> List[dict]:
         process_tree = self._convert_processes_dict_to_tree(self.process_event_dicts)
         return process_tree
+
+    def get_process_tree_with_signatures(self, signatures: List[dict] = None) -> List[dict]:
+        if signatures is None:
+            signatures = []
+        s = Signatures(signatures=signatures)
+        process_event_dicts_with_signatures = self._match_signatures_to_process_events(s.signature_dicts)
+        process_tree_with_signatures = self._convert_processes_dict_to_tree(process_event_dicts_with_signatures)
+        return process_tree_with_signatures
 
     def get_events(self) -> List[dict]:
         sorted_event_dicts = []
