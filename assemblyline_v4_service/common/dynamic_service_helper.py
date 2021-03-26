@@ -257,15 +257,17 @@ class SandboxOntology(Events):
         process_event_dicts_with_signatures = {}
         copy_of_process_event_dicts = self.process_event_dicts.copy()
         for pid, process_event_dict in copy_of_process_event_dicts.items():
-            process_event_dict["signatures"] = []
+            process_event_dict["signatures"] = {}
             process_event_dicts_with_signatures[pid] = process_event_dict
 
         for signature_dict in signature_dicts:
             pid = signature_dict["pid"]
+            name = signature_dict["name"]
+            score = signature_dict["score"]
             if pid not in process_event_dicts_with_signatures:
                 raise Exception(f"{signature_dict} does not match up with a PID in {process_event_dicts_with_signatures.keys()}")
             else:
-                process_event_dicts_with_signatures[pid]["signatures"].append(signature_dict)
+                process_event_dicts_with_signatures[pid]["signatures"][name] = score
 
         return process_event_dicts_with_signatures
 
