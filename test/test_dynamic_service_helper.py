@@ -465,8 +465,8 @@ class TestSandboxOntology:
         [
             (None, [], {}),
             ([], [], {}),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}}),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}}),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}}),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}}),
         ]
     )
     def test_match_signatures_to_process_events(process_list, signatures, expected_result):
@@ -492,8 +492,8 @@ class TestSandboxOntology:
         [
             (None, [], []),
             ([], [], []),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}]),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}]),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "signatures": {"blah": 1}}]),
         ]
     )
     def test_get_process_tree_with_signatures(process_list, signatures, expected_result):
