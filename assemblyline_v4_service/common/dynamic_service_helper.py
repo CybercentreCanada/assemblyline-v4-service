@@ -260,6 +260,11 @@ class SandboxOntology(Events):
             process_event_dict["signatures"] = {}
             process_event_dicts_with_signatures[pid] = process_event_dict
 
+            # Match the UI ProcessTree result body format
+            process_event_dict["process_pid"] = process_event_dict["pid"]
+            process_event_dict["process_name"] = process_event_dict["image"]
+            # NOTE: not going to delete the original of the duplicated keys, as they may be useful in the future
+
         for signature_dict in signature_dicts:
             pid = signature_dict["pid"]
             name = signature_dict["name"]
