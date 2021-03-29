@@ -433,8 +433,9 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_BLACKLIST.items():
             for e in i:
-                if bytes(e, 'utf8') in value:
-                    final_values.append(e)
+                val = bytes(e, 'utf8')
+                if val in value:
+                    final_values.append(val)
         if len(final_values) > 0:
             value_extract['file.string.blacklisted'] = set()
         for val in final_values:
@@ -445,8 +446,9 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_API.items():
             for e in i:
-                if bytes(e, 'utf8') in value:
-                    final_values.append(e)
+                val = bytes(e, 'utf8')
+                if val in value:
+                    final_values.append(val)
         if len(final_values) > 0:
             value_extract['file.string.api'] = set()
         for val in final_values:
@@ -457,8 +459,9 @@ class PatternMatch(object):
         final_values = []
         for k, i in self.PEST_POWERSHELL.items():
             for e in i:
-                if bytes(e, 'utf8') in value:
-                    final_values.append(e)
+                val = bytes(e, 'utf8')
+                if val in value:
+                    final_values.append(val)
         if len(final_values) > 0:
             value_extract['file.powershell.cmdlet'] = set()
         for val in final_values:
