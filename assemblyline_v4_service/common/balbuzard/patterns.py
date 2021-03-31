@@ -563,7 +563,7 @@ class PatternMatch(object):
         if len(domain) < 5:
             return False
         tld = domain.rsplit(b'.', 1)[1].lower()
-        if str(tld) not in self.TDLS:
+        if tld not in self.TDLS:
             return False
 
         return True
