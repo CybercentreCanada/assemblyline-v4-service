@@ -55,7 +55,7 @@ class ServiceBase:
     def _success(self) -> None:
         self._task.success()
 
-    def execute(self, request: ServiceRequest) -> Dict[str, Any]:
+    def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")
 
     def get_service_version(self) -> str:
