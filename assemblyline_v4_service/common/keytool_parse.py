@@ -36,7 +36,7 @@ def certificate_chain_from_printcert(printcert: str) -> List[Certificate]:
     :param printcert: the string output of 'keytool -printcert'
     :return: a list of the parsed out certificates. If only one certificate is present and not a chain, then the list will have one element.
     """
-    certs = []
+    certs: List[Certificate] = []
 
     for cert_str in split('Certificate\[\d+\]:', printcert): # split printcert output in case of certificate chain
         if cert_str == '':
