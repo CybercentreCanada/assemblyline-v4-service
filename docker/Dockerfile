@@ -35,8 +35,11 @@ ENV SERVICE_API_HOST http://al_service_server:5003
 ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 ENV CONTAINER_MODE true
 
-# Create directory for service
 USER root
+# Install additional libs for service use
+RUN apt-get update && mkdir -p /usr/share/man/man1 && apt-get install -y openjdk-8-jre-headless java-common && rm -rf /var/lib/apt/lists/*
+
+# Create directory for service
 RUN mkdir -p /opt/al_service
 RUN touch /opt/al_service/__init__.py
 COPY process_handler.py /etc/
