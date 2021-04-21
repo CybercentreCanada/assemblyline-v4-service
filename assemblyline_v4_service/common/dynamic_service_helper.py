@@ -1,5 +1,7 @@
 from typing import List
 from re import compile
+from logging import getLogger
+from assemblyline.common import log as al_log
 from assemblyline_v4_service.common.result import ResultSection
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
@@ -7,6 +9,9 @@ from assemblyline_v4_service.common.task import MaxExtractedExceeded
 HOLLOWSHUNTER_EXE_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
 HOLLOWSHUNTER_SHC_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
 HOLLOWSHUNTER_DLL_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
+
+al_log.init_logging('service.dynamic_service_helper')
+log = getLogger('assemblyline.service.dynamic_service_helper')
 
 
 class Event:
@@ -270,7 +275,8 @@ class SandboxOntology(Events):
             name = signature_dict["name"]
             score = signature_dict["score"]
             if pid not in process_event_dicts_with_signatures:
-                raise Exception(f"{signature_dict} does not match up with a PID in {process_event_dicts_with_signatures.keys()}")
+                # Ignore it
+                log.warning(f"{signature_dict} does not match up with a PID in {process_event_dicts_with_signatures.keys()}")
             else:
                 process_event_dicts_with_signatures[pid]["signatures"][name] = score
 
