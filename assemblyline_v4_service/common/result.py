@@ -134,7 +134,7 @@ class Heuristic:
 
     def add_attack_id(self, attack_id: str):
         # Check if this is a valid attack ID
-        if attack_id not in attack_map and attack_id in software_map:
+        if attack_id not in attack_map and attack_id not in software_map:
             log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self.heur_id}'. Ignoring it.")
             return
 
@@ -245,7 +245,7 @@ class ResultSection:
             raise ResultAggregationException("Double finalize() on result detected.")
 
         if not self.title_text:
-            log.error(f"Failed to finalize section, title is empty...")
+            log.error("Failed to finalize section, title is empty...")
             return False
 
         if not self.body and self.body is not None:

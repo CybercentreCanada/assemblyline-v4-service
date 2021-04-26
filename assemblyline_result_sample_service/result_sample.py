@@ -4,6 +4,7 @@ import random
 import tempfile
 
 from assemblyline.common import forge
+from assemblyline.common.attack_map import software_map
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
@@ -71,7 +72,7 @@ class ResultSample(ServiceBase):
             #     we're doing this by adding the signature name to the heuristic. (Here we generating a random name)
             text_section.set_heuristic(3, signature="sig_one")
             # You can attach attack ids to heuristics after they where defined
-            text_section.heuristic.add_attack_id("T1066")
+            text_section.heuristic.add_attack_id(random.choice(list(software_map.keys())))
             # Same thing for the signatures, they can be added to heuristic after the fact and you can even say how
             #   many time the signature fired by setting its frequency. If you call add_signature_id twice with the
             #   same signature, this will effectively increase the frequency of the signature.
@@ -234,20 +235,20 @@ class ResultSample(ServiceBase):
                             "process_pid": 321,
                             "process_name": "takeovercomputer.exe",
                             "command_line": "C:\\Temp\\takeovercomputer.exe -f do_bad_stuff",
-                            "signatures": {"one":250},
+                            "signatures": {"one": 250},
                             "children": [
                                 {
                                     "process_pid": 456,
                                     "process_name": "evenworsethanbefore.exe",
                                     "command_line": "C:\\Temp\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad",
-                                    "signatures": {"one":10, "two":10, "three":10},
+                                    "signatures": {"one": 10, "two": 10, "three": 10},
                                     "children": []
                                 },
                                 {
                                     "process_pid": 234,
                                     "process_name": "badfile.exe",
                                     "command_line": "C:\\badfile.exe -k nothing_to_see_here",
-                                    "signatures": {"one":1000, "two":10, "three":10, "four":10, "five":10},
+                                    "signatures": {"one": 1000, "two": 10, "three": 10, "four": 10, "five": 10},
                                     "children": []
                                 }
                             ]
@@ -273,7 +274,7 @@ class ResultSample(ServiceBase):
                                        body_format=BODY_FORMAT.PROCESS_TREE,
                                        body=json.dumps(nc_body))
             result.add_section(nc_section)
-            
+
             # ==================================================================
             # TABLE section:
             #     This section allows the service writer to have their content displayed in a table format in the UI
