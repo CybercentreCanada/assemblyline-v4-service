@@ -4,7 +4,7 @@ import random
 import tempfile
 
 from assemblyline.common import forge
-from assemblyline.common.attack_map import software_map, attack_map, group_map
+from assemblyline.common.attack_map import software_map, attack_map, group_map, revoke_map
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
@@ -75,6 +75,7 @@ class ResultSample(ServiceBase):
             text_section.heuristic.add_attack_id(random.choice(list(software_map.keys())))
             text_section.heuristic.add_attack_id(random.choice(list(attack_map.keys())))
             text_section.heuristic.add_attack_id(random.choice(list(group_map.keys())))
+            text_section.heuristic.add_attack_id(random.choice(list(revoke_map.keys())))
             # Same thing for the signatures, they can be added to heuristic after the fact and you can even say how
             #   many time the signature fired by setting its frequency. If you call add_signature_id twice with the
             #   same signature, this will effectively increase the frequency of the signature.

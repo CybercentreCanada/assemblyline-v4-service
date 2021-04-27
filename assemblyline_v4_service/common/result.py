@@ -5,7 +5,7 @@ from typing import List, Union, Optional, Dict, Any
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
-from assemblyline.common.attack_map import attack_map, software_map, group_map
+from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
@@ -92,6 +92,8 @@ class Heuristic:
         for a_id in attack_ids:
             if a_id in attack_map or a_id in software_map or a_id in group_map:
                 self.attack_ids.append(a_id)
+            elif a_id in revoke_map:
+                self.attack_ids.append(revoke_map[a_id])
             else:
                 log.warning(f"Invalid attack_id '{a_id}' for heuristic '{heur_id}'. Ignoring it.")
 
@@ -133,14 +135,15 @@ class Heuristic:
         return temp_score
 
     def add_attack_id(self, attack_id: str):
-        # Check if this is a valid attack ID
-        if attack_id not in attack_map and attack_id not in software_map and attack_id not in group_map:
-            log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self.heur_id}'. Ignoring it.")
-            return
-
-        # if its a new attack id, add it to the list
         if attack_id not in self.attack_ids:
-            self.attack_ids.append(attack_id)
+            if attack_id in attack_map or attack_id in software_map or attack_id in group_map:
+                self.attack_ids.append(attack_id)
+            elif attack_id in revoke_map:
+                new_attack_id = revoke_map[attack_id]
+                if new_attack_id not in self.attack_ids:
+                    self.attack_ids.append(new_attack_id)
+            else:
+                log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self.heur_id}'. Ignoring it.")
 
     def add_signature_id(self, signature: str, score: int = None, frequency: int = 1):
         # Add the signature to the map and adds it new frequency to the old value
