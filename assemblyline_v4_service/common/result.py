@@ -5,7 +5,7 @@ from typing import List, Union, Optional, Dict, Any
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
-from assemblyline.common.attack_map import attack_map, software_map
+from assemblyline.common.attack_map import attack_map, software_map, group_map
 from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
@@ -90,7 +90,7 @@ class Heuristic:
 
         # Validate that all attack_ids are in the attack_map
         for a_id in attack_ids:
-            if a_id in attack_map or a_id in software_map:
+            if a_id in attack_map or a_id in software_map or a_id in group_map:
                 self.attack_ids.append(a_id)
             else:
                 log.warning(f"Invalid attack_id '{a_id}' for heuristic '{heur_id}'. Ignoring it.")
@@ -134,7 +134,7 @@ class Heuristic:
 
     def add_attack_id(self, attack_id: str):
         # Check if this is a valid attack ID
-        if attack_id not in attack_map and attack_id in software_map:
+        if attack_id not in attack_map and attack_id not in software_map and attack_id not in group_map:
             log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self.heur_id}'. Ignoring it.")
             return
 
@@ -245,7 +245,7 @@ class ResultSection:
             raise ResultAggregationException("Double finalize() on result detected.")
 
         if not self.title_text:
-            log.error(f"Failed to finalize section, title is empty...")
+            log.error("Failed to finalize section, title is empty...")
             return False
 
         if not self.body and self.body is not None:

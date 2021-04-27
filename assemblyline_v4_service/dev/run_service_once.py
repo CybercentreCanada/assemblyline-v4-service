@@ -137,8 +137,12 @@ class RunService:
                         heur_id = section['heuristic']['heur_id']
 
                         try:
-                            section['heuristic'] = service_heuristic_to_result_heuristic(section['heuristic'],
-                                                                                         heuristics)
+                            section['heuristic'], new_tags = service_heuristic_to_result_heuristic(section['heuristic'],
+                                                                                                   heuristics)
+                            for tag in new_tags:
+                                section['tags'].setdefault(tag[0], [])
+                                if tag[1] not in section['tags'][tag[0]]:
+                                    section['tags'][tag[0]].append(tag[1])
                             total_score += section['heuristic']['score']
                         except InvalidHeuristicException:
                             section['heuristic'] = None
@@ -194,7 +198,8 @@ class RunService:
             if service_manifest_data:
                 service_config = service_manifest_data.get('config', {})
 
-            self.submission_params = {x['name']: x['default'] for x in service_manifest_data.get('submission_params', [])}
+            self.submission_params = {x['name']: x['default']
+                                      for x in service_manifest_data.get('submission_params', [])}
 
             self.service = self.service_class(config=service_config)
             if return_heuristics:

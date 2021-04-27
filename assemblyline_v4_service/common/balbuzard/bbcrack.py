@@ -694,7 +694,7 @@ class Transform_ADD_XOR (Transform_char):
 def xor_simple(a, b):
     out = ""
     for i, c in enumerate(a):
-        out += chr(ord(c) ^ ord(b[i % len(b)]))
+        out += chr(c ^ ord(b[i % len(b)]))
     return out
 
 def deobfuscate_simple(d, r, m):
@@ -704,7 +704,7 @@ def deobfuscate_simple(d, r, m):
     for i in range(1, len(max_mask)+1):
         t_mask = max_mask[:i]
         r_mask = xor_simple(d[:i], t_mask)
-        de_enc = xor_simple(d, r_mask)
+        de_enc = xor_simple(d, r_mask).encode()
         if re.match(r, de_enc):
             return de_enc.strip(), r_mask
     return None, None
@@ -800,9 +800,9 @@ def bbcrack(file_data, level=1):
             sxor, smask = deobfuscate_simple(raw_data, pattern.pat, pmask)
             if sxor:
                 results.append((smask, pattern.name.split("_", 1)[1], sxor))
+        return results
 
     # Run bbcrack patterns against transforms
-
     bbz = Balbuzard(bbcrack_patterns)
 
     for Transform_class in transform_classes:
