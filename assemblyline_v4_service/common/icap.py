@@ -109,7 +109,7 @@ class IcapClient(object):
         for i in range(self.MAX_RETRY):
             s = None
             try:
-                s = socket.create_connection((self.host, self.port), timeout=10)
+                s = socket.create_connection((self.host, self.port), timeout=30)
                 s.sendall(serialized_request)
                 response = temp_resp = s.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
