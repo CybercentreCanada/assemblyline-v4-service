@@ -54,7 +54,7 @@ class RunService:
 
         # Identify the file
         file_info = identify.fileinfo(FILE_PATH)
-        if file_info['type'] == "archive/cart":
+        if file_info['type'] == "archive/cart" or file_info['magic'] == "custom: archive/cart":
             # This is a CART file, uncart it and recreate the file info object
             original_temp = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             with open(FILE_PATH, 'rb') as ifile, open(original_temp, 'wb') as ofile:
