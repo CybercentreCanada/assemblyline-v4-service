@@ -3,11 +3,12 @@ import signal
 import time
 
 from os import environ
-from subprocess import Popen
+from subprocess import Popen, TimeoutExpired
 
 from assemblyline.common import log as al_log
 
 LOG_LEVEL = logging.getLevelName(environ.get("LOG_LEVEL", "INFO"))
+
 
 def check_processes(service_process, task_handler_process):
     rs_rc = service_process.poll()
@@ -31,6 +32,10 @@ def check_processes(service_process, task_handler_process):
     if rs_rc is not None:
         log.error(f"The service has crashed with exit code: {rs_rc}. The container will be stopped...")
         task_handler_process.send_signal(signal.SIGUSR1)
+        try:
+            task_handler_process.wait(timeout=60)
+        except TimeoutExpired:
+            pass
 
 
 if __name__ == '__main__':
