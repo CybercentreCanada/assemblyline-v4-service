@@ -1,6 +1,5 @@
 import os
 import socket
-from io import StringIO
 
 from assemblyline.common.str_utils import safe_str
 
@@ -35,20 +34,20 @@ class IcapClient(object):
             return self.scan_data(data, filename)
 
     def options_respmod(self):
-        request = f"OPTIONS icap://{self.host}/{self.service} ICAP/1.0\r\n\r\n"
+        request = f"OPTIONS icap://{self.host}:{self.port}/{self.service} ICAP/1.0\r\n\r\n"
 
         for i in range(self.MAX_RETRY):
             s = None
             try:
                 s = socket.create_connection((self.host, self.port), timeout=10)
-                s.sendall(bytes(request))
+                s.sendall(request.encode())
                 response = temp_resp = s.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
                     temp_resp = s.recv(self.RESP_CHUNK_SIZE)
                     response += temp_resp
                 if not response or not response.startswith(ICAP_OK):
                     raise Exception(f"Unexpected OPTIONS response: {response}")
-                return response
+                return response.decode()
             except Exception:
                 if i == (self.MAX_RETRY-1):
                     raise
@@ -65,7 +64,7 @@ class IcapClient(object):
     @staticmethod
     def chunk_encode(data):
         chunk_size = 8160
-        out = ""
+        out = b""
         offset = 0
         while len(data) < offset * chunk_size:
             out += "1FEO\r\n"
@@ -73,9 +72,9 @@ class IcapClient(object):
             out += "\r\n"
             offset += 1
 
-        out += "%X\r\n" % len(data[offset * chunk_size:])
+        out += b"%X\r\n" % len(data[offset * chunk_size:])
         out += data[offset * chunk_size:]
-        out += "\r\n0\r\n\r\n"
+        out += b"\r\n0\r\n\r\n"
 
         return out
 
@@ -99,29 +98,25 @@ class IcapClient(object):
 
         respmod_icap_hdr = (
             f"RESPMOD icap://{self.host}:{self.port}/{self.service}{self.action} ICAP/1.0\r\n"
-            f"Host:{self.host}:{self.port}\r\n"
-            "Allow:204\r\n"
+            f"Host: {self.host}:{self.port}\r\n"
+            "Allow: 204\r\n"
             f"Encapsulated: req-hdr=0, res-hdr={res_hdr_offset}, res-body={res_bdy_offset}\r\n\r\n"
         )
 
-        sio = StringIO()
-        sio.write(respmod_icap_hdr)
-        sio.write(respmod_req_hdr)
-        sio.write(respmod_res_hdr)
-        sio.write(encoded)
-        serialized_request = sio.getvalue()
+        serialized_request = b"%s%s%s%s" % (respmod_icap_hdr.encode(), respmod_req_hdr.encode(),
+                                            respmod_res_hdr.encode(), encoded)
 
         for i in range(self.MAX_RETRY):
             s = None
             try:
-                s = socket.create_connection((self.host, self.port), timeout=10)
-                s.sendall(bytes(serialized_request))
+                s = socket.create_connection((self.host, self.port), timeout=30)
+                s.sendall(serialized_request)
                 response = temp_resp = s.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
                     temp_resp = s.recv(self.RESP_CHUNK_SIZE)
                     response += temp_resp
 
-                return response
+                return response.decode()
             except Exception:
                 if i == (self.MAX_RETRY-1):
                     raise

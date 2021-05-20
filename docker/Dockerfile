@@ -42,4 +42,4 @@ RUN touch /opt/al_service/__init__.py
 COPY process_handler.py /etc/
 
 USER assemblyline
-CMD python /etc/process_handler.py
+CMD ["python", "/etc/process_handler.py"]
