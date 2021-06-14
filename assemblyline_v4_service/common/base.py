@@ -64,11 +64,13 @@ class ServiceBase:
         self._task.success()
 
     def _warning(self, msg: str, *args, **kwargs) -> None:
-        msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
+        if self._task:
+            msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
         self._log_warning(msg, *args, **kwargs)
 
     def _error(self, msg: str, *args, **kwargs) -> None:
-        msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
+        if self._task:
+            msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
         self._log_error(msg, *args, **kwargs)
 
     def execute(self, request: ServiceRequest) -> None:
