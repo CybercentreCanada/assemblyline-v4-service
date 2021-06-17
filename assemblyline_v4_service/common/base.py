@@ -13,6 +13,7 @@ from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 
+
 class ServiceBase:
     def __init__(self, config: Optional[Dict] = None) -> None:
         # Load the service attributes from the service manifest
@@ -26,6 +27,13 @@ class ServiceBase:
         # Initialize logging for the service
         log.init_logging(f'{self.service_attributes.name}', log_level=LOG_LEVEL)
         self.log = logging.getLogger(f'assemblyline.service.{self.service_attributes.name.lower()}')
+
+        # Replace warning/error methods with our own patched version
+        self._log_warning = self.log.warning
+        self._log_error = self.log.error
+
+        self.log.warning = self._warning
+        self.log.error = self._error
 
         self._task = None
 
@@ -54,6 +62,16 @@ class ServiceBase:
 
     def _success(self) -> None:
         self._task.success()
+
+    def _warning(self, msg: str, *args, **kwargs) -> None:
+        if self._task:
+            msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
+        self._log_warning(msg, *args, **kwargs)
+
+    def _error(self, msg: str, *args, **kwargs) -> None:
+        if self._task:
+            msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
+        self._log_error(msg, *args, **kwargs)
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")

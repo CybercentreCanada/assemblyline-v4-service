@@ -101,8 +101,12 @@ class RunService(ServerBase):
             else:
                 msg = f"{json.dumps([None, ERROR])}\n"
 
-            self.done_fifo.write(msg)
-            self.done_fifo.flush()
+            try:
+                self.done_fifo.write(msg)
+                self.done_fifo.flush()
+            except BrokenPipeError:
+                self.log.info("Done fifo is closed. Cleaning up...")
+                return
 
     def stop(self):
         self.log.info("Closing named pipes...")

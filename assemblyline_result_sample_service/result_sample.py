@@ -66,6 +66,8 @@ class ResultSample(ServiceBase):
             # Or your can add them from a list
             #   Here we will generate random amount of random lines
             text_section.add_lines([get_random_phrase() for _ in range(random.randint(1, 5))])
+            # You can tag data to a section, tagging is used to to quickly find defining information about a file
+            text_section.add_tag("attribution.implant", "ResultSample")
             # If the section needs to affect the score of the file you need to set a heuristics
             #   Here we will pick one at random
             #     In addition to add a heuristic, we will associated a signature with the heuristic,
