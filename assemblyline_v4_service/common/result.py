@@ -258,9 +258,7 @@ class ResultSection:
         tmp_subs = []
         self.depth = depth
         for subsection in self.subsections:
-            subsection.finalize(depth=depth+1)
-            # Unwrap it if we're going to keep it
-            if subsection in self.subsections:
+            if subsection.finalize(depth=depth+1):
                 tmp_subs.append(subsection)
         self.subsections = tmp_subs
 

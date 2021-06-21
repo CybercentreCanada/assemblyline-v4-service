@@ -170,6 +170,12 @@ class ResultSample(ServiceBase):
             # we will add it as a sub-section of url_sub_section not to the main result itself
             url_sub_section.add_subsection(url_sub_sub_section)
 
+            # Invalid sections will be ignored, and an error will apear in the logs
+            # Sub-sections of invalid sections will be ignored too
+            invalid_section = ResultSection("")
+            ResultSection("I won't make it to the report because my parent is invalid :(", parent=invalid_section)
+            url_sub_section.add_subsection(invalid_section)
+
             # Since url_sub_section is a sub-section of url_section
             # we will add it as a sub-section of url_section not to the main result itself
             url_section.add_subsection(url_sub_section)
