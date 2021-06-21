@@ -105,6 +105,9 @@ class ResultSample(ServiceBase):
             # Make sure you add your section to the result
             result.add_section(text_section)
 
+            # Even if the section was added to the results you can still modify it by adding a subsection for example
+            ResultSection("Example of sub-section without a body added later in processing", parent=text_section)
+
             # ==================================================================
             # Color map Section: BODY_FORMAT.GRAPH_DATA
             #     Creates a color map bar using a minimum and maximum domain
