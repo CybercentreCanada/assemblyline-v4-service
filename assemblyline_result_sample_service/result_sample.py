@@ -139,30 +139,41 @@ class ResultSample(ServiceBase):
             #   Also, No need to provide a name, the url link will be displayed
             host1 = get_random_host()
             host2 = get_random_host()
-            ip1 = get_random_ip()
-            ip2 = get_random_ip()
-            ip3 = get_random_ip()
             urls = [
                 {"url": f"https://{host1}/"},
-                {"url": f"https://{host2}/"},
-                {"url": f"https://{ip1}/"},
-                {"url": f"https://{ip2}/"},
-                {"url": f"https://{ip3}/"}]
+                {"url": f"https://{host2}/"}]
 
             # A heuristic can fire more then once without being associated to a signature
             url_heuristic = Heuristic(4, frequency=len(urls))
 
-            url_sub_section = ResultSection('Example of a url section with multiple links',
+            url_sub_section = ResultSection('Example of a url sub-section with multiple links',
                                             body=json.dumps(urls), body_format=BODY_FORMAT.URL,
-                                            heuristic=url_heuristic)
-            url_sub_section.add_tag("network.static.ip", ip1)
-            url_sub_section.add_tag("network.static.ip", ip2)
-            url_sub_section.add_tag("network.static.ip", ip3)
+                                            heuristic=url_heuristic, classification=cl_engine.RESTRICTED)
             url_sub_section.add_tag("network.static.domain", host1)
             url_sub_section.add_tag("network.dynamic.domain", host2)
+
+            # You can keep nesting sections if you really need to
+            ip1 = get_random_ip()
+            ip2 = get_random_ip()
+            ip3 = get_random_ip()
+            ips = [
+                {"url": f"https://{ip1}/"},
+                {"url": f"https://{ip2}/"},
+                {"url": f"https://{ip3}/"}]
+            url_sub_sub_section = ResultSection('Exemple of a two level deep sub-section',
+                                                body=json.dumps(ips), body_format=BODY_FORMAT.URL)
+            url_sub_sub_section.add_tag("network.static.ip", ip1)
+            url_sub_sub_section.add_tag("network.static.ip", ip2)
+            url_sub_sub_section.add_tag("network.static.ip", ip3)
+
+            # Since url_sub_sub_section is a sub-section of url_sub_section
+            # we will add it as a sub-section of url_sub_section not to the main result itself
+            url_sub_section.add_subsection(url_sub_sub_section)
+
             # Since url_sub_section is a sub-section of url_section
             # we will add it as a sub-section of url_section not to the main result itself
             url_section.add_subsection(url_sub_section)
+
             result.add_section(url_section)
 
             # ==================================================================
