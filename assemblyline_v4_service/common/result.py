@@ -6,7 +6,6 @@ from typing import List, Union, Optional, Dict, Any
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
-from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
@@ -256,7 +255,6 @@ class ResultSection:
 
         self._finalized = True
 
-        keep_me = True
         tmp_subs = []
         self.depth = depth
         for subsection in self.subsections:
@@ -266,16 +264,7 @@ class ResultSection:
                 tmp_subs.append(subsection)
         self.subsections = tmp_subs
 
-        # At this point, all subsections are finalized and we're not deleting ourself
-        if self.parent is not None and isinstance(self.parent, ResultSection):
-            try:
-                self.parent.classification = \
-                    Classification.max_classification(self.classification, self.parent.classification)
-            except InvalidClassification as e:
-                log.error(f"Failed to finalize section due to a classification error: {str(e)}")
-                keep_me = False
-
-        return keep_me
+        return True
 
     def set_body(self, body: str, body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
         self.body = body
