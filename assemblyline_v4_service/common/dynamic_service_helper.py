@@ -2,13 +2,13 @@ from typing import List
 from re import compile
 from logging import getLogger
 from assemblyline.common import log as al_log
-from assemblyline_v4_service.common.result import ResultSection
+from assemblyline_v4_service.common.result import ResultSection, Heuristic
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
-HOLLOWSHUNTER_EXE_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
-HOLLOWSHUNTER_SHC_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
-HOLLOWSHUNTER_DLL_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
+HOLLOWSHUNTER_EXE_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
+HOLLOWSHUNTER_SHC_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
+HOLLOWSHUNTER_DLL_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
 
 al_log.init_logging('service.dynamic_service_helper')
 log = getLogger('assemblyline.service.dynamic_service_helper')
@@ -254,6 +254,11 @@ class SandboxOntology(Events):
             if pattern.match(artefact.name):
                 artefact_result_section = ResultSection(title)
                 artefact_result_section.add_tag("dynamic.process.file_name", artefact.path)
+                if regex in [HOLLOWSHUNTER_DLL_REGEX, HOLLOWSHUNTER_EXE_REGEX]:
+                    # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
+                    heur = Heuristic(17)
+                    heur.add_signature_id("hollowshunter_pe")
+                    artefact_result_section.heuristic = heur
 
         if artefact_result_section is not None:
             artefacts_result_section.add_subsection(artefact_result_section)
