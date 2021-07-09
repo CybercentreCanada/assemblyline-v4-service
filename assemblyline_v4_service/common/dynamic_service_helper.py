@@ -254,7 +254,7 @@ class SandboxOntology(Events):
             if pattern.match(artefact.name):
                 artefact_result_section = ResultSection(title)
                 artefact_result_section.add_tag("dynamic.process.file_name", artefact.path)
-                if regex in [HOLLOWSHUNTER_DLL_REGEX, HOLLOWSHUNTER_EXE_REGEX]:
+                if regex in [HOLLOWSHUNTER_EXE_REGEX]:
                     # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
                     heur = Heuristic(17)
                     heur.add_signature_id("hollowshunter_pe")
