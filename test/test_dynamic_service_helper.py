@@ -99,7 +99,7 @@ def check_section_equality(this, that) -> bool:
 def setup_module():
     if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
         open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("name: Sample\nversion: sample\ndocker_config: \n  image: sample")
+        open_manifest.write("name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n    name: blah\n    description: blah\n    filetype: '*'\n    score: 250")
 
 
 def teardown_module():
@@ -423,14 +423,14 @@ class TestSandboxOntology:
         [
             (None, None),
             ({"path": "blah", "name": "blah", "description": "blah", "to_be_extracted": True}, None),
-            ({"path": "blah", "name": "hollowshunter/hh_process_123_blah.exe", "description": "blah", "to_be_extracted": True}, "HollowsHunter Injected Portable Executable"),
-            ({"path": "blah", "name": "hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, "HollowsHunter Shellcode"),
-            ({"path": "blah", "name": "hollowshunter/hh_process_123_blah.dll", "description": "blah", "to_be_extracted": True}, "HollowsHunter DLL"),
+            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.exe", "description": "blah", "to_be_extracted": True}, "HollowsHunter Injected Portable Executable"),
+            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, "HollowsHunter Shellcode"),
+            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.dll", "description": "blah", "to_be_extracted": True}, "HollowsHunter DLL"),
         ]
     )
     def test_handle_artefact(artefact, expected_result_section_title):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artefact
-        from assemblyline_v4_service.common.result import ResultSection
+        from assemblyline_v4_service.common.result import ResultSection, Heuristic
 
         if artefact is None:
             with pytest.raises(Exception):
@@ -441,7 +441,10 @@ class TestSandboxOntology:
         if expected_result_section_title is not None:
             expected_result_section = ResultSection(expected_result_section_title)
             expected_result_section.add_tag("dynamic.process.file_name", artefact["path"])
-
+            if expected_result_section_title == "HollowsHunter Injected Portable Executable":
+                heur = Heuristic(17)
+                heur.add_signature_id("hollowshunter_pe")
+                expected_result_section.heuristic = heur
         parent_result_section = ResultSection("blah")
         a = Artefact(
             name=artefact["name"],
