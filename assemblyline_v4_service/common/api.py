@@ -52,9 +52,6 @@ class ServiceAPI:
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
 
-    def lookup_hash(self, qhash):
-        return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
-
     def get_safelist(self, tag_list=None):
         if tag_list:
             if not isinstance(tag_list, list):
@@ -65,3 +62,12 @@ class ServiceAPI:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
         return self._with_retries(self.session.get, url)
+
+    def lookup_safelist(self, qhash):
+        try:
+            return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return None
+            else:
+                raise
