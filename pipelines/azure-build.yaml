@@ -134,13 +134,13 @@ stages:
         export SERIES="`expr $TAG : '\([0-9]\+\.[0-9]\+\.\)'`${BUILD_TYPE}"
         until sudo env "PATH=$PATH" python -m pip download "assemblyline-v4-service==$TAG" --pre --no-deps &> /dev/null; do sleep 2; done
 
-        for IMAGE in "cccs/assemblyline-v4-service-base" "docker.pkg.github.com/cybercentrecanada/assemblyline/assemblyline-v4-service-base"
+        export IMAGE="cccs/assemblyline-v4-service-base"
         do
           docker build --build-arg version=$VERSION --build-arg branch=$BUILD_TYPE -t $IMAGE:$TAG -t $IMAGE:$SERIES docker
           docker push $IMAGE --all-tags
         done
 
-        for IMAGE in "cccs/assemblyline-service-resultsample" "docker.pkg.github.com/cybercentrecanada/assemblyline/assemblyline-service-resultsample"
+        export IMAGE="cccs/assemblyline-service-resultsample"
         do
           docker build --build-arg version=$VERSION --build-arg branch=$BUILD_TYPE -f assemblyline_result_sample_service/Dockerfile -t $IMAGE:$TAG -t $IMAGE:$SERIES .
           docker push $IMAGE --all-tags
