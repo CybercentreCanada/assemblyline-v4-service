@@ -1,4 +1,5 @@
-FROM cccs/assemblyline:latest as builder
+ARG branch=latest
+FROM cccs/assemblyline:$branch as builder
 ARG version
 
 USER root
