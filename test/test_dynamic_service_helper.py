@@ -38,7 +38,7 @@ def dummy_request_class(dummy_task_class):
     yield DummyRequest
 
 
-def check_artefact_equality(this, that):
+def check_artifact_equality(this, that):
     if this.name == that.name and this.path == that.path and this.description == that.description \
             and this.to_be_extracted == that.to_be_extracted:
         return True
@@ -177,7 +177,7 @@ class TestNetworkEvent:
         assert n.timestamp == timestamp
 
 
-class TestArtefact:
+class TestArtifact:
     @staticmethod
     @pytest.mark.parametrize("name, path, description, to_be_extracted",
         [
@@ -187,12 +187,12 @@ class TestArtefact:
         ]
     )
     def test_init(name, path, description, to_be_extracted):
-        from assemblyline_v4_service.common.dynamic_service_helper import Artefact
+        from assemblyline_v4_service.common.dynamic_service_helper import Artifact
         if any(item is None for item in [name, path, description, to_be_extracted]):
             with pytest.raises(Exception):
-                Artefact(name=name, path=path, description=description, to_be_extracted=to_be_extracted)
+                Artifact(name=name, path=path, description=description, to_be_extracted=to_be_extracted)
             return
-        a = Artefact(name=name, path=path, description=description, to_be_extracted=to_be_extracted)
+        a = Artifact(name=name, path=path, description=description, to_be_extracted=to_be_extracted)
         assert a.name == name
         assert a.path == path
         assert a.description == description
@@ -397,62 +397,62 @@ class TestSandboxOntology:
         assert expected_result == actual_result
 
     @staticmethod
-    @pytest.mark.parametrize("artefact_list",
+    @pytest.mark.parametrize("artifact_list",
         [
             None,
             [],
             [{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}],
         ]
     )
-    def test_validate_artefacts(artefact_list):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artefact
-        actual_validated_artefact_list = SandboxOntology._validate_artefacts(artefact_list)
-        if artefact_list is None:
-            artefact_list = []
-        for index, artefact in enumerate(artefact_list):
-            expected_artefact = Artefact(
-                name=artefact["name"],
-                path=artefact["path"],
-                description=artefact["description"],
-                to_be_extracted=artefact["to_be_extracted"]
+    def test_validate_artifacts(artifact_list):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact
+        actual_validated_artifact_list = SandboxOntology._validate_artifacts(artifact_list)
+        if artifact_list is None:
+            artifact_list = []
+        for index, artifact in enumerate(artifact_list):
+            expected_artifact = Artifact(
+                name=artifact["name"],
+                path=artifact["path"],
+                description=artifact["description"],
+                to_be_extracted=artifact["to_be_extracted"]
             )
-            assert check_artefact_equality(expected_artefact, actual_validated_artefact_list[index])
+            assert check_artifact_equality(expected_artifact, actual_validated_artifact_list[index])
 
     @staticmethod
-    @pytest.mark.parametrize("artefact, expected_result_section_title",
+    @pytest.mark.parametrize("artifact, expected_result_section_title",
         [
             (None, None),
             ({"path": "blah", "name": "blah", "description": "blah", "to_be_extracted": True}, None),
             ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.exe", "description": "blah", "to_be_extracted": True}, "HollowsHunter Injected Portable Executable"),
-            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, "HollowsHunter Shellcode"),
+            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, None),
             ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.dll", "description": "blah", "to_be_extracted": True}, "HollowsHunter DLL"),
         ]
     )
-    def test_handle_artefact(artefact, expected_result_section_title):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artefact
+    def test_handle_artifact(artifact, expected_result_section_title):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact
         from assemblyline_v4_service.common.result import ResultSection, Heuristic
 
-        if artefact is None:
+        if artifact is None:
             with pytest.raises(Exception):
-                SandboxOntology._handle_artefact(artefact, None)
+                SandboxOntology._handle_artifact(artifact, None)
             return
 
         expected_result_section = None
         if expected_result_section_title is not None:
             expected_result_section = ResultSection(expected_result_section_title)
-            expected_result_section.add_tag("dynamic.process.file_name", artefact["path"])
+            expected_result_section.add_tag("dynamic.process.file_name", artifact["path"])
             if expected_result_section_title == "HollowsHunter Injected Portable Executable":
                 heur = Heuristic(17)
                 heur.add_signature_id("hollowshunter_pe")
                 expected_result_section.heuristic = heur
         parent_result_section = ResultSection("blah")
-        a = Artefact(
-            name=artefact["name"],
-            path=artefact["path"],
-            description=artefact["description"],
-            to_be_extracted=artefact["to_be_extracted"]
+        a = Artifact(
+            name=artifact["name"],
+            path=artifact["path"],
+            description=artifact["description"],
+            to_be_extracted=artifact["to_be_extracted"]
         )
-        SandboxOntology._handle_artefact(a, parent_result_section)
+        SandboxOntology._handle_artifact(a, parent_result_section)
         if len(parent_result_section.subsections) > 0:
             actual_result_section = parent_result_section.subsections[0]
         else:
@@ -536,7 +536,7 @@ class TestSandboxOntology:
     #     assert actual_result is True
 
     @staticmethod
-    @pytest.mark.parametrize("artefact_list, expected_result",
+    @pytest.mark.parametrize("artifact_list, expected_result",
         [
             (None, None),
             ([], None),
@@ -544,10 +544,10 @@ class TestSandboxOntology:
             ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": False}], None),
         ]
     )
-    def test_handle_artefacts(artefact_list, expected_result, dummy_request_class):
+    def test_handle_artifacts(artifact_list, expected_result, dummy_request_class):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         r = dummy_request_class()
         o = SandboxOntology()
-        actual_result = o.handle_artefacts(artefact_list, r)
+        actual_result = o.handle_artifacts(artifact_list, r)
         assert actual_result == expected_result
 
