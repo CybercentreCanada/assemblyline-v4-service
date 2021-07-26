@@ -244,7 +244,6 @@ class SandboxOntology(Events):
         # This is a dict who's key-value pairs follow the format {regex: result_section_title}
         artifact_map = {
             HOLLOWSHUNTER_EXE_REGEX: "HollowsHunter Injected Portable Executable",
-            HOLLOWSHUNTER_SHC_REGEX: "HollowsHunter Shellcode",
             HOLLOWSHUNTER_DLL_REGEX: "HollowsHunter DLL",
         }
         artifact_result_section = None

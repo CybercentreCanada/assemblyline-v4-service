@@ -424,7 +424,7 @@ class TestSandboxOntology:
             (None, None),
             ({"path": "blah", "name": "blah", "description": "blah", "to_be_extracted": True}, None),
             ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.exe", "description": "blah", "to_be_extracted": True}, "HollowsHunter Injected Portable Executable"),
-            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, "HollowsHunter Shellcode"),
+            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, None),
             ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.dll", "description": "blah", "to_be_extracted": True}, "HollowsHunter DLL"),
         ]
     )
