@@ -58,7 +58,7 @@ class ServiceAPI:
             if not isinstance(tag_list, list):
                 raise ValueError("Parameter tag_list should be a list of strings.")
 
-            url = f"{self.service_api_host}/api/v1/safelist/?{','.join(tag_list)}"
+            url = f"{self.service_api_host}/api/v1/safelist/?tags={','.join(tag_list)}"
         else:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
