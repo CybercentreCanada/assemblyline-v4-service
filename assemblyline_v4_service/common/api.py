@@ -44,7 +44,7 @@ class ServiceAPI:
                             raise
 
                         raise ServiceAPIError(resp.content, resp.status_code)
-            except requests.ConnectionError:
+            except (requests.ConnectionError, requests.Timeout):
                 if not retries:
                     self.log.info("Service server is unreachable, retrying now ...")
                 elif retries % 10 == 0:
@@ -52,8 +52,6 @@ class ServiceAPI:
                                      "Is there something wrong with it?")
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
-            except requests.Timeout:  # Handles ConnectTimeout and ReadTimeout
-                pass
 
     def get_safelist(self, tag_list=None):
         if tag_list:
