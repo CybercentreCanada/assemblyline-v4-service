@@ -2,8 +2,6 @@ import os
 import requests
 import time
 
-from urllib3.exceptions import NewConnectionError
-
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 
@@ -46,11 +44,16 @@ class ServiceAPI:
                             raise
 
                         raise ServiceAPIError(resp.content, resp.status_code)
-            except (ConnectionError, NewConnectionError):
-                if retries % 10 == 0:
-                    self.log.info("Service server unreachable, retrying...")
+            except requests.ConnectionError:
+                if not retries:
+                    self.log.info("Service server is unreachable, retrying now ...")
+                elif retries % 10 == 0:
+                    self.log.warning(f"Service server has been unreachable for the past {retries} attempts. "
+                                     "Is there something wrong with it?")
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
+            except requests.Timeout:  # Handles ConnectTimeout and ReadTimeout
+                pass
 
     def get_safelist(self, tag_list=None):
         if tag_list:
