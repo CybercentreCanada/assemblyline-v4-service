@@ -15,6 +15,9 @@ RUN pip install --no-cache-dir --user \
   assemblyline-v4-service==$version \
   assemblyline-client \
   && rm -rf ~/.cache/pip
+  
+# If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
+RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline assemblyline-core assemblyline-service-client assemblyline-client; fi
 
 # Remove files that existed before the pip install so that our copy command below doesn't take a snapshot of
 # files that already exist in the base image
@@ -25,7 +28,7 @@ USER root
 RUN chown root:root -R /var/lib/assemblyline/.local
 
 # Restart a new image, this time the output one
-FROM cccs/assemblyline:latest
+FROM cccs/assemblyline:$branch
 
 # Get the updated local dir from builder
 COPY --chown=assemblyline:assemblyline --from=builder /var/lib/assemblyline/.local /var/lib/assemblyline/.local
