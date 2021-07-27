@@ -1,6 +1,7 @@
 ARG branch=latest
 FROM cccs/assemblyline:$branch as builder
 ARG version
+ARG branch
 
 USER root
 RUN apt-get update \
