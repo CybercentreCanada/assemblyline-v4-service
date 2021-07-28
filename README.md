@@ -7,6 +7,7 @@ This repository provides the base service functionality for Assemblyline 4 servi
 ### Service file structure
 
 An Assemblyline service has the following file structure:
+
 ```text
 assemblyline-service-<service name>
 │
@@ -17,14 +18,13 @@ assemblyline-service-<service name>
 
 This is overview of what each of these does:
 
-* `Dockerfile` ─ Build file for the service container, see *Dockerfile* section below for more details
-* `<service name>.py` ─ Contains main service code
-* `service_manifest.yml` ─ Service definition file, see *Service manifest* section below for more details
+- `Dockerfile` ─ Build file for the service container, see _Dockerfile_ section below for more details
+- `<service name>.py` ─ Contains main service code
+- `service_manifest.yml` ─ Service definition file, see _Service manifest_ section below for more details
 
- 
 ### Service manifest
 
-Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service. 
+Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service.
 
 The diagram below shows all the elements that the manifest file can contain, including a brief description of each.
 
@@ -150,10 +150,10 @@ A Dockerfile is required to build the service container that will be executed in
 
 The following items must be set for all services:
 
-* All services must be based on the `cccs/assemblyline-v4-service-base:latest` image
-* An environment variable must be set for the service path
-* Install any service requirements
-* Copy the service code into `/opt/al/al_service/`
+- All services must be based on the `cccs/assemblyline-v4-service-base:latest` image
+- An environment variable must be set for the service path
+- Install any service requirements
+- Copy the service code into `/opt/al/al_service/`
 
 ```dockerfile
 FROM cccs/assemblyline-v4-service-base:latest
@@ -165,7 +165,7 @@ ENV SERVICE_PATH result_sample.ResultSample
 #  switch to root to perform installation of dependancies
 USER root
 
-# See that we all these operations in one line to reduce 
+# See that we all these operations in one line to reduce
 #  the number of container layers and size of the container
 RUN apt-get update && apt-get install -y my_debian_apt_dependency_package && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --user my_pip_dependency && rm -rf ~/.cache/pip
@@ -180,24 +180,25 @@ COPY assemblyline_result_sample_service .
 
 ## Testing an Assemblyline service
 
-To test an Assemblyline service in standalone mode, the [run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script can be used to run a single task through the service for testing. That script does not require that you have a working version of Assemblyline installed, all you need are the Assemblyline python libraries. 
+To test an Assemblyline service in standalone mode, the [run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script can be used to run a single task through the service for testing. That script does not require that you have a working version of Assemblyline installed, all you need are the Assemblyline python libraries.
 
 ### Setting up dev environment
 
-**NOTE:** The following environment setup has only been tested on Ubuntu 18.04.
+**NOTE:** The following environment setup has only been tested on Ubuntu 20.04.
 
 1. Install required packages
 
-    ```
-    sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
-    ```
-    
+   ```shell
+   sudo add-apt-repository ppa:deadsnakes/ppa
+   sudo apt-get install build-essential libffi-dev python3.9 python3.9-dev python3-pip automake autoconf libtool
+   ```
+
 2. Install Assemblyline v4 service package
 
-    ```
-    pip install --no-cache-dir --user assemblyline-v4-service
-    ```
-    
+   ```shell
+   pip install --no-cache-dir --user assemblyline-v4-service
+   ```
+
 3. Add your service development directory path (ie. `/home/ubuntu/assemblyline-v4-service`) to the PYTHONPATH environment variable
 
 ### Using the `run_service_once.py` script
@@ -206,30 +207,30 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 
 1. Ensure the current working directory is the root of the service directory of the service to be run
 
-   ```
+   ```shell
    cd assemblyline-service-<service name>
    ```
-   
+
 2. From a terminal, run the `run_service_once` script, where `<service path>` is the path to the service module and `<file path>` is the path of the file to be processed
 
+   ```shell
+   python3.9 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
-   python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
-   ```
-   
-3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located 
-   
+
+3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located
+
 #### Example of running the ResultSample service
 
 1. Change working directory to root of the service:
 
-   ```
+   ```shell
    cd assemblyline_result_sample_service
    ```
-   
+
 2. From a terminal, run the `run_service_once` script
 
+   ```shell
+   python3.9 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
-   python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
-   ```
-   
+
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`
