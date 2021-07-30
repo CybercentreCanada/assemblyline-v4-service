@@ -168,6 +168,7 @@ class ResultSection:
             heuristic: Optional[Heuristic] = None,
             tags: Optional[Dict[str, List[str]]] = None,
             parent: Optional[Union[ResultSection, Result]] = None,
+            zeroize_on_tag_safe: bool = False,
     ):
         self._finalized: bool = False
         self.parent = parent
@@ -179,6 +180,7 @@ class ResultSection:
         self.depth: int = 0
         self.tags = tags or {}
         self.heuristic = None
+        self.zeroize_on_tag_safe = zeroize_on_tag_safe
 
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
@@ -300,6 +302,7 @@ class Result:
             heuristic=get_heuristic_primitives(section.heuristic),
             tags=unflatten(section.tags),
             title_text=section.title_text,
+            zeroize_on_tag_safe=section.zeroize_on_tag_safe
         ))
 
     def _flatten_sections(self, section: ResultSection, root: bool = True) -> None:
