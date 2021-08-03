@@ -385,11 +385,19 @@ class ResultSample(ServiceBase):
             # Zeroize on safe tags
             #     When this feature is turned on, the section will get its score set to zero if all its tags
             #     were safelisted by the safelisting engine
-            zero_section = ResultSection('Exemple of zeroize-able section', zeroize_on_tag_safe=True)
+            zero_section = ResultSection('Example of zeroize-able section', zeroize_on_tag_safe=True)
             zero_section.set_heuristic(2)
             zero_section.add_line("This section will have a zero score if all tags are safelisted.")
             zero_section.add_tag('network.static.ip', '127.0.0.1')
             result.add_section(zero_section)
+
+            # ==================================================================
+            # Auto-collapse
+            #     When this feature is turned on, the section will be collapsed when first displayed
+            collapse_section = ResultSection('Example of auto-collapse section', auto_collapse=True)
+            collapse_section.set_heuristic(2)
+            collapse_section.add_line("This section was collapsed when first loaded in the UI")
+            result.add_section(collapse_section)
 
             # ==================================================================
             # Wrap-up:
