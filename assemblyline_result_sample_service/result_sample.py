@@ -382,6 +382,16 @@ class ResultSample(ServiceBase):
             request.add_supplementary(temp_path, "json_body.json", "This is the json_body as a JSON file")
 
             # ==================================================================
+            # Zeroize on safe tags
+            #     When this feature is turned on, the section will get its score set to zero if all its tags
+            #     were safelisted by the safelisting engine
+            zero_section = ResultSection('Exemple of zeroize-able section', zeroize_on_tag_safe=True)
+            zero_section.set_heuristic(2)
+            zero_section.add_line("This section will have a zero score if all tags are safelisted.")
+            zero_section.add_tag('network.static.ip', '127.0.0.1')
+            result.add_section(zero_section)
+
+            # ==================================================================
             # Wrap-up:
             #     Save your result object back into the request
             request.result = result
