@@ -20,6 +20,7 @@ from flask import Flask
 
 SERVICE_PULL_INTERVAL = 5 * 60
 UPDATE_FUNCTION_PATH = os.getenv('UPDATE_FUNCTION_PATH')
+CHECK_FUNCTION_PATH = os.getenv('CHECK_FUNCTION_PATH')
 SERVICE_NAME = os.getenv('SERVICE_NAME')
 
 
@@ -130,50 +131,73 @@ class BackgroundUpdateApp(Flask):
                     # Run update function
                     # noinspection PyBroadException
                     try:
-                        update_function(new_directory)
+                        expect_changes = update_function(output_directory=new_directory,
+                                                         old_hash=self.__update_data.get('hash', None),
+                                                         config_hash=self.__update_data.get('config_hash', None),
+                                                         last_update_time=self.__update_data.get('update_time', None))
                     except Exception:
                         self.logger.exception('An error occurred running the update. Will retry...')
                         time.sleep(60)
                         continue
 
-                    # Tar update directory
-                    raw_file_handle, new_tar = tempfile.mkstemp(suffix='.tar.bz2')
-                    tar_handle = tarfile.open(new_tar, 'w:bz2')
-                    tar_handle.add(new_directory, '/')
-                    tar_handle.close()
+                    if expect_changes:
+                        # Tar update directory
+                        raw_file_handle, new_tar = tempfile.mkstemp(suffix='.tar.bz2')
+                        tar_handle = tarfile.open(new_tar, 'w:bz2')
+                        tar_handle.add(new_directory, '/')
+                        tar_handle.close()
 
-                    # Calculate hash
-                    hash_calculator = hashlib.sha256()
-                    file_handle = os.fdopen(raw_file_handle, 'rb')
-                    file_handle.seek(0)
-                    while True:
-                        chunk = file_handle.read(2 ** 12)
-                        if not chunk:
-                            break
-                        hash_calculator.update(chunk)
-                    new_hash = hash_calculator.hexdigest()
+                        # Calculate hash
+                        hash_calculator = hashlib.sha256()
+                        file_handle = os.fdopen(raw_file_handle, 'rb')
+                        file_handle.seek(0)
+                        while True:
+                            chunk = file_handle.read(2 ** 12)
+                            if not chunk:
+                                break
+                            hash_calculator.update(chunk)
+                        new_hash = hash_calculator.hexdigest()
 
-                    # Check if hash is the same as last time
-                    expiry_duration = update_interval * 5
-                    if self.__update_data.get('hash') == new_hash:
-                        storage.touch(new_hash, expiry_duration)
-                        continue
+                        # Check if hash is the same as last time
+                        expiry_duration = update_interval * 5
+                        if self.__update_data.get('hash') == new_hash:
+                            storage.touch(new_hash, expiry_duration)
+                            continue
 
-                    # upload tar file
-                    storage.upload(new_tar, new_hash, ttl=expiry_duration)
+                        # upload tar file
+                        storage.upload(new_tar, new_hash, ttl=expiry_duration)
 
-                    # set new update time/hash data in redis and locally
-                    self.__update_data['hash'] = new_hash
-                    self.__update_data['config_hash'] = config_hash
-                    self.__update_data['update_time'] = time.time()
-                    self.__update_data_hash.set(self.service.name, self.__update_data)
+                        # set new update time/hash data in redis and locally
+                        self.__update_data['hash'] = new_hash
+                        self.__update_data['config_hash'] = config_hash
+                        self.__update_data['update_time'] = time.time()
+                        self.__update_data_hash.set(self.service.name, self.__update_data)
 
-                    # swap update directory with old one
-                    self.__update_dir, new_directory = new_directory, self.__update_dir
-                    self.__update_tar, new_tar = new_tar, self.__update_tar
+                        # swap update directory with old one
+                        self.__update_dir, new_directory = new_directory, self.__update_dir
+                        self.__update_tar, new_tar = new_tar, self.__update_tar
+                    else:
+                        # set new update time/hash data in redis and locally
+                        self.__update_data['config_hash'] = config_hash
+                        self.__update_data['update_time'] = time.time()
+                        self.__update_data_hash.set(self.service.name, self.__update_data)
 
                 finally:
                     if new_directory:
                         shutil.rmtree(new_directory)
                     if new_tar:
                         os.unlink(new_tar)
+
+    def pre_download_check(self):
+        if not UPDATE_FUNCTION_PATH:
+            return
+        # noinspection PyBroadException
+        try:
+            check_function = load_module_by_path(UPDATE_FUNCTION_PATH)
+            check_function(directory=self.update_dir(),
+                           old_hash=self.__update_data.get('hash', None),
+                           config_hash=self.__update_data.get('config_hash', None),
+                           last_update_time=self.__update_data.get('update_time', None))
+        except Exception:
+            self.logger.exception('An error occurred checking for updates.')
+            return

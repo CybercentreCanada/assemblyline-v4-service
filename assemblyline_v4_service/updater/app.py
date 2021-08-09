@@ -1,8 +1,5 @@
 import functools
 import os
-# 1 background thread for running updates
-# 3 allow support containers to request (in manifest) core config
-# 4 api for list/downloading update files
 
 from flask import jsonify, make_response, request, send_from_directory, send_file
 from werkzeug.exceptions import Unauthorized, ServiceUnavailable
@@ -49,6 +46,7 @@ def list_files():
     path = app.update_dir()
     if path is None or not os.path.isdir(path):
         raise ServiceUnavailable("No update ready")
+    app.pre_download_check()
 
     entries = []
     for dirname, _, file_names in os.walk(path):
@@ -66,6 +64,7 @@ def get_file(name):
     path = app.update_dir()
     if path is None or not os.path.isdir(path):
         raise ServiceUnavailable("No update ready")
+    app.pre_download_check()
     return send_from_directory(path, name)
 
 
@@ -76,4 +75,5 @@ def get_all_files():
     path = app.update_tar()
     if path is None or not os.path.isdir(path):
         raise ServiceUnavailable("No update ready")
+    app.pre_download_check()
     return send_file(path)
