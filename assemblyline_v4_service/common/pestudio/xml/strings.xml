@@ -42,33 +42,11 @@ It contains the strings that will be detected as blackListed by pestudio.
 
   <!-- Virustotal AntiVirus -->
   <avs>
-    <av>threatexpert</av>
-    <av>emsisoft</av>
-    <av>pctools</av>
-    <av>norman</av>
-    <av>k7computing</av>
     <av>ikarus</av>
-    <av>hacksoft</av>
-    <av>gdata</av>
     <av>fortinet</av>
-    <av>ewido</av>
     <av>clamav</av>
-    <av>comodo</av>
-    <av>quickheal</av>
     <av>avira</av>
     <av>avast</av>
-    <av>esafe</av>
-    <av>ahnlab</av>
-    <av>centralcommand</av>
-    <av>drweb</av>
-    <av>grisoft</av>
-    <av>nod32</av>
-    <av>f-prot</av>
-    <av>jotti</av>
-    <av>computerassociates</av>
-    <av>networkassociates</av>
-    <av>etrust</av>
-    <av>panda</av>
     <av>sophos</av>
     <av>trendmicro</av>
     <av>defender</av>
@@ -76,26 +54,15 @@ It contains the strings that will be detected as blackListed by pestudio.
     <av>spyware</av>
     <av>Kaspersky</av>
     <av>BitDefender</av>
-    <av>Dr.Web</av>
     <av>Kaspersky Antivirus</av>
-    <av>Nod32 Antivirus 2.x</av>
-    <av>Ewido Security Suite</av>
     <av>McAfee VirusScan</av>
     <av>Panda Antivirus/Firewall</av>
     <av>Symantec/Norton</av>
-    <av>PC-cillin Antivirus</av>
     <av>F-Secure</av>
-    <av>Kingsoft ShaDu</av>
-    <av>NOD32 Antivirus</av>
-    <av>Rising Antivirus</av>
-    <av>Jiangmin Antivirus</av>
-    <av>360 ShaDu</av>
-    <av>360 Safe</av>
     <av>McAfee AV</av>
     <av>Bitdefender AV</av>
     <av>Norton Symantec AV</av>
     <av>F-Secure AV</av>
-    <av>AhnLab V3 Internet Security 8</av>
     <av>Avast AntiVirus</av>
     <av>Avira Antivirus</av>
     <av>Eset Nod32 Scanner</av>
@@ -104,12 +71,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <av>F-Secure HIPS</av>
     <av>F-Secure Gatekeeper</av>
     <av>F-Secure Filter</av>
-    <av>WinDefend</av>
-    <av>OutpostFirewall</av>
     <av>McAfee Framework Service</av>
-    <av>Panda Antivirus</av>
-    <av>ZoneAlarm Client</av>
-    <av>Zone Labs Client</av>
     <av>windefender</av>
     <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Antivirus</av>
     <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Antivirus</av>
@@ -239,6 +201,33 @@ It contains the strings that will be detected as blackListed by pestudio.
     <oid>1.3.6.1.4.1.311.88.2.2</oid>
     <oid>1.3.6.1.5.5.7.3.3</oid>
   </oids>
+
+  <exts>
+    <ext enable="1" risk="1">b64</ext>
+    <ext enable="1" risk="1">bat</ext>
+    <ext enable="1" risk="1">cert</ext>
+    <ext enable="1" risk="1">cmd</ext>
+    <ext enable="1" risk="1">dll</ext>
+    <ext enable="1" risk="1">exe</ext>
+    <ext enable="1" risk="1">ftp</ext>
+    <ext enable="1" risk="1">gzip</ext>
+    <ext enable="1" risk="1">hta</ext>
+    <ext enable="1" risk="1">html</ext>
+    <ext enable="1" risk="1">iso</ext>
+    <ext enable="1" risk="1">jar</ext>
+    <ext enable="1" risk="1">rsrc</ext>
+    <ext enable="1" risk="1">tar</ext>
+    <ext enable="1" risk="1">tmp</ext>
+    <ext enable="1" risk="1">temp</ext>
+    <ext enable="1" risk="1">tor</ext>
+    <ext enable="1" risk="1">url</ext>
+    <ext enable="1" risk="1">vb</ext>
+    <ext enable="1" risk="1">vbe</ext>
+    <ext enable="1" risk="1">vbs</ext>
+    <ext enable="1" risk="1">vbp</ext>
+    <ext enable="1" risk="1">xll</ext>
+    <ext enable="1" risk="1">zip</ext>
+  </exts>
 
   <agents>
     <agent>Mozilla/1.22</agent>
@@ -746,16 +735,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <event enable="1" risk="1">OnUpdate</event>
   </events>
 
-  <insults>
-    <insult>fuck</insult>
-    <insult>Fuck You!!!</insult>
-    <insult>sandboxfuck</insult>
-    <insult>Fuck You By QQ:123**321</insult>
-    <insult>Shit!!</insult>
-    <insult>asshole</insult>
-    <insult>FUCK OFF!!!</insult>
-  </insults>
-
   <strings>
     <string score="0">unzip</string>
     <string score="0">inflate</string>
@@ -832,19 +811,11 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">$Info: This file is packed with the UPX executable packer http://upx.sf.net $</string>
     <string score="0">$Id: UPX 3.91 Copyright (C) 1996-2013 the UPX Team. All Rights Reserved. $</string>
     <string score="0">Microsoft Application Compatibility Toolkit 5.6</string>
-    <string score="0">Management</string>
-    <string score="0">File manager</string>
     <string score="0">System Manager</string>
     <string score="0">Screen Capture</string>
     <string score="0">Webcam Capture</string>
     <string score="0">Packet Sniffer</string>
-    <string score="0">Listen</string>
-    <string score="0">Kill</string>
-    <string score="0">Background</string>
     <string score="0">\\.\mailslot\%s</string>
-    <string score="0">Macromedia Flash Player 7.0  r14</string>
-    <string score="0">Macromedia Flash Player 7.0</string>
-    <string score="0">dbgeng</string>
     <string score="0">Network Performance and Security Manager</string>
     <string score="0">ProxyEnable</string>
     <string score="0">ProxyServer</string>
@@ -852,16 +823,10 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">ProxyUserName</string>
     <string score="0">ProxyPassword</string>
     <string score="0">SkpWnd</string>
-    <string score="0">SkypeControlAPIAttach</string>
-    <string score="0">SkypeControlAPIDiscover</string>
-    <string score="0">Skype:API</string>
-    <string score="0">GET SKYPEVERSION</string>
-    <string score="0">SkypePath</string>
     <string score="0">AdministratorsGroup</string>
     <string score="0">NtAuthority</string>
     <string score="0">masterkey</string>
     <string score="0">IEHistory</string>
-    <string score="0">BUILTIN</string>
     <string score="0">NT AUTHORITY</string>
 
     <!-- Firefox -->
@@ -885,8 +850,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">PR_GetNameForIdentity</string>
 
     <!-- Unclassified -->
-    <string score="0">speex-1.1.11.1</string>
-    <string score="0">Time expiried.</string>
     <string score="0">PClock</string>
     <string score="0">Start scanner</string>
     <string score="0">Scanner completed</string>
@@ -921,18 +884,13 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">FtpUserName</string>
     <string score="0">FtpPassword</string>
     <string score="0">FtpDirectory</string>
-    <string score="0">RootDirectory</string>
-    <string score="0">Port</string>
     <string score="0">ServerType</string>
     <string score="0">onEnterFrame</string>
-    <string score="0">attachMovie</string>
     <string score="0">error to get HDD firmware serial</string>
     <string score="0">aPLib v1.01  -  the smaller the better :)</string>
     <string score="0">TrojanEngine</string>
-    <string score="0">Clinic</string>
     <string score="0">NetMon</string>
     <string score="0">FileSmash</string>
-    <string score="0">SafeBox</string>
     <string score="0">IERepair</string>
     <string score="0">KillVirus</string>
     <string score="0">SoftMove</string>
@@ -944,29 +902,19 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">CrashDumpBase64Len</string>
     <string score="0">CrashStack</string>
     <string score="0">MinDump</string>
-    <string score="0">Google Update Service</string>
-    <string score="0">googleupdate</string>
     <string score="0">VIRUS</string>
     <string score="0">QEMU</string>
 
-    <string score="0">PaySafeCard</string>
-    <string score="0">MoneyPak</string>
-    <string score="0">moneypak</string>
     <string score="0">Safengine Shielden v2.3.0.0</string>
-    <string score="0">MSFT</string>
     <string score="0">EnumProcess</string>
     <string score="0">InjectByPid</string>
     <string score="0">Send to Server failed.</string>
     <string score="0">HandShake with the server failed. Error:</string>
     <string score="0">Microsoft Unified Security Protocol Provider</string>
     <string score="0">ddos.bot</string>
-    <string score="0">passwords</string>
-    <string score="0">httpserver</string>
     <string score="0">makedir</string>
-    <string score="0">sendkeys</string>
     <string score="0">opencmd</string>
     <string score="0">ProcessorNameString</string>
-    <string score="0">Identifier</string>
     <string score="0">VendorIdentifier</string>
     <string score="0">SystemBiosVersion</string>
     <string score="0">SystemBiosDate</string>
@@ -1120,7 +1068,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Norton</string>
     <string score="0">Host OS</string>
 
-    <string score="0">PONG!</string>
     <string score="0">ReadPort</string>
     <string score="0">WritePort</string>
     <string score="0">cookie_module</string>
@@ -1132,7 +1079,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Terminal Server</string>
     <string score="0">Enterprise</string>
     <string score="0">LanmanNT</string>
-    <string score="0">BEGIN</string>
     <string score="0">CONNECTED</string>
     <string score="0">SENDME</string>
     <string score="0">EXTEND</string>
@@ -1151,8 +1097,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">INTRO_ESTABLISHED</string>
     <string score="0">RENDEZVOUS_ESTABLISHED</string>
     <string score="0">INTRODUCE_ACK</string>
-    <string score="0">ChewBacca/</string>
-    <string score="0">chewbacca</string>
     <string score="0">.onion/</string>
     <string score="0">TMemoryScanner</string>
     <string score="0">Symantec Shared</string>
@@ -1162,14 +1106,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Optimizing the registry...</string>
     <string score="0">Virtual HD</string>
     <string score="0">db2admin</string>
-    <string score="0">nopassword</string>
-    <string score="0">password12</string>
-    <string score="0">secret</string>
-    <string score="0">superman</string>
-    <string score="0">iloveyou</string>
-    <string score="0">helpme</string>
-    <string score="0">hockey</string>
-    <string score="0">home123</string>
     <string score="0">changeme</string>
     <string score="0">MsComCtl.ocx</string>
     <string score="0">HotTracking</string>
@@ -1218,8 +1154,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Fast decoding</string>
     <string score="0">Gina</string>
     <string score="0">cgets</string>
-    <string score="0">Macromedia</string>
-    <string score="0">FlashPlayer</string>
     <string score="0">NetworkService\Cookies\</string>
     <string score="0">Scheduler</string>
     <string score="0">Local Settings\History\History.IE5</string>
@@ -1227,12 +1161,10 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">unrarw32</string>
     <string score="0">server</string>
     <string score="0">verifyinginstaller</string>
-    <string score="0">Mozilla</string>
     <string score="0">CONNECT</string>
     <string score="0">AppData</string>
     <string score="0">admin</string>
     <string score="0">Microsoft.VisualBasic</string>
-    <string score="0">Dictionary</string>
     <string score="0">Protocol not supported</string>
     <string score="0">referer</string>
     <string score="0">partner_online_url</string>
@@ -1241,19 +1173,15 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">mail.ru</string>
     <string score="0">password</string>
     <string score="0">Launcher</string>
-    <string score="0">setup</string>
     <string score="0">remote</string>
-    <string score="0">random</string>
     <string score="0">inject</string>
     <string score="0">hook</string>
     <string score="0">crack</string>
     <string score="0">script</string>
     <string score="0">browse</string>
-    <string score="0">Clipboard</string>
     <string score="0">Event</string>
     <string score="0">Privilege</string>
     <string score="0">Reboot</string>
-    <string score="0">CABINET</string>
     <string score="0">CabinetFile</string>
     <string score="0">cabfile</string>
     <string score="0">extract</string>
@@ -1290,13 +1218,11 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">exec error</string>
     <string score="0">application/x-www-form-urlencoded</string>
     <string score="0">LordPE</string>
-    <string score="0">Silvana</string>
     <string score="0">deflate</string>
     <string score="0">60794-12b3-e4169440</string>
     <string score="0">Keep-Alive</string>
     <string score="0">Referer</string>
     <string score="0">WinSta0</string>
-    <string score="0">Gh0st</string>
     <string score="0">Update</string>
     <string score="0">Forbidden</string>
     <string score="0">Accepted</string>
@@ -1314,14 +1240,12 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Winlogon</string>
     <string score="0">nsocket</string>
     <string score="0">compression</string>
-    <string score="0">dictionary</string>
     <string score="0">userprofile</string>
     <string score="0">webkit</string>
     <string score="0">command</string>
     <string score="0">tracing</string>
     <string score="0">sandbox</string>
     <string score="0">keystroke</string>
-    <string score="0">Adobe</string>
     <string score="0">scanning</string>
     <string score="0">Callback</string>
     <string score="0">torrent</string>
@@ -1330,16 +1254,12 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">proxy</string>
     <string score="0">downspeed</string>
     <string score="0">webseeds</string>
-    <string score="0">666</string>
     <string score="0">POST</string>
     <string score="0">fingerprint</string>
     <string score="0">DNA_Proxy</string>
     <string score="0">min_http_connections</string>
     <string score="0">Unauthorized</string>
-    <string score="0">pairing</string>
     <string score="0">TOKEN</string>
-    <string score="0">subscribe</string>
-    <string score="0">announce</string>
     <string score="0">multicast</string>
     <string score="0">payload</string>
     <string score="0">UPnP</string>
@@ -1356,7 +1276,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">HHA Version 4.74.8702</string>
 
     <string score="0">ThisprogrammustberununderWin32</string>
-    <string score="0">PrepareOurShit</string>
     <string score="0">Exefiles</string>
     <string score="0">Scanning</string>
     <string score="0">StdOut</string>
@@ -1371,9 +1290,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">\\cryptme\\</string>
     <string score="0">run.vbs</string>
     <string score="0">{0000054f-0000-0010-8000-00aa006d2ea4}</string>
-    <string score="0">username</string>
-    <string score="0">Password</string>
-    <string score="0">Username</string>
     <string score="0">Expires</string>
     <string score="0">User-Agent</string>
     <string score="0">Cookie</string>
@@ -1399,25 +1315,17 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">OLLYDBG</string>
     <string score="0">WinDbgFrameClass</string>
     <string score="0">BankID</string>
-    <string score="0">Timer1</string>
-    <string score="0">Timer2</string>
-    <string score="0">Timer3</string>
     <string score="0">Mscomctl32.ocx</string>
     <string score="0">WebBrowser</string>
-    <string score="0">Logout</string>
     <string score="0">9368265E-85FE-11d1-8BE3-0000F8754DA1</string>
-    <string score="0">TIPOFDAY.TXT</string>
     <string score="0">Scripting.FileSystemObject</string>
-    <string score="0">LoVein1</string>
     <string score="0">KerNel32.dll</string>
     <string score="0">downloader</string>
     <string score="0">browser</string>
     <string score="0">NETSCAPE2.0</string>
-    <string score="0">opera</string>
     <string score="0">RemoveRange</string>
     <string score="0">AuthenticationMode</string>
     <string score="0">Downloader</string>
-    <string score="0">chromepref</string>
     <string score="0">ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/</string>
     <string score="0">FPC 2.7.1 [2013/10/22] for i386 - Win32</string>
     <string score="0">pipedatacontinue</string>
@@ -1428,9 +1336,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">geturl</string>
     <string score="0">Destroy</string>
     <string score="0">likubes</string>
-    <string score="0">fine musicians</string>
     <string score="0">file not found</string>
-    <string score="0">brothers-in-law</string>
     <string score="0">_RTL_CRITICAL_SECTION_DEBUG</string>
     <string score="0">_RTL_CRITICAL_SECTION</string>
     <string score="0">_SECURITY_ATTRIBUTES</string>
@@ -1462,9 +1368,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">NetSubKey</string>
     <string score="0">FileDescrsiption</string>
     <string score="0">state.ini</string>
-    <string score="0">Accepted:</string>
     <string score="0">sha256</string>
-    <string score="0">sinzy</string>
     <string score="0">AckPacket</string>
     <string score="0">Connection</string>
     <string score="0">autoRunKeyPath</string>
@@ -1502,32 +1406,23 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Shutdown</string>
     <string score="0">WebKit2WebProcess</string>
     <string score="0">Sleeping</string>
-    <string score="0">Ivan Medvedev</string>
     <string score="0">Rijndael</string>
     <string score="0">SystemBiosVersion</string>
     <string score="0">VideoBiosVersion</string>
-    <string score="0">VirtualBox</string>
-    <string score="0">Identifier</string>
     <string score="0">UDPV6</string>
     <string score="0">TCPV6</string>
     <string score="0"> deflate 1.2.3 Copyright 1995-2005 Jean-loup Gailly</string>
     <string score="0"> deflate 1.1.4 Copyright 1995-2002 Jean-loup Gailly</string>
     <string score="0"> inflate 1.2.3 Copyright 1995-2005 Mark Adler </string>
     <string score="0"> inflate 1.1.4 Copyright 1995-2002 Mark Adler </string>
-    <string score="0">History</string>
-    <string score="0">ProductType</string>
     <string score="0">RegisterRawInputDevices</string>
     <string score="0">GetRawInputData</string>
-    <string score="0">protocol></string>
     <string score="0">sqlite3_open</string>
     <string score="0">sqlite3_close</string>
     <string score="0">sqlite3_prepare_v2</string>
     <string score="0">sqlite3_step</string>
     <string score="0">sqlite3_column_text</string>
-    <string score="0">plugins</string>
     <string score="0">Hibernating</string>
-    <string score="0">Valid</string>
-    <string score="0">Running</string>
     <string score="0">downtime-started</string>
     <string score="0">uptime-started</string>
     <string score="0">Intel Hardware Cryptographic Service Provider</string>
@@ -1536,10 +1431,8 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">EndInvoke</string>
     <string score="0">StatusChecker</string>
     <string score="0">Encoding</string>
-    <string score="0">semaphore</string>
     <string score="0">stand by</string>
     <string score="0">startime</string>
-    <string score="0">status</string>
     <string score="0">throttle</string>
     <string score="0">Mandatory Level</string>
     <string score="0">_invoke_watson</string>
@@ -1565,7 +1458,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Stale thread</string>
     <string score="0">Locking doors</string>
     <string score="0">Rotors engaged</string>
-    <string score="0">Im going to start it</string>
     <string score="0">\DosDevices\DKOM_Driver</string>
     <string score="0">\Device\DKOM_Driver</string>
     <string score="0">Process successfully hidden.</string>
@@ -1573,10 +1465,8 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">EPROCESS address: %#x</string>
     <string score="0">ActiveProcessLinks offset: %#x</string>
     <string score="0">Extracting %s</string>
-    <string score="0">Your message has been sended</string>
     <string score="0">Couponserver</string>
     <string score="0">xmlUrl</string>
-    <string score="0">yahoo</string>
     <string score="0">LoadXml</string>
     <string score="0">LocalMachine</string>
     <string score="0">DownloadAll</string>
@@ -1596,7 +1486,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">RegSAM</string>
     <string score="0">MemoryManagement</string>
     <string score="0">Trackingurls</string>
-    <string score="0">TypeChekDomain</string>
     <string score="0">DownloadUrl</string>
     <string score="0">QueueDownloader</string>
     <string score="0">ZipManager</string>
@@ -1616,8 +1505,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">remove_DownloadComplete</string>
     <string score="0">DownloadThreads</string>
     <string score="0">Arquitecture</string>
-    <string score="0">Monetizer</string>
-    <string score="0">yahoo</string>
     <string score="0">internetTurbo</string>
     <string score="0">strongvault</string>
     <string score="0">amonetize</string>
@@ -1627,12 +1514,9 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">AndroidAPK</string>
     <string score="0">IexplorerMinVersion</string>
     <string score="0">checkMachineInfo</string>
-    <string score="0">checkYahooBug</string>
     <string score="0">checkCouponserver</string>
     <string score="0">checkInternet</string>
-    <string score="0">checkAOLbug</string>
     <string score="0">hideWhenInstalling</string>
-    <string score="0">idPromo</string>
     <string score="0">WebmasterId</string>
     <string score="0">firewalls</string>
     <string score="0">IsControlled</string>
@@ -1643,7 +1527,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Windows Filter Driver</string>
     <string score="0">firewall</string>
     <string score="0">IsUserAdministrator</string>
-    <string score="0">EVERYONE</string>
     <string score="0">CreateSubKey</string>
     <string score="0">NotifyDownloading</string>
     <string score="0">isvirtualMachine</string>
@@ -1657,7 +1540,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">GetDomain</string>
     <string score="0">checkdomain</string>
     <string score="0">bytesDownloaded</string>
-    <string score="0">God Mode</string>
     <string score="0">logger</string>
     <string score="0">This plugin is already loaded.</string>
     <string score="0">The plugin you are trying to load does not exist</string>
@@ -1675,18 +1557,13 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">#include-once</string>
     <string score="0">D:\RECYCLER\</string>
     <string score="0">Windows Registry Editor Version 5.00</string>
-    <string score="0">start</string>
-    <string score="0">stop</string>
     <string score="0">DisallowRun</string>
     <string score="0">NoDriveTypeAutoRun</string>
     <string score="0">HideFileExt</string>
     <string score="0">Hidden</string>
-    <string score="0">SuperHidden</string>
     <string score="0">Application cannot be run with debugger or monitoring tool(s) loaded!</string>
     <string score="0">Logon User Name</string>
     <string score="0">NoFolderOptions</string>
-    <string score="0">Happy BirthDay mys Boss</string>
-    <string score="0">Merry Christmas</string>
 
     <string score="0">Starting Hide myself ...</string>
     <string score="0">Starting Killing myself ...</string>
@@ -1719,8 +1596,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">List domain server ok!#</string>
     <string score="0">fileupload</string>
     <string score="0">cruisenet</string>
-    <string score="0">chunked</string>
-    <string score="0">bankman</string>
     <string score="0">javascript:</string>
 
     <string score="0">All the important files on your computer were encrypted.</string>
@@ -1732,11 +1607,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Botnet shutdown</string>
     <string score="0">QUIT :Botnet shutdown</string>
     <string score="0">PRIVMSG %s :bingo - botnet shutting down</string>
-    <string score="0">Resistance is futile</string>
-    <string score="0">No malware here honest guv!</string>
     <string score="0">Anti-debug</string>
-    <string score="0">misery mystery</string>
-    <string score="0">AppleMac</string>
     <string score="0">.detour</string>
     <string score="0">Detoured</string>
     <string score="0">Client hook allocation failure.</string>
@@ -1770,7 +1641,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Monitor</string>
     <string score="0">www.memtest86.com</string>
     <string score="0">boxedapp.com</string>
-    <string score="0">julian seward</string>
     <string score="0">RegServer</string>
     <string score="0">Send ack is successful.</string>
     <string score="0">Get the right data.</string>
@@ -1785,7 +1655,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">POP3 Server</string>
     <string score="0">POP3 User Name</string>
     <string score="0">HTTPMail Password2</string>
-    <string score="0">Hotmail</string>
     <string score="0">HTTPMail User Name</string>
     <string score="0"> 2004 2005 Pierre le Riche / Professional Software Development</string>
     <string score="0">Broadcast adress :</string>
@@ -1833,7 +1702,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">drivers\etc\hosts</string>
     <string score="0">unknown compression method</string>
     <string score="0">wscsvc</string>
-    <string score="0">fukoff</string>
     <string score="0">httpstop</string>
     <string score="0">logstop</string>
     <string score="0">ftfpstop</string>
@@ -1868,9 +1736,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">[PING]</string>
     <string score="0">[TFTP]</string>
     <string score="0">[UPD]</string>
-    <string score="0">administrador</string>
-    <string score="0">administrat</string>
-    <string score="0">administrateur</string>
     <string score="0">Download complete</string>
     <string score="0">ALIEN-Z</string>
     <string score="0">\Google\Chrome\User Data</string>
@@ -1900,15 +1765,10 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">GZipStream</string>
     <string score="0">MulticastDelegate</string>
     <string score="0">IAT processed</string>
-    <string score="0">0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz+/</string>
     <string score="0">putfile:</string>
     <string score="0">getfile:</string>
-    <string score="0">outlook</string>
-    <string score="0">iexplore</string>
-    <string score="0">source</string>
     <string score="0">Connecting</string>
     <string score="0">Downloading</string>
-    <string score="0">Cancelled</string>
     <string score="0">Connecting</string>
     <string score="0">Reconnect Pause</string>
     <string score="0">Terminated</string>
@@ -1922,7 +1782,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">Server Error</string>
     <string score="0">Redirection</string>
     <string score="0">TypeLib</string>
-    <string score="0">Hardware</string>
     <string score="0">Interface</string>
     <string score="0">FileType</string>
     <string score="0">Component Categories</string>
@@ -1933,7 +1792,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">ForceRemove</string>
     <string score="0">Keylogger</string>
     <string score="0">crypter</string>
-    <string score="0">dump</string>
     <string score="0">vbox</string>
     <string score="0">NetKeyLogger</string>
     <string score="0">TARGET</string>
@@ -1952,9 +1810,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">ASPNET</string>
     <string score="0">POP3</string>
     <string score="0">Admins</string>
-    <string score="0">Browsers</string>
-    <string score="0">Guests</string>
-    <string score="0">Users</string>
     <string score="0">webBrowser2</string>
     <string score="0">IEFrame</string>
     <string score="0">\\.\pipe\</string>
@@ -1987,8 +1842,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">mysql</string>
     <string score="0">daemon</string>
     <string score="0">backup</string>
-    <string score="0">marta</string>
-    <string score="0">oracle</string>
     <string score="0">redhat</string>
     <string score="0">VNC%d.%d</string>
     <string score="0">exploitable</string>
@@ -2465,17 +2318,19 @@ It contains the strings that will be detected as blackListed by pestudio.
     <!-- https://blogs.technet.microsoft.com/heyscriptingguy/2015/06/11/table-of-basic-powershell-commands/ -->
     <powershell score="0">Add-Content</powershell>
     <powershell score="0">Add-PSSnapIn</powershell>
+    <powershell score="0">AppData</powershell>
     <powershell score="0">Clear-Content</powershell>
     <powershell score="0">Clear-Host</powershell>
     <powershell score="0">Clear-History</powershell>
     <powershell score="0">Clear-Item</powershell>
     <powershell score="0">Clear-ItemProperty</powershell>
-    <powershell score="0">Clear-Variable</powershell>
+    <powershell score="0">Clear-Variable</powershell
     <powershell score="0">Compare-Object</powershell>
     <powershell score="0">Connect-PSSession</powershell>
     <powershell score="0">Copy-Item</powershell>
     <powershell score="0">Copy-ItemProperty</powershell>
     <powershell score="0">Convert-Path</powershell>
+    <powershell score="0">cmd</powershell>
     <powershell score="0">Disable-PSBreakpoint</powershell>
     <powershell score="0">Disconnect-PSSession</powershell>
     <powershell score="0">Enable-PSBreakpoint</powershell>
@@ -2533,6 +2388,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <powershell score="0">New-PSSession</powershell>
     <powershell score="0">New-PSSessionConfigurationFile</powershell>
     <powershell score="0">New-Variable</powershell>
+    <powershell score="0">New-Object</powershell>
     <powershell score="0">Out-GridView</powershell>
     <powershell score="0">Out-Host</powershell>
     <powershell score="0">Out-Printer</powershell>
@@ -2561,6 +2417,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <powershell score="0">Set-Location</powershell>
     <powershell score="0">Set-PSBreakpoint</powershell>
     <powershell score="0">Set-Variable</powershell>
+    <powershell score="0">Shell</powershell>
     <powershell score="0">Show-Command</powershell>
     <powershell score="0">Start-Job</powershell>
     <powershell score="0">Start-Process</powershell>
