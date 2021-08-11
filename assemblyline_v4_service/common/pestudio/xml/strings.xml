@@ -40,57 +40,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     </setting>
   </settings>
 
-  <!-- Virustotal AntiVirus -->
-  <avs>
-    <av>ikarus</av>
-    <av>fortinet</av>
-    <av>clamav</av>
-    <av>avira</av>
-    <av>avast</av>
-    <av>sophos</av>
-    <av>trendmicro</av>
-    <av>defender</av>
-    <av>rootkit</av>
-    <av>spyware</av>
-    <av>Kaspersky</av>
-    <av>BitDefender</av>
-    <av>Kaspersky Antivirus</av>
-    <av>McAfee VirusScan</av>
-    <av>Panda Antivirus/Firewall</av>
-    <av>Symantec/Norton</av>
-    <av>F-Secure</av>
-    <av>McAfee AV</av>
-    <av>Bitdefender AV</av>
-    <av>Norton Symantec AV</av>
-    <av>F-Secure AV</av>
-    <av>Avast AntiVirus</av>
-    <av>Avira Antivirus</av>
-    <av>Eset Nod32 Scanner</av>
-    <av>F-Secure Gatekeeper Handler Starter</av>
-    <av>F-Secure Recognizer</av>
-    <av>F-Secure HIPS</av>
-    <av>F-Secure Gatekeeper</av>
-    <av>F-Secure Filter</av>
-    <av>McAfee Framework Service</av>
-    <av>windefender</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Antivirus</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Antivirus</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\360SD</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\360SD</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft PC Doctor</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft PC Doctor</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\360 Internet Security</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\360 Internet Security</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security 9</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security 9</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security U SP1</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\Kingsoft Internet Security U SP1</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\{D1ABBC6D-4C7B-4D6B-9B50-F79399DD3652}</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{D1ABBC6D-4C7B-4D6B-9B50-F79399DD3652}</av>
-    <av>Software\Microsoft\Windows\CurrentVersion\Uninstall\{AC54C7CC-3868-4942-BD2E-1BCA2519C881}</av>
-    <av>Software\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\{AC54C7CC-3868-4942-BD2E-1BCA2519C881}</av>
-  </avs>
-
   <privs>
     <priv>SeAssignPrimaryTokenPrivilege</priv>
     <priv>SeAuditPrivilege</priv>
@@ -1322,7 +1271,6 @@ It contains the strings that will be detected as blackListed by pestudio.
     <string score="0">KerNel32.dll</string>
     <string score="0">downloader</string>
     <string score="0">browser</string>
-    <string score="0">NETSCAPE2.0</string>
     <string score="0">RemoveRange</string>
     <string score="0">AuthenticationMode</string>
     <string score="0">Downloader</string>
