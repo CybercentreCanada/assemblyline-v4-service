@@ -1,13 +1,20 @@
 import functools
 import os
 
-from flask import jsonify, make_response, request, send_from_directory, send_file
+from flask import jsonify, make_response, request, send_from_directory, send_file, Flask
 from werkzeug.exceptions import Unauthorized, ServiceUnavailable
 
-from assemblyline_v4_service.updater.background import BackgroundUpdateApp
+from .updater import ServiceUpdater, UpdaterRPC, MANAGER_KEY, MANAGER_PORT, MANAGER_HOST
+
+# The real ServiceUpdater object is running in a different process from 
+# the http interface. Exported methods of the process can be accessed via the
+# proxy object 'updater' below. 
+server = UpdaterRPC(address=(MANAGER_HOST, MANAGER_PORT), authkey=MANAGER_KEY)
+server.connect()
+updater: ServiceUpdater = getattr(server, 'updater')()
 
 
-app = BackgroundUpdateApp('service_updater')
+app = Flask('service_updater')
 AUTH_KEY = os.environ.get('SERVICE_API_AUTH_KEY', 'ThisIsARandomAuthKey...ChangeMe!')
 
 
@@ -20,10 +27,7 @@ def container_ready():
 @app.route('/status')
 def update_status():
     """A report on readiness for services to run."""
-    return make_response(jsonify({
-        'initialized': app.service is not None,
-        'update_available': app.update_dir() is not None
-    }))
+    return make_response(jsonify(updater.status()))
 
 
 def api_login(func):
@@ -43,10 +47,9 @@ def api_login(func):
 @api_login
 def list_files():
     """Get a directory listing of files in the current update."""
-    path = app.update_dir()
+    path = updater.update_directory()
     if path is None or not os.path.isdir(path):
         raise ServiceUnavailable("No update ready")
-    app.pre_download_check()
 
     entries = []
     for dirname, _, file_names in os.walk(path):
@@ -61,10 +64,9 @@ def list_files():
 @api_login
 def get_file(name):
     """Download a specific file from the directory listing of the current update."""
-    path = app.update_dir()
+    path = updater.update_directory()
     if path is None or not os.path.isdir(path):
         raise ServiceUnavailable("No update ready")
-    app.pre_download_check()
     return send_from_directory(path, name)
 
 
@@ -72,8 +74,11 @@ def get_file(name):
 @api_login
 def get_all_files():
     """Download a tar containing all the files in the current update."""
-    path = app.update_tar()
-    if path is None or not os.path.isdir(path):
+    path = updater.update_tar()
+    if path is None or not os.path.isfile(path):
         raise ServiceUnavailable("No update ready")
-    app.pre_download_check()
     return send_file(path)
+
+
+if __name__ == '__main__':
+    app.run()
