@@ -231,6 +231,15 @@ class PatternMatch(object):
                  rb'(?:XN--[A-Z0-9]{4,18}|[a-z]{2,12}|[0-9]{1,3})' \
                  rb'(?::[0-9]{1,5})?' \
                  rb'/[A-Z0-9/\-\.&%\$#=~\?_+]{5,}[\r\n]*'
+    PAT_URI_NO_PROTOCOL = rb'(?:(?:(?:[A-Za-z]*:)?//)?' \
+                          rb'(?:\S+(?::\S*)?@)?' \
+                          rb'(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}' \
+                          rb'(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)' \
+                          rb'|(?:(?:[A-Za-z0-9\u00a1-\uffff][A-Za-z0-9\u00a1-\uffff_-]{0,62})?' \
+                          rb'[A-Za-z0-9\u00a1-\uffff]\.)+(?:xn--)?' \
+                          rb'(?:[A-Za-z0-9\u00a1-\uffff]{2,}\.?))' \
+                          rb'(?::\d{2,5})?)' \
+                          rb'(?:[/?#]\S*)?'
 
     PAT_EXEDOS = rb'This program cannot be run in DOS mode'
     PAT_EXEHEADER = rb'(?s)MZ.{32,1024}PE\000\000'
