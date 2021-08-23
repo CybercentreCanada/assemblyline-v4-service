@@ -2272,7 +2272,7 @@ It contains the strings that will be detected as blackListed by pestudio.
     <powershell score="0">Clear-History</powershell>
     <powershell score="0">Clear-Item</powershell>
     <powershell score="0">Clear-ItemProperty</powershell>
-    <powershell score="0">Clear-Variable</powershell
+    <powershell score="0">Clear-Variable</powershell>
     <powershell score="0">Compare-Object</powershell>
     <powershell score="0">Connect-PSSession</powershell>
     <powershell score="0">Copy-Item</powershell>
