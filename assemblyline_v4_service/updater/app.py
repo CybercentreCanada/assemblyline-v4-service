@@ -1,21 +1,14 @@
 import functools
 import os
 
+import requests
 from flask import jsonify, make_response, request, send_from_directory, send_file, Flask
 from werkzeug.exceptions import Unauthorized, ServiceUnavailable
 
-from .updater import ServiceUpdater, UpdaterRPC, MANAGER_KEY, MANAGER_PORT, MANAGER_HOST
 
-# The real ServiceUpdater object is running in a different process from 
-# the http interface. Exported methods of the process can be accessed via the
-# proxy object 'updater' below. 
-server = UpdaterRPC(address=(MANAGER_HOST, MANAGER_PORT), authkey=MANAGER_KEY)
-server.connect()
-updater: ServiceUpdater = getattr(server, 'updater')()
-
-
+session = requests.session()
 app = Flask('service_updater')
-AUTH_KEY = os.environ.get('SERVICE_API_AUTH_KEY', 'ThisIsARandomAuthKey...ChangeMe!')
+AUTH_KEY = os.environ.get('AL_INSTANCE_KEY', 'ThisIsARandomAuthKey...ChangeMe!')
 
 
 @app.route('/healthz/live')
@@ -27,8 +20,14 @@ def container_ready():
 @app.route('/status')
 def update_status():
     """A report on readiness for services to run."""
-    return make_response(jsonify(updater.status()))
-
+    request = session.get('http://localhost:9999')
+    request.raise_for_status()
+    response = app.response_class(
+        response=request.text,
+        status=200,
+        mimetype='application/json'
+    )
+    return response
 
 def api_login(func):
     @functools.wraps(func)
@@ -43,13 +42,25 @@ def api_login(func):
     return base
 
 
+def get_paths():
+    try:
+        request = session.get('http://localhost:9999')
+        request.raise_for_status()
+        path = request.json()['_directory']
+        tar = request.json()['_tar']
+        if path is None or not os.path.isdir(path):
+            raise ValueError()
+        if tar is None or not os.path.isfile(tar):
+            raise ValueError()
+    except Exception:
+        raise ServiceUnavailable("No update ready")
+    return path, tar
+
 @app.route('/files')
 @api_login
 def list_files():
     """Get a directory listing of files in the current update."""
-    path = updater.update_directory()
-    if path is None or not os.path.isdir(path):
-        raise ServiceUnavailable("No update ready")
+    path, _ = get_paths()
 
     entries = []
     for dirname, _, file_names in os.walk(path):
@@ -64,9 +75,7 @@ def list_files():
 @api_login
 def get_file(name):
     """Download a specific file from the directory listing of the current update."""
-    path = updater.update_directory()
-    if path is None or not os.path.isdir(path):
-        raise ServiceUnavailable("No update ready")
+    path, _ = get_paths()
     return send_from_directory(path, name)
 
 
@@ -74,9 +83,7 @@ def get_file(name):
 @api_login
 def get_all_files():
     """Download a tar containing all the files in the current update."""
-    path = updater.update_tar()
-    if path is None or not os.path.isfile(path):
-        raise ServiceUnavailable("No update ready")
+    _, path = get_paths()
     return send_file(path)
 
 

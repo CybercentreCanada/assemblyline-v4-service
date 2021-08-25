@@ -1,5 +1,11 @@
+"""
+The updater components get all the same environment variables as other core containers.
+If these variables are set globally for ui and you don't want it to effect the updaters
+they can be overwritten (for all future systems) by setting them in the service manifest
+entry for the updater container, or (for a running system) in the service configuration
+UI panel for the update container.
+"""
 from os import environ as env
-import multiprocessing
 
 # Port to bind to
 bind = f":{int(env.get('PORT', 5003))}"
