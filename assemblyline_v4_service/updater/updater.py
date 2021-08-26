@@ -17,7 +17,7 @@ from contextlib import contextmanager
 
 from passlib.hash import bcrypt
 
-from assemblyline.common.server_base import ThreadedCoreBase, ServiceStage
+from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
 from assemblyline.odm.models.service import Service
 from assemblyline.remote.datatypes.hash import Hash
 from assemblyline.common.security import get_random_password, get_password_hash
