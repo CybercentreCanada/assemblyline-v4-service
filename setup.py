@@ -40,6 +40,7 @@ setup(
         'assemblyline-core',
         'cart',
         'fuzzywuzzy',
+        'pefile',
         'python-Levenshtein',
     ],
     package_data={
