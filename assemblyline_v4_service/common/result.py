@@ -170,6 +170,7 @@ class ResultSection:
             parent: Optional[Union[ResultSection, Result]] = None,
             zeroize_on_tag_safe: bool = False,
             auto_collapse: bool = False,
+            zeroize_on_sig_safe: bool = True,
     ):
         self._finalized: bool = False
         self.parent = parent
@@ -183,6 +184,7 @@ class ResultSection:
         self.heuristic = None
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
+        self.zeroize_on_sig_safe = zeroize_on_sig_safe
 
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
