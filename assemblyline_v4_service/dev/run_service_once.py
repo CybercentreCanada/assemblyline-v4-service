@@ -11,7 +11,7 @@ from cart import unpack_stream
 from typing import Union, Dict
 
 from assemblyline.common import identify, forge
-from assemblyline.common.heuristics import service_heuristic_to_result_heuristic, InvalidHeuristicException
+from assemblyline.common.heuristics import HeuristicHandler, InvalidHeuristicException
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.common.uid import get_random_id
@@ -137,8 +137,8 @@ class RunService:
                         heur_id = section['heuristic']['heur_id']
 
                         try:
-                            section['heuristic'], new_tags = service_heuristic_to_result_heuristic(section['heuristic'],
-                                                                                                   heuristics)
+                            section['heuristic'], new_tags = HeuristicHandler().service_heuristic_to_result_heuristic(
+                                section['heuristic'], heuristics)
                             for tag in new_tags:
                                 section['tags'].setdefault(tag[0], [])
                                 if tag[1] not in section['tags'][tag[0]]:
