@@ -239,7 +239,7 @@ class PatternMatch(object):
                           rb'[A-Za-z0-9\\u00a1-\\uffff]\.)+(?:xn--)?' \
                           rb'(?:[A-Za-z0-9\\u00a1-\\uffff]{2,}\.?))' \
                           rb'(?::\d{2,5})?)' \
-                          rb'(?:[/?#][a-zA-Z0-9.\-_~\$\.\+\!\*\'\(\)\,]+)*'
+                          rb'(?:[/?#=&][a-zA-Z0-9.\-_~\$\.\+\!\*\'\(\)\,]+)*'
 
     PAT_EXEDOS = rb'This program cannot be run in DOS mode'
     PAT_EXEHEADER = rb'(?s)MZ.{32,1024}PE\000\000'
