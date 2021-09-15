@@ -16,6 +16,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from contextlib import contextmanager
 
 from passlib.hash import bcrypt
+from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
+from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
 from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
 from assemblyline.odm.models.service import Service
@@ -33,7 +35,7 @@ if typing.TYPE_CHECKING:
     RedisType = redis.Redis[typing.Any]
 
 
-SERVICE_PULL_INTERVAL = 60
+SERVICE_PULL_INTERVAL = 1200
 SERVICE_NAME = os.getenv('AL_SERVICE_NAME', 'service')
 
 CONFIG_HASH_KEY = 'config_hash'
@@ -73,10 +75,20 @@ class ServiceUpdater(ThreadedCoreBase):
                          config=config, datastore=datastore, redis=redis,
                          redis_persist=redis_persist)
 
-        self.update_data_hash = Hash(f'service-updates-{SERVICE_NAME}', redis_persist)
+        self.update_data_hash = Hash(f'service-updates-{SERVICE_NAME}', self.redis_persist)
         self._update_dir = None
         self._update_tar = None
         self._service: Optional[Service] = None
+        self.event_sender = EventSender('changes.services',
+                                        host=self.config.core.redis.nonpersistent.host,
+                                        port=self.config.core.redis.nonpersistent.port)
+
+        self.service_change_watcher = EventWatcher(self.redis, deserializer=ServiceChange.deserialize)
+        self.service_change_watcher.register(f'changes.services.{SERVICE_NAME}', self._handle_service_change_event)
+
+        self.signature_change_watcher = EventWatcher(self.redis, deserializer=SignatureChange.deserialize)
+        self.signature_change_watcher.register(f'changes.signatures.{SERVICE_NAME.lower()}', 
+                                               self._handle_signature_change_event)
 
         # A event flag that gets set when an update should be run for
         # reasons other than it being the regular interval (eg, change in signatures)
@@ -136,12 +148,16 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def stop(self):
         super().stop()
+        self.signature_change_watcher.stop()
+        self.service_change_watcher.stop()
         self.source_update_flag.set()
         self.local_update_flag.set()
         if self._internal_server:
             self._internal_server.shutdown()
 
     def try_run(self):
+        self.signature_change_watcher.start()
+        self.service_change_watcher.start()
         self.maintain_threads(self.expected_threads)
 
     def _run_internal_http(self):
@@ -187,17 +203,27 @@ class ServiceUpdater(ThreadedCoreBase):
             return 0
         return hash(json.dumps(service.update_config.as_primitives()))
 
+    def _handle_signature_change_event(self, data: SignatureChange):
+        self.local_update_flag.set()
+
+    def _handle_service_change_event(self, data: ServiceChange):
+        if data.operation == Operation.Modified:
+            self._pull_settings()
+
     def _sync_settings(self):
         # Download the service object from datastore
         self._service = self.datastore.get_service_with_delta(SERVICE_NAME)
 
         while self.sleep(SERVICE_PULL_INTERVAL):
-            # Download the service object from datastore
-            self._service = self.datastore.get_service_with_delta(SERVICE_NAME)
+            self._pull_settings()
 
-            # If the update configuration for the service has changed, trigger an update
-            if self.config_hash(self._service) != self.get_active_config_hash():
-                self.source_update_flag.set()
+    def _pull_settings(self):
+        # Download the service object from datastore
+        self._service = self.datastore.get_service_with_delta(SERVICE_NAME)
+
+        # If the update configuration for the service has changed, trigger an update
+        if self.config_hash(self._service) != self.get_active_config_hash():
+            self.source_update_flag.set()
 
     def do_local_update(self) -> None:
         raise NotImplementedError()
@@ -217,6 +243,7 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info("Checking for in cluster update cache")
             self.do_local_update()
             self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
+            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Added, 'name': SERVICE_NAME})
         except Exception:
             self.log.exception('An error occurred loading cached update files. Continuing.')
 
@@ -292,7 +319,9 @@ class ServiceUpdater(ThreadedCoreBase):
             # noinspection PyBroadException
             try:
                 self.do_local_update()
-                self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
+                if self._service_stage_hash.get(SERVICE_NAME) == ServiceStage.Update:
+                    self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
+                    self.event_sender.send(SERVICE_NAME, {'operation': Operation.Added, 'name': SERVICE_NAME})
             except Exception:
                 self.log.exception('An error occurred finding new local files. Will retry...')
                 self.local_update_flag.set()
