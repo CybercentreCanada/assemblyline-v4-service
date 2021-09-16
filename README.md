@@ -21,10 +21,10 @@ This is overview of what each of these does:
 * `<service name>.py` ─ Contains main service code
 * `service_manifest.yml` ─ Service definition file, see *Service manifest* section below for more details
 
- 
+
 ### Service manifest
 
-Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service. 
+Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service.
 
 The diagram below shows all the elements that the manifest file can contain, including a brief description of each.
 
@@ -124,10 +124,6 @@ docker_config:
 
 # Update configuration block
 update_config:
-  # update method either run or build
-  # run = run the provided update container
-  # build = build the provided dockefile
-  method: run
   # list of source object from where to fetch files for update and what will be the name of those files on disk
   sources:
     - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
@@ -138,10 +134,6 @@ update_config:
   update_interval_seconds: 300
   # Should the downloaded files be used to create signatures in the system
   generates_signatures: false
-  # options provided to the build or run command
-  run_options:
-    image: cccs/assemblyline_dev:latest
-    command: python3 -m assemblyline_core.updater.url_update
 ```
 
 ### Dockerfile
@@ -165,7 +157,7 @@ ENV SERVICE_PATH result_sample.ResultSample
 #  switch to root to perform installation of dependancies
 USER root
 
-# See that we all these operations in one line to reduce 
+# See that we all these operations in one line to reduce
 #  the number of container layers and size of the container
 RUN apt-get update && apt-get install -y my_debian_apt_dependency_package && rm -rf /var/lib/apt/lists/*
 RUN pip install --no-cache-dir --user my_pip_dependency && rm -rf ~/.cache/pip
@@ -180,7 +172,7 @@ COPY assemblyline_result_sample_service .
 
 ## Testing an Assemblyline service
 
-To test an Assemblyline service in standalone mode, the [run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script can be used to run a single task through the service for testing. That script does not require that you have a working version of Assemblyline installed, all you need are the Assemblyline python libraries. 
+To test an Assemblyline service in standalone mode, the [run_service_once.py](https://github.com/CybercentreCanada/assemblyline-v4-service/src/master/dev/run_service_once.py) script can be used to run a single task through the service for testing. That script does not require that you have a working version of Assemblyline installed, all you need are the Assemblyline python libraries.
 
 ### Setting up dev environment
 
@@ -191,13 +183,13 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
     ```
     sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
     ```
-    
+
 2. Install Assemblyline v4 service package
 
     ```
     pip install --no-cache-dir --user assemblyline-v4-service
     ```
-    
+
 3. Add your service development directory path (ie. `/home/ubuntu/assemblyline-v4-service`) to the PYTHONPATH environment variable
 
 ### Using the `run_service_once.py` script
@@ -209,15 +201,15 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
    ```
    cd assemblyline-service-<service name>
    ```
-   
+
 2. From a terminal, run the `run_service_once` script, where `<service path>` is the path to the service module and `<file path>` is the path of the file to be processed
 
    ```
    python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
-   
-3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located 
-   
+
+3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located
+
 #### Example of running the ResultSample service
 
 1. Change working directory to root of the service:
@@ -225,11 +217,11 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
    ```
    cd assemblyline_result_sample_service
    ```
-   
+
 2. From a terminal, run the `run_service_once` script
 
    ```
    python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
-   
+
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`

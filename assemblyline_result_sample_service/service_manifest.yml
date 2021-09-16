@@ -105,10 +105,6 @@ docker_config:
 
 # Update configuration block
 update_config:
-  # update method either run or build
-  # run = run the provided update container
-  # build = build the provided dockefile
-  method: run
   # list of source object from where to fetch files for update and what will be the name of those files on disk
   sources:
     - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
@@ -119,7 +115,3 @@ update_config:
   update_interval_seconds: 300
   # Should the downloaded files be used to create signatures in the system
   generates_signatures: false
-  # options provided to the build or run command
-  run_options:
-    image: cccs/assemblyline_dev:latest
-    command: ["python3", "-m", "assemblyline_core.updater.url_update"]
