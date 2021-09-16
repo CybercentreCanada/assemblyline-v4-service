@@ -87,13 +87,14 @@ class ServiceUpdater(ThreadedCoreBase):
         self.service_change_watcher.register(f'changes.services.{SERVICE_NAME}', self._handle_service_change_event)
 
         self.signature_change_watcher = EventWatcher(self.redis, deserializer=SignatureChange.deserialize)
-        self.signature_change_watcher.register(f'changes.signatures.{SERVICE_NAME.lower()}', 
+        self.signature_change_watcher.register(f'changes.signatures.{SERVICE_NAME.lower()}',
                                                self._handle_signature_change_event)
 
         # A event flag that gets set when an update should be run for
         # reasons other than it being the regular interval (eg, change in signatures)
         self.source_update_flag = threading.Event()
         self.local_update_flag = threading.Event()
+        self.local_update_start = threading.Event()
         self._local_update_time: float = 0
 
         self._internal_server = None
@@ -152,6 +153,7 @@ class ServiceUpdater(ThreadedCoreBase):
         self.service_change_watcher.stop()
         self.source_update_flag.set()
         self.local_update_flag.set()
+        self.local_update_start.set()
         if self._internal_server:
             self._internal_server.shutdown()
 
@@ -243,9 +245,10 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info("Checking for in cluster update cache")
             self.do_local_update()
             self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
-            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Added, 'name': SERVICE_NAME})
+            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
         except Exception:
             self.log.exception('An error occurred loading cached update files. Continuing.')
+        self.local_update_start.set()
 
         # Go into a loop running the update whenever triggered or its time to
         while self.running:
@@ -301,6 +304,7 @@ class ServiceUpdater(ThreadedCoreBase):
             pass
         if not self._service:
             return
+        self.local_update_start.wait()
 
         # Go into a loop running the update whenever triggered or its time to
         while self.running:
@@ -321,7 +325,7 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.do_local_update()
                 if self._service_stage_hash.get(SERVICE_NAME) == ServiceStage.Update:
                     self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
-                    self.event_sender.send(SERVICE_NAME, {'operation': Operation.Added, 'name': SERVICE_NAME})
+                    self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
             except Exception:
                 self.log.exception('An error occurred finding new local files. Will retry...')
                 self.local_update_flag.set()
