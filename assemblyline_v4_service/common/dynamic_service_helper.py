@@ -2,13 +2,13 @@ from typing import List
 from re import compile
 from logging import getLogger
 from assemblyline.common import log as al_log
-from assemblyline_v4_service.common.result import ResultSection
+from assemblyline_v4_service.common.result import ResultSection, Heuristic
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
-HOLLOWSHUNTER_EXE_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
-HOLLOWSHUNTER_SHC_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
-HOLLOWSHUNTER_DLL_REGEX = "hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
+HOLLOWSHUNTER_EXE_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
+HOLLOWSHUNTER_SHC_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
+HOLLOWSHUNTER_DLL_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
 
 al_log.init_logging('service.dynamic_service_helper')
 log = getLogger('assemblyline.service.dynamic_service_helper')
@@ -141,10 +141,10 @@ class Events:
         return events_dict
 
 
-class Artefact:
+class Artifact:
     def __init__(self, name: str = None, path: str = None, description: str = None, to_be_extracted: bool = None):
         if any(item is None for item in [name, path, description, to_be_extracted]):
-            raise Exception("Missing positional arguments for Artefact validation")
+            raise Exception("Missing positional arguments for Artifact validation")
 
         self.name = name
         self.path = path
@@ -221,42 +221,46 @@ class SandboxOntology(Events):
         return SandboxOntology._sort_things_by_timestamp(root["children"])
 
     @staticmethod
-    def _validate_artefacts(artefact_list: List[dict] = None) -> List[Artefact]:
-        if artefact_list is None:
-            artefact_list = []
+    def _validate_artifacts(artifact_list: List[dict] = None) -> List[Artifact]:
+        if artifact_list is None:
+            artifact_list = []
 
-        validated_artefacts = []
-        for artefact in artefact_list:
-            validated_artefact = Artefact(
-                name=artefact["name"],
-                path=artefact["path"],
-                description=artefact["description"],
-                to_be_extracted=artefact["to_be_extracted"]
+        validated_artifacts = []
+        for artifact in artifact_list:
+            validated_artifact = Artifact(
+                name=artifact["name"],
+                path=artifact["path"],
+                description=artifact["description"],
+                to_be_extracted=artifact["to_be_extracted"]
             )
-            validated_artefacts.append(validated_artefact)
-        return validated_artefacts
+            validated_artifacts.append(validated_artifact)
+        return validated_artifacts
 
     @staticmethod
-    def _handle_artefact(artefact: Artefact = None, artefacts_result_section: ResultSection = None):
-        if artefact is None:
-            raise Exception("Artefact cannot be None")
+    def _handle_artifact(artifact: Artifact = None, artifacts_result_section: ResultSection = None):
+        if artifact is None:
+            raise Exception("Artifact cannot be None")
 
         # This is a dict who's key-value pairs follow the format {regex: result_section_title}
-        artefact_map = {
+        artifact_map = {
             HOLLOWSHUNTER_EXE_REGEX: "HollowsHunter Injected Portable Executable",
-            HOLLOWSHUNTER_SHC_REGEX: "HollowsHunter Shellcode",
             HOLLOWSHUNTER_DLL_REGEX: "HollowsHunter DLL",
         }
-        artefact_result_section = None
+        artifact_result_section = None
 
-        for regex, title in artefact_map.items():
+        for regex, title in artifact_map.items():
             pattern = compile(regex)
-            if pattern.match(artefact.name):
-                artefact_result_section = ResultSection(title)
-                artefact_result_section.add_tag("dynamic.process.file_name", artefact.path)
+            if pattern.match(artifact.name):
+                artifact_result_section = ResultSection(title)
+                artifact_result_section.add_tag("dynamic.process.file_name", artifact.path)
+                if regex in [HOLLOWSHUNTER_EXE_REGEX]:
+                    # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
+                    heur = Heuristic(17)
+                    heur.add_signature_id("hollowshunter_pe")
+                    artifact_result_section.heuristic = heur
 
-        if artefact_result_section is not None:
-            artefacts_result_section.add_subsection(artefact_result_section)
+        if artifact_result_section is not None:
+            artifacts_result_section.add_subsection(artifact_result_section)
 
     def _match_signatures_to_process_events(self, signature_dicts: List[dict]) -> dict:
         process_event_dicts_with_signatures = {}
@@ -307,28 +311,28 @@ class SandboxOntology(Events):
         raise NotImplementedError
 
     @staticmethod
-    def handle_artefacts(artefact_list: list, request: ServiceRequest) -> ResultSection:
+    def handle_artifacts(artifact_list: list, request: ServiceRequest) -> ResultSection:
         """
-        Goes through each artefact in artefact_list, uploading them and adding result sections accordingly
+        Goes through each artifact in artifact_list, uploading them and adding result sections accordingly
 
         Positional arguments:
-        artefact_list -- list of dictionaries that each represent an artefact
+        artifact_list -- list of dictionaries that each represent an artifact
         """
 
-        validated_artefacts = SandboxOntology._validate_artefacts(artefact_list)
+        validated_artifacts = SandboxOntology._validate_artifacts(artifact_list)
 
-        artefacts_result_section = ResultSection("Sandbox Artefacts")
+        artifacts_result_section = ResultSection("Sandbox Artifacts")
 
-        for artefact in validated_artefacts:
-            SandboxOntology._handle_artefact(artefact, artefacts_result_section)
+        for artifact in validated_artifacts:
+            SandboxOntology._handle_artifact(artifact, artifacts_result_section)
 
-            if artefact.to_be_extracted:
+            if artifact.to_be_extracted:
                 try:
-                    request.add_extracted(artefact.path, artefact.name, artefact.description)
+                    request.add_extracted(artifact.path, artifact.name, artifact.description)
                 except MaxExtractedExceeded:
                     # To avoid errors from being raised when too many files have been extracted
                     pass
             else:
-                request.add_supplementary(artefact.path, artefact.name, artefact.description)
+                request.add_supplementary(artifact.path, artifact.name, artifact.description)
 
-        return artefacts_result_section if artefacts_result_section.subsections else None
+        return artifacts_result_section if artifacts_result_section.subsections else None

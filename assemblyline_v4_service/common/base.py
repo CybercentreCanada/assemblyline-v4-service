@@ -3,11 +3,12 @@ from __future__ import annotations
 import logging
 import os
 import tempfile
-from typing import Optional, Dict, Any
+from typing import Optional, Dict
 
 from assemblyline.common import exceptions, log, version
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
+from assemblyline_v4_service.common.api import ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
@@ -72,6 +73,9 @@ class ServiceBase:
         if self._task:
             msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
         self._log_error(msg, *args, **kwargs)
+
+    def get_api_interface(self):
+        return ServiceAPI(self.service_attributes, self.log)
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")

@@ -66,6 +66,8 @@ class ResultSample(ServiceBase):
             # Or your can add them from a list
             #   Here we will generate random amount of random lines
             text_section.add_lines([get_random_phrase() for _ in range(random.randint(1, 5))])
+            # You can tag data to a section, tagging is used to to quickly find defining information about a file
+            text_section.add_tag("attribution.implant", "ResultSample")
             # If the section needs to affect the score of the file you need to set a heuristics
             #   Here we will pick one at random
             #     In addition to add a heuristic, we will associated a signature with the heuristic,
@@ -105,6 +107,9 @@ class ResultSample(ServiceBase):
             # Make sure you add your section to the result
             result.add_section(text_section)
 
+            # Even if the section was added to the results you can still modify it by adding a subsection for example
+            ResultSection("Example of sub-section without a body added later in processing", parent=text_section)
+
             # ==================================================================
             # Color map Section: BODY_FORMAT.GRAPH_DATA
             #     Creates a color map bar using a minimum and maximum domain
@@ -139,30 +144,47 @@ class ResultSample(ServiceBase):
             #   Also, No need to provide a name, the url link will be displayed
             host1 = get_random_host()
             host2 = get_random_host()
-            ip1 = get_random_ip()
-            ip2 = get_random_ip()
-            ip3 = get_random_ip()
             urls = [
                 {"url": f"https://{host1}/"},
-                {"url": f"https://{host2}/"},
-                {"url": f"https://{ip1}/"},
-                {"url": f"https://{ip2}/"},
-                {"url": f"https://{ip3}/"}]
+                {"url": f"https://{host2}/"}]
 
             # A heuristic can fire more then once without being associated to a signature
             url_heuristic = Heuristic(4, frequency=len(urls))
 
-            url_sub_section = ResultSection('Example of a url section with multiple links',
+            url_sub_section = ResultSection('Example of a url sub-section with multiple links',
                                             body=json.dumps(urls), body_format=BODY_FORMAT.URL,
-                                            heuristic=url_heuristic)
-            url_sub_section.add_tag("network.static.ip", ip1)
-            url_sub_section.add_tag("network.static.ip", ip2)
-            url_sub_section.add_tag("network.static.ip", ip3)
+                                            heuristic=url_heuristic, classification=cl_engine.RESTRICTED)
             url_sub_section.add_tag("network.static.domain", host1)
             url_sub_section.add_tag("network.dynamic.domain", host2)
+
+            # You can keep nesting sections if you really need to
+            ip1 = get_random_ip()
+            ip2 = get_random_ip()
+            ip3 = get_random_ip()
+            ips = [
+                {"url": f"https://{ip1}/"},
+                {"url": f"https://{ip2}/"},
+                {"url": f"https://{ip3}/"}]
+            url_sub_sub_section = ResultSection('Exemple of a two level deep sub-section',
+                                                body=json.dumps(ips), body_format=BODY_FORMAT.URL)
+            url_sub_sub_section.add_tag("network.static.ip", ip1)
+            url_sub_sub_section.add_tag("network.static.ip", ip2)
+            url_sub_sub_section.add_tag("network.static.ip", ip3)
+
+            # Since url_sub_sub_section is a sub-section of url_sub_section
+            # we will add it as a sub-section of url_sub_section not to the main result itself
+            url_sub_section.add_subsection(url_sub_sub_section)
+
+            # Invalid sections will be ignored, and an error will apear in the logs
+            # Sub-sections of invalid sections will be ignored too
+            invalid_section = ResultSection("")
+            ResultSection("I won't make it to the report because my parent is invalid :(", parent=invalid_section)
+            url_sub_section.add_subsection(invalid_section)
+
             # Since url_sub_section is a sub-section of url_section
             # we will add it as a sub-section of url_section not to the main result itself
             url_section.add_subsection(url_sub_section)
+
             result.add_section(url_section)
 
             # ==================================================================
@@ -358,6 +380,24 @@ class ResultSample(ServiceBase):
             with os.fdopen(fd, "w") as myfile:
                 myfile.write(json.dumps(json_body))
             request.add_supplementary(temp_path, "json_body.json", "This is the json_body as a JSON file")
+
+            # ==================================================================
+            # Zeroize on safe tags
+            #     When this feature is turned on, the section will get its score set to zero if all its tags
+            #     were safelisted by the safelisting engine
+            zero_section = ResultSection('Example of zeroize-able section', zeroize_on_tag_safe=True)
+            zero_section.set_heuristic(2)
+            zero_section.add_line("This section will have a zero score if all tags are safelisted.")
+            zero_section.add_tag('network.static.ip', '127.0.0.1')
+            result.add_section(zero_section)
+
+            # ==================================================================
+            # Auto-collapse
+            #     When this feature is turned on, the section will be collapsed when first displayed
+            collapse_section = ResultSection('Example of auto-collapse section', auto_collapse=True)
+            collapse_section.set_heuristic(2)
+            collapse_section.add_line("This section was collapsed when first loaded in the UI")
+            result.add_section(collapse_section)
 
             # ==================================================================
             # Wrap-up:

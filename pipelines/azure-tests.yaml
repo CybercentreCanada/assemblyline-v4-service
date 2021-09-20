@@ -4,34 +4,34 @@ trigger: ["*"]
 pr: ["*"]
 
 pool:
-  vmImage: 'ubuntu-18.04'
+  vmImage: "ubuntu-20.04"
 
 jobs:
-- job: run_test
-  strategy:
-    matrix:
-      python3_7:
-        python.version: '3.7'
-      Python3_8:
-        python.version: '3.8'
+  - job: run_test
+    strategy:
+      matrix:
+        python3_9:
+          python.version: "3.9"
+        # Python3_10:
+        #   python.version: "3.10"
 
-  timeoutInMinutes: 10
+    timeoutInMinutes: 10
 
-  steps:
-    - task: UsePythonVersion@0
-      displayName: Set python version
-      inputs:
-        versionSpec: '$(python.version)'
-    - script: |
-        sudo mkdir -p /etc/assemblyline/
-        sudo mkdir -p /var/cache/assemblyline/
-        sudo cp pipelines/config.yml /etc/assemblyline
-        sudo chmod a+rw /var/cache/assemblyline/
-        sudo apt-get update
-        sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev
-        sudo env "PATH=$PATH" python -m pip install --no-cache-dir -U pip cython setuptools
-        sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .
-        sudo env "PATH=$PATH" python -m pip install --no-cache-dir -r test/requirements.txt
-      displayName: Setup environment
-    - script: python -m pytest -rsx -vv
-      displayName: Test
+    steps:
+      - task: UsePythonVersion@0
+        displayName: Set python version
+        inputs:
+          versionSpec: "$(python.version)"
+      - script: |
+          sudo mkdir -p /etc/assemblyline/
+          sudo mkdir -p /var/cache/assemblyline/
+          sudo cp pipelines/config.yml /etc/assemblyline
+          sudo chmod a+rw /var/cache/assemblyline/
+          sudo apt-get update
+          sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev
+          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -U pip cython setuptools
+          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .
+          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -r test/requirements.txt
+        displayName: Setup environment
+      - script: python -m pytest -rsx -vv
+        displayName: Test

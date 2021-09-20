@@ -7,6 +7,7 @@ This repository provides the base service functionality for Assemblyline 4 servi
 ### Service file structure
 
 An Assemblyline service has the following file structure:
+
 ```text
 assemblyline-service-<service name>
 │
@@ -17,9 +18,9 @@ assemblyline-service-<service name>
 
 This is overview of what each of these does:
 
-* `Dockerfile` ─ Build file for the service container, see *Dockerfile* section below for more details
-* `<service name>.py` ─ Contains main service code
-* `service_manifest.yml` ─ Service definition file, see *Service manifest* section below for more details
+- `Dockerfile` ─ Build file for the service container, see _Dockerfile_ section below for more details
+- `<service name>.py` ─ Contains main service code
+- `service_manifest.yml` ─ Service definition file, see _Service manifest_ section below for more details
 
 
 ### Service manifest
@@ -142,10 +143,10 @@ A Dockerfile is required to build the service container that will be executed in
 
 The following items must be set for all services:
 
-* All services must be based on the `cccs/assemblyline-v4-service-base:latest` image
-* An environment variable must be set for the service path
-* Install any service requirements
-* Copy the service code into `/opt/al/al_service/`
+- All services must be based on the `cccs/assemblyline-v4-service-base:latest` image
+- An environment variable must be set for the service path
+- Install any service requirements
+- Copy the service code into `/opt/al/al_service/`
 
 ```dockerfile
 FROM cccs/assemblyline-v4-service-base:latest
@@ -176,7 +177,7 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 
 ### Setting up dev environment
 
-**NOTE:** The following environment setup has only been tested on Ubuntu 18.04.
+**NOTE:** The following environment setup has only been tested on Ubuntu 20.04.
 
 1. Install required packages
 
@@ -198,15 +199,18 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 
 1. Ensure the current working directory is the root of the service directory of the service to be run
 
-   ```
+   ```shell
    cd assemblyline-service-<service name>
    ```
 
 2. From a terminal, run the `run_service_once` script, where `<service path>` is the path to the service module and `<file path>` is the path of the file to be processed
 
+   ```shell
+   python3.9 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
    python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
+
 
 3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located
 
@@ -214,14 +218,17 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 
 1. Change working directory to root of the service:
 
-   ```
+   ```shell
    cd assemblyline_result_sample_service
    ```
 
 2. From a terminal, run the `run_service_once` script
 
+   ```shell
+   python3.9 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
    python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
+
 
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`

@@ -6,7 +6,6 @@ from typing import List, Union, Optional, Dict, Any
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
-from assemblyline.common.classification import InvalidClassification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
@@ -169,6 +168,9 @@ class ResultSection:
             heuristic: Optional[Heuristic] = None,
             tags: Optional[Dict[str, List[str]]] = None,
             parent: Optional[Union[ResultSection, Result]] = None,
+            zeroize_on_tag_safe: bool = False,
+            auto_collapse: bool = False,
+            zeroize_on_sig_safe: bool = True,
     ):
         self._finalized: bool = False
         self.parent = parent
@@ -180,6 +182,9 @@ class ResultSection:
         self.depth: int = 0
         self.tags = tags or {}
         self.heuristic = None
+        self.zeroize_on_tag_safe = zeroize_on_tag_safe
+        self.auto_collapse = auto_collapse
+        self.zeroize_on_sig_safe = zeroize_on_sig_safe
 
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
@@ -256,26 +261,14 @@ class ResultSection:
 
         self._finalized = True
 
-        keep_me = True
         tmp_subs = []
         self.depth = depth
         for subsection in self.subsections:
-            subsection.finalize(depth=depth+1)
-            # Unwrap it if we're going to keep it
-            if subsection in self.subsections:
+            if subsection.finalize(depth=depth+1):
                 tmp_subs.append(subsection)
         self.subsections = tmp_subs
 
-        # At this point, all subsections are finalized and we're not deleting ourself
-        if self.parent is not None and isinstance(self.parent, ResultSection):
-            try:
-                self.parent.classification = \
-                    Classification.max_classification(self.classification, self.parent.classification)
-            except InvalidClassification as e:
-                log.error(f"Failed to finalize section due to a classification error: {str(e)}")
-                keep_me = False
-
-        return keep_me
+        return True
 
     def set_body(self, body: str, body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
         self.body = body
@@ -313,6 +306,8 @@ class Result:
             heuristic=get_heuristic_primitives(section.heuristic),
             tags=unflatten(section.tags),
             title_text=section.title_text,
+            zeroize_on_tag_safe=section.zeroize_on_tag_safe,
+            auto_collapse=section.auto_collapse
         ))
 
     def _flatten_sections(self, section: ResultSection, root: bool = True) -> None:
