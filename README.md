@@ -22,6 +22,7 @@ This is overview of what each of these does:
 - `<service name>.py` ─ Contains main service code
 - `service_manifest.yml` ─ Service definition file, see _Service manifest_ section below for more details
 
+
 ### Service manifest
 
 Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service.
@@ -124,10 +125,6 @@ docker_config:
 
 # Update configuration block
 update_config:
-  # update method either run or build
-  # run = run the provided update container
-  # build = build the provided dockefile
-  method: run
   # list of source object from where to fetch files for update and what will be the name of those files on disk
   sources:
     - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
@@ -138,10 +135,6 @@ update_config:
   update_interval_seconds: 300
   # Should the downloaded files be used to create signatures in the system
   generates_signatures: false
-  # options provided to the build or run command
-  run_options:
-    image: cccs/assemblyline_dev:latest
-    command: python3 -m assemblyline_core.updater.url_update
 ```
 
 ### Dockerfile
@@ -188,16 +181,15 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 
 1. Install required packages
 
-   ```shell
-   sudo add-apt-repository ppa:deadsnakes/ppa
-   sudo apt-get install build-essential libffi-dev python3.9 python3.9-dev python3-pip automake autoconf libtool
-   ```
+    ```
+    sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
+    ```
 
 2. Install Assemblyline v4 service package
 
-   ```shell
-   pip install --no-cache-dir --user assemblyline-v4-service
-   ```
+    ```
+    pip install --no-cache-dir --user assemblyline-v4-service
+    ```
 
 3. Add your service development directory path (ie. `/home/ubuntu/assemblyline-v4-service`) to the PYTHONPATH environment variable
 
@@ -216,6 +208,9 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
    ```shell
    python3.9 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
+   python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
+   ```
+
 
 3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located
 
@@ -232,5 +227,8 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
    ```shell
    python3.9 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
+   python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
+   ```
+
 
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`

@@ -14,11 +14,14 @@ import threading
 import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from contextlib import contextmanager
-
 from passlib.hash import bcrypt
+from zipfile import ZipFile
+
+from assemblyline.common.isotime import epoch_to_iso
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
+from assemblyline_client import get_client
 from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
 from assemblyline.odm.models.service import Service
 from assemblyline.remote.datatypes.hash import Hash
@@ -42,6 +45,7 @@ CONFIG_HASH_KEY = 'config_hash'
 SOURCE_UPDATE_TIME_KEY = 'update_time'
 LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
+UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 
 
 @contextmanager
@@ -228,7 +232,52 @@ class ServiceUpdater(ThreadedCoreBase):
             self.source_update_flag.set()
 
     def do_local_update(self) -> None:
-        raise NotImplementedError()
+        old_update_time = self.get_local_update_time()
+        run_time = time.time()
+        output_directory = tempfile.mkdtemp()
+
+        self.log.info("Setup service account.")
+        username = self.ensure_service_account()
+        self.log.info("Create temporary API key.")
+        with temporary_api_key(self.datastore, username) as api_key:
+            self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
+            al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+
+            # Check if new signatures have been added
+            self.log.info("Check for new signatures.")
+            if al_client.signature.update_available(
+                    since=epoch_to_iso(old_update_time) or '', sig_type=self.updater_type)['update_available']:
+                self.log.info("An update is available for download from the datastore")
+
+                extracted_zip = False
+                attempt = 0
+
+                # Sometimes a zip file isn't always returned, will affect service's use of signature source. Patience..
+                while not extracted_zip and attempt < 5:
+                    temp_zip_file = os.path.join(output_directory, 'temp.zip')
+                    al_client.signature.download(
+                        output=temp_zip_file, query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
+
+                    if os.path.exists(temp_zip_file):
+                        try:
+                            with ZipFile(temp_zip_file, 'r') as zip_f:
+                                zip_f.extractall(output_directory)
+                                extracted_zip = True
+                                self.log.info("Zip extracted.")
+                        except Exception:
+                            attempt += 1
+                            self.log.warning(f"[{attempt}/5] Bad zip. Trying again after 30s...")
+                            time.sleep(30)
+
+                        os.remove(temp_zip_file)
+
+                if attempt == 5:
+                    self.log.error("Signatures aren't saved to disk. Check sources..")
+                    shutil.rmtree(output_directory, ignore_errors=True)
+                else:
+                    self.log.info("New ruleset successfully downloaded and ready to use")
+                    self.serve_directory(output_directory)
+                    self.set_local_update_time(run_time)
 
     def do_source_update(self, service: Service) -> None:
         raise NotImplementedError()
