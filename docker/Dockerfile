@@ -31,7 +31,8 @@ USER root
 RUN chown root:root -R /var/lib/assemblyline/.local
 
 # Restart a new image, this time the output one
-FROM cccs/assemblyline:$branch
+ARG base=cccs/assemblyline
+FROM $base:$branch
 
 # Get the updated local dir from builder
 COPY --chown=assemblyline:assemblyline --from=builder /var/lib/assemblyline/.local /var/lib/assemblyline/.local
