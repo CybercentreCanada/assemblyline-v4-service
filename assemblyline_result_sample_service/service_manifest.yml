@@ -104,17 +104,17 @@ docker_config:
   ram_mb: 256
 
 # Dependencies configuration block
-dependencies:
-  updates:
-    container:
-      allow_internet_access: true
-      command: ["python", "-m", "update_server"]
-      image: ${REGISTRY}cccs/assemblyline-service-resultsample:$SERVICE_TAG
-      ports: ["5003"]
-      # Upper-bound, adjust based on sources
-      # cpu_cores: 2
-      # ram_mb: 4096
-    run_as_core: True
+# dependencies:
+#   updates:
+#     container:
+#       allow_internet_access: true
+#       command: ["python", "-m", "update_server"]
+#       image: ${REGISTRY}cccs/assemblyline-service-resultsample:$SERVICE_TAG
+#       ports: ["5003"]
+#       # Upper-bound, adjust based on sources
+#       # cpu_cores: 2
+#       # ram_mb: 4096
+#     run_as_core: True
 
 # Update configuration block
 update_config:
