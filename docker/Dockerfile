@@ -1,5 +1,6 @@
 ARG branch=latest
-FROM cccs/assemblyline:$branch as builder
+ARG base=cccs/assemblyline
+FROM $base:$branch as builder
 ARG version
 ARG branch
 
@@ -11,12 +12,13 @@ RUN apt-get update \
 # install pip packages, as assemblyline so they go into our .local with the ones already there
 USER assemblyline
 RUN touch /tmp/before-pip
-RUN pip install --no-cache-dir --user \
+COPY setup.py dist* dist/
+RUN pip install --no-cache-dir -f dist --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   assemblyline-client \
   && rm -rf ~/.cache/pip
-  
+
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
 RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline assemblyline-core assemblyline-service-client assemblyline-client; fi
 
