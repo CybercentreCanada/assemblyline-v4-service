@@ -164,17 +164,6 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
         add_cacert(ca_cert)
         git_env['GIT_SSL_CAINFO'] = certifi.where()
 
-    if key:
-        logger.info(f"key found for {url}")
-        # Save the key to a file
-        git_ssh_identity_file = os.path.join(tempfile.gettempdir(), 'id_rsa')
-        with open(git_ssh_identity_file, 'w') as key_fh:
-            key_fh.write(key)
-        os.chmod(git_ssh_identity_file, 0o0400)
-
-        git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file}"
-        git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
-
     if auth:
         logger.info("Credentials provided for auth..")
         url = re.sub(r'^(?P<scheme>https?://)', fr'\g<scheme>{auth}', url)
@@ -183,16 +172,27 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)
 
-    repo = Repo.clone_from(url, clone_dir, env=git_env, git_config=git_config)
+    with tempfile.NamedTemporaryFile() as git_ssh_identity_file:
+        if key:
+            logger.info(f"key found for {url}")
+            # Save the key to a file
+            git_ssh_identity_file.write(key.encode())
+            git_ssh_identity_file.seek(0)
+            os.chmod(git_ssh_identity_file.name, 0o0400)
 
-    # Check repo last commit
-    if previous_update:
-        if isinstance(previous_update, str):
-            previous_update = iso_to_epoch(previous_update)
-        for c in repo.iter_commits():
-            if c.committed_date < previous_update:
-                raise SkipSource()
-            break
+            git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
+            git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
+
+        repo = Repo.clone_from(url, clone_dir, env=git_env, git_config=git_config)
+
+        # Check repo last commit
+        if previous_update:
+            if isinstance(previous_update, str):
+                previous_update = iso_to_epoch(previous_update)
+            for c in repo.iter_commits():
+                if c.committed_date < previous_update:
+                    raise SkipSource()
+                break
 
     # Clear proxy setting
     if proxy:

@@ -3,15 +3,13 @@ import os
 import tempfile
 import time
 
-import certifi
-import requests
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
-from assemblyline.common.isotime import iso_to_epoch
 from assemblyline.odm.models.service import Service, UpdateSource
 
 from assemblyline_client import get_client
 from assemblyline_v4_service.updater.updater import ServiceUpdater, temporary_api_key
+from assemblyline_v4_service.updater.helper import url_download, SkipSource
 
 al_log.init_logging('updater.sample')
 classification = forge.get_classification()
@@ -26,94 +24,6 @@ UPDATE_DIR = os.path.join(tempfile.gettempdir(), 'sample_updates')
 
 BLOCK_SIZE = 64 * 1024
 HASH_LEN = 1000
-
-
-class SkipSource(RuntimeError):
-    pass
-
-
-def add_cacert(cert: str):
-    # Add certificate to requests
-    cafile = certifi.where()
-    with open(cafile, 'a') as ca_editor:
-        ca_editor.write(f"\n{cert}")
-
-
-def url_download(source, target_path, logger, previous_update=None):
-    uri = source['uri']
-    username = source.get('username', None)
-    password = source.get('password', None)
-    ca_cert = source.get('ca_cert', None)
-    ignore_ssl_errors = source.get('ssl_ignore_errors', False)
-    auth = (username, password) if username and password else None
-
-    proxy = source.get('proxy', None)
-    headers = source.get('headers', None)
-
-    logger.info(f"This source is configured to {'ignore SSL errors' if ignore_ssl_errors else 'verify SSL'}.")
-    if ca_cert:
-        logger.info("A CA certificate has been provided with this source.")
-        add_cacert(ca_cert)
-
-    # Create a requests session
-    session = requests.Session()
-    session.verify = not ignore_ssl_errors
-
-    # Let https requests go through proxy
-    if proxy:
-        os.environ['https_proxy'] = proxy
-
-    try:
-        if isinstance(previous_update, str):
-            previous_update = iso_to_epoch(previous_update)
-
-        # Check the response header for the last modified date
-        response = session.head(uri, auth=auth, headers=headers)
-        last_modified = response.headers.get('Last-Modified', None)
-        if last_modified:
-            # Convert the last modified time to epoch
-            last_modified = time.mktime(time.strptime(last_modified, "%a, %d %b %Y %H:%M:%S %Z"))
-
-            # Compare the last modified time with the last updated time
-            if previous_update and last_modified <= previous_update:
-                # File has not been modified since last update, do nothing
-                logger.info("The file has not been modified since last run, skipping...")
-                return False
-
-        if previous_update:
-            previous_update = time.strftime("%a, %d %b %Y %H:%M:%S %Z", time.gmtime(previous_update))
-            if headers:
-                headers['If-Modified-Since'] = previous_update
-            else:
-                headers = {'If-Modified-Since': previous_update}
-
-        logger.info(f"Downloading file from: {source['uri']}")
-        with session.get(uri, auth=auth, headers=headers, stream=True) as response:
-            # Check the response code
-            if response.status_code == requests.codes['not_modified']:
-                # File has not been modified since last update, do nothing
-                logger.info("The file has not been modified since last run, skipping...")
-                raise SkipSource
-            elif response.ok:
-                with open(target_path, 'wb') as f:
-                    for content in response.iter_content(BLOCK_SIZE):
-                        f.write(content)
-
-                # Clear proxy setting
-                if proxy:
-                    del os.environ['https_proxy']
-
-                # Return file_path
-                return True
-    except requests.Timeout:
-        pass
-    except Exception as e:
-        # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
-        logger.warning(str(e))
-        return False
-    finally:
-        # Close the requests session
-        session.close()
 
 
 class SampleUpdateServer(ServiceUpdater):
