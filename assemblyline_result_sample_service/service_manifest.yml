@@ -104,28 +104,26 @@ docker_config:
   ram_mb: 256
 
 # Dependencies configuration block
-# dependencies:
-#   updates:
-#     container:
-#       allow_internet_access: true
-#       command: ["python", "-m", "update_server"]
-#       image: ${REGISTRY}cccs/assemblyline-service-resultsample:$SERVICE_TAG
-#       ports: ["5003"]
-#       # Upper-bound, adjust based on sources
-#       # cpu_cores: 2
-#       # ram_mb: 4096
-#     run_as_core: True
+dependencies:
+  updates:
+    container:
+      allow_internet_access: true
+      command: ["python", "-m", "update_server"]
+      image: ${REGISTRY}cccs/assemblyline-service-resultsample:$SERVICE_TAG
+      ports: ["5003"]
+      # Defines resource limits, adjust based on sources to avoid OOM during runtime
+      # cpu_cores: 2 (default: 1)
+      # ram_mb: 4096 (default: 512)
+    run_as_core: True
 
 # Update configuration block
 update_config:
   # list of source object from where to fetch files for update and what will be the name of those files on disk
   sources:
-    - name: NSRL_modernm
-      pattern: rds_modernm/NSRLFile.txt
-      uri: https://s3.amazonaws.com/rds.nsrl.nist.gov/RDS/current/rds_modernm.zip
-    - name: NSRL_android
-      pattern: NSRLFile.txt
-      uri: https://s3.amazonaws.com/rds.nsrl.nist.gov/RDS/current/RDS_android.iso
+    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_2MB.zip
+      name: sample_2mb_file
+    - uri: https://file-examples.com/wp-content/uploads/2017/02/zip_5MB.zip
+      name: sample_5mb_file
   # interval in seconds at which the updater dependency runs
   update_interval_seconds: 300
   # Should the downloaded files be used to create signatures in the system

@@ -18,14 +18,14 @@ class SkipSource(RuntimeError):
     pass
 
 
-def add_cacert(cert: str):
+def add_cacert(cert: str) -> None:
     # Add certificate to requests
     cafile = certifi.where()
     with open(cafile, 'a') as ca_editor:
         ca_editor.write(f"\n{cert}")
 
 
-def filter_downloads(update_directory, pattern, default_pattern="*"):
+def filter_downloads(update_directory, pattern, default_pattern="*") -> List[Tuple[str, str]]:
     f_files = []
     if not pattern:
         # Regex will either match on the filename or the filepath, either with default or given pattern for source
@@ -135,7 +135,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
 
 
 def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_pattern: str = "*",
-                   logger=None, output_dir: str = None) -> List:
+                   logger=None, output_dir: str = None) -> List[Tuple[str, str]]:
     name = source['name']
     url = source['uri']
     pattern = source.get('pattern', None)
