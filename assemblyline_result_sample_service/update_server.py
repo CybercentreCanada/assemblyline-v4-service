@@ -50,7 +50,6 @@ class SampleUpdateServer(ServiceUpdater):
             # Go through each source and download file
             for source_name, source_obj in sources.items():
                 source = source_obj.as_primitives()
-                uri: str = source['uri']
                 cache_name = f"{source_name}.zip"
                 source_default_classification[source_name] = source.get('default_classification',
                                                                         classification.UNRESTRICTED)
@@ -58,7 +57,7 @@ class SampleUpdateServer(ServiceUpdater):
                 extracted_path = os.path.join(UPDATE_DIR, source['name'])
 
                 try:
-                    url_download(uri, extracted_path, self.log, previous_update=old_update_time)
+                    url_download(source, previous_update=old_update_time, logger=self.log, output_dir=extracted_path)
                 except SkipSource:
                     if cache_name in previous_hashes:
                         files_sha256[cache_name] = previous_hashes[cache_name]
