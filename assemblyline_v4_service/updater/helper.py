@@ -122,14 +122,13 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             else:
                 return [(file_path, get_sha256_for_file(file_path))]
 
-    except requests.Timeout:
-        # TODO: should we retry?
-        pass
+    except SkipSource:
+        # Raise to calling function for handling
+        raise
     except Exception as e:
         # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
-        logger.info(str(e))
+        logger.warning(str(e))
         exit()
-        # TODO: Should we exit even if one file fails to download? Or should we continue downloading other files?
     finally:
         # Close the requests session
         session.close()
