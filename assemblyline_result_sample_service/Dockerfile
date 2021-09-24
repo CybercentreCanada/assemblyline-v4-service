@@ -1,5 +1,6 @@
 ARG branch=latest
-FROM cccs/assemblyline-v4-service-base:$branch
+ARG base=cccs/assemblyline-v4-service-base
+FROM $base:$branch
 
 ENV SERVICE_PATH result_sample.ResultSample
 
