@@ -15,9 +15,10 @@ import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from contextlib import contextmanager
 from passlib.hash import bcrypt
-from zipfile import ZipFile
+from zipfile import ZipFile, BadZipFile
 
 from assemblyline.common.isotime import epoch_to_iso
+from assemblyline.common.identify import zip_ident
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
@@ -249,6 +250,8 @@ class ServiceUpdater(ThreadedCoreBase):
                     since=epoch_to_iso(old_update_time) or '', sig_type=self.updater_type)['update_available']:
                 self.log.info("An update is available for download from the datastore")
 
+                self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
+
                 extracted_zip = False
                 attempt = 0
 
@@ -258,26 +261,31 @@ class ServiceUpdater(ThreadedCoreBase):
                     al_client.signature.download(
                         output=temp_zip_file, query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
 
+                    self.log.debug(f"Downloading update to {temp_zip_file}")
                     if os.path.exists(temp_zip_file):
+                        self.log.debug(f"Verifying this is a zip file: {zip_ident(temp_zip_file)}")
                         try:
                             with ZipFile(temp_zip_file, 'r') as zip_f:
                                 zip_f.extractall(output_directory)
                                 extracted_zip = True
                                 self.log.info("Zip extracted.")
-                        except Exception:
+                        except BadZipFile:
                             attempt += 1
                             self.log.warning(f"[{attempt}/5] Bad zip. Trying again after 30s...")
                             time.sleep(30)
+                        except Exception as e:
+                            self.log.error(f'Problem while extracting signatures to disk: {e}')
+                            break
 
                         os.remove(temp_zip_file)
 
-                if attempt == 5:
-                    self.log.error("Signatures aren't saved to disk. Check sources..")
-                    shutil.rmtree(output_directory, ignore_errors=True)
-                else:
+                if extracted_zip:
                     self.log.info("New ruleset successfully downloaded and ready to use")
                     self.serve_directory(output_directory)
                     self.set_local_update_time(run_time)
+                else:
+                    self.log.error("Signatures aren't saved to disk. Check logs..")
+                    shutil.rmtree(output_directory, ignore_errors=True)
 
     def do_source_update(self, service: Service) -> None:
         raise NotImplementedError()
