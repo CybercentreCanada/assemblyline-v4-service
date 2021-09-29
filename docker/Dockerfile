@@ -15,8 +15,9 @@ RUN pip install --no-cache-dir --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   assemblyline-client \
+  gunicorn flask gitpython \
   && rm -rf ~/.cache/pip
-  
+
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
 RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline assemblyline-core assemblyline-service-client assemblyline-client; fi
 

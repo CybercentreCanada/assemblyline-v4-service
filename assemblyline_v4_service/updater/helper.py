@@ -121,6 +121,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 return filter_downloads(extract_dir, pattern)
             else:
                 return [(file_path, get_sha256_for_file(file_path))]
+        else:
+            logger.warning(f"Download not successful: {response.content}")
+            return []
 
     except SkipSource:
         # Raise to calling function for handling
