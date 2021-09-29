@@ -57,7 +57,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
     auth = (username, password) if username and password else None
 
     proxy = source.get('proxy', None)
-    headers = source.get('headers', None)
+    headers_list = source.get('headers', [])
+    headers = {}
+    [headers.update({header['name']: header['value']}) for header in headers_list]
 
     logger.info(f"{name} source is configured to {'ignore SSL errors' if ignore_ssl_errors else 'verify SSL'}.")
     if ca_cert:
