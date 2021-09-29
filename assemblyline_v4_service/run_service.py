@@ -4,7 +4,7 @@ import select
 import tempfile
 
 from assemblyline.common.importing import load_module_by_path
-from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
+from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION, BUILD_MINOR
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_core.server_base import ServerBase
 from assemblyline_v4_service.common import helper
@@ -49,7 +49,8 @@ class RunService(ServerBase):
 
         if not os.path.exists(self.runtime_service_manifest):
             # In case service tag have not been overwritten we will do it here (This is mainly use during debugging)
-            service_tag = os.environ.get("SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0").encode("utf-8")
+            service_tag = os.environ.get("SERVICE_TAG",
+                                         f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0").encode("utf-8")
 
             with open(self.service_manifest, "rb") as srv_manifest:
                 with open(self.runtime_service_manifest, "wb") as runtime_manifest:
