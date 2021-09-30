@@ -17,7 +17,7 @@ from contextlib import contextmanager
 from passlib.hash import bcrypt
 from zipfile import ZipFile, BadZipFile
 
-from assemblyline.common import forge
+from assemblyline.common import forge, log as al_log
 from assemblyline.common.isotime import epoch_to_iso
 from assemblyline.common.identify import zip_ident
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
@@ -79,7 +79,16 @@ class ServiceUpdater(ThreadedCoreBase):
     def __init__(self, logger: logging.Logger = None,
                  shutdown_timeout: float = None, config: Config = None,
                  datastore: AssemblylineDatastore = None,
-                 redis: RedisType = None, redis_persist: RedisType = None):
+                 redis: RedisType = None, redis_persist: RedisType = None,
+                 default_pattern="*"):
+
+        self.updater_type = os.environ['SERVICE_PATH'].split('.')[-1].lower()
+        self.default_pattern = default_pattern
+
+        if not logger:
+            al_log.init_logging(f'updater.{self.updater_type}', log_level=os.environ.get('LOG_LEVEL', "WARNING"))
+            logger = logging.getLogger(f'assemblyline.updater.{self.updater_type}')
+
         super().__init__(f'assemblyline.{SERVICE_NAME}_updater', logger=logger, shutdown_timeout=shutdown_timeout,
                          config=config, datastore=datastore, redis=redis,
                          redis_persist=redis_persist)
@@ -114,9 +123,6 @@ class ServiceUpdater(ThreadedCoreBase):
             'Run source updates': self._run_source_updates,
             'Run local updates': self._run_local_updates,
         }
-
-        self.updater_type = os.environ['SERVICE_PATH'].split('.')[-1].lower()
-        self.default_pattern = '*'
 
     def trigger_update(self):
         self.source_update_flag.set()

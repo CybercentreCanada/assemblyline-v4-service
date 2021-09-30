@@ -14,6 +14,9 @@ from assemblyline.common.isotime import iso_to_epoch
 from assemblyline.common.digests import get_sha256_for_file
 
 
+BLOCK_SIZE = 64 * 1024
+
+
 class SkipSource(RuntimeError):
     pass
 
@@ -110,7 +113,8 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             file_name = os.path.basename(urlparse(uri).path)
             file_path = os.path.join(output_dir, file_name)
             with open(file_path, 'wb') as f:
-                f.write(response.content)
+                for content in response.iter_content(BLOCK_SIZE):
+                    f.write(content)
 
             # Clear proxy setting
             if proxy:
