@@ -6,7 +6,7 @@ ARG branch
 
 USER root
 RUN apt-get update \
-  && apt-get install -yy build-essential libfuzzy-dev \
+  && apt-get install -yy build-essential libfuzzy-dev git\
   && rm -rf /var/lib/apt/lists/*
 
 # install pip packages, as assemblyline so they go into our .local with the ones already there
@@ -17,6 +17,7 @@ RUN pip install --no-cache-dir -f dist --user \
   assemblyline-service-client \
   assemblyline-v4-service==$version \
   assemblyline-client \
+  gunicorn flask gitpython \
   && rm -rf ~/.cache/pip
 
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies

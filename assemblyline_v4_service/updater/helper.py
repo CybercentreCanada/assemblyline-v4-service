@@ -14,6 +14,9 @@ from assemblyline.common.isotime import iso_to_epoch
 from assemblyline.common.digests import get_sha256_for_file
 
 
+BLOCK_SIZE = 64 * 1024
+
+
 class SkipSource(RuntimeError):
     pass
 
@@ -57,7 +60,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
     auth = (username, password) if username and password else None
 
     proxy = source.get('proxy', None)
-    headers = source.get('headers', None)
+    headers_list = source.get('headers', [])
+    headers = {}
+    [headers.update({header['name']: header['value']}) for header in headers_list]
 
     logger.info(f"{name} source is configured to {'ignore SSL errors' if ignore_ssl_errors else 'verify SSL'}.")
     if ca_cert:
@@ -108,7 +113,8 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             file_name = os.path.basename(urlparse(uri).path)
             file_path = os.path.join(output_dir, file_name)
             with open(file_path, 'wb') as f:
-                f.write(response.content)
+                for content in response.iter_content(BLOCK_SIZE):
+                    f.write(content)
 
             # Clear proxy setting
             if proxy:
@@ -121,6 +127,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 return filter_downloads(extract_dir, pattern)
             else:
                 return [(file_path, get_sha256_for_file(file_path))]
+        else:
+            logger.warning(f"Download not successful: {response.content}")
+            return []
 
     except SkipSource:
         # Raise to calling function for handling

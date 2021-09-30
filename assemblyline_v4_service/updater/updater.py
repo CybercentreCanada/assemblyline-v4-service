@@ -1,6 +1,6 @@
 from __future__ import annotations
 import shutil
-from typing import Optional, Any
+from typing import Optional, Any, Tuple, List
 import typing
 import os
 import logging
@@ -17,19 +17,22 @@ from contextlib import contextmanager
 from passlib.hash import bcrypt
 from zipfile import ZipFile, BadZipFile
 
+from assemblyline.common import forge, log as al_log
 from assemblyline.common.isotime import epoch_to_iso
 from assemblyline.common.identify import zip_ident
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
-from assemblyline_client import get_client
+from assemblyline_client import Client, get_client
 from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
-from assemblyline.odm.models.service import Service
+from assemblyline.odm.models.service import Service, UpdateSource
 from assemblyline.remote.datatypes.hash import Hash
 from assemblyline.common.security import get_random_password, get_password_hash
 from assemblyline.remote.datatypes.lock import Lock
 from assemblyline.odm.models.user import User
 from assemblyline.odm.models.user_settings import UserSettings
+
+from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource
 
 
 if typing.TYPE_CHECKING:
@@ -37,7 +40,6 @@ if typing.TYPE_CHECKING:
     from assemblyline.odm.models.config import Config
     from assemblyline.datastore.helper import AssemblylineDatastore
     RedisType = redis.Redis[typing.Any]
-
 
 SERVICE_PULL_INTERVAL = 1200
 SERVICE_NAME = os.getenv('AL_SERVICE_NAME', 'service')
@@ -47,6 +49,8 @@ SOURCE_UPDATE_TIME_KEY = 'update_time'
 LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
+
+classification = forge.get_classification()
 
 
 @contextmanager
@@ -75,7 +79,16 @@ class ServiceUpdater(ThreadedCoreBase):
     def __init__(self, logger: logging.Logger = None,
                  shutdown_timeout: float = None, config: Config = None,
                  datastore: AssemblylineDatastore = None,
-                 redis: RedisType = None, redis_persist: RedisType = None):
+                 redis: RedisType = None, redis_persist: RedisType = None,
+                 default_pattern="*"):
+
+        self.updater_type = os.environ['SERVICE_PATH'].split('.')[-1].lower()
+        self.default_pattern = default_pattern
+
+        if not logger:
+            al_log.init_logging(f'updater.{self.updater_type}', log_level=os.environ.get('LOG_LEVEL', "WARNING"))
+            logger = logging.getLogger(f'assemblyline.updater.{self.updater_type}')
+
         super().__init__(f'assemblyline.{SERVICE_NAME}_updater', logger=logger, shutdown_timeout=shutdown_timeout,
                          config=config, datastore=datastore, redis=redis,
                          redis_persist=redis_persist)
@@ -288,6 +301,60 @@ class ServiceUpdater(ThreadedCoreBase):
                     shutil.rmtree(output_directory, ignore_errors=True)
 
     def do_source_update(self, service: Service) -> None:
+        self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
+        run_time = time.time()
+        username = self.ensure_service_account()
+        with temporary_api_key(self.datastore, username) as api_key:
+            with tempfile.TemporaryDirectory() as update_dir:
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+                old_update_time = self.get_source_update_time()
+
+                self.log.info("Connected!")
+
+                # Parse updater configuration
+                previous_hashes: dict[str, dict[str, str]] = self.get_source_extra()
+                sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
+                files_sha256: dict[str, dict[str, str]] = {}
+
+                # Go through each source and download file
+                for source_name, source_obj in sources.items():
+                    source = source_obj.as_primitives()
+                    uri: str = source['uri']
+                    default_classification = source.get('default_classification', classification.UNRESTRICTED)
+                    try:
+                        # Pull sources from external locations (method depends on the URL)
+                        files = git_clone_repo(source, old_update_time, self.default_pattern, self.log, update_dir) \
+                            if uri.endswith('.git') else url_download(source, old_update_time, self.log, update_dir)
+
+                        # Add to collection of sources for caching purposes
+                        self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
+                        for file, sha256 in files:
+                            files_sha256.setdefault(source_name, {})
+                            if previous_hashes.get(source_name, {}).get(file, None) != sha256 and self.is_valid(file):
+                                files_sha256[source_name][file] = sha256
+
+                        # Import into Assemblyline
+                        self.import_update(files, al_client, source_name, default_classification)
+
+                    except SkipSource:
+                        # This source hasn't changed, no need to re-import into Assemblyline
+                        self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
+                        if source_name in previous_hashes:
+                            files_sha256[source_name] = previous_hashes[source_name]
+                        continue
+
+        self.set_source_update_time(run_time)
+        self.set_source_extra(files_sha256)
+        self.set_active_config_hash(self.config_hash(service))
+        self.local_update_flag.set()
+
+    # Define to determine if file is a valid signature file
+    def is_valid(self, file_path) -> bool:
+        return True
+
+    # Define how your source update gets imported into Assemblyline
+    def import_update(self, files_sha256: List[Tuple[str, str]], client: Client, source_name: str,
+                      default_classification=None):
         raise NotImplementedError()
 
     def _run_source_updates(self):
