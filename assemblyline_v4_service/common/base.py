@@ -2,8 +2,12 @@ from __future__ import annotations
 
 import logging
 import os
+import requests
+import shutil
+import tarfile
 import tempfile
-from typing import Optional, Dict
+import time
+from typing import Dict, Optional
 
 from assemblyline.common import exceptions, log, version
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -39,10 +43,26 @@ class ServiceBase:
         self._task = None
 
         self._working_directory = None
+        self.dependencies = self._get_dependencies_info()
+
+    def _get_dependencies_info(self) -> None:
+        dependencies = {}
+        dep_names = [e.split('_key')[0] for e in os.environ.keys() if e.endswith('_key')]
+        for name in dep_names:
+            try:
+                dependencies[name] = {part: os.environ[f'{name}_{part}'] for part in ['host', 'port', 'key']}
+            except KeyError:
+                pass
+        return dependencies
 
     def _cleanup(self) -> None:
         self._task = None
         self._working_directory = None
+        if self.dependencies.get('updates', None):
+            try:
+                self._update_rules()
+            except Exception as e:
+                raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
 
     def _handle_execute_failure(self, exception, stack_info) -> None:
         # Clear the result, in case it caused the problem
@@ -117,6 +137,13 @@ class ServiceBase:
 
     def start_service(self) -> None:
         self.log.info(f"Starting service: {self.service_attributes.name}")
+
+        if self.dependencies.get('updates', None):
+            try:
+                self._update_rules()
+            except Exception as e:
+                raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
+
         self.start()
 
     def stop(self) -> None:
@@ -140,3 +167,53 @@ class ServiceBase:
         if self._working_directory is None:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
+
+    # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
+    def _download_rules(self):
+        url_base = f"http://{self.dependencies['updates']['host']}:{self.dependencies['updates']['port']}/"
+        headers = {
+            'X_APIKEY': self.dependencies['updates']['key']
+        }
+
+        # Check if there are new
+        while True:
+            resp = requests.get(url_base + 'status')
+            resp.raise_for_status()
+            status = resp.json()
+            if self.update_time is not None and self.update_time >= status['local_update_time']:
+                return False
+            if status['download_available']:
+                break
+            self.log.warning('Waiting on update server availability...')
+            time.sleep(10)
+
+        # Download the current update
+        temp_directory = tempfile.mkdtemp()
+        buffer_handle, buffer_name = tempfile.mkstemp()
+        try:
+            with os.fdopen(buffer_handle, 'wb') as buffer:
+                resp = requests.get(url_base + 'tar', headers=headers)
+                resp.raise_for_status()
+                for chunk in resp.iter_content(chunk_size=1024):
+                    buffer.write(chunk)
+
+            tar_handle = tarfile.open(buffer_name)
+            tar_handle.extractall(temp_directory)
+            self.update_time = status['local_update_time']
+            self.rules_directory, temp_directory = temp_directory, self.rules_directory
+            return True
+        finally:
+            os.unlink(buffer_name)
+            if temp_directory is not None:
+                shutil.rmtree(temp_directory, ignore_errors=True)
+
+    def _update_rules(self):
+        if self._download_rules():
+            self.rules_hash = self._get_rules_hash()
+            self._load_rules()
+
+    def _get_rules_hash(self) -> str:
+        raise NotImplementedError()
+
+    def _load_rules(self) -> None:
+        raise NotImplementedError
