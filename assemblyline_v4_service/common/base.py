@@ -29,9 +29,10 @@ class ServiceBase:
         if config:
             self.config.update(config)
 
+        self.name = self.service_attributes.name.lower()
         # Initialize logging for the service
         log.init_logging(f'{self.service_attributes.name}', log_level=LOG_LEVEL)
-        self.log = logging.getLogger(f'assemblyline.service.{self.service_attributes.name.lower()}')
+        self.log = logging.getLogger(f'assemblyline.service.{self.name}')
 
         # Replace warning/error methods with our own patched version
         self._log_warning = self.log.warning
@@ -51,7 +52,7 @@ class ServiceBase:
         self.update_time: int = None
         self.rules_hash: str = None
 
-    def _get_dependencies_info(self) -> None:
+    def _get_dependencies_info(self) -> dict:
         dependencies = {}
         dep_names = [e.split('_key')[0] for e in os.environ.keys() if e.endswith('_key')]
         for name in dep_names:
@@ -214,12 +215,14 @@ class ServiceBase:
                 shutil.rmtree(temp_directory, ignore_errors=True)
 
     def _update_rules(self):
-        if self._download_rules() and self._load_rules():
+        if self._download_rules():
             self.rules_hash = self._get_rules_hash()
             self._load_rules()
 
+    # Should return a hash of the ruleset and instantiate the rules_list for _load_rules()
     def _get_rules_hash(self) -> str:
         raise NotImplementedError()
 
-    def _load_rules(self) -> bool:
+    # Use the rules_list to setup rules-use for the service
+    def _load_rules(self) -> None:
         raise NotImplementedError
