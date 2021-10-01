@@ -45,6 +45,12 @@ class ServiceBase:
         self._working_directory = None
         self.dependencies = self._get_dependencies_info()
 
+        # Updater-related
+        self.rules_directory: str = None
+        self.rules_list: list = []
+        self.update_time: int = None
+        self.rules_hash: str = None
+
     def _get_dependencies_info(self) -> None:
         dependencies = {}
         dep_names = [e.split('_key')[0] for e in os.environ.keys() if e.endswith('_key')]
@@ -204,16 +210,16 @@ class ServiceBase:
             return True
         finally:
             os.unlink(buffer_name)
-            if temp_directory is not None:
+            if temp_directory:
                 shutil.rmtree(temp_directory, ignore_errors=True)
 
     def _update_rules(self):
-        if self._download_rules():
+        if self._download_rules() and self._load_rules():
             self.rules_hash = self._get_rules_hash()
             self._load_rules()
 
     def _get_rules_hash(self) -> str:
         raise NotImplementedError()
 
-    def _load_rules(self) -> None:
+    def _load_rules(self) -> bool:
         raise NotImplementedError
