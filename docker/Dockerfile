@@ -6,7 +6,7 @@ ARG branch
 
 USER root
 RUN apt-get update \
-  && apt-get install -yy build-essential libfuzzy-dev git\
+  && apt-get install -yy build-essential libfuzzy-dev \
   && rm -rf /var/lib/apt/lists/*
 
 # install pip packages, as assemblyline so they go into our .local with the ones already there
@@ -45,6 +45,9 @@ ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 ENV CONTAINER_MODE true
 
 USER root
+# Install git binary for gitpython pip package
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 # Create directory for service
 RUN mkdir -p /opt/al_service
 RUN touch /opt/al_service/__init__.py
