@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import logging
 import os
 import requests
@@ -8,8 +9,10 @@ import tarfile
 import tempfile
 import time
 from typing import Dict, Optional
+from pathlib import Path
 
 from assemblyline.common import exceptions, log, version
+from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import ServiceAPI
@@ -147,7 +150,7 @@ class ServiceBase:
 
         if self.dependencies.get('updates', None):
             try:
-                self._update_rules()
+                self._download_rules()
             except Exception as e:
                 raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
 
@@ -188,7 +191,7 @@ class ServiceBase:
             resp.raise_for_status()
             status = resp.json()
             if self.update_time is not None and self.update_time >= status['local_update_time']:
-                return False
+                return
             if status['download_available']:
                 break
             self.log.warning('Waiting on update server availability...')
@@ -208,20 +211,38 @@ class ServiceBase:
             tar_handle.extractall(temp_directory)
             self.update_time = status['local_update_time']
             self.rules_directory, temp_directory = temp_directory, self.rules_directory
-            return True
+            # Try to load the rules into the service before declaring we're using these rules moving forward
+            old_rules_list = self.rules_list
+            temp_hash = self._gen_rules_hash()
+            self._clear_rules()
+            self._load_rules()
+            self.rules_hash = temp_hash
+        except Exception as e:
+            # Should something happen, we should revert to the old set and log the exception
+            self.log.error(f'Error occurred while updating signatures: {e}. Reverting to the former signature set.')
+            self.rules_directory, temp_directory = temp_directory, self.rules_directory
+            # Clear rules that was added from the new set and reload old set
+            self.rules_list = old_rules_list
+            self._clear_rules()
+            self._load_rules()
         finally:
             os.unlink(buffer_name)
             if temp_directory:
                 shutil.rmtree(temp_directory, ignore_errors=True)
 
-    def _update_rules(self):
-        if self._download_rules():
-            self.rules_hash = self._get_rules_hash()
-            self._load_rules()
+    # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater
+    def _gen_rules_hash(self) -> str:
+        self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
+        all_sha256s = [get_sha256_for_file(f) for f in self.rules_list]
 
-    # Should return a hash of the ruleset and instantiate the rules_list for _load_rules()
-    def _get_rules_hash(self) -> str:
-        raise NotImplementedError()
+        if len(all_sha256s) == 1:
+            return all_sha256s[0][:7]
+
+        return hashlib.sha256(' '.join(sorted(all_sha256s)).encode('utf-8')).hexdigest()[:7]
+
+    # Clear all rules from the service; should be followed by a _load_rule()
+    def _clear_rules(self) -> None:
+        pass
 
     # Use the rules_list to setup rules-use for the service
     def _load_rules(self) -> None:
