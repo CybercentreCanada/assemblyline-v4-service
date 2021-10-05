@@ -70,7 +70,7 @@ class ServiceBase:
         self._working_directory = None
         if self.dependencies.get('updates', None):
             try:
-                self._update_rules()
+                self._download_rules()
             except Exception as e:
                 raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
 
