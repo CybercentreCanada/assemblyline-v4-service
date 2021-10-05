@@ -8,7 +8,7 @@ from assemblyline.common.attack_map import software_map, attack_map, group_map, 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+from assemblyline_v4_service.common.result import Result, ResultImageSection, ResultSection, BODY_FORMAT, Heuristic
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -398,6 +398,18 @@ class ResultSample(ServiceBase):
             collapse_section.set_heuristic(2)
             collapse_section.add_line("This section was collapsed when first loaded in the UI")
             result.add_section(collapse_section)
+
+            # ==================================================================
+            # Image Section
+            #     This type of section allows the user to display images to the user
+            image_section = ResultImageSection(request, 'Example of Image section')
+            image_section.add_image('data/0001.jpg', '0001.jpg', 'Cuckoo screenshot 0001')
+            image_section.add_image('data/0009.jpg', '0009.jpg', 'Cuckoo screenshot 0009')
+            image_section.add_image('data/0018.jpg', '0018.jpg', 'Cuckoo screenshot 0018')
+            image_section.add_image('data/0025.jpg', '0025.jpg', 'Cuckoo screenshot 0025')
+            image_section.add_image('data/0032.jpg', '0032.jpg', 'Cuckoo screenshot 0032')
+            image_section.add_image('data/0036.jpg', '0036.jpg', 'Cuckoo screenshot 0036')
+            result.add_section(image_section)
 
             # ==================================================================
             # Wrap-up:
