@@ -67,19 +67,21 @@ class ServiceRequest:
                 img = Image.open(path)
 
                 # Force image format switch to prevent exploit to cross-over
-                format = 'PNG'
-                if img.format == format:
-                    format = 'JPEG'
+                img_format = 'PNG'
+                if img.format == img_format:
+                    img_format = 'JPEG'
 
                 # Save and upload new image
-                img.save(outtmp.name, format=format, optimize=True, quality=90)
-                img_res = self.task.add_supplementary(outtmp.name, name, description, classification, safe_image=True)
+                img.save(outtmp.name, format=img_format, optimize=True, quality=90)
+                img_res = self.task.add_supplementary(outtmp.name, name, description, classification,
+                                                      is_section_image=True)
 
                 # Save and upload thumbnail
                 img.thumbnail((128, 128))
-                img.save(thumbtmp.name, format=format, optimize=True, quality=90)
+                img.save(thumbtmp.name, format=img_format, optimize=True, quality=90)
                 thumb_res = self.task.add_supplementary(thumbtmp.name, f"{name}.thumb",
-                                                        f"{description} (thumbnail)", classification, safe_image=True)
+                                                        f"{description} (thumbnail)", classification,
+                                                        is_section_image=True)
 
         return {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
                 'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
