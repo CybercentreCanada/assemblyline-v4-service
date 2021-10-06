@@ -20,6 +20,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
+UPDATES_DIR = '/updates'
 
 
 class ServiceBase:
@@ -112,10 +113,11 @@ class ServiceBase:
 
     def get_service_version(self) -> str:
         fw_version = f"{version.FRAMEWORK_VERSION}.{version.SYSTEM_VERSION}."
+        r_version = f"r{self.rules_hash}" if self.rules_hash else ""
         if self.service_attributes.version.startswith(fw_version):
-            return self.service_attributes.version
+            return f"{self.service_attributes.version}{r_version}"
         else:
-            return f"{fw_version}{self.service_attributes.version}"
+            return f"{fw_version}{self.service_attributes.version}{r_version}"
 
     # noinspection PyMethodMayBeStatic
     def get_tool_version(self) -> Optional[str]:
@@ -197,8 +199,12 @@ class ServiceBase:
             self.log.warning('Waiting on update server availability...')
             time.sleep(10)
 
+        # Dedicated directory for updates
+        if not os.path.exists(UPDATES_DIR):
+            os.mkdir(UPDATES_DIR)
+
         # Download the current update
-        temp_directory = tempfile.mkdtemp()
+        temp_directory = tempfile.mkdtemp(dir=UPDATES_DIR)
         buffer_handle, buffer_name = tempfile.mkstemp()
         try:
             with os.fdopen(buffer_handle, 'wb') as buffer:

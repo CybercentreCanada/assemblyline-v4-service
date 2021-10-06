@@ -50,5 +50,9 @@ RUN mkdir -p /opt/al_service
 RUN touch /opt/al_service/__init__.py
 COPY process_handler.py /etc/
 
+# Create directory for service updates
+RUN mkdir /updates
+RUN chown -R assemblyline:assemblyline /updates
+
 USER assemblyline
 CMD ["python", "/etc/process_handler.py"]
