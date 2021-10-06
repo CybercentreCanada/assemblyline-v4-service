@@ -403,12 +403,12 @@ class ResultSample(ServiceBase):
             # Image Section
             #     This type of section allows the user to display images to the user
             image_section = ResultImageSection(request, 'Example of Image section')
-            image_section.add_image('data/0001.jpg', '0001.jpg', 'Cuckoo screenshot 0001')
-            image_section.add_image('data/0009.jpg', '0009.jpg', 'Cuckoo screenshot 0009')
-            image_section.add_image('data/0018.jpg', '0018.jpg', 'Cuckoo screenshot 0018')
-            image_section.add_image('data/0025.jpg', '0025.jpg', 'Cuckoo screenshot 0025')
-            image_section.add_image('data/0032.jpg', '0032.jpg', 'Cuckoo screenshot 0032')
-            image_section.add_image('data/0036.jpg', '0036.jpg', 'Cuckoo screenshot 0036')
+            image_section.add_image('data/0001.jpg', '0001.jpg', 'ResultSample screenshot 0001')
+            image_section.add_image('data/0002.jpg', '0002.jpg', 'ResultSample screenshot 0002')
+            image_section.add_image('data/0003.jpg', '0003.jpg', 'ResultSample screenshot 0003')
+            image_section.add_image('data/0004.jpg', '0004.jpg', 'ResultSample screenshot 0004')
+            image_section.add_image('data/0005.jpg', '0005.jpg', 'ResultSample screenshot 0005')
+            image_section.add_image('data/0006.jpg', '0006.jpg', 'ResultSample screenshot 0006')
             result.add_section(image_section)
 
             # ==================================================================
