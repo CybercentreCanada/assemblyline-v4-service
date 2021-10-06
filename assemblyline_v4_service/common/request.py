@@ -72,13 +72,13 @@ class ServiceRequest:
                     img_format = 'JPEG'
 
                 # Save and upload new image
-                img.save(outtmp.name, format=img_format, optimize=True, quality=90)
+                img.save(outtmp.name, format=img_format)
                 img_res = self.task.add_supplementary(outtmp.name, name, description, classification,
                                                       is_section_image=True)
 
                 # Save and upload thumbnail
                 img.thumbnail((128, 128))
-                img.save(thumbtmp.name, format=img_format, optimize=True, quality=90)
+                img.save(thumbtmp.name, format=img_format, optimize=True)
                 thumb_res = self.task.add_supplementary(thumbtmp.name, f"{name}.thumb",
                                                         f"{description} (thumbnail)", classification,
                                                         is_section_image=True)
