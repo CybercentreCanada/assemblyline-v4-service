@@ -50,7 +50,7 @@ class ServiceRequest:
             raise
 
     def add_image(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None) -> bool:
+                  classification: Optional[Classification] = None) -> dict:
         """
         Add a image file to be viewed in the result section.
 
