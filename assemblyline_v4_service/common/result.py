@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import List, Union, Optional, Dict, Any
 
@@ -329,6 +330,12 @@ class ResultImageSection(ResultSection):
     def set_body(self, body: str, body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
         raise InvalidFunctionException("Do not use set_body in an Image section, loop through your "
                                        "files and use add_image instead.")
+
+    def finalize(self, depth: int = 0) -> bool:
+        if self.body:
+            self.body = json.dumps(self.body)
+
+        return super().finalize(depth=depth)
 
 
 class Result:
