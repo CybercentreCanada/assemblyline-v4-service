@@ -15,6 +15,7 @@ from assemblyline.common.digests import get_sha256_for_file
 
 
 BLOCK_SIZE = 64 * 1024
+FORCE_UPDATE = os.environ.get('FORCE_SIGNATURE_UPDATE', 'false').lower() == 'true'
 
 
 class SkipSource(RuntimeError):
@@ -89,7 +90,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             last_modified = time.mktime(time.strptime(last_modified, "%a, %d %b %Y %H:%M:%S %Z"))
 
             # Compare the last modified time with the last updated time
-            if previous_update and last_modified <= previous_update:
+            if previous_update and last_modified <= previous_update and not FORCE_UPDATE:
                 # File has not been modified since last update, do nothing
                 raise SkipSource()
 
@@ -103,7 +104,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
         response = session.get(uri, auth=auth, headers=headers)
 
         # Check the response code
-        if response.status_code == requests.codes['not_modified']:
+        if response.status_code == requests.codes['not_modified'] and not FORCE_UPDATE:
             # File has not been modified since last update, do nothing
             raise SkipSource()
         elif response.ok:
@@ -198,7 +199,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
             if isinstance(previous_update, str):
                 previous_update = iso_to_epoch(previous_update)
             for c in repo.iter_commits():
-                if c.committed_date < previous_update:
+                if c.committed_date < previous_update and not FORCE_UPDATE:
                     raise SkipSource()
                 break
 
