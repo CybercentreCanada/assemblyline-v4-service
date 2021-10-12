@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from typing import List, Union, Optional, Dict, Any
 
@@ -25,10 +26,15 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('KEY_VALUE', 5),
     ('PROCESS_TREE', 6),
     ('TABLE', 7),
+    ('IMAGE', 8),
 ])
 
 
 class InvalidHeuristicException(Exception):
+    pass
+
+
+class InvalidFunctionException(Exception):
     pass
 
 
@@ -162,7 +168,7 @@ class ResultSection:
     def __init__(
             self,
             title_text: Union[str, List],
-            body: Optional[str, Dict] = None,
+            body: Optional[Union[str, Dict]] = None,
             classification: Optional[Classification] = None,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
             heuristic: Optional[Heuristic] = None,
@@ -289,6 +295,47 @@ class ResultSection:
                                             f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
 
         self.heuristic = Heuristic(heur_id, attack_id=attack_id, signature=signature)
+
+
+class ResultImageSection(ResultSection):
+    def __init__(self,
+                 request,
+                 title_text: Union[str, List],
+                 classification: Optional[Classification] = None,
+                 heuristic: Optional[Heuristic] = None,
+                 tags: Optional[Dict[str, List[str]]] = None,
+                 parent: Optional[Union[ResultSection, Result]] = None,
+                 zeroize_on_tag_safe: bool = False,
+                 auto_collapse: bool = False,
+                 zeroize_on_sig_safe: bool = True):
+        body = []
+        body_format = BODY_FORMAT.IMAGE
+        super().__init__(title_text, body=body, classification=classification, body_format=body_format,
+                         heuristic=heuristic, tags=tags, parent=parent, zeroize_on_tag_safe=zeroize_on_tag_safe,
+                         auto_collapse=auto_collapse, zeroize_on_sig_safe=zeroize_on_sig_safe)
+        self.request = request
+
+    def add_image(self, path: str, name: str, description: str,
+                  classification: Optional[Classification] = None) -> bool:
+        res = self.request.add_image(path, name, description, classification)
+        self.body.append(res)
+
+    def add_line(self, text: Union[str, List]) -> None:
+        raise InvalidFunctionException("Do not use add_line in an Image section, use add_image instead.")
+
+    def add_lines(self, line_list: List[str]) -> None:
+        raise InvalidFunctionException("Do not use add_lines in an Image section, loop through your "
+                                       "files and use add_image instead.")
+
+    def set_body(self, body: str, body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
+        raise InvalidFunctionException("Do not use set_body in an Image section, loop through your "
+                                       "files and use add_image instead.")
+
+    def finalize(self, depth: int = 0) -> bool:
+        if self.body:
+            self.body = json.dumps(self.body)
+
+        return super().finalize(depth=depth)
 
 
 class Result:

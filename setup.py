@@ -41,6 +41,7 @@ setup(
         'cart',
         'fuzzywuzzy',
         'pefile',
+        'pillow',
         'python-Levenshtein',
     ],
     extra_requires={
