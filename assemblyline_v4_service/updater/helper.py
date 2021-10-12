@@ -29,7 +29,7 @@ def add_cacert(cert: str) -> None:
         ca_editor.write(f"\n{cert}")
 
 
-def filter_downloads(update_directory, pattern, default_pattern="*") -> List[Tuple[str, str]]:
+def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
     f_files = []
     if not pattern:
         # Regex will either match on the filename or the filepath, either with default or given pattern for source

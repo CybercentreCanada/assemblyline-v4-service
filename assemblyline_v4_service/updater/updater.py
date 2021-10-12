@@ -80,7 +80,7 @@ class ServiceUpdater(ThreadedCoreBase):
                  shutdown_timeout: float = None, config: Config = None,
                  datastore: AssemblylineDatastore = None,
                  redis: RedisType = None, redis_persist: RedisType = None,
-                 default_pattern="*"):
+                 default_pattern=".*"):
 
         self.updater_type = os.environ['SERVICE_PATH'].split('.')[-1].lower()
         self.default_pattern = default_pattern
