@@ -8,7 +8,7 @@ from assemblyline.common.attack_map import software_map, attack_map, group_map, 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT, Heuristic
+from assemblyline_v4_service.common.result import Result, ResultImageSection, ResultSection, BODY_FORMAT, Heuristic
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -398,6 +398,18 @@ class ResultSample(ServiceBase):
             collapse_section.set_heuristic(2)
             collapse_section.add_line("This section was collapsed when first loaded in the UI")
             result.add_section(collapse_section)
+
+            # ==================================================================
+            # Image Section
+            #     This type of section allows the user to display images to the user
+            image_section = ResultImageSection(request, 'Example of Image section')
+            image_section.add_image('data/0001.jpg', '0001.jpg', 'ResultSample screenshot 0001')
+            image_section.add_image('data/0002.jpg', '0002.jpg', 'ResultSample screenshot 0002')
+            image_section.add_image('data/0003.jpg', '0003.jpg', 'ResultSample screenshot 0003')
+            image_section.add_image('data/0004.jpg', '0004.jpg', 'ResultSample screenshot 0004')
+            image_section.add_image('data/0005.jpg', '0005.jpg', 'ResultSample screenshot 0005')
+            image_section.add_image('data/0006.jpg', '0006.jpg', 'ResultSample screenshot 0006')
+            result.add_section(image_section)
 
             # ==================================================================
             # Wrap-up:

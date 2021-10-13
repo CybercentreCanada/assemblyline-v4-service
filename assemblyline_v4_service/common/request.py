@@ -1,4 +1,7 @@
 import logging
+import tempfile
+
+from PIL import Image
 from typing import Dict, Optional, Any
 
 from assemblyline.common import forge
@@ -45,6 +48,43 @@ class ServiceRequest:
             return r
         except MaxExtractedExceeded:
             raise
+
+    def add_image(self, path: str, name: str, description: str,
+                  classification: Optional[Classification] = None) -> dict:
+        """
+        Add a image file to be viewed in the result section.
+
+        :param path: Complete path to the image file
+        :param name: Display name of the image file
+        :param description: Descriptive text about the image file
+        :param classification: Classification of the image file (default: service classification)
+        :return: None
+        """
+
+        with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as outtmp:
+            with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as thumbtmp:
+                # Load Image
+                img = Image.open(path)
+
+                # Force image format switch to prevent exploit to cross-over
+                img_format = 'PNG'
+                if img.format == img_format:
+                    img_format = 'JPEG'
+
+                # Save and upload new image
+                img.save(outtmp.name, format=img_format)
+                img_res = self.task.add_supplementary(outtmp.name, name, description, classification,
+                                                      is_section_image=True)
+
+                # Save and upload thumbnail
+                img.thumbnail((128, 128))
+                img.save(thumbtmp.name, format=img_format, optimize=True)
+                thumb_res = self.task.add_supplementary(thumbtmp.name, f"{name}.thumb",
+                                                        f"{description} (thumbnail)", classification,
+                                                        is_section_image=True)
+
+        return {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
+                'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
 
     def add_supplementary(self, path: str, name: str, description: str,
                           classification: Optional[Classification] = None) -> bool:
