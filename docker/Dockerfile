@@ -14,14 +14,15 @@ USER assemblyline
 RUN touch /tmp/before-pip
 COPY setup.py dist* dist/
 RUN pip install --no-cache-dir -f dist --user \
-  assemblyline-service-client \
+  assemblyline-core==$version \
+  assemblyline-service-client==$version \
   assemblyline-v4-service==$version \
   assemblyline-client \
   gunicorn flask gitpython \
   && rm -rf ~/.cache/pip
 
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
-RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline assemblyline-core assemblyline-service-client assemblyline-client; fi
+RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline-client; fi
 
 # Remove files that existed before the pip install so that our copy command below doesn't take a snapshot of
 # files that already exist in the base image
