@@ -4,6 +4,15 @@ FROM $base:$branch
 
 ENV SERVICE_PATH result_sample.ResultSample
 
+USER root
+
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
+USER assemblyline
+
+# Install packages for update-server
+RUN pip install gunicorn flask gitpython && rm -rf ~/.cache/pip
+
 # Copy ResultSample service code
 WORKDIR /opt/al_service
 COPY assemblyline_result_sample_service .

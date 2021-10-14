@@ -18,6 +18,7 @@ RUN pip install --no-cache-dir -f dist --user \
   assemblyline-service-client==$version \
   assemblyline-v4-service==$version \
   assemblyline-client \
+  gunicorn flask gitpython \
   && rm -rf ~/.cache/pip
 
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
@@ -45,10 +46,17 @@ ENV SERVICE_API_AUTH_KEY ThisIsARandomAuthKey...ChangeMe!
 ENV CONTAINER_MODE true
 
 USER root
+# Install git binary for gitpython pip package
+RUN apt-get update && apt-get install -y git && rm -rf /var/lib/apt/lists/*
+
 # Create directory for service
 RUN mkdir -p /opt/al_service
 RUN touch /opt/al_service/__init__.py
 COPY docker/process_handler.py /etc/
+
+# Create directory for service updates
+RUN mkdir /updates
+RUN chown -R assemblyline:assemblyline /updates
 
 USER assemblyline
 CMD ["python", "/etc/process_handler.py"]

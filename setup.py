@@ -44,6 +44,12 @@ setup(
         'pillow',
         'python-Levenshtein',
     ],
+    extra_requires={
+        'updater': [
+            'gevent',
+            'flask'
+        ]
+    },
     package_data={
         '': [
             "*.xml",
