@@ -206,6 +206,8 @@ class ServiceBase:
         # Download the current update
         temp_directory = tempfile.mkdtemp(dir=UPDATES_DIR)
         buffer_handle, buffer_name = tempfile.mkstemp()
+
+        old_rules_list = self.rules_list
         try:
             with os.fdopen(buffer_handle, 'wb') as buffer:
                 resp = requests.get(url_base + 'tar', headers=headers)
@@ -218,7 +220,6 @@ class ServiceBase:
             self.update_time = status['local_update_time']
             self.rules_directory, temp_directory = temp_directory, self.rules_directory
             # Try to load the rules into the service before declaring we're using these rules moving forward
-            old_rules_list = self.rules_list
             temp_hash = self._gen_rules_hash()
             self._clear_rules()
             self._load_rules()
