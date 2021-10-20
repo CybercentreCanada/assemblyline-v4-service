@@ -8,6 +8,7 @@ from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
 from assemblyline.common.dict_utils import unflatten
+from assemblyline.common.identify import fileinfo
 from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
 
@@ -317,8 +318,11 @@ class ResultImageSection(ResultSection):
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None) -> bool:
-        res = self.request.add_image(path, name, description, classification)
-        self.body.append(res)
+        if "image" in fileinfo(path).get('type', ''):
+            res = self.request.add_image(path, name, description, classification)
+            self.body.append(res)
+        else:
+            self.request.add_supplementary(path, name, description, classification)
 
     def add_line(self, text: Union[str, List]) -> None:
         raise InvalidFunctionException("Do not use add_line in an Image section, use add_image instead.")
