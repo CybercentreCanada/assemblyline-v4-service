@@ -322,6 +322,7 @@ class ResultImageSection(ResultSection):
             res = self.request.add_image(path, name, description, classification)
             self.body.append(res)
         else:
+            log.warning(f'{path} not considered an image by Assemblyline. Will add file as supplementary..')
             self.request.add_supplementary(path, name, description, classification)
 
     def add_line(self, text: Union[str, List]) -> None:
