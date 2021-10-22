@@ -1,5 +1,5 @@
-from typing import List
-from re import compile
+from typing import List, Dict, Optional
+from re import compile, escape, sub
 from logging import getLogger
 from assemblyline.common import log as al_log
 from assemblyline_v4_service.common.result import ResultSection, Heuristic
@@ -15,6 +15,9 @@ log = getLogger('assemblyline.service.dynamic_service_helper')
 
 
 class Event:
+    X86_64 = "x86_64"
+    X86 = "x86"
+
     def __init__(self, pid: int = None, image: str = None, timestamp: float = None, guid: str = None):
         self.pid = pid
         self.image = image
@@ -23,6 +26,99 @@ class Event:
 
     def convert_event_to_dict(self) -> dict:
         return self.__dict__
+
+    def _determine_arch(self, path: str) -> str:
+        # Clear indicators in a file path of the architecture of the operating system
+        if any(item in path for item in ["program files (x86)", "syswow64"]):
+            return self.X86
+        return self.X86_64
+
+    @staticmethod
+    def _pattern_substitution(path: str, rule: Dict[str, str]) -> str:
+        if path.startswith(rule['pattern']):
+            path = path.replace(rule['pattern'], rule['replacement'])
+        return path
+
+    @staticmethod
+    def _regex_substitution(path, rule):
+        rule['regex'] = rule['regex'].split('*')
+        rule['regex'] = [escape(e) for e in rule['regex']]
+        rule['regex'] = '[^\\\\]+'.join(rule['regex'])
+        path = sub(rf"{rule['regex']}", rule['replacement'], path)
+        return path
+
+    def _normalize_path(self, path: str, arch: Optional[str] = None) -> str:
+        path = path.lower()
+        if not arch:
+            arch = self._determine_arch(path)
+
+        system_drive = 'c:\\'
+        system_root = 'c:\\windows\\'
+        sz_usr_temp_path = 'users\\*\\appdata\\local\\temp\\'
+        sz_usr_path = 'users\\*\\'
+        arch_specific_defaults = {
+            self.X86_64: {
+                'szProgFiles86': 'program files (x86)',
+                'szProgFiles64': 'program files',
+                'szSys86': 'syswow64',
+                'szSys64': 'system32'
+            },
+            self.X86: {
+                'szProgFiles86': 'program files',
+                'szSys86': 'system32'
+            }
+        }
+
+        # Order here matters
+        rules: List[Dict[str, str]] = []
+        rules.append({
+            'pattern': system_root + arch_specific_defaults[arch]["szSys86"],
+            'replacement': '?sys32'
+        })
+        if arch == self.X86_64:
+            rules.append({
+                'pattern': system_root + arch_specific_defaults[arch]["szSys64"],
+                'replacement': '?sys64'
+            })
+        rules.append({
+            'pattern': system_drive + arch_specific_defaults[arch]["szProgFiles86"],
+            'replacement': '?pf86'
+        })
+        if arch == self.X86_64:
+            rules.append({
+                'pattern': system_drive + arch_specific_defaults[arch]["szProgFiles64"],
+                'replacement': '?pf64'
+            })
+        rules.append({
+            'regex': f"{system_drive}{sz_usr_temp_path}",
+            'replacement': '?usrtmp\\\\'
+        })
+        rules.append({
+            'regex': f"{system_drive}{sz_usr_path}",
+            'replacement': '?usr\\\\'
+        })
+        rules.append({
+            'pattern': system_root,
+            'replacement': '?win\\'
+        })
+        rules.append({
+            'pattern': system_drive,
+            'replacement': '?c\\'
+        })
+        for rule in rules:
+            if 'pattern' in rule:
+                path = self._pattern_substitution(path, rule)
+            if 'regex' in rule:
+                path = self._regex_substitution(path, rule)
+        return path
+
+    def normalize_paths(self, attributes: List[str]):
+        for attribute in attributes:
+            if hasattr(self, attribute):
+                setattr(self, attribute, self._normalize_path(getattr(self, attribute)))
+            else:
+                raise ValueError(f"{self.__class__} does not have attribute '{attribute}'")
+        return self
 
 
 class ProcessEvent(Event):
@@ -55,7 +151,8 @@ class NetworkEvent(Event):
 
 
 class Events:
-    def __init__(self, events: List[dict] = None):
+    def __init__(self, events: List[dict] = None, normalize_paths: bool = False):
+        self.normalize_paths = normalize_paths
         if events is None:
             self.events = []
             self.sorted_events = []
@@ -66,7 +163,7 @@ class Events:
         else:
             self.events = self._validate_events(events)
             self.sorted_events = self._sort_things_by_timestamp(self.events)
-            self.process_events = self._get_process_events(self.sorted_events)
+            self.process_events = self._get_process_events(self.sorted_events, self.normalize_paths)
             self.process_event_dicts = self._convert_events_to_dict(self.process_events)
             self.network_events = self._get_network_events(self.sorted_events)
             self.network_event_dicts = self._convert_events_to_dict(self.network_events)
@@ -107,10 +204,12 @@ class Events:
         return validated_events
 
     @staticmethod
-    def _get_process_events(events: List[Event] = None) -> List[ProcessEvent]:
+    def _get_process_events(events: List[Event] = None, normalize_paths: bool = False) -> List[ProcessEvent]:
         process_events = []
         for event in events:
             if isinstance(event, ProcessEvent):
+                if normalize_paths:
+                    event = event.normalize_paths(["image"])
                 process_events.append(event)
         return process_events
 
@@ -198,8 +297,8 @@ class Signatures:
 
 
 class SandboxOntology(Events):
-    def __init__(self, events: List[dict] = None):
-        Events.__init__(self, events=events)
+    def __init__(self, events: List[dict] = None, normalize_paths: bool = False):
+        Events.__init__(self, events=events, normalize_paths=normalize_paths)
 
     @staticmethod
     def _convert_processes_dict_to_tree(processes_dict: dict = None) -> List[dict]:
