@@ -138,6 +138,71 @@ class TestEvent:
         actual_result = e.convert_event_to_dict()
         assert actual_result == expected_result
 
+    @staticmethod
+    @pytest.mark.parametrize("path, expected_result",
+        [
+            ("blah", "x86_64"),
+            ("C:\\program files\\blah", "x86_64"),
+            ("C:\\program files (x86)\\blah", "x86"),
+            ("C:\\syswow64\\blah", "x86"),
+        ]
+    )
+    def test_determine_arch(path, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import Event
+        e = Event(pid=1, image=path, timestamp=0, guid="blah")
+        actual_result = e._determine_arch(path)
+        assert actual_result == expected_result
+
+    @staticmethod
+    @pytest.mark.parametrize("path, rule, expected_result",
+        [
+            ("blah", {"pattern": "", "replacement": ""}, "blah"),
+            ("blah", {"pattern": "ah", "replacement": "ue"}, "blah"),
+            ("blah", {"pattern": "bl", "replacement": "y"}, "yah"),
+        ]
+    )
+    def test_pattern_substitution(path, rule, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import Event
+        e = Event(pid=1, image=path, timestamp=0, guid="blah")
+        actual_result = e._pattern_substitution(path, rule)
+        assert actual_result == expected_result
+
+    @staticmethod
+    @pytest.mark.parametrize("path, rule, expected_result",
+         [
+             ("blah", {"regex": "", "replacement": ""}, "blah"),
+             ("blah", {"regex": "bl*ah", "replacement": "bl"}, "blah"),
+             ("blah", {"regex": "\\bl*ah", "replacement": "bl"}, "blah"),
+             ("blaah", {"regex": "bl*ah", "replacement": "blue"}, "blue"),
+         ]
+     )
+    def test_regex_substitution(path, rule, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import Event
+        e = Event(pid=1, image=path, timestamp=0, guid="blah")
+        actual_result = e._regex_substitution(path, rule)
+        assert actual_result == expected_result
+
+    @staticmethod
+    @pytest.mark.parametrize("path, arch, expected_result",
+        [
+            ("blah", None, "blah"),
+            ("C:\\Program Files\\Word.exe", None, "?pf64\\word.exe"),
+            ("C:\\Program Files (x86)\\Word.exe", None, "?pf86 (x86)\\word.exe"),
+            ("C:\\Program Files (x86)\\Word.exe", "x86_64", "?pf86\\word.exe"),
+            ("C:\\Windows\\System32\\Word.exe", None, "?sys64\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", None, "?win\\syswow64\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
+            ("C:\\Users\\buddy\\AppData\\Local\\Temp\\Word.exe", None, "?usrtmp\\word.exe"),
+            ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
+        ]
+    )
+    def test_normalize_path(path, arch, expected_result):
+        from assemblyline_v4_service.common.dynamic_service_helper import Event
+        e = Event(pid=1, image=path, timestamp=0, guid="blah")
+        actual_result = e._normalize_path(path, arch)
+        assert actual_result == expected_result
+
 
 class TestProcessEvent:
     @staticmethod
