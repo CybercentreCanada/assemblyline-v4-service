@@ -141,10 +141,10 @@ class TestEvent:
     @staticmethod
     @pytest.mark.parametrize("path, expected_result",
         [
-            ("blah", "x86_64"),
-            ("C:\\program files\\blah", "x86_64"),
-            ("C:\\program files (x86)\\blah", "x86"),
-            ("C:\\syswow64\\blah", "x86"),
+            ("blah", "x86"),
+            ("C:\\program files\\blah", "x86"),
+            ("C:\\program files (x86)\\blah", "x86_64"),
+            ("C:\\syswow64\\blah", "x86_64"),
         ]
     )
     def test_determine_arch(path, expected_result):
@@ -186,12 +186,12 @@ class TestEvent:
     @pytest.mark.parametrize("path, arch, expected_result",
         [
             ("blah", None, "blah"),
-            ("C:\\Program Files\\Word.exe", None, "?pf64\\word.exe"),
-            ("C:\\Program Files (x86)\\Word.exe", None, "?pf86 (x86)\\word.exe"),
+            ("C:\\Program Files\\Word.exe", None, "?pf86\\word.exe"),
+            ("C:\\Program Files (x86)\\Word.exe", None, "?pf86\\word.exe"),
             ("C:\\Program Files (x86)\\Word.exe", "x86_64", "?pf86\\word.exe"),
-            ("C:\\Windows\\System32\\Word.exe", None, "?sys64\\word.exe"),
-            ("C:\\Windows\\SysWow64\\Word.exe", None, "?win\\syswow64\\word.exe"),
-            ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
+            ("C:\\Windows\\System32\\Word.exe", None, "?sys32\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", None, "?sys32\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", "x86", "?win\\syswow64\\word.exe"),
             ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
             ("C:\\Users\\buddy\\AppData\\Local\\Temp\\Word.exe", None, "?usrtmp\\word.exe"),
             ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
