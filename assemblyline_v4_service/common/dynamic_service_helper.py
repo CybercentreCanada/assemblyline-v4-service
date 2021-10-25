@@ -30,8 +30,8 @@ class Event:
     def _determine_arch(self, path: str) -> str:
         # Clear indicators in a file path of the architecture of the operating system
         if any(item in path for item in ["program files (x86)", "syswow64"]):
-            return self.X86
-        return self.X86_64
+            return self.X86_64
+        return self.X86
 
     @staticmethod
     def _pattern_substitution(path: str, rule: Dict[str, str]) -> str:
