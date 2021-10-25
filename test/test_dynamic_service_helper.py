@@ -511,6 +511,36 @@ class TestSandboxOntology:
                          },
                     ],
             ),
+            # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
+            (
+                    {
+                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
+                              "pguid": None},
+                        2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None,
+                              "pguid": None},
+                        3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None,
+                              "pguid": None},
+                        4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None,
+                              "pguid": None},
+                    },
+                    [
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
+                         "pguid": None,
+                         "children":
+                             [
+                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
+                                  "guid": None, "pguid": None,
+                                  "children": []},
+                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
+                                  "guid": None, "pguid": None,
+                                  "children":
+                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,
+                                        "guid": None, "pguid": None,
+                                        "children": []}]},
+                             ]
+                         },
+                    ],
+            ),
         ]
     )
     def test_convert_processes_dict_to_tree(processes_dict, expected_result):

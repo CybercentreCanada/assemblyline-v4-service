@@ -314,7 +314,7 @@ class SandboxOntology(Events):
         procs_seen = []
         key_to_use_for_linking = "ppid"
         key_to_use_for_tracking = "pid"
-        if all([any(process_dict.get(key) for key in ["pguid", "guid"] for process_dict in processes_dict.values())]):
+        if all([any(process_dict.get(key) for key in ["pguid", "guid"]) for process_dict in processes_dict.values()]):
             key_to_use_for_linking = "pguid"
             key_to_use_for_tracking = "guid"
 
