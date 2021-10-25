@@ -1,4 +1,4 @@
-from typing import List, Dict, Optional
+from typing import Dict, List, Optional
 from re import compile, escape, sub
 from logging import getLogger
 from assemblyline.common import log as al_log
@@ -24,7 +24,7 @@ class Event:
         self.timestamp = timestamp
         self.guid = guid
 
-    def convert_event_to_dict(self) -> dict:
+    def convert_event_to_dict(self) -> Dict:
         return self.__dict__
 
     def _determine_arch(self, path: str) -> str:
@@ -123,14 +123,15 @@ class Event:
 
 class ProcessEvent(Event):
     def __init__(self, pid: int = None, ppid: int = None, image: str = None, command_line: str = None,
-                 timestamp: float = None, guid: str = None):
+                 timestamp: float = None, guid: str = None, pguid: str = None):
         super().__init__(pid=pid, image=image, timestamp=timestamp, guid=guid)
         self.ppid = ppid
+        self.pguid = pguid
         self.command_line = command_line
 
     @staticmethod
     def keys() -> set:
-        return {"command_line", "guid", "image", "pid", "ppid", "timestamp"}
+        return {"command_line", "guid", "image", "pid", "pguid", "ppid", "timestamp"}
 
 
 class NetworkEvent(Event):
@@ -151,7 +152,7 @@ class NetworkEvent(Event):
 
 
 class Events:
-    def __init__(self, events: List[dict] = None, normalize_paths: bool = False):
+    def __init__(self, events: List[Dict] = None, normalize_paths: bool = False):
         self.normalize_paths = normalize_paths
         if events is None:
             self.events = []
@@ -169,7 +170,7 @@ class Events:
             self.network_event_dicts = self._convert_events_to_dict(self.network_events)
 
     @staticmethod
-    def _validate_events(events: List[dict] = None) -> List[Event]:
+    def _validate_events(events: List[Dict] = None) -> List[Event]:
         validated_events = []
         process_event_keys = ProcessEvent.keys()
         network_event_keys = NetworkEvent.keys()
@@ -183,6 +184,7 @@ class Events:
                     command_line=event["command_line"],
                     timestamp=event["timestamp"],
                     guid=event["guid"],
+                    pguid=event["pguid"],
                 )
                 validated_events.append(validated_process_event)
             elif event_keys == network_event_keys:
@@ -225,7 +227,7 @@ class Events:
     def _sort_things_by_timestamp(things_to_sort_by_timestamp: List = None) -> List:
         if not things_to_sort_by_timestamp:
             return []
-        if isinstance(things_to_sort_by_timestamp[0], dict):
+        if isinstance(things_to_sort_by_timestamp[0], Dict):
             timestamp = lambda x: x["timestamp"]
         else:
             timestamp = lambda x: x.timestamp
@@ -233,10 +235,13 @@ class Events:
         return sorted_things
 
     @staticmethod
-    def _convert_events_to_dict(events: List[Event]) -> dict:
+    def _convert_events_to_dict(events: List[Event]) -> Dict:
         events_dict = {}
+        mapping_value = "pid"
+        if all([event.guid is not None for event in events]):
+            mapping_value = "guid"
         for event in events:
-            events_dict[event.pid] = event.convert_event_to_dict()
+            events_dict[getattr(event, mapping_value)] = event.convert_event_to_dict()
         return events_dict
 
 
@@ -261,19 +266,19 @@ class Signature:
     def keys() -> set:
         return {"name", "pid", "score"}
 
-    def convert_signature_to_dict(self) -> dict:
+    def convert_signature_to_dict(self) -> Dict:
         return self.__dict__
 
 
 class Signatures:
-    def __init__(self, signatures: List[dict] = None):
+    def __init__(self, signatures: List[Dict] = None):
         if signatures is None:
             signatures = []
         self.signatures = self._validate_signatures(signatures)
         self.signature_dicts = self._convert_signatures_to_dicts()
 
     @staticmethod
-    def _validate_signatures(signatures: List[dict] = None) -> List[Signature]:
+    def _validate_signatures(signatures: List[Dict] = None) -> List[Signature]:
         signature_keys = Signature.keys()
         validated_signatures = []
         for signature in signatures:
@@ -288,7 +293,7 @@ class Signatures:
                 raise ValueError(f"{signature} does not match the signature format of {signature_keys}")
         return validated_signatures
 
-    def _convert_signatures_to_dicts(self) -> List[dict]:
+    def _convert_signatures_to_dicts(self) -> List[Dict]:
         signature_dicts = []
         for signature in self.signatures:
             signature_dict = signature.convert_signature_to_dict()
@@ -297,30 +302,35 @@ class Signatures:
 
 
 class SandboxOntology(Events):
-    def __init__(self, events: List[dict] = None, normalize_paths: bool = False):
+    def __init__(self, events: List[Dict] = None, normalize_paths: bool = False):
         Events.__init__(self, events=events, normalize_paths=normalize_paths)
 
     @staticmethod
-    def _convert_processes_dict_to_tree(processes_dict: dict = None) -> List[dict]:
+    def _convert_processes_dict_to_tree(processes_dict: Dict = None) -> List[Dict]:
         root = {
             "children": [],
         }
         sorted_processes = SandboxOntology._sort_things_by_timestamp(list(processes_dict.values()))
         procs_seen = []
+        key_to_use_for_linking = "ppid"
+        key_to_use_for_tracking = "pid"
+        if all([any(process_dict.get(key) for key in ["pguid", "guid"] for process_dict in processes_dict.values())]):
+            key_to_use_for_linking = "pguid"
+            key_to_use_for_tracking = "guid"
 
         for p in sorted_processes:
             p["children"] = []
-            if p["ppid"] in procs_seen:
-                processes_dict[p["ppid"]]["children"].append(p)
+            if p[key_to_use_for_linking] in procs_seen:
+                processes_dict[p[key_to_use_for_linking]]["children"].append(p)
             else:
                 root["children"].append(p)
 
-            procs_seen.append(p["pid"])
+            procs_seen.append(p[key_to_use_for_tracking])
 
         return SandboxOntology._sort_things_by_timestamp(root["children"])
 
     @staticmethod
-    def _validate_artifacts(artifact_list: List[dict] = None) -> List[Artifact]:
+    def _validate_artifacts(artifact_list: List[Dict] = None) -> List[Artifact]:
         if artifact_list is None:
             artifact_list = []
 
@@ -361,35 +371,38 @@ class SandboxOntology(Events):
         if artifact_result_section is not None:
             artifacts_result_section.add_subsection(artifact_result_section)
 
-    def _match_signatures_to_process_events(self, signature_dicts: List[dict]) -> dict:
+    def _match_signatures_to_process_events(self, signature_dicts: List[Dict]) -> Dict:
         process_event_dicts_with_signatures = {}
         copy_of_process_event_dicts = self.process_event_dicts.copy()
-        for pid, process_event_dict in copy_of_process_event_dicts.items():
+        for key, process_event_dict in copy_of_process_event_dicts.items():
             process_event_dict["signatures"] = {}
-            process_event_dicts_with_signatures[pid] = process_event_dict
+            process_event_dicts_with_signatures[key] = process_event_dict
 
             # Match the UI ProcessTree result body format
             process_event_dict["process_pid"] = process_event_dict["pid"]
             process_event_dict["process_name"] = process_event_dict["image"]
             # NOTE: not going to delete the original of the duplicated keys, as they may be useful in the future
 
+        pids = [process_event_dict["pid"] for process_event_dict in copy_of_process_event_dicts.values()]
         for signature_dict in signature_dicts:
             pid = signature_dict["pid"]
             name = signature_dict["name"]
             score = signature_dict["score"]
-            if pid not in process_event_dicts_with_signatures:
+            if pid not in pids:
                 # Ignore it
                 log.warning(f"{signature_dict} does not match up with a PID in {process_event_dicts_with_signatures.keys()}")
             else:
-                process_event_dicts_with_signatures[pid]["signatures"][name] = score
+                # We should always get a key from this
+                key = next(key for key, process_event_dict in process_event_dicts_with_signatures.items() if process_event_dict["pid"] == pid)
+                process_event_dicts_with_signatures[key]["signatures"][name] = score
 
         return process_event_dicts_with_signatures
 
-    def get_process_tree(self) -> List[dict]:
+    def get_process_tree(self) -> List[Dict]:
         process_tree = self._convert_processes_dict_to_tree(self.process_event_dicts)
         return process_tree
 
-    def get_process_tree_with_signatures(self, signatures: List[dict] = None) -> List[dict]:
+    def get_process_tree_with_signatures(self, signatures: List[Dict] = None) -> List[Dict]:
         if signatures is None:
             signatures = []
         s = Signatures(signatures=signatures)
@@ -397,7 +410,7 @@ class SandboxOntology(Events):
         process_tree_with_signatures = self._convert_processes_dict_to_tree(process_event_dicts_with_signatures)
         return process_tree_with_signatures
 
-    def get_events(self) -> List[dict]:
+    def get_events(self) -> List[Dict]:
         sorted_event_dicts = []
         for event in self.sorted_events:
             sorted_event_dicts.append(event.convert_event_to_dict())
