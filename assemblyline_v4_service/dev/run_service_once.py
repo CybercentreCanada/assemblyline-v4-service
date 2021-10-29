@@ -133,6 +133,10 @@ class RunService:
                 # Transform heuristics and calculate score
                 total_score = 0
                 for section in result['result']['sections']:
+                    # Ignore tag and sig safe flags since we have no connection to the safelist
+                    section.pop('zeroize_on_tag_safe', None)
+                    section.pop('zeroize_on_sig_safe', None)
+
                     if section['heuristic']:
                         heur_id = section['heuristic']['heur_id']
 
