@@ -69,8 +69,8 @@ class Task:
                   is_section_image: bool = False) -> Optional[Dict[str, str]]:
         # Reject empty files
         if os.path.getsize(path) == 0:
-            self.log.warning(f"Adding empty extracted or supplementary files is not allowed. "
-                             f"Empty file ({name}) was ignored.")
+            self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
+                          f"Empty file ({name}) was ignored.")
             return
 
         # If file classification not provided, then use the default result classification
