@@ -98,13 +98,13 @@ class ServiceUpdater(ThreadedCoreBase):
         self._update_tar = None
         self._service: Optional[Service] = None
         self.event_sender = EventSender('changes.services',
-                                        host=self.config.core.redis.nonpersistent.host,
-                                        port=self.config.core.redis.nonpersistent.port)
+                                        host=self.config.core.redis.pubsub.host,
+                                        port=self.config.core.redis.pubsub.port)
 
-        self.service_change_watcher = EventWatcher(self.redis, deserializer=ServiceChange.deserialize)
+        self.service_change_watcher = EventWatcher(self.redis_pubsub, deserializer=ServiceChange.deserialize)
         self.service_change_watcher.register(f'changes.services.{SERVICE_NAME}', self._handle_service_change_event)
 
-        self.signature_change_watcher = EventWatcher(self.redis, deserializer=SignatureChange.deserialize)
+        self.signature_change_watcher = EventWatcher(self.redis_pubsub, deserializer=SignatureChange.deserialize)
         self.signature_change_watcher.register(f'changes.signatures.{SERVICE_NAME.lower()}',
                                                self._handle_signature_change_event)
 
