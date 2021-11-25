@@ -150,6 +150,10 @@ class ServiceBase:
         self.log.info(f"Starting service: {self.service_attributes.name}")
 
         if self.dependencies.get('updates', None):
+            # Start with a clean update dir
+            if os.path.exists(UPDATES_DIR):
+                shutil.rmtree(UPDATES_DIR)
+
             try:
                 self._download_rules()
             except Exception as e:

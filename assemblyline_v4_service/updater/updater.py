@@ -49,7 +49,7 @@ SOURCE_UPDATE_TIME_KEY = 'update_time'
 LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
-UPDATER_DIR = os.getenv('UPDATER_DIR', 'updater')
+UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 
 classification = forge.get_classification()
 
@@ -115,6 +115,11 @@ class ServiceUpdater(ThreadedCoreBase):
         self.local_update_flag = threading.Event()
         self.local_update_start = threading.Event()
 
+        # Cleanup update directory
+        if os.path.exists(UPDATER_DIR):
+            shutil.rmtree(UPDATER_DIR)
+
+        # Load threads
         self._internal_server = None
         self.expected_threads = {
             'Sync Service Settings': self._sync_settings,
@@ -247,10 +252,9 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def do_local_update(self) -> None:
         old_update_time = self.get_local_update_time()
-        temp_dir = os.path.join(tempfile.gettempdir(), UPDATER_DIR)
-        if not os.path.isdir(temp_dir):
-            os.makedirs(temp_dir)
-        output_directory = tempfile.mkdtemp(dir=temp_dir)
+        if not os.path.isdir(UPDATER_DIR):
+            os.makedirs(UPDATER_DIR)
+        output_directory = tempfile.mkdtemp(dir=UPDATER_DIR)
 
         self.log.info("Setup service account.")
         username = self.ensure_service_account()
@@ -296,10 +300,13 @@ class ServiceUpdater(ThreadedCoreBase):
 
                 if extracted_zip:
                     self.log.info("New ruleset successfully downloaded and ready to use")
-                    self.serve_directory(temp_dir, output_directory)
+                    self.serve_directory(output_directory)
                 else:
                     self.log.error(f"Signatures aren't saved to disk. Removing output directory {output_directory}...")
                     shutil.rmtree(output_directory, ignore_errors=True)
+            else:
+                self.log.info(f"No signature updates available. Removing output directory {output_directory}...")
+                shutil.rmtree(output_directory, ignore_errors=True)
 
     def do_source_update(self, service: Service) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
@@ -402,12 +409,12 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.sleep(60)
                 continue
 
-    def serve_directory(self, base: str, new_directory: str):
+    def serve_directory(self, new_directory: str):
         self.log.info("Update finished with new data.")
         new_tar = ''
         try:
             # Tar update directory
-            _, new_tar = tempfile.mkstemp(dir=base, suffix='.tar.bz2')
+            _, new_tar = tempfile.mkstemp(dir=UPDATER_DIR, suffix='.tar.bz2')
             tar_handle = tarfile.open(new_tar, 'w:bz2')
             tar_handle.add(new_directory, '/')
             tar_handle.close()
