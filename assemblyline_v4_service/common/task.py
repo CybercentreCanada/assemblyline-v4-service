@@ -137,7 +137,7 @@ class Task:
         self.supplementary.clear()
 
     def download_file(self) -> str:
-        file_path = os.path.join(tempfile.gettempdir(), self.sha256)
+        file_path = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), self.sha256)
         if not os.path.exists(file_path):
             raise Exception("File download failed. File not found on local filesystem.")
 
@@ -221,14 +221,18 @@ class Task:
             self.error_status = 'FAIL_NONRECOVERABLE'
 
         error = self.get_service_error()
-        error_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_error.json')
+        error_path = os.path.join(
+            os.environ.get('TASKING_DIR', tempfile.gettempdir()),
+            f'{self.sid}_{self.sha256}_error.json')
         with open(error_path, 'w') as f:
             json.dump(error, f, default=str)
         self.log.info(f"Saving error to: {error_path}")
 
     def save_result(self) -> None:
         result = self.get_service_result()
-        result_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_result.json')
+        result_path = os.path.join(
+            os.environ.get('TASKING_DIR', tempfile.gettempdir()),
+            f'{self.sid}_{self.sha256}_result.json')
         with open(result_path, 'w') as f:
             json.dump(result, f, default=str)
         self.log.info(f"Saving result to: {result_path}")
