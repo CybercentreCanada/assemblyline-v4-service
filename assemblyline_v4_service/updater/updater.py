@@ -304,6 +304,9 @@ class ServiceUpdater(ThreadedCoreBase):
                 else:
                     self.log.error(f"Signatures aren't saved to disk. Removing output directory {output_directory}...")
                     shutil.rmtree(output_directory, ignore_errors=True)
+            else:
+                self.log.info(f"No signature updates available. Removing output directory {output_directory}...")
+                shutil.rmtree(output_directory, ignore_errors=True)
 
     def do_source_update(self, service: Service) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
