@@ -152,7 +152,12 @@ class ServiceBase:
         if self.dependencies.get('updates', None):
             # Start with a clean update dir
             if os.path.exists(UPDATES_DIR):
-                shutil.rmtree(UPDATES_DIR)
+                for files in os.scandir(UPDATES_DIR):
+                    path = os.path.join(UPDATES_DIR, files)
+                    try:
+                        shutil.rmtree(path)
+                    except OSError:
+                        os.remove(path)
 
             try:
                 self._download_rules()
