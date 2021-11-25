@@ -113,15 +113,14 @@ class ServiceBase:
 
     def get_service_version(self) -> str:
         fw_version = f"{version.FRAMEWORK_VERSION}.{version.SYSTEM_VERSION}."
-        r_version = f"r{self.rules_hash}" if self.rules_hash else ""
         if self.service_attributes.version.startswith(fw_version):
-            return f"{self.service_attributes.version}{r_version}"
+            return self.service_attributes.version
         else:
-            return f"{fw_version}{self.service_attributes.version}{r_version}"
+            return f"{fw_version}{self.service_attributes.version}"
 
     # noinspection PyMethodMayBeStatic
     def get_tool_version(self) -> Optional[str]:
-        return None
+        return self.rules_hash
 
     def handle_task(self, task: ServiceTask) -> None:
         try:
