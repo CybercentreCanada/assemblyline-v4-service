@@ -20,7 +20,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
-UPDATES_DIR = '/updates'
+UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 
 
 class ServiceBase:
@@ -193,8 +193,10 @@ class ServiceBase:
             resp.raise_for_status()
             status = resp.json()
             if self.update_time is not None and self.update_time >= status['local_update_time']:
+                self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
                 return
             if status['download_available']:
+                self.log.info("A signature update is available, downloading new signatures...")
                 break
             self.log.warning('Waiting on update server availability...')
             time.sleep(10)
@@ -234,6 +236,7 @@ class ServiceBase:
         finally:
             os.unlink(buffer_name)
             if temp_directory:
+                self.log.info(f'Removing temp directory: {temp_directory}')
                 shutil.rmtree(temp_directory, ignore_errors=True)
 
     # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater

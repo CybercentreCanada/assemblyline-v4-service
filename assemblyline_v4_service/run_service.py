@@ -23,7 +23,7 @@ class RunService(ServerBase):
         super(RunService, self).__init__(f'assemblyline.service.{SERVICE_NAME}', shutdown_timeout=shutdown_timeout)
 
         self.classification_yml = '/etc/assemblyline/classification.yml'
-        self.service_manifest = os.path.join(os.getcwd(), 'service_manifest.yml')
+        self.service_manifest = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
         self.runtime_service_manifest = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml"
         self.task_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_task.fifo"
         self.done_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_done.fifo"
@@ -37,6 +37,7 @@ class RunService(ServerBase):
         self.service_file_required = None
         self.task_fifo = None
         self.done_fifo = None
+        self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
 
         self.log.setLevel(LOG_LEVEL)
 
@@ -93,8 +94,8 @@ class RunService(ServerBase):
             self.service.handle_task(task)
 
             # Notify task handler that processing is done
-            result_json = os.path.join(tempfile.gettempdir(), f"{task.sid}_{task.fileinfo.sha256}_result.json")
-            error_json = os.path.join(tempfile.gettempdir(), f"{task.sid}_{task.fileinfo.sha256}_error.json")
+            result_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
+            error_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
             if os.path.exists(result_json):
                 msg = f"{json.dumps([result_json, SUCCESS])}\n"
             elif os.path.exists(error_json):
