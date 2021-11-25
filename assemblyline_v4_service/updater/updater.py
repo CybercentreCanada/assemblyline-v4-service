@@ -117,7 +117,12 @@ class ServiceUpdater(ThreadedCoreBase):
 
         # Cleanup update directory
         if os.path.exists(UPDATER_DIR):
-            shutil.rmtree(UPDATER_DIR)
+            for files in os.scandir(UPDATER_DIR):
+                path = os.path.join(UPDATER_DIR, files)
+                try:
+                    shutil.rmtree(path)
+                except OSError:
+                    os.remove(path)
 
         # Load threads
         self._internal_server = None
@@ -252,7 +257,7 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def do_local_update(self) -> None:
         old_update_time = self.get_local_update_time()
-        if not os.path.isdir(UPDATER_DIR):
+        if not os.path.exists(UPDATER_DIR):
             os.makedirs(UPDATER_DIR)
         output_directory = tempfile.mkdtemp(dir=UPDATER_DIR)
 
