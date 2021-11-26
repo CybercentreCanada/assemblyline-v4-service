@@ -387,7 +387,7 @@ class TestSandboxOntology:
             # One process
             (
                     {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1}},
-                    [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "children": []}]
+                    [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []}]
             ),
             # One parent process and one child process
             (
@@ -396,9 +396,9 @@ class TestSandboxOntology:
                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
                          "children":
-                             [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "children": []},]
+                             [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},]
                         },
                     ],
             ),
@@ -409,8 +409,8 @@ class TestSandboxOntology:
                         2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "children": []},
-                        {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "children": []},
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                        {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},
                     ],
             ),
             # Three processes consisting of a parent-child relationship and a rando process
@@ -421,10 +421,10 @@ class TestSandboxOntology:
                         3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "children": []},
-                        {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1,
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                        {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah",
                          "children":
-                             [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "children": []},]
+                             [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 3, "process_name": "blah", "children": []}]
                          },
                     ],
             ),
@@ -437,14 +437,14 @@ class TestSandboxOntology:
                         4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
                          "children":
-                            [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
+                            [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
                               "children":
-                                  [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3,
+                                  [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 3, "process_name": "blah",
                                     "children": []}, ]}]
                          },
-                        {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2, "children": []}
+                        {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 4, "process_name": "blah", "children": []}
                     ],
             ),
             # Four processes consisting of a grandparent-parent-parent-child relationship
@@ -456,13 +456,13 @@ class TestSandboxOntology:
                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
                          "children":
                              [
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
+                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
                                   "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "children": []}]},
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "children": []}
+                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,  "process_pid": 4, "process_name": "blah", "children": []}]},
+                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,  "process_pid": 3, "process_name": "blah", "children": []}
                               ]
                          },
                     ],
@@ -476,14 +476,14 @@ class TestSandboxOntology:
                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
                          "children":
                              [
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
+                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 3, "process_name": "blah",
                                   "children": []},
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
+                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 2, "process_name": "blah",
                                   "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,
+                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "process_pid": 4, "process_name": "blah",
                                         "children": []}]},
                              ]
                          },
@@ -498,14 +498,14 @@ class TestSandboxOntology:
                         "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b"},
                     },
                     [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None,
+                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "process_pid": 1, "process_name": "blah",
                          "children":
                              [
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a",
+                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a", "process_pid": 3, "process_name": "blah",
                                   "children": []},
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a",
+                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a", "process_pid": 2, "process_name": "blah",
                                   "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b",
+                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b", "process_pid": 4, "process_name": "blah",
                                         "children": []}]},
                              ]
                          },
@@ -525,17 +525,17 @@ class TestSandboxOntology:
                     },
                     [
                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
-                         "pguid": None,
+                         "pguid": None, "process_pid": 1, "process_name": "blah",
                          "children":
                              [
                                  {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
-                                  "guid": None, "pguid": None,
+                                  "guid": None, "pguid": None, "process_pid": 3, "process_name": "blah",
                                   "children": []},
                                  {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
-                                  "guid": None, "pguid": None,
+                                  "guid": None, "pguid": None, "process_pid": 2, "process_name": "blah",
                                   "children":
                                       [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,
-                                        "guid": None, "pguid": None,
+                                        "guid": None, "pguid": None, "process_pid": 4, "process_name": "blah",
                                         "children": []}]},
                              ]
                          },
@@ -620,10 +620,10 @@ class TestSandboxOntology:
         [
             (None, [], {}),
             ([], [], {}),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None, "signatures": {"blah": 1}}}),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {2: {"pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None, "signatures": {}}}),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {"a": {"pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "signatures": {}}}),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {"a": {"pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "signatures": {"blah": 1}}}),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None, "signatures": {"blah": 1}}}),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None, "signatures": {}}}),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {"a": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "signatures": {}}}),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {"a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "signatures": {"blah": 1}}}),
         ]
     )
     def test_match_signatures_to_process_events(process_list, signatures, expected_result):
