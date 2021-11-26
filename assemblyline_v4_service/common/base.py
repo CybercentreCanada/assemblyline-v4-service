@@ -20,7 +20,7 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
-UPDATES_DIR = '/updates'
+UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 
 
 class ServiceBase:
@@ -113,15 +113,14 @@ class ServiceBase:
 
     def get_service_version(self) -> str:
         fw_version = f"{version.FRAMEWORK_VERSION}.{version.SYSTEM_VERSION}."
-        r_version = f"r{self.rules_hash}" if self.rules_hash else ""
         if self.service_attributes.version.startswith(fw_version):
-            return f"{self.service_attributes.version}{r_version}"
+            return self.service_attributes.version
         else:
-            return f"{fw_version}{self.service_attributes.version}{r_version}"
+            return f"{fw_version}{self.service_attributes.version}"
 
     # noinspection PyMethodMayBeStatic
     def get_tool_version(self) -> Optional[str]:
-        return None
+        return self.rules_hash
 
     def handle_task(self, task: ServiceTask) -> None:
         try:
@@ -151,6 +150,15 @@ class ServiceBase:
         self.log.info(f"Starting service: {self.service_attributes.name}")
 
         if self.dependencies.get('updates', None):
+            # Start with a clean update dir
+            if os.path.exists(UPDATES_DIR):
+                for files in os.scandir(UPDATES_DIR):
+                    path = os.path.join(UPDATES_DIR, files)
+                    try:
+                        shutil.rmtree(path)
+                    except OSError:
+                        os.remove(path)
+
             try:
                 self._download_rules()
             except Exception as e:
@@ -193,8 +201,10 @@ class ServiceBase:
             resp.raise_for_status()
             status = resp.json()
             if self.update_time is not None and self.update_time >= status['local_update_time']:
+                self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
                 return
             if status['download_available']:
+                self.log.info("A signature update is available, downloading new signatures...")
                 break
             self.log.warning('Waiting on update server availability...')
             time.sleep(10)
@@ -235,6 +245,7 @@ class ServiceBase:
         finally:
             os.unlink(buffer_name)
             if temp_directory:
+                self.log.info(f'Removing temp directory: {temp_directory}')
                 shutil.rmtree(temp_directory, ignore_errors=True)
 
     # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater
