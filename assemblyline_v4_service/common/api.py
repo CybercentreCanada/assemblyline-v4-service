@@ -20,7 +20,7 @@ class ServiceAPI:
         self.service_api_host = os.environ.get("SERVICE_API_HOST", DEFAULT_SERVICE_SERVER)
         self.session = requests.Session()
         self.session.headers.update(dict(
-            X_APIKEY=os.environ.get("SERVICE_API_AUTH_KEY", DEFAULT_AUTH_KEY),
+            X_APIKEY=os.environ.get("SERVICE_API_KEY", DEFAULT_AUTH_KEY),
             container_id=os.environ.get('HOSTNAME', 'dev-service'),
             service_name=service_attributes.name,
             service_version=service_attributes.version
