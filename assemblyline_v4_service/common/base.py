@@ -195,7 +195,8 @@ class ServiceBase:
             'X_APIKEY': self.dependencies['updates']['key']
         }
 
-        # Check if there are new
+        # Check if there are new signatures
+        retries = 0
         while True:
             resp = requests.get(url_base + 'status')
             resp.raise_for_status()
@@ -207,7 +208,8 @@ class ServiceBase:
                 self.log.info("A signature update is available, downloading new signatures...")
                 break
             self.log.warning('Waiting on update server availability...')
-            time.sleep(10)
+            time.sleep(min(5**retries, 30))
+            retries += 1
 
         # Dedicated directory for updates
         if not os.path.exists(UPDATES_DIR):
