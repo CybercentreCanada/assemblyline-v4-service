@@ -2,11 +2,11 @@ import os
 import time
 import requests
 
-from assemblyline_core.tasking import client
-
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
+if PRIVILEGED:
+    from assemblyline_core.tasking import client
 
 
 class ServiceAPIError(Exception):
