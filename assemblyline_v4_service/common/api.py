@@ -1,9 +1,12 @@
 import os
-import requests
 import time
+import requests
+
+from assemblyline_core.tasking import client
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
+PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
 
 class ServiceAPIError(Exception):
@@ -25,6 +28,13 @@ class ServiceAPI:
             service_name=service_attributes.name,
             service_version=service_attributes.version
         ))
+        self.request = self._directly if PRIVILEGED else self._with_retries
+
+    def _directly(self, func, url):
+        path = f"GET {url}"
+        self.log.debug(path)
+        func, params = client.request(path)
+        return func(**params)
 
     def _with_retries(self, func, url):
         retries = 0
@@ -62,11 +72,11 @@ class ServiceAPI:
         else:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
-        return self._with_retries(self.session.get, url)
+        return self.request(self.session.get, url)
 
     def lookup_safelist(self, qhash):
         try:
-            return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
+            return self.request(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
         except ServiceAPIError as e:
             if e.status_code == 404:
                 return None
