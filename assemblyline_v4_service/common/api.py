@@ -34,6 +34,7 @@ class ServiceAPI:
         path = f"GET {url}"
         self.log.debug(path)
         func, params = client.request(path)
+        self.log.debug(params)
         return func(**params)
 
     def _with_retries(self, func, url):
@@ -68,7 +69,7 @@ class ServiceAPI:
             if not isinstance(tag_list, list):
                 raise ValueError("Parameter tag_list should be a list of strings.")
 
-            url = f"{self.service_api_host}/api/v1/safelist/?tags={','.join(tag_list)}"
+            url = f"{self.service_api_host}/api/v1/safelist/?tag_types={','.join(tag_list)}"
         else:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
