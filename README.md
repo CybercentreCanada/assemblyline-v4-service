@@ -22,7 +22,6 @@ This is overview of what each of these does:
 - `<service name>.py` ─ Contains main service code
 - `service_manifest.yml` ─ Service definition file, see _Service manifest_ section below for more details
 
-
 ### Service manifest
 
 Every service must have a `service_manifest.yml` file in its root directory. The manifest file presents essential information about the service to the Assemblyline core system, information the system must have before it can run the service.
@@ -181,15 +180,15 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 
 1. Install required packages
 
-    ```
-    sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
-    ```
+   ```shell
+   sudo apt-get install build-essential libffi-dev python3.7 python3.7-dev python3-pip automake autoconf libtool
+   ```
 
 2. Install Assemblyline v4 service package
 
-    ```
-    pip install --no-cache-dir --user assemblyline-v4-service
-    ```
+   ```shell
+   pip install --no-cache-dir --user assemblyline-v4-service
+   ```
 
 3. Add your service development directory path (ie. `/home/ubuntu/assemblyline-v4-service`) to the PYTHONPATH environment variable
 
@@ -206,11 +205,8 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 2. From a terminal, run the `run_service_once` script, where `<service path>` is the path to the service module and `<file path>` is the path of the file to be processed
 
    ```shell
-   python3.9 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
+   python3.10 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
-   python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
-   ```
-
 
 3. The output of the service (`result.json` and extracted/supplementary files) will be located in a directory where the input file is located
 
@@ -225,10 +221,7 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 2. From a terminal, run the `run_service_once` script
 
    ```shell
-   python3.9 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
+   python3.10 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
-   python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
-   ```
-
 
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`
