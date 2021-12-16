@@ -45,7 +45,7 @@ class Event:
         rule['regex'] = rule['regex'].split('*')
         rule['regex'] = [escape(e) for e in rule['regex']]
         rule['regex'] = '[^\\\\]+'.join(rule['regex'])
-        path = sub(rf"{rule['regex']}", rule['replacement'], path) 
+        path = sub(rf"{rule['regex']}", rule['replacement'], path)
         return path
 
     def _normalize_path(self, path: str, arch: Optional[str] = None) -> str:
@@ -405,16 +405,18 @@ class SandboxOntology(Events):
             process_tree = SandboxOntology._filter_process_tree_against_safe_hashes(process_tree, safelist)
         return process_tree
 
-    def get_process_tree_with_signatures(self, signatures: List[Dict[str, Any]] = None) -> List[Dict[str, Any]]:
+    def get_process_tree_with_signatures(self, signatures: List[Dict[str, Any]] = None, safelist: List[str] = None) -> List[Dict[str, Any]]:
         if signatures is None:
             signatures = []
         s = Signatures(signatures=signatures)
         process_event_dicts_with_signatures = self._match_signatures_to_process_events(s.signature_dicts)
         process_tree_with_signatures = self._convert_processes_dict_to_tree(process_event_dicts_with_signatures)
+        if safelist:
+            process_tree_with_signatures = SandboxOntology._filter_process_tree_against_safe_hashes(process_tree_with_signatures, safelist)
         return process_tree_with_signatures    
     
     @staticmethod
-    def _create_hashed_node(parent: str, node: Dict[str, Any], hashes: List[str], hash_type: str) -> None:
+    def _create_hashed_node(parent: str, node: Dict[str, Any], hashes: List[str]) -> None:
         """
         This method takes a single node and hashes node attributes.
         Recurses through children to do the same.
@@ -436,14 +438,11 @@ class SandboxOntology(Events):
 
         node['node_hash'] = encoded256
 
-        if hash_type == 'root':
+        if not children:
             hashes.append(encoded256)
-        elif hash_type == 'leaf': 
-            if not children:
-                hashes.append(encoded256)
 
         for child in children:
-            SandboxOntology._create_hashed_node(encoded256, child, hashes, hash_type)
+            SandboxOntology._create_hashed_node(encoded256, child, hashes)
 
     @staticmethod
     def _create_hashes(process_tree: List[Dict[str, Any]], hash_type: str) -> Union[List[str], List[List[str]]]:
@@ -462,7 +461,7 @@ class SandboxOntology(Events):
         for root in process_tree:
             # List to hold each hash computed using the _create_hashed_node function
             hashes = []
-            SandboxOntology._create_hashed_node("", root, hashes, hash_type)
+            SandboxOntology._create_hashed_node("", root, hashes)
             
             if hash_type == 'leaf':
                 process_tree_hashes.append(hashes)
@@ -477,7 +476,6 @@ class SandboxOntology(Events):
                 process_tree_hashes.append(sha256(encoded_final_hash).hexdigest())
 
         return process_tree_hashes
-
 
     @staticmethod
     def _remove_safe_leaves_helper(node: Dict[str, Any], leaf_hashes: List[str], safe_leaf_hashes: List[str]) -> Union[str, None]:
@@ -543,7 +541,6 @@ class SandboxOntology(Events):
         SandboxOntology._remove_safe_leaves(process_tree, leaf_hashes, safe_leaf_hashes)
 
         return process_tree
-
 
     def get_events(self) -> List[Dict]:
         sorted_event_dicts = []
