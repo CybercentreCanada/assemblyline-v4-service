@@ -414,46 +414,33 @@ class SandboxOntology(Events):
         return process_tree_with_signatures    
     
     @staticmethod
-    def _create_hashed_node(parent: str, node: Dict[str, Any], hashes: List[str], hash_type: str) -> None:
+    def _create_hashed_node(parent: str, node: Dict[str, Any], hashes: List[str]) -> None:
         """
         This method takes a single node and hashes node attributes.
         Recurses through children to do the same.
         :param parent: A string representing the node hash
         :param node: A dictionary representing the node
         :param hashes: A list containing the hashes of the root
-        :param hash_type: A string representing what type of processing we are doing (root vs leaf)
         :return: None
         """
-        # Extract the two pieces of info needed from the node
-        image = node["image"]
         children = node["children"]
+        value_to_create_hash_from = (parent + node["image"]).encode()
+        sha256sum = sha256(value_to_create_hash_from).hexdigest()
 
-        info = parent + image
+        node['node_hash'] = sha256sum
 
-        encoded = info.encode()
-        # hexdigest() returns the SHA256 encoded string of the object, encoded256
-        encoded256 = sha256(encoded).hexdigest()
-
-        node['node_hash'] = encoded256
-
-        if hash_type == 'root':
-            hashes.append(encoded256)
-        elif hash_type == 'leaf': 
-            if not children:
-                hashes.append(encoded256)
+        if not children:
+            hashes.append(sha256sum)
 
         for child in children:
-            SandboxOntology._create_hashed_node(encoded256, child, hashes, hash_type)
+            SandboxOntology._create_hashed_node(sha256sum, child, hashes)
 
     @staticmethod
-    def _create_hashes(process_tree: List[Dict[str, Any]], hash_type: str) -> Union[List[str], List[List[str]]]:
+    def _create_hashes(process_tree: List[Dict[str, Any]]) -> List[List[str]]:
         """
-        This method creates hashes for each root, or all root-to-leaf paths, in the tree, depending 
-        on which hash_type is specified
+        This method creates hashes for all root-to-leaf paths in the tree
         :param process_tree: A list of dictionaries where each dictionary represents a root.
-        :param hash_type: A string representing what type of processing we are doing (root vs leaf)
-        :return: A list of strings representing hashes, in the same order as the provided process tree
-                    or a list of list of strings representing the hashes for all of the root-to-leaf paths
+        :return: A list of list of strings representing the hashes for all of the root-to-leaf paths
                     in the same order as the provided process tree
         """
         # List that holds the hashes of each root in a tree
@@ -462,22 +449,9 @@ class SandboxOntology(Events):
         for root in process_tree:
             # List to hold each hash computed using the _create_hashed_node function
             hashes = []
-            SandboxOntology._create_hashed_node("", root, hashes, hash_type)
-            
-            if hash_type == 'leaf':
-                process_tree_hashes.append(hashes)
-            elif hash_type == 'root':
-                # String to hold all of hashed nodes from the tree
-                final_hash = ""
-
-                for node_hash in hashes:
-                    final_hash += node_hash
-
-                encoded_final_hash = final_hash.encode()
-                process_tree_hashes.append(sha256(encoded_final_hash).hexdigest())
-
+            SandboxOntology._create_hashed_node("", root, hashes)
+            process_tree_hashes.append(hashes)
         return process_tree_hashes
-
 
     @staticmethod
     def _remove_safe_leaves_helper(node: Dict[str, Any], leaf_hashes: List[str], safe_leaf_hashes: List[str]) -> Union[str, None]:
@@ -539,11 +513,10 @@ class SandboxOntology(Events):
         Returns:
             List[Dict[str, Any]]: A list of processes in a tree structure, with the safe branches filtered out
         """        
-        leaf_hashes = SandboxOntology._create_hashes(process_tree, 'leaf')
+        leaf_hashes = SandboxOntology._create_hashes(process_tree)
         SandboxOntology._remove_safe_leaves(process_tree, leaf_hashes, safe_leaf_hashes)
 
         return process_tree
-
 
     def get_events(self) -> List[Dict]:
         sorted_event_dicts = []
