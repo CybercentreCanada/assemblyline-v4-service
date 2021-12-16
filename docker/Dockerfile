@@ -6,7 +6,7 @@ ARG branch
 
 USER root
 RUN apt-get update \
-  && apt-get install -yy build-essential cmake libfuzzy-dev \
+  && apt-get install -yy build-essential libfuzzy-dev \
   && rm -rf /var/lib/apt/lists/*
 
 # install pip packages, as assemblyline so they go into our .local with the ones already there
