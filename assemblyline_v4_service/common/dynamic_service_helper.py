@@ -1,4 +1,4 @@
-from typing import Dict, List, Optional, Any, Union, Set
+from typing import Dict, List, Optional, Any, Union
 from re import compile, escape, sub
 from logging import getLogger
 from assemblyline.common import log as al_log
@@ -6,7 +6,6 @@ from assemblyline_v4_service.common.result import ResultSection, Heuristic
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from hashlib import sha256
-from copy import deepcopy
 
 HOLLOWSHUNTER_EXE_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.exe$"
 HOLLOWSHUNTER_SHC_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
@@ -479,20 +478,6 @@ class SandboxOntology(Events):
 
         return process_tree_hashes
 
-    @staticmethod
-    def _remove_safe_roots(process_tree: List[Dict[str, Any]], process_tree_hashes: List[str], safe_process_tree_hashes: Dict[str, Dict[str, Any]]) -> None:
-        """
-        This method checks each hash against the safe hashes and removes safe roots from the process tree
-        :param process_tree: A list of dictionaries where each dictionary represents a root.
-        :param process_tree_hashes: A list of strings representing hashes, in the same order as the provided process tree
-        :param safe_process_tree_hashes: A set of strings representing hashes of safe process trees
-        :return: None
-        """
-        num_removed = 0
-        for index in range(len(process_tree_hashes)):
-            if process_tree_hashes[index] in list(safe_process_tree_hashes):
-                process_tree.pop(index - num_removed)
-                num_removed += 1
 
     @staticmethod
     def _remove_safe_leaves_helper(node: Dict[str, Any], leaf_hashes: List[str], safe_leaf_hashes: List[str]) -> Union[str, None]:
@@ -545,16 +530,20 @@ class SandboxOntology(Events):
     @staticmethod
     def _filter_process_tree_against_safe_hashes(process_tree: List[Dict[str, Any]], safe_leaf_hashes: List[str]) -> List[Dict[str, Any]]:
         """
-        This method takes a process tree and a list of safe process tree hashes, and filters out safe process roots in the
-        tree.
-        :param process_tree: A list of processes in a tree structure
-        :param safe_process_tree_hashes: A List of hashes representing safe process trees
-        :return: A list of processes in a tree structure, with the safe branches filtered out
-        """
+        This method takes a process tree and a list of safe process tree hashes, and filters out safe process roots in the tree.
+
+        Args:
+            process_tree (List[Dict[str, Any]]): A list of processes in a tree structure
+            safe_leaf_hashes (List[str]): A List of hashes representing safe leaf nodes/branches
+
+        Returns:
+            List[Dict[str, Any]]: A list of processes in a tree structure, with the safe branches filtered out
+        """        
         leaf_hashes = SandboxOntology._create_hashes(process_tree, 'leaf')
         SandboxOntology._remove_safe_leaves(process_tree, leaf_hashes, safe_leaf_hashes)
 
         return process_tree
+
 
     def get_events(self) -> List[Dict]:
         sorted_event_dicts = []
