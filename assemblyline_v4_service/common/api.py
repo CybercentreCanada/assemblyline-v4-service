@@ -1,12 +1,11 @@
 import os
 import time
 import requests
+from assemblyline_core.tasking_client import TaskingClient
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
-if PRIVILEGED:
-    from assemblyline_core.tasking import client
 
 
 class ServiceAPIError(Exception):
@@ -28,14 +27,7 @@ class ServiceAPI:
             service_name=service_attributes.name,
             service_version=service_attributes.version
         ))
-        self.request = self._directly if PRIVILEGED else self._with_retries
-
-    def _directly(self, func, url):
-        path = f"GET {url}"
-        self.log.debug(path)
-        func, params = client.request(path)
-        self.log.debug(params)
-        return func(**params)
+        self.tasking_client = TaskingClient() if PRIVILEGED else None
 
     def _with_retries(self, func, url):
         retries = 0
@@ -65,19 +57,22 @@ class ServiceAPI:
                 time.sleep(min(2, 2 ** (retries - 7)))
 
     def get_safelist(self, tag_list=None):
+        tag_types = None
         if tag_list:
             if not isinstance(tag_list, list):
                 raise ValueError("Parameter tag_list should be a list of strings.")
-
-            url = f"{self.service_api_host}/api/v1/safelist/?tag_types={','.join(tag_list)}"
+            tag_types = ','.join(tag_list)
+            url = f"{self.service_api_host}/api/v1/safelist/?tag_types={tag_types}"
         else:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
-        return self.request(self.session.get, url)
+        return self.tasking_client.get_safelist_for_tags(tag_types=tag_types) \
+            if PRIVILEGED else self._with_retries(self.session.get, url)
 
     def lookup_safelist(self, qhash):
         try:
-            return self.request(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
+            return self.tasking_client.exists(qhash=qhash) if PRIVILEGED \
+                else self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
         except ServiceAPIError as e:
             if e.status_code == 404:
                 return None
