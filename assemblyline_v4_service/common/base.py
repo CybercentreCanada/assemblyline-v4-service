@@ -129,7 +129,7 @@ class ServiceBase:
     def handle_task(self, task: ServiceTask) -> None:
         try:
             self._task = Task(task)
-            self.log.info(f"Starting task: {self._task.sid}/{self._task.sha256} ({self._task.type})")
+            self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
 
