@@ -15,12 +15,13 @@ from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
-from assemblyline_v4_service.common.api import ServiceAPI
+from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
+PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
 
 class ServiceBase:
@@ -106,7 +107,10 @@ class ServiceBase:
         self._log_error(msg, *args, **kwargs)
 
     def get_api_interface(self):
-        return ServiceAPI(self.service_attributes, self.log)
+        if PRIVILEGED:
+            return PrivilegedServiceAPI(self.log)
+        else:
+            return ServiceAPI(self.service_attributes, self.log)
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")

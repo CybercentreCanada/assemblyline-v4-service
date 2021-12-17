@@ -1,11 +1,11 @@
 import os
-import time
 import requests
-from assemblyline_core.tasking_client import TaskingClient
+import time
+
+from assemblyline_core.safelist_client import SafelistClient
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
-PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
 
 class ServiceAPIError(Exception):
@@ -27,7 +27,6 @@ class ServiceAPI:
             service_name=service_attributes.name,
             service_version=service_attributes.version
         ))
-        self.tasking_client = TaskingClient() if PRIVILEGED else None
 
     def _with_retries(self, func, url):
         retries = 0
@@ -57,24 +56,37 @@ class ServiceAPI:
                 time.sleep(min(2, 2 ** (retries - 7)))
 
     def get_safelist(self, tag_list=None):
-        tag_types = None
         if tag_list:
             if not isinstance(tag_list, list):
                 raise ValueError("Parameter tag_list should be a list of strings.")
-            tag_types = ','.join(tag_list)
-            url = f"{self.service_api_host}/api/v1/safelist/?tag_types={tag_types}"
+            url = f"{self.service_api_host}/api/v1/safelist/?tag_types={','.join(tag_list)}"
         else:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
-        return self.tasking_client.get_safelist_for_tags(tag_types=tag_types) \
-            if PRIVILEGED else self._with_retries(self.session.get, url)
+        return self._with_retries(self.session.get, url)
 
     def lookup_safelist(self, qhash):
         try:
-            return self.tasking_client.exists(qhash=qhash) if PRIVILEGED \
-                else self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
+            return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
         except ServiceAPIError as e:
             if e.status_code == 404:
                 return None
             else:
                 raise
+
+
+class PrivilegedServiceAPI:
+    def __init__(self, logger):
+        self.log = logger
+        self.safelist_client = SafelistClient()
+
+    def get_safelist(self, tag_list=None):
+        tag_types = None
+
+        if tag_list and not isinstance(tag_list, list):
+            raise ValueError("Parameter tag_list should be a list of strings.")
+
+        return self.safelist_client.get_safelisted_tags(tag_types)
+
+    def lookup_safelist(self, qhash):
+        return self.safelist_client.exists(qhash)
