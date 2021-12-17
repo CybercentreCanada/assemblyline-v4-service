@@ -445,7 +445,7 @@ class SandboxOntology(Events):
             SandboxOntology._create_hashed_node(encoded256, child, hashes)
 
     @staticmethod
-    def _create_hashes(process_tree: List[Dict[str, Any]], hash_type: str) -> Union[List[str], List[List[str]]]:
+    def _create_hashes(process_tree: List[Dict[str, Any]]) -> List[List[str]]:
         """
         This method creates hashes for each root, or all root-to-leaf paths, in the tree, depending 
         on which hash_type is specified
@@ -463,17 +463,7 @@ class SandboxOntology(Events):
             hashes = []
             SandboxOntology._create_hashed_node("", root, hashes)
             
-            if hash_type == 'leaf':
-                process_tree_hashes.append(hashes)
-            elif hash_type == 'root':
-                # String to hold all of hashed nodes from the tree
-                final_hash = ""
-
-                for node_hash in hashes:
-                    final_hash += node_hash
-
-                encoded_final_hash = final_hash.encode()
-                process_tree_hashes.append(sha256(encoded_final_hash).hexdigest())
+            process_tree_hashes.append(hashes)
 
         return process_tree_hashes
 
@@ -537,7 +527,7 @@ class SandboxOntology(Events):
         Returns:
             List[Dict[str, Any]]: A list of processes in a tree structure, with the safe branches filtered out
         """        
-        leaf_hashes = SandboxOntology._create_hashes(process_tree, 'leaf')
+        leaf_hashes = SandboxOntology._create_hashes(process_tree)
         SandboxOntology._remove_safe_leaves(process_tree, leaf_hashes, safe_leaf_hashes)
 
         return process_tree
