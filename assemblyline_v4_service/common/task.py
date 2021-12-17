@@ -257,7 +257,7 @@ class Task:
 
     @property
     def working_directory(self) -> str:
-        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
+        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:

@@ -19,7 +19,7 @@ class ServiceRequest:
         al_log.init_logging(f'{task.service_name}', log_level=logging.INFO)
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
-        self._working_directory = None
+        self._working_directory = task.working_directory
         self.deep_scan = task.deep_scan
         self.extracted = task.extracted
         self.file_name = task.file_name

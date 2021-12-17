@@ -1,6 +1,7 @@
 import copy
 import json
 import os
+import shutil
 import tempfile
 import yaml
 
@@ -68,12 +69,23 @@ class RunPrivilegedService(ServerBase):
 
         return yaml.safe_load(bio)
 
-    def try_run(self):
-        self.status = STATUSES.INITIALIZING
-
+    def _cleanup_working_directory(self):
         # Make the tasking dir if it does not exists
         if not os.path.exists(self.tasking_dir):
             os.makedirs(self.tasking_dir)
+
+        for file in os.listdir(self.tasking_dir):
+            file_path = os.path.join(self.tasking_dir, file)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+                elif os.path.isdir(file_path):
+                    shutil.rmtree(file_path)
+            except Exception:
+                pass
+
+    def try_run(self):
+        self.status = STATUSES.INITIALIZING
 
         # Try to load service class
         try:
@@ -106,6 +118,9 @@ class RunPrivilegedService(ServerBase):
         self.service.start_service()
 
         while self.running:
+            # Cleanup the working directory
+            self._cleanup_working_directory()
+
             # Get a task
             self.status = STATUSES.WAITING_FOR_TASK
             task, _ = self.tasking_client.get_task(self.client_id, self.service_name, self.service_config['version'],
