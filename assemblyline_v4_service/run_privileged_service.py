@@ -163,15 +163,15 @@ class RunPrivilegedService(ServerBase):
             # Handle the service response
             if self.status == STATUSES.RESULT_FOUND:
                 self.log.info(f"[{service_task.sid}] Task successfully completed")
-                self.handle_task_result(result_json, service_task)
+                self._handle_task_result(result_json, service_task)
             elif self.status == STATUSES.ERROR_FOUND:
                 self.log.info(f"[{service_task.sid}] Task completed with errors")
-                self.handle_task_error(service_task, error_json_path=error_json)
+                self._handle_task_error(service_task, error_json_path=error_json)
             elif self.status == STATUSES.FILE_NOT_FOUND:
                 self.log.info(f"[{service_task.sid}] Task completed with errors due to missing file from filestore")
-                self.handle_task_error(service_task, status="FAIL_NONRECOVERABLE", error_type="EXCEPTION")
+                self._handle_task_error(service_task, status="FAIL_NONRECOVERABLE", error_type="EXCEPTION")
 
-    def handle_task_result(self, result_json_path: str, task: ServiceTask):
+    def _handle_task_result(self, result_json_path: str, task: ServiceTask):
         with open(result_json_path, 'r') as f:
             result = json.load(f)
 
@@ -203,17 +203,17 @@ class RunPrivilegedService(ServerBase):
                     dict(task=task.as_primitives(), result=result, freshen=freshen), self.client_id,
                     self.service_name, self.metric_factory)
                 if resp is None:
-                    self.handle_task_error(task, message="No result or error provided by service.",
-                                           error_type='EXCEPTION', status='FAIL_NONRECOVERABLE')
+                    self._handle_task_error(task, message="No result or error provided by service.",
+                                            error_type='EXCEPTION', status='FAIL_NONRECOVERABLE')
                     return
             except ValueError as e:
-                self.handle_task_error(task, message=str(e), error_type='EXCEPTION', status='FAIL_NONRECOVERABLE')
+                self._handle_task_error(task, message=str(e), error_type='EXCEPTION', status='FAIL_NONRECOVERABLE')
                 return
 
             freshen = False
 
-    def handle_task_error(self, task: ServiceTask, error_json_path=None,
-                          message=None, error_type=None, status=None):
+    def _handle_task_error(self, task: ServiceTask, error_json_path=None,
+                           message=None, error_type=None, status=None):
         if task is None:
             return
 
