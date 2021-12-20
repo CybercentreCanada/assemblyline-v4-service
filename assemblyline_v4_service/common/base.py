@@ -15,12 +15,13 @@ from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
-from assemblyline_v4_service.common.api import ServiceAPI
+from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
+PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
 
 class ServiceBase:
@@ -106,7 +107,10 @@ class ServiceBase:
         self._log_error(msg, *args, **kwargs)
 
     def get_api_interface(self):
-        return ServiceAPI(self.service_attributes, self.log)
+        if PRIVILEGED:
+            return PrivilegedServiceAPI(self.log)
+        else:
+            return ServiceAPI(self.service_attributes, self.log)
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")
@@ -125,7 +129,7 @@ class ServiceBase:
     def handle_task(self, task: ServiceTask) -> None:
         try:
             self._task = Task(task)
-            self.log.info(f"Starting task: {self._task.sid}/{self._task.sha256} ({self._task.type})")
+            self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
 
@@ -181,7 +185,7 @@ class ServiceBase:
 
     @property
     def working_directory(self):
-        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
+        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:

@@ -2,6 +2,8 @@ import os
 import requests
 import time
 
+from assemblyline_core.safelist_client import SafelistClient
+
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 
@@ -57,8 +59,7 @@ class ServiceAPI:
         if tag_list:
             if not isinstance(tag_list, list):
                 raise ValueError("Parameter tag_list should be a list of strings.")
-
-            url = f"{self.service_api_host}/api/v1/safelist/?tags={','.join(tag_list)}"
+            url = f"{self.service_api_host}/api/v1/safelist/?tag_types={','.join(tag_list)}"
         else:
             url = f"{self.service_api_host}/api/v1/safelist/"
 
@@ -72,3 +73,20 @@ class ServiceAPI:
                 return None
             else:
                 raise
+
+
+class PrivilegedServiceAPI:
+    def __init__(self, logger):
+        self.log = logger
+        self.safelist_client = SafelistClient()
+
+    def get_safelist(self, tag_list=None):
+        tag_types = None
+
+        if tag_list and not isinstance(tag_list, list):
+            raise ValueError("Parameter tag_list should be a list of strings.")
+
+        return self.safelist_client.get_safelisted_tags(tag_types)
+
+    def lookup_safelist(self, qhash):
+        return self.safelist_client.exists(qhash)
