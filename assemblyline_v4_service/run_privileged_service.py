@@ -48,13 +48,18 @@ class RunPrivilegedService(ServerBase):
             f'assemblyline.service.{SERVICE_NAME}', shutdown_timeout=shutdown_timeout)
 
         self.client_id = os.environ.get('HOSTNAME', 'dev-service')
+
         self.tasking_client = TaskingClient()
-        self.filestore = forge.get_filestore()
-        self.service = None
         self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
-        self.status = None
-        self.service_tool_version = None
+
+        self.filestore = forge.get_filestore()
+
+        self.service = None
+        self.service_config = {}
         self.service_name = None
+        self.service_tool_version = None
+
+        self.status = STATUSES.INITIALIZING
         self.metric_factory = None
 
         self.log.setLevel(LOG_LEVEL)
@@ -109,7 +114,7 @@ class RunPrivilegedService(ServerBase):
         # Instantiate the service based of the registration results
         self.service_config = registration.get('service_config', {})
         self.service = service_class(config=self.service_config)
-        self.service_name = self.service_config['name']
+        self.service_name = self.service_config.get('name', self.service.name)
         self.service_tool_version = self.service.get_tool_version()
         self.metric_factory = MetricsFactory('service', Metrics, name=self.service_name, export_zero=False)
         file_required = self.service_config.get('file_required', True)
@@ -268,10 +273,10 @@ class RunPrivilegedService(ServerBase):
     def stop(self):
         if self.status == STATUSES.WAITING_FOR_TASK:
             # A task request was sent and a task might be received, so shutdown after giving service time to process it
-            self._shutdown_timeout = TASK_REQUEST_TIMEOUT + self.service_config['timeout']
-        elif self.status != STATUSES.INITIALIZING:
+            self._shutdown_timeout = TASK_REQUEST_TIMEOUT + self.service_config.get('timeout', SHUTDOWN_SECONDS_LIMIT)
+        elif self.status not in [STATUSES.INITIALIZING, STATUSES.STOPPING]:
             # A task is currently running, so wait until service timeout before doing a hard stop
-            self._shutdown_timeout = self.service_config['timeout']
+            self._shutdown_timeout = self.service_config.get('timeout', SHUTDOWN_SECONDS_LIMIT)
         else:
             # Already the default
             self._shutdown_timeout = SHUTDOWN_SECONDS_LIMIT
