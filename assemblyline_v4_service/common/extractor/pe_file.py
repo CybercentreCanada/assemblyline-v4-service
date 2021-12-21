@@ -7,14 +7,15 @@ import pefile
 EXEDOS_RE = rb'(?s)This program cannot be run in DOS mode'
 EXEHEADER_RE = rb'(?s)MZ.{32,1024}PE\000\000'
 
-def find_pe_files(data: bytes) -> List[Tuple[bytes, int, int]]:
+
+def find_pe_files_with_offset(data: bytes) -> List[Tuple[bytes, int, int]]:
     """
     Searches for any PE files within data
 
     Args:
         data: The data to search
     Returns:
-        A list of found PE files
+        A list tuples containing: The found PE file, the starting offset and the end offset
     """
     pe_files: List[Tuple[bytes, int, int]] = []
     offset = 0
@@ -32,7 +33,19 @@ def find_pe_files(data: bytes) -> List[Tuple[bytes, int, int]]:
                 return pe_files
             end = offset+size
             pe_files.append((data[offset:end], offset, end))
-            offset=end
+            offset = end
         except Exception:
             return pe_files
     return pe_files
+
+
+def find_pe_files(data: bytes) -> List[bytes]:
+    """
+    Searches for any PE files within data
+
+    Args:
+        data: The data to search
+    Returns:
+        A list of found PE files
+    """
+    return [pe[0] for pe in find_pe_files_with_offset(data)]
