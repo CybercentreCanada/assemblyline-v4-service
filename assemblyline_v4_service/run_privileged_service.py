@@ -114,7 +114,7 @@ class RunPrivilegedService(ServerBase):
         # Instantiate the service based of the registration results
         self.service_config = registration.get('service_config', {})
         self.service = service_class(config=self.service_config)
-        self.service_name = self.service_config.get('name', self.service.name)
+        self.service_name = self.service_config['name']
         self.service_tool_version = self.service.get_tool_version()
         self.metric_factory = MetricsFactory('service', Metrics, name=self.service_name, export_zero=False)
         file_required = self.service_config.get('file_required', True)
@@ -238,7 +238,7 @@ class RunPrivilegedService(ServerBase):
             return
 
         if self.service:
-            version = self.service.version
+            version = self.service_config['version']
         else:
             version = '0'
 
