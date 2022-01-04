@@ -4,6 +4,7 @@ Base 64 encoded text
 
 import binascii
 import re
+import warnings
 
 from typing import Dict, List, Tuple
 
@@ -25,6 +26,7 @@ def base64_search(text: bytes) -> Dict[bytes, bytes]:
         A dictionary with the original base64 encoded sections as keys
         and the corresponding decoded data as values.
     """
+    warnings.warn("base64_search is depricated, use find_base64 instead", DeprecationWarning)
     b64_matches = {}
     for b64_match in re.findall(BASE64_RE, text):
         if b64_match in b64_matches:
