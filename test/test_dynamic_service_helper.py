@@ -633,27 +633,253 @@ class TestSandboxOntology:
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("process_list, expected_result", [(None, []), ([], [])])
-    def test_get_process_tree(process_list, expected_result):
+    @pytest.mark.parametrize("process_list, safelist, expected_result", 
+        [
+            (None, [], []), 
+            ([], [], []),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [], [{'pid': 1, 'image': 'blah', 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah', 'children': []}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}, {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2", "pguid": "blah"}], [], [{'pid': 1, 'image': 'blah', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah', 'children': [{'pid': 2, 'image': 'blah2', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2', 'children': [], 'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}], 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52'}]),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}, {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2", "pguid": "blah"}, {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "timestamp": 1, "guid": "blah3", "pguid": "blah3"}, {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "timestamp": 2, "guid": "blah4", "pguid": "blah3"}], ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"], [{'pid': 1, 'image': 'blah', 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah', 'children': [{'pid': 2, 'image': 'blah2', 'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2', 'children': []}]}]),
+        ]
+    )
+    def test_get_process_tree(process_list, safelist, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
-        actual_result = o.get_process_tree()
+        actual_result = o.get_process_tree(safelist)
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("process_list, signatures, expected_result",
+    @pytest.mark.parametrize("process_list, signatures, safelist, expected_result",
         [
-            (None, [], []),
-            ([], [], []),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {"blah": 1}}]),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], [{"children": [], "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {}}]),
+            (None, [], [], []),
+            ([], [], [], []),
+            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], [], [{"children": [], "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {"blah": 1}}]),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], [], [{"children": [], "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {}}]),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], ["blah"], [{"children": [], "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {}}]),
+            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"], []),
         ]
     )
-    def test_get_process_tree_with_signatures(process_list, signatures, expected_result):
+    def test_get_process_tree_with_signatures(process_list, signatures, safelist, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
-        actual_result = o.get_process_tree_with_signatures(signatures=signatures)
+        actual_result = o.get_process_tree_with_signatures(signatures=signatures, safelist=safelist)
         assert actual_result == expected_result
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "parent, node, expected_node, expected_tree_ids",
+        [
+            ("", {"image": "got the image",
+                  "children": [{"image": "image number 2", "children": []},
+                               {"image": "image number 3", "children": []}]},
+                {"image": "got the image", "tree_id": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
+                  "children": [{"image": "image number 2", "tree_id": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17", "children": []},
+                               {"image": "image number 3", "tree_id": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129", "children": []}]},
+             ['294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17',
+              '0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129']),
+            ("blahblah", {"image": "got the image", "children": [{"image": "image number 2", "children": []}, {"image": "image number 3", "children": []}]},
+             {"image": "got the image", "tree_id": "66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
+              "children": [{"image": "image number 2", "tree_id": "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154", "children": []},
+                           {"image": "image number 3", "tree_id": "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d", "children": []}]},
+             ['9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154',
+              '020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d'])
+        ]
+    )
+    def test_create_hashed_node(parent, node, expected_node, expected_tree_ids):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        tree_ids = []
+        SandboxOntology._create_hashed_node(parent, node, tree_ids)
+        assert tree_ids == expected_tree_ids
+        assert node == expected_node
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "process_tree, expected_process_tree, expected_process_tree_ids",
+        [
+            (
+                [
+                    {
+                        "image": "?pf86\\microsoft office\\office14\\excel.exe",
+                        "children":
+                            [
+                                {
+                                    "image": "?sys32\\wbem\\wmic1.exe",
+                                    "children":
+                                        [
+                                            {
+                                                "image": "?sys32\\wbem\\wmic11.exe",
+                                                "children":
+                                                    [
+                                                        {
+                                                            "image": "?sys32\\wbem\\wmic111.exe",
+                                                            "children": []
+                                                        }
+                                                    ]
+                                            },
+                                            {
+                                                "image": "?sys32\\wbem\\wmic12.exe",
+                                                "children": []
+                                            }
+                                        ]
+                                },
+                                {
+                                    "image": "?sys32\\wbem\\wmic2.exe",
+                                    "children": []
+                                },
+                                {
+                                    "image": "?sys32\\wbem\\wmic3.exe",
+                                    "children":
+                                        [
+                                            {
+                                                "image": "?sys32\\wbem\\wmic31.exe",
+                                                "children": []
+                                            },
+                                            {
+                                                "image": "?sys32\\wbem\\wmic32.exe",
+                                                "children": []
+                                            },
+                                            {
+                                                "image": "?sys32\\wbem\\wmic33.exe",
+                                                "children": []
+                                            }
+                                        ]
+                                }
+                            ]
+                    }
+                ],
+                [
+                    {
+                        "image": "?pf86\\microsoft office\\office14\\excel.exe",
+                        "tree_id": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62",
+                        "children":
+                            [
+                                {
+                                    "image": "?sys32\\wbem\\wmic1.exe",
+                                    "tree_id": "444ba8aca3c500c14d6b9948e6564864ffe3533b17c8a7970b20ff4145884448",
+                                    "children":
+                                        [
+                                            {
+                                                "image": "?sys32\\wbem\\wmic11.exe",
+                                                "tree_id": "29ee5e07066a9f5c9f66856c8cadaf706439b1eaef79ddad74f3cac929b54464",
+                                                "children":
+                                                    [
+                                                        {
+                                                             "image": "?sys32\\wbem\\wmic111.exe",
+                                                             "tree_id": "63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac",
+                                                             "children": []
+                                                        }
+                                                    ]
+                                            },
+                                            {
+                                                "image": "?sys32\\wbem\\wmic12.exe",
+                                                "tree_id": "6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d",
+                                                "children": []
+                                            }
+                                        ]
+                                },
+                                {
+                                    "image": "?sys32\\wbem\\wmic2.exe",
+                                    "tree_id": "a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b",
+                                    "children": []
+                                },
+                                {
+                                    "image": "?sys32\\wbem\\wmic3.exe",
+                                    "tree_id": "878e93a9cb19e3d8d659dbb3bd4945e53055f3b22c79ac49fac3070b3cc1acd7",
+                                    "children":
+                                        [
+                                            {
+                                                "image": "?sys32\\wbem\\wmic31.exe",
+                                                "tree_id": "6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40",
+                                                "children": []
+                                            },
+                                            {
+                                                "image": "?sys32\\wbem\\wmic32.exe",
+                                                "tree_id": "099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd",
+                                                "children": []
+                                            },
+                                            {
+                                                "image": "?sys32\\wbem\\wmic33.exe",
+                                                "tree_id": "4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5",
+                                                "children": []
+                                            }
+                                        ]
+                                }
+                            ]
+                    }
+                ],
+                [['63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac',
+                 '6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d',
+                 'a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b',
+                 '6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40',
+                 '099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd',
+                 '4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5']]),
+        ]
+    )
+    def test_create_tree_ids(process_tree, expected_process_tree, expected_process_tree_ids):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        tree_ids = SandboxOntology._create_tree_ids(process_tree)
+        assert tree_ids == expected_process_tree_ids
+        assert process_tree == expected_process_tree
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        'node, safe_tree_ids, expected_node',
+        [
+            ({"image": "a", "tree_id": "a", "children": []}, [], {"image": "a", "tree_id": "a", "children": []}),
+            ({"image": "a", "tree_id": "a", "children": []}, ["a"], {"image": "a", "tree_id": "a", "children": []}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}, [], {"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}, ["b"], {'children': [], 'image': 'a', 'tree_id': 'b'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}, ["a"], {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": []}]}, [], {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}, {'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": []}]}, ["b"], {'children': [{'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": []}]}, ["c"], {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": [{"image": "d", "tree_id": "d", "children": []}]}, {"image": "c", "tree_id": "c", "children": []}]}, ["c"], {'children': [{'children': [{"image": "d", "tree_id": "d", "children": []}], 'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": [{"image": "d", "tree_id": "d", "children": []}]}, {"image": "c", "tree_id": "c", "children": []}]}, ["d"], {'children': [{'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": [{"image": "d", "tree_id": "d", "children": []}]}]}, ["d"], {"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}),
+            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": [{"image": "d", "tree_id": "d", "children": []}]}]}, ["b"], {"image": "a", "tree_id": "a", "children": [{"image": "c", "tree_id": "c", "children": [{"image": "d", "tree_id": "d", "children": []}]}]}),
+        ]
+    )
+    def test_remove_safe_leaves_helper(node, safe_tree_ids, expected_node):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        _ = SandboxOntology._remove_safe_leaves_helper(node, safe_tree_ids)
+        assert node == expected_node
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        'process_tree, safe_tree_ids, expected_process_tree',
+        [
+            ([{"image": "a", "children": [], "tree_id": "blah"}], [], [{"image": "a", "children": [], "tree_id": "blah"}]),
+            ([{"image": "a", "children": [], "tree_id": "blah"}], ["blah"], []),
+            ([{"image": "a", "children": [], "tree_id": "blah"}, {"image": "b", "children": [], "tree_id": "blahblah"}], ["blah"], [{"image": "b", "children": [], "tree_id": "blahblah"}]),
+            ([{"image": "a", "children": [], "tree_id": "blah"}, {"image": "b", "children": [], "tree_id": "blahblah"}], ["blahblah"], [{"image": "a", "children": [], "tree_id": "blah"}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}], [], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}], ["a"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}], ["b"], [{"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}]),
+        ]
+    )
+    def test_remove_safe_leaves(process_tree, safe_tree_ids, expected_process_tree):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        SandboxOntology._remove_safe_leaves(process_tree, safe_tree_ids)
+        assert process_tree == expected_process_tree
+
+    @staticmethod
+    @pytest.mark.parametrize(
+        "process_tree, safe_tree_ids, expected_process_tree",
+        [
+            ([], [], []),
+            ([{"image": "a", "children": [], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], [], [{"image": "a", "children": [], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
+            ([{"image": "a", "children": [], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"], []),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], [], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"], []),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}, {"image": "c", "children": [{"image": "d", "children": [], 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}], ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"], [{'children': [{'children': [], 'image': 'd', 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], 'image': 'c', 'tree_id': '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}, {"image": "c", "children": [{"image": "d", "children": [], 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}], ["2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}], "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}]),
+            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}, {"image": "c", "children": [{"image": "d", "children": [], 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}], ["c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}], "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}]),
+        ])
+    def test_filter_process_tree_against_safe_tree_ids(process_tree, safe_tree_ids, expected_process_tree):
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        filtered_process_tree = SandboxOntology._filter_process_tree_against_safe_tree_ids(process_tree, safe_tree_ids)
+        assert filtered_process_tree == expected_process_tree
 
     @staticmethod
     @pytest.mark.parametrize("events, expected_result",
@@ -663,7 +889,6 @@ class TestSandboxOntology:
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}]),
             ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 2.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 2.0, "guid": "blah"}]),
             ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}, {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah", "pguid": "blah"}]),
         ]
     )
