@@ -203,7 +203,8 @@ class Events:
                 )
                 validated_events.append(validated_network_event)
             else:
-                raise ValueError(f"The event {event} does not match the process_event format {process_event_keys} or the network_event format {network_event_keys}.")
+                raise ValueError(f"The event {event} does not match the process_event format {process_event_keys}"
+                                 f" or the network_event format {network_event_keys}.")
         return validated_events
 
     @staticmethod
@@ -391,139 +392,130 @@ class SandboxOntology(Events):
             score = signature_dict["score"]
             if pid not in pids:
                 # Ignore it
-                log.warning(f"{signature_dict} does not match up with a PID in {process_event_dicts_with_signatures.keys()}")
+                log.warning(f"{signature_dict} does not match up with a PID in "
+                            f"{process_event_dicts_with_signatures.keys()}")
             else:
                 # We should always get a key from this
-                key = next(key for key, process_event_dict in process_event_dicts_with_signatures.items() if process_event_dict["pid"] == pid)
+                key = next(key for key, process_event_dict in process_event_dicts_with_signatures.items()
+                           if process_event_dict["pid"] == pid)
                 process_event_dicts_with_signatures[key]["signatures"][name] = score
 
         return process_event_dicts_with_signatures
 
     def get_process_tree(self, safelist: List[str] = None) -> List[Dict[str, Any]]:
         process_tree = self._convert_processes_dict_to_tree(self.process_event_dicts)
+        SandboxOntology._create_tree_ids(process_tree)
         if safelist:
-            process_tree = SandboxOntology._filter_process_tree_against_safe_hashes(process_tree, safelist)
+            process_tree = SandboxOntology._filter_process_tree_against_safe_tree_ids(process_tree, safelist)
         return process_tree
 
-    def get_process_tree_with_signatures(self, signatures: List[Dict[str, Any]] = None, safelist: List[str] = None) -> List[Dict[str, Any]]:
+    def get_process_tree_with_signatures(self, signatures: List[Dict[str, Any]] = None, safelist: List[str] = None) \
+            -> List[Dict[str, Any]]:
         if signatures is None:
             signatures = []
         s = Signatures(signatures=signatures)
         process_event_dicts_with_signatures = self._match_signatures_to_process_events(s.signature_dicts)
         process_tree_with_signatures = self._convert_processes_dict_to_tree(process_event_dicts_with_signatures)
+        SandboxOntology._create_tree_ids(process_tree_with_signatures)
         if safelist:
-            process_tree_with_signatures = SandboxOntology._filter_process_tree_against_safe_hashes(process_tree_with_signatures, safelist)
+            process_tree_with_signatures = \
+                SandboxOntology._filter_process_tree_against_safe_tree_ids(process_tree_with_signatures, safelist)
         return process_tree_with_signatures    
     
     @staticmethod
-    def _create_hashed_node(parent: str, node: Dict[str, Any], hashes: List[str]) -> None:
+    def _create_hashed_node(parent: str, node: Dict[str, Any], tree_ids: List[str]) -> None:
         """
         This method takes a single node and hashes node attributes.
         Recurses through children to do the same.
-        :param parent: A string representing the node hash
-        :param node: A dictionary representing the node
-        :param hashes: A list containing the hashes of the root
+        :param parent: A string representing the tree id
+        :param node: A dictionary representing the node to hash
+        :param tree_ids: A list containing the tree IDs from the root
         :return: None
         """
-        # Extract the two pieces of info needed from the node
-        image = node["image"]
         children = node["children"]
-
-        info = parent + image
-
-        encoded = info.encode()
-        # hexdigest() returns the SHA256 encoded string of the object, encoded256
-        encoded256 = sha256(encoded).hexdigest()
-
-        node['node_hash'] = encoded256
+        value_to_create_hash_from = (parent + node["image"]).encode()
+        sha256sum = sha256(value_to_create_hash_from).hexdigest()
+        node['tree_id'] = sha256sum
 
         if not children:
-            hashes.append(encoded256)
+            tree_ids.append(sha256sum)
 
         for child in children:
-            SandboxOntology._create_hashed_node(encoded256, child, hashes)
+            SandboxOntology._create_hashed_node(sha256sum, child, tree_ids)
 
     @staticmethod
-    def _create_hashes(process_tree: List[Dict[str, Any]]) -> List[List[str]]:
+    def _create_tree_ids(process_tree: List[Dict[str, Any]]) -> List[List[str]]:
         """
-        This method creates hashes for each node in the process tree
+        This method creates tree IDs for each node in the process tree
         :param process_tree: A list of dictionaries where each dictionary represents a root.
-        :return: A list of list of strings representing the hashes for all of the root-to-leaf paths
-                    in the same order as the provided process tree
+        :return: A list of list of strings representing the tree_ids for all of the root-to-leaf paths
+                 in the same order as the provided process tree
         """
-        # List that holds the hashes of each root in a tree
-        process_tree_hashes = []
+        # List that holds the tree IDs of each root in a tree
+        process_tree_ids = []
 
         for root in process_tree:
             # List to hold each hash computed using the _create_hashed_node function
-            hashes = []
-            SandboxOntology._create_hashed_node("", root, hashes)
-            
-            process_tree_hashes.append(hashes)
+            tree_ids = []
+            SandboxOntology._create_hashed_node("", root, tree_ids)
+            process_tree_ids.append(tree_ids)
 
-        return process_tree_hashes
+        return process_tree_ids
 
     @staticmethod
-    def _remove_safe_leaves_helper(node: Dict[str, Any], safe_leaf_hashes: List[str]) -> Union[str, None]:
+    def _remove_safe_leaves_helper(node: Dict[str, Any], safe_tree_ids: List[str]) -> Union[str, None]:
         """
         This method is used to recursively remove safe branches from the given node. It removes a branch from the leaf 
-        up until it is no longer safelisted
-
-        Args:
-            node (Dict[str, Any]): A dictionary of a process tree node (root)
-            safe_leaf_hashes (List[str]): All of the safe leaf hashes (the safelist)
-
-        Returns:
-            Union[str, None]: Returns the string representing the node's hash for the purpose of recursive removal, 
-                                or returns None if the removal is complete
+        up until it is reaches a node that is not safelisted
+        :param node: A dictionary of a process tree node (root)
+        :param safe_tree_ids: All of the safe leaf tree IDs (the safelist)
+        :return: Returns the string representing the node's hash for the purpose of recursive removal,
+                 or returns None if the removal is complete
         """
-        children = node['children']
+        children: List[Dict[str, Any]] = node['children']
         num_removed = 0
-        for index in range(len(children)):
-            hash_to_remove = SandboxOntology._remove_safe_leaves_helper(children[index - num_removed], safe_leaf_hashes)
-            if hash_to_remove == children[index - num_removed]['node_hash']:
-                children.pop(index - num_removed)
+        for index, _ in enumerate(children):
+            child_to_operate_on = children[index - num_removed]
+            hash_to_remove = SandboxOntology._remove_safe_leaves_helper(child_to_operate_on, safe_tree_ids)
+            if hash_to_remove and hash_to_remove == child_to_operate_on['tree_id']:
+                children.remove(child_to_operate_on)
                 num_removed += 1
-                if not children:    
-                    node["node_hash"] = hash_to_remove
+                # We need to overwrite the hash of the parent node with the hash to remove to that it will be
+                # removed from the tree as well.
+                if not children:
+                    node["tree_id"] = hash_to_remove
 
         if not children:
-            if node['node_hash'] in safe_leaf_hashes:
-                return node['node_hash']
+            tree_id = node['tree_id']
+            if tree_id in safe_tree_ids:
+                return tree_id
             else:
                 return None
         
     @staticmethod
-    def _remove_safe_leaves(process_tree: List[Dict[str, Any]], safe_leaf_hashes: List[str]) -> None:
+    def _remove_safe_leaves(process_tree: List[Dict[str, Any]], safe_tree_ids: List[str]) -> None:
         """
-        This method checks each leaf's hash against the safe hashes and removes safe branches from the process tree
-
-        Args:
-            process_tree (List[Dict[str, Any]]): A list of dictionaries where each dictionary represents a root.
-            safe_leaf_hashes (List[str]): A list containing the hashes of each safe branch 
+        This method checks each leaf's hash against the safe tree IDs and removes safe branches from the process tree
+        :param process_tree: A list of dictionaries where each dictionary represents a root.
+        :param safe_tree_ids: A list containing the tree IDs of each safe branch
+        :return: None
         """
-        num_removed = 0
-        for index in range(len(process_tree)):
-            SandboxOntology._remove_safe_leaves_helper(process_tree[index - num_removed], safe_leaf_hashes)
-            if process_tree[index - num_removed]['node_hash'] in safe_leaf_hashes:
-                process_tree.pop(index - num_removed)
-                num_removed += 1
+        for root in process_tree:
+            _ = SandboxOntology._remove_safe_leaves_helper(root, safe_tree_ids)
+            if root['tree_id'] in safe_tree_ids and not root["children"]:
+                process_tree.remove(root)
 
     @staticmethod
-    def _filter_process_tree_against_safe_hashes(process_tree: List[Dict[str, Any]], safe_leaf_hashes: List[str]) -> List[Dict[str, Any]]:
+    def _filter_process_tree_against_safe_tree_ids(process_tree: List[Dict[str, Any]], safe_tree_ids: List[str]) \
+            -> List[Dict[str, Any]]:
         """
-        This method takes a process tree and a list of safe process tree hashes, and filters out safe process roots in the tree.
-
-        Args:
-            process_tree (List[Dict[str, Any]]): A list of processes in a tree structure
-            safe_leaf_hashes (List[str]): A List of hashes representing safe leaf nodes/branches
-
-        Returns:
-            List[Dict[str, Any]]: A list of processes in a tree structure, with the safe branches filtered out
+        This method takes a process tree and a list of safe process tree tree IDs, and filters out safe process roots
+        in the tree.
+        :param process_tree: A list of processes in a tree structure
+        :param safe_tree_ids: A List of tree IDs representing safe leaf nodes/branches
+        :return: A list of processes in a tree structure, with the safe branches filtered out
         """        
-        SandboxOntology._create_hashes(process_tree)
-        SandboxOntology._remove_safe_leaves(process_tree, safe_leaf_hashes)
-
+        SandboxOntology._remove_safe_leaves(process_tree, safe_tree_ids)
         return process_tree
 
     def get_events(self) -> List[Dict]:
