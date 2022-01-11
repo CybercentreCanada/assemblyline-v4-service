@@ -146,18 +146,18 @@ class RunPrivilegedService(ServerBase):
             if file_required:
                 self.status = STATUSES.DOWNLOADING_FILE
                 file_path = os.path.join(self.tasking_dir, service_task.fileinfo.sha256)
+                received_file_sha256 = None
                 self.log.info(f"[{service_task.sid}] Downloading file: {service_task.fileinfo.sha256}")
                 try:
                     self.filestore.download(service_task.fileinfo.sha256, file_path)
+                    received_file_sha256 = get_sha256_for_file(file_path)
                 except FileStoreException:
                     self.status = STATUSES.FILE_NOT_FOUND
                     self.log.error(
                         f"[{service_task.sid}] Requested file not found in the system: {service_task.fileinfo.sha256}")
 
-                received_file_sha256 = get_sha256_for_file(file_path)
-
                 # If the file retrieved is different from what we requested, report the error
-                if received_file_sha256 != service_task.fileinfo.sha256:
+                if received_file_sha256 and received_file_sha256 != service_task.fileinfo.sha256:
                     self.status = STATUSES.ERROR_FOUND
                     self.log.error(f"[{service_task.sid}] Downloaded ({received_file_sha256}) doesn't match "
                                    f"requested ({service_task.fileinfo.sha256})")
