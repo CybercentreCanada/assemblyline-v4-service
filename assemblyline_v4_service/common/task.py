@@ -69,8 +69,8 @@ class Task:
                   is_section_image: bool = False) -> Optional[Dict[str, str]]:
         # Reject empty files
         if os.path.getsize(path) == 0:
-            self.log.warning(f"Adding empty extracted or supplementary files is not allowed. "
-                             f"Empty file ({name}) was ignored.")
+            self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
+                          f"Empty file ({name}) was ignored.")
             return
 
         # If file classification not provided, then use the default result classification
@@ -137,7 +137,7 @@ class Task:
         self.supplementary.clear()
 
     def download_file(self) -> str:
-        file_path = os.path.join(tempfile.gettempdir(), self.sha256)
+        file_path = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), self.sha256)
         if not os.path.exists(file_path):
             raise Exception("File download failed. File not found on local filesystem.")
 
@@ -221,17 +221,21 @@ class Task:
             self.error_status = 'FAIL_NONRECOVERABLE'
 
         error = self.get_service_error()
-        error_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_error.json')
+        error_path = os.path.join(
+            os.environ.get('TASKING_DIR', tempfile.gettempdir()),
+            f'{self.sid}_{self.sha256}_error.json')
         with open(error_path, 'w') as f:
             json.dump(error, f, default=str)
-        self.log.info(f"Saving error to: {error_path}")
+        self.log.info(f"[{self.sid}] Saving error to: {error_path}")
 
     def save_result(self) -> None:
         result = self.get_service_result()
-        result_path = os.path.join(tempfile.gettempdir(), f'{self.sid}_{self.sha256}_result.json')
+        result_path = os.path.join(
+            os.environ.get('TASKING_DIR', tempfile.gettempdir()),
+            f'{self.sid}_{self.sha256}_result.json')
         with open(result_path, 'w') as f:
             json.dump(result, f, default=str)
-        self.log.info(f"Saving result to: {result_path}")
+        self.log.info(f"[{self.sid}] Saving result to: {result_path}")
 
     def set_service_context(self, context: str) -> None:
         self.service_context = context
@@ -253,7 +257,7 @@ class Task:
 
     @property
     def working_directory(self) -> str:
-        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
+        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:

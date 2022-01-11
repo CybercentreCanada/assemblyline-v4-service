@@ -6,11 +6,13 @@ from os import environ
 from subprocess import Popen, TimeoutExpired
 
 from assemblyline.common import log as al_log
+from assemblyline_v4_service.run_privileged_service import RunPrivilegedService
 
 LOG_LEVEL = logging.getLevelName(environ.get("LOG_LEVEL", "INFO"))
+PRIVILEGED = environ.get('PRIVILEGED', 'false') == 'true'
 
 
-def check_processes(service_process, task_handler_process):
+def check_processes(service_process, task_handler_process, log):
     rs_rc = service_process.poll()
     th_rc = task_handler_process.poll()
 
@@ -42,10 +44,11 @@ def check_processes(service_process, task_handler_process):
             pass
 
 
-if __name__ == '__main__':
+def run_task_handler():
     al_log.init_logging("assemblyline.service.process_handler", log_level=LOG_LEVEL)
 
     log = logging.getLogger("assemblyline.service.process_handler")
+
     # Start the two processes
     rs_p = Popen(['python3', '-m', 'assemblyline_v4_service.run_service'])
     th_p = Popen(['python3', '-m', 'assemblyline_service_client.task_handler'])
@@ -58,7 +61,14 @@ if __name__ == '__main__':
     signal.signal(signal.SIGTERM, forward_signal)
 
     while True:
-        check_processes(rs_p, th_p)
+        check_processes(rs_p, th_p, log)
 
         # Wait 2 seconds before polling process status
         time.sleep(2)
+
+
+if __name__ == '__main__':
+    if PRIVILEGED:
+        RunPrivilegedService().serve_forever()
+    else:
+        run_task_handler()

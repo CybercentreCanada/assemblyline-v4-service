@@ -15,12 +15,13 @@ from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
-from assemblyline_v4_service.common.api import ServiceAPI
+from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
-UPDATES_DIR = '/updates'
+UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
+PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
 
 class ServiceBase:
@@ -106,27 +107,29 @@ class ServiceBase:
         self._log_error(msg, *args, **kwargs)
 
     def get_api_interface(self):
-        return ServiceAPI(self.service_attributes, self.log)
+        if PRIVILEGED:
+            return PrivilegedServiceAPI(self.log)
+        else:
+            return ServiceAPI(self.service_attributes, self.log)
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")
 
     def get_service_version(self) -> str:
         fw_version = f"{version.FRAMEWORK_VERSION}.{version.SYSTEM_VERSION}."
-        r_version = f"r{self.rules_hash}" if self.rules_hash else ""
         if self.service_attributes.version.startswith(fw_version):
-            return f"{self.service_attributes.version}{r_version}"
+            return self.service_attributes.version
         else:
-            return f"{fw_version}{self.service_attributes.version}{r_version}"
+            return f"{fw_version}{self.service_attributes.version}"
 
     # noinspection PyMethodMayBeStatic
     def get_tool_version(self) -> Optional[str]:
-        return None
+        return self.rules_hash
 
     def handle_task(self, task: ServiceTask) -> None:
         try:
             self._task = Task(task)
-            self.log.info(f"Starting task: {self._task.sid}/{self._task.sha256} ({self._task.type})")
+            self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
 
@@ -151,6 +154,15 @@ class ServiceBase:
         self.log.info(f"Starting service: {self.service_attributes.name}")
 
         if self.dependencies.get('updates', None):
+            # Start with a clean update dir
+            if os.path.exists(UPDATES_DIR):
+                for files in os.scandir(UPDATES_DIR):
+                    path = os.path.join(UPDATES_DIR, files)
+                    try:
+                        shutil.rmtree(path)
+                    except OSError:
+                        os.remove(path)
+
             try:
                 self._download_rules()
             except Exception as e:
@@ -173,7 +185,7 @@ class ServiceBase:
 
     @property
     def working_directory(self):
-        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
+        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:
@@ -187,17 +199,21 @@ class ServiceBase:
             'X_APIKEY': self.dependencies['updates']['key']
         }
 
-        # Check if there are new
+        # Check if there are new signatures
+        retries = 0
         while True:
             resp = requests.get(url_base + 'status')
             resp.raise_for_status()
             status = resp.json()
             if self.update_time is not None and self.update_time >= status['local_update_time']:
+                self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
                 return
             if status['download_available']:
+                self.log.info("A signature update is available, downloading new signatures...")
                 break
             self.log.warning('Waiting on update server availability...')
-            time.sleep(10)
+            time.sleep(min(5**retries, 30))
+            retries += 1
 
         # Dedicated directory for updates
         if not os.path.exists(UPDATES_DIR):
@@ -206,6 +222,8 @@ class ServiceBase:
         # Download the current update
         temp_directory = tempfile.mkdtemp(dir=UPDATES_DIR)
         buffer_handle, buffer_name = tempfile.mkstemp()
+
+        old_rules_list = self.rules_list
         try:
             with os.fdopen(buffer_handle, 'wb') as buffer:
                 resp = requests.get(url_base + 'tar', headers=headers)
@@ -218,7 +236,6 @@ class ServiceBase:
             self.update_time = status['local_update_time']
             self.rules_directory, temp_directory = temp_directory, self.rules_directory
             # Try to load the rules into the service before declaring we're using these rules moving forward
-            old_rules_list = self.rules_list
             temp_hash = self._gen_rules_hash()
             self._clear_rules()
             self._load_rules()
@@ -234,6 +251,7 @@ class ServiceBase:
         finally:
             os.unlink(buffer_name)
             if temp_directory:
+                self.log.info(f'Removing temp directory: {temp_directory}')
                 shutil.rmtree(temp_directory, ignore_errors=True)
 
     # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater

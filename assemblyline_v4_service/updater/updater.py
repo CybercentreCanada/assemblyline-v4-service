@@ -49,6 +49,7 @@ SOURCE_UPDATE_TIME_KEY = 'update_time'
 LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
+UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 
 classification = forge.get_classification()
 
@@ -96,6 +97,7 @@ class ServiceUpdater(ThreadedCoreBase):
         self.update_data_hash = Hash(f'service-updates-{SERVICE_NAME}', self.redis_persist)
         self._update_dir = None
         self._update_tar = None
+        self._time_keeper = None
         self._service: Optional[Service] = None
         self.event_sender = EventSender('changes.services',
                                         host=self.config.core.redis.nonpersistent.host,
@@ -113,8 +115,17 @@ class ServiceUpdater(ThreadedCoreBase):
         self.source_update_flag = threading.Event()
         self.local_update_flag = threading.Event()
         self.local_update_start = threading.Event()
-        self._local_update_time: float = 0
 
+        # Cleanup update directory
+        if os.path.exists(UPDATER_DIR):
+            for files in os.scandir(UPDATER_DIR):
+                path = os.path.join(UPDATER_DIR, files)
+                try:
+                    shutil.rmtree(path)
+                except OSError:
+                    os.remove(path)
+
+        # Load threads
         self._internal_server = None
         self.expected_threads = {
             'Sync Service Settings': self._sync_settings,
@@ -152,10 +163,9 @@ class ServiceUpdater(ThreadedCoreBase):
         self.update_data_hash.set(SOURCE_EXTRA_KEY, extra_data)
 
     def get_local_update_time(self) -> float:
-        return self._local_update_time
-
-    def set_local_update_time(self, update_time: float):
-        self.local_update_time = update_time
+        if self._time_keeper:
+            return os.path.getctime(self._time_keeper)
+        return 0
 
     def status(self):
         return {
@@ -206,8 +216,9 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def _run_http(self):
         # Start a server for our http interface in a separate process
+        my_env = os.environ.copy()
         proc = subprocess.Popen(["gunicorn", "assemblyline_v4_service.updater.app:app",
-                                "--config=python:assemblyline_v4_service.updater.gunicorn_config"])
+                                "--config=python:assemblyline_v4_service.updater.gunicorn_config"], env=my_env)
         while self.sleep(1):
             if proc.poll() is not None:
                 break
@@ -247,8 +258,10 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def do_local_update(self) -> None:
         old_update_time = self.get_local_update_time()
-        run_time = time.time()
-        output_directory = tempfile.mkdtemp()
+        if not os.path.exists(UPDATER_DIR):
+            os.makedirs(UPDATER_DIR)
+        output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
+        _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
 
         self.log.info("Setup service account.")
         username = self.ensure_service_account()
@@ -294,11 +307,17 @@ class ServiceUpdater(ThreadedCoreBase):
 
                 if extracted_zip:
                     self.log.info("New ruleset successfully downloaded and ready to use")
-                    self.serve_directory(output_directory)
-                    self.set_local_update_time(run_time)
+                    self.serve_directory(output_directory, time_keeper)
                 else:
-                    self.log.error("Signatures aren't saved to disk. Check logs..")
+                    self.log.error("Signatures aren't saved to disk.")
                     shutil.rmtree(output_directory, ignore_errors=True)
+                    if os.path.exists(time_keeper):
+                        os.unlink(time_keeper)
+            else:
+                self.log.info("No signature updates available.")
+                shutil.rmtree(output_directory, ignore_errors=True)
+                if os.path.exists(time_keeper):
+                    os.unlink(time_keeper)
 
     def do_source_update(self, service: Service) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
@@ -401,12 +420,12 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.sleep(60)
                 continue
 
-    def serve_directory(self, new_directory: str):
+    def serve_directory(self, new_directory: str, new_time: str):
         self.log.info("Update finished with new data.")
         new_tar = ''
         try:
             # Tar update directory
-            _, new_tar = tempfile.mkstemp(suffix='.tar.bz2')
+            _, new_tar = tempfile.mkstemp(prefix="signatures_", dir=UPDATER_DIR, suffix='.tar.bz2')
             tar_handle = tarfile.open(new_tar, 'w:bz2')
             tar_handle.add(new_directory, '/')
             tar_handle.close()
@@ -414,13 +433,19 @@ class ServiceUpdater(ThreadedCoreBase):
             # swap update directory with old one
             self._update_dir, new_directory = new_directory, self._update_dir
             self._update_tar, new_tar = new_tar, self._update_tar
-            self.log.info(f"Now serving: {self._update_dir} and {self._update_tar}")
+            self._time_keeper, new_time = new_time, self._time_keeper
+            self.log.info(f"Now serving: {self._update_dir} and {self._update_tar} ({self.get_local_update_time()})")
         finally:
             if new_tar and os.path.exists(new_tar):
+                self.log.info(f"Remove old tar file: {new_tar}")
                 time.sleep(3)
                 os.unlink(new_tar)
             if new_directory and os.path.exists(new_directory):
+                self.log.info(f"Remove old directory: {new_directory}")
                 shutil.rmtree(new_directory, ignore_errors=True)
+            if new_time and os.path.exists(new_time):
+                self.log.info(f"Remove old time keeper file: {new_time}")
+                os.unlink(new_time)
 
     def _run_local_updates(self):
         # Wait until basic data is loaded
