@@ -226,7 +226,7 @@ class Task:
             f'{self.sid}_{self.sha256}_error.json')
         with open(error_path, 'w') as f:
             json.dump(error, f, default=str)
-        self.log.info(f"Saving error to: {error_path}")
+        self.log.info(f"[{self.sid}] Saving error to: {error_path}")
 
     def save_result(self) -> None:
         result = self.get_service_result()
@@ -235,7 +235,7 @@ class Task:
             f'{self.sid}_{self.sha256}_result.json')
         with open(result_path, 'w') as f:
             json.dump(result, f, default=str)
-        self.log.info(f"Saving result to: {result_path}")
+        self.log.info(f"[{self.sid}] Saving result to: {result_path}")
 
     def set_service_context(self, context: str) -> None:
         self.service_context = context
@@ -257,7 +257,7 @@ class Task:
 
     @property
     def working_directory(self) -> str:
-        temp_dir = os.path.join(tempfile.gettempdir(), 'working_directory')
+        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
         if not os.path.isdir(temp_dir):
             os.makedirs(temp_dir)
         if self._working_directory is None:
