@@ -412,6 +412,14 @@ class ResultSample(ServiceBase):
             result.add_section(image_section)
 
             # ==================================================================
+            # Propagate temporary submission data to other services
+            #   Sometimes two service can work in tandem were one extra some piece of information the other
+            #   one uses to do it's work. This is how a service can set temporary data that other
+            #   services that subscribe to can use.
+            request.temp_submission_data['kv_section'] = kv_body
+            request.temp_submission_data['url_section'] = urls
+
+            # ==================================================================
             # Wrap-up:
             #     Save your result object back into the request
             request.result = result
