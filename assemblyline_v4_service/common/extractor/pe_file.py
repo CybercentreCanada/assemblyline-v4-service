@@ -8,7 +8,7 @@ EXEDOS_RE = rb'(?s)This program cannot be run in DOS mode'
 EXEHEADER_RE = rb'(?s)MZ.{32,1024}PE\000\000'
 
 
-def find_pe_files_with_offset(data: bytes) -> List[Tuple[bytes, int, int]]:
+def _find_pe_files_with_offset(data: bytes) -> List[Tuple[bytes, int, int]]:
     """
     Searches for any PE files within data
 
@@ -48,4 +48,4 @@ def find_pe_files(data: bytes) -> List[bytes]:
     Returns:
         A list of found PE files
     """
-    return [pe[0] for pe in find_pe_files_with_offset(data)]
+    return [pe[0] for pe in _find_pe_files_with_offset(data)]
