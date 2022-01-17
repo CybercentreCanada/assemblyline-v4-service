@@ -183,7 +183,15 @@ class RunPrivilegedService(ServerBase):
             # Handle the service response
             if self.status == STATUSES.RESULT_FOUND:
                 self.log.info(f"[{service_task.sid}] Task successfully completed")
-                self._handle_task_result(result_json, service_task)
+                try:
+                    self._handle_task_result(result_json, service_task)
+                except RuntimeError as re:
+                    if "cannot schedule new futures after interpreter shutdown" in str(re):
+                        self.log.info(f"[{service_task.sid}] Service trying to use a threadpool during shutdown, "
+                                      "sending recoverable error.")
+                        self._handle_task_error(service_task, error_json_path=error_json)
+                    else:
+                        raise
             elif self.status == STATUSES.ERROR_FOUND:
                 self.log.info(f"[{service_task.sid}] Task completed with errors")
                 self._handle_task_error(service_task, error_json_path=error_json)

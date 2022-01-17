@@ -137,6 +137,12 @@ class ServiceBase:
             self.execute(request)
 
             self._success()
+        except RuntimeError as re:
+            if "cannot schedule new futures after interpreter shutdown" in str(re):
+                new_ex = exceptions.RecoverableError("Service trying to use a threadpool during shutdown")
+                self._handle_execute_failure(new_ex, exceptions.get_stacktrace_info(re))
+            else:
+                self._handle_execute_failure(re, exceptions.get_stacktrace_info(re))
         except Exception as ex:
             self._handle_execute_failure(ex, exceptions.get_stacktrace_info(ex))
         finally:
