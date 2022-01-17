@@ -19,7 +19,7 @@ from assemblyline.odm.messages.service_heartbeat import Metrics
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_core.tasking_client import TaskingClient
 from assemblyline_core.server_base import ServerBase
-from assemblyline_v4_service.common.base import LOG_LEVEL
+from assemblyline_v4_service.common.base import LOG_LEVEL, is_recoverable_runtime_error
 
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_TAG = os.environ.get("SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0").encode("utf-8")
@@ -186,10 +186,10 @@ class RunPrivilegedService(ServerBase):
                 try:
                     self._handle_task_result(result_json, service_task)
                 except RuntimeError as re:
-                    if "cannot schedule new futures after interpreter shutdown" in str(re):
+                    if is_recoverable_runtime_error(re):
                         self.log.info(f"[{service_task.sid}] Service trying to use a threadpool during shutdown, "
                                       "sending recoverable error.")
-                        self._handle_task_error(service_task, error_json_path=error_json)
+                        self._handle_task_error(service_task)
                     else:
                         raise
             elif self.status == STATUSES.ERROR_FOUND:
