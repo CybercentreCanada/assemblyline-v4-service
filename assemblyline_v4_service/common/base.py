@@ -23,6 +23,16 @@ LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
+RECOVERABLE_RE_MSG = ["cannot schedule new futures after interpreter shutdown", "can't register atexit after shutdown"]
+
+
+def is_recoverable_runtime_error(error):
+    for msg in RECOVERABLE_RE_MSG:
+        if msg in str(error):
+            return True
+
+    return False
+
 
 class ServiceBase:
     def __init__(self, config: Optional[Dict] = None) -> None:
@@ -138,7 +148,7 @@ class ServiceBase:
 
             self._success()
         except RuntimeError as re:
-            if "cannot schedule new futures after interpreter shutdown" in str(re):
+            if is_recoverable_runtime_error(re):
                 new_ex = exceptions.RecoverableError("Service trying to use a threadpool during shutdown")
                 self._handle_execute_failure(new_ex, exceptions.get_stacktrace_info(re))
             else:
