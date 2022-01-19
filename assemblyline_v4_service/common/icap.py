@@ -18,12 +18,14 @@ class IcapClient(object):
     RESP_CHUNK_SIZE = 65565
     MAX_RETRY = 3
 
-    def __init__(self, host, port, respmod_service="av/respmod", action=""):
+    def __init__(self, host, port, respmod_service="av/respmod", action="", timeout=30):
         self.host = host
         self.port = port
         self.service = respmod_service
         self.action = action
         self.socket = None
+        self.timeout = timeout
+        self.kill = False
 
     def scan_data(self, data, name=None):
         return self._do_respmod(name or 'filetoscan', data)
@@ -39,8 +41,11 @@ class IcapClient(object):
 
         for i in range(self.MAX_RETRY):
             try:
+                if self.kill:
+                    self.kill = False
+                    return
                 if not self.socket:
-                    self.socket = socket.create_connection((self.host, self.port), timeout=10)
+                    self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
                 self.socket.sendall(request.encode())
                 response = temp_resp = self.socket.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
@@ -107,8 +112,11 @@ class IcapClient(object):
 
         for i in range(self.MAX_RETRY):
             try:
+                if self.kill:
+                    self.kill = False
+                    return
                 if not self.socket:
-                    self.socket = socket.create_connection((self.host, self.port), timeout=30)
+                    self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
                 self.socket.sendall(serialized_request)
                 response = temp_resp = self.socket.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
@@ -126,3 +134,10 @@ class IcapClient(object):
                     raise
 
         raise Exception("Icap server refused to respond.")
+
+    def close(self):
+        self.kill = True
+        try:
+            self.socket.close()
+        except Exception:
+            pass
