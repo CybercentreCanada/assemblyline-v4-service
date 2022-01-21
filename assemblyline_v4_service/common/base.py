@@ -25,7 +25,8 @@ PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 
 RECOVERABLE_RE_MSG = [
     "cannot schedule new futures after interpreter shutdown",
-    "can't register atexit after shutdown"
+    "can't register atexit after shutdown",
+    "cannot schedule new futures after shutdown"
 ]
 
 
