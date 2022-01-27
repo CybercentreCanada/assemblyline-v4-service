@@ -15,6 +15,7 @@ from assemblyline.common.metrics import MetricsFactory
 from assemblyline.common.str_utils import StringTable
 from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION, BUILD_MINOR
 from assemblyline.filestore import FileStoreException
+from assemblyline.remote.datatypes import get_client
 from assemblyline.odm.messages.service_heartbeat import Metrics
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_core.tasking_client import TaskingClient
@@ -49,7 +50,19 @@ class RunPrivilegedService(ServerBase):
 
         self.client_id = os.environ.get('HOSTNAME', 'dev-service')
 
-        self.tasking_client = TaskingClient()
+        self.redis = get_client(
+            host=self.config.core.redis.nonpersistent.host,
+            port=self.config.core.redis.nonpersistent.port,
+            private=False,
+        )
+
+        self.redis_persist = get_client(
+            host=self.config.core.redis.persistent.host,
+            port=self.config.core.redis.persistent.port,
+            private=False,
+        )
+
+        self.tasking_client = TaskingClient(redis=self.redis, redis_persist=self.redis_persist)
         self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
 
         self.filestore = forge.get_filestore()
@@ -116,7 +129,8 @@ class RunPrivilegedService(ServerBase):
         self.service = service_class(config=self.service_config.get('config'))
         self.service_name = self.service_config['name']
         self.service_tool_version = self.service.get_tool_version()
-        self.metric_factory = MetricsFactory('service', Metrics, name=self.service_name, export_zero=False)
+        self.metric_factory = MetricsFactory('service', Metrics, name=self.service_name,
+                                             export_zero=False, redis=self.redis)
         file_required = self.service_config.get('file_required', True)
 
         # Start the service
