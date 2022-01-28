@@ -1,0 +1,82 @@
+{
+    "version": "<provided by system>",
+    "filename": "<provided by system>",
+    "filetype": "<provided by system>",
+    "md5": "<provided by system>",
+    "sha1": "<provided by system>",
+    "sha256": "<provided by system>",
+    "classification": "<provided by system>",
+    "categories": {
+        "antivirus": {
+            "analysis_date": "",
+            "capabilities": [],
+            "results": [
+                {
+                    "category": "",
+                    "engine" : {
+                        "name": "",
+                        "version": "",
+                        "update": ""
+                    },
+                    "result": ""
+                }
+            ]
+
+        },
+        "deobfuscation": {
+            "original": "",
+            "deobfuscated": "",
+            "method": ""
+        },
+        "elf": {
+
+        },
+        "networking":{
+            "alerts": [
+                {
+                    "name": "",
+                    "classification": "",
+                    "destinations": {
+                        "ips": [],
+                        "domains": []
+                    }
+                }
+            ]
+        },
+        "pe":{
+            "entry_point": "",
+            "exports": [],
+            "imphash": "",
+            "import_list": [
+                {
+                    "imported_functions": "",
+                    "library_name": ""
+                }
+            ],
+            "resouce_details": {
+
+            },
+            "sections": [
+                {
+                    "entropy": "",
+                    "md5": "",
+                    "name": "",
+                    "raw_size": "",
+                    "virtual_address": "",
+                    "virtual_size": ""
+                }
+        ]
+        },
+        "sandbox": {
+            "sandbox_name": "",
+            "confidence": "",
+            "process_tree": {},
+            "malware" : {
+                "names": [],
+                "classification": []
+            },
+            "verdict": ""
+
+        }
+    }
+}
