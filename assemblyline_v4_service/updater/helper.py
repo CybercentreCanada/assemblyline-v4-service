@@ -1,3 +1,4 @@
+from logging import root
 import certifi
 import os
 import re
@@ -9,6 +10,7 @@ import time
 from git import Repo
 from typing import List, Dict, Any, Tuple
 from urllib.parse import urlparse
+from shutil import make_archive
 
 from assemblyline.common.isotime import iso_to_epoch
 from assemblyline.common.digests import get_sha256_for_file
@@ -32,14 +34,20 @@ def add_cacert(cert: str) -> None:
 def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
     f_files = []
     if not pattern:
-        # Regex will either match on the filename or the filepath, either with default or given pattern for source
+        # Regex will either match on the filename, directory, or filepath, either with default or given pattern for source
         pattern = default_pattern
-    for path_in_dir, _, files in os.walk(update_directory):
+    for path_in_dir, subdirs, files in os.walk(update_directory):
         for filename in files:
-            if isinstance(filename, str):
-                filepath = os.path.join(update_directory, path_in_dir, filename)
-                if re.match(pattern, filepath) or re.match(pattern, filename):
-                    f_files.append((filepath, get_sha256_for_file(filepath)))
+            filepath = os.path.join(update_directory, path_in_dir, filename)
+            if re.match(pattern, filepath) or re.match(pattern, filename):
+                f_files.append((filepath, get_sha256_for_file(filepath)))
+        for subdir in subdirs:
+            dirpath = f'{os.path.join(update_directory, path_in_dir, subdir)}/'
+            if re.match(pattern, dirpath) or re.match(pattern, subdir):
+                # Zip contents of directory and add to path
+                fp = make_archive(subdir, 'tar', root_dir=dirpath)
+                f_files.append((fp, get_sha256_for_file(fp)))
+
     return f_files
 
 
