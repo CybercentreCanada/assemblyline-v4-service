@@ -162,7 +162,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
     git_env = {}
 
     if ignore_ssl_errors:
-        git_env['GIT_SSL_NO_VERIFY'] = 1
+        git_env['GIT_SSL_NO_VERIFY'] = '1'
 
     # Let https requests go through proxy
     if proxy:
