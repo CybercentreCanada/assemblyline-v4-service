@@ -1,4 +1,3 @@
-from logging import root
 import certifi
 import os
 import re
@@ -43,10 +42,8 @@ def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tu
                 f_files.append((filepath, get_sha256_for_file(filepath)))
         for subdir in subdirs:
             dirpath = f'{os.path.join(update_directory, path_in_dir, subdir)}/'
-            if re.match(pattern, dirpath) or re.match(pattern, subdir):
-                # Zip contents of directory and add to path
-                fp = make_archive(subdir, 'tar', root_dir=dirpath)
-                f_files.append((fp, get_sha256_for_file(fp)))
+            if re.match(pattern, dirpath):
+                f_files.append((dirpath, get_sha256_for_file(make_archive(subdir, 'tar', root_dir=dirpath))))
 
     return f_files
 
@@ -129,7 +126,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             if proxy:
                 del os.environ['https_proxy']
 
-            if file_name.endswith('tar.gz'):
+            if file_name.endswith('tar.gz') or file_name.endswith('zip'):
                 extract_dir = os.path.join(output_dir, name)
                 shutil.unpack_archive(file_path, extract_dir=extract_dir)
 

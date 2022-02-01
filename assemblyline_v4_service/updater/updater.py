@@ -116,15 +116,6 @@ class ServiceUpdater(ThreadedCoreBase):
         self.local_update_flag = threading.Event()
         self.local_update_start = threading.Event()
 
-        # Cleanup update directory
-        if os.path.exists(UPDATER_DIR):
-            for files in os.scandir(UPDATER_DIR):
-                path = os.path.join(UPDATER_DIR, files)
-                try:
-                    shutil.rmtree(path)
-                except OSError:
-                    os.remove(path)
-
         # Load threads
         self._internal_server = None
         self.expected_threads = {
