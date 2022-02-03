@@ -14,6 +14,7 @@ from pathlib import Path
 from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline.odm.models.result_ontology import ResultOntology
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -144,7 +145,7 @@ class ServiceBase:
                              self.service_attributes.version, self.get_tool_version())
 
             request = ServiceRequest(self._task)
-            self.execute(request)
+            self._attach_service_ontology(request, self.execute(request))
 
             self._success()
         except RuntimeError as re:
@@ -207,6 +208,36 @@ class ServiceBase:
         if self._working_directory is None:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
+
+    def _attach_service_ontology(self, request: ServiceRequest, service_output: dict = None) -> None:
+        if not service_output:
+            # Nothing additional to append from the service
+            return
+
+        service_result = {
+            'service_info': {
+                'version' : request.task.service_version,
+                'tool_version' :  request.task.service_tool_version,
+                'date' : request.task._service_completed,
+                'classification' : request.task._classification
+            },
+            'file_info': {
+                'md5': request.md5,
+                'sha1': request.sha1,
+                'sha256': request.sha256,
+                'type': request.file_type,
+                'size': len(request.file_contents)
+            }
+        }
+
+        service_result.update(service_output)
+        try:
+            ontology_path = os.path.join(self.working_directory, 'result_ontology.json')
+            open(ontology_path, 'w').write(ResultOntology(service_result).json())
+            request.add_supplementary(path=ontology_path, description="Ontological Result",
+            classification=request.task._classification)
+        except Exception as e:
+            self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
