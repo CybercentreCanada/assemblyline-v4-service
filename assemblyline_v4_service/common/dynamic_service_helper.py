@@ -11,6 +11,8 @@ HOLLOWSHUNTER_EXE_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z
 HOLLOWSHUNTER_SHC_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.shc$"
 HOLLOWSHUNTER_DLL_REGEX = "[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[a-zA-Z0-9]*\.*[a-zA-Z0-9]+\.dll$"
 
+HOLLOWSHUNTER_TITLE = "HollowsHunter Injected Portable Executable"
+
 al_log.init_logging('service.dynamic_service_helper')
 log = getLogger('assemblyline.service.dynamic_service_helper')
 
@@ -357,21 +359,26 @@ class SandboxOntology(Events):
         if artifact is None:
             raise Exception("Artifact cannot be None")
 
-        # This is a dict who's key-value pairs follow the format {regex: result_section_title}
         artifact_result_section = None
-
         for regex in [HOLLOWSHUNTER_EXE_REGEX, HOLLOWSHUNTER_DLL_REGEX]:
             pattern = compile(regex)
             if pattern.match(artifact.name):
-                artifact_result_section = ResultSection("HollowsHunter Injected Portable Executable")
-                artifact_result_section.add_tag("dynamic.process.file_name", artifact.path)
+                artifact_result_section = next(
+                    (subsection for subsection in artifacts_result_section.subsections
+                     if subsection.title_text == HOLLOWSHUNTER_TITLE),
+                    None)
+                if artifact_result_section is None:
+                    artifact_result_section = ResultSection(HOLLOWSHUNTER_TITLE)
+                    heur = Heuristic(17)
+                    artifact_result_section.heuristic = heur
+                    artifact_result_section.add_line("HollowsHunter dumped the following:")
+                artifact_result_section.add_line(f"\t- {artifact.name}")
+                artifact_result_section.add_tag("dynamic.process.file_name", artifact.name)
                 # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
-                heur = Heuristic(17)
-                artifact_result_section.heuristic = heur
                 if regex in [HOLLOWSHUNTER_EXE_REGEX]:
-                    heur.add_signature_id("hollowshunter_exe")
+                    artifact_result_section.heuristic.add_signature_id("hollowshunter_exe")
                 elif regex in [HOLLOWSHUNTER_DLL_REGEX]:
-                    heur.add_signature_id("hollowshunter_dll")
+                    artifact_result_section.heuristic.add_signature_id("hollowshunter_dll")
 
         if artifact_result_section is not None:
             artifacts_result_section.add_subsection(artifact_result_section)
