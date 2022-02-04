@@ -52,24 +52,24 @@ def check_section_equality(this, that) -> bool:
     # Heuristics also need their own equality checks
     if this.heuristic and that.heuristic:
         heuristic_equality = this.heuristic.definition.attack_id == that.heuristic.definition.attack_id and \
-                             this.heuristic.definition.classification == that.heuristic.definition.classification and \
-                             this.heuristic.definition.description == that.heuristic.definition.description and \
-                             this.heuristic.definition.filetype == that.heuristic.definition.filetype and \
-                             this.heuristic.definition.heur_id == that.heuristic.definition.heur_id and \
-                             this.heuristic.definition.id == that.heuristic.definition.id and \
-                             this.heuristic.definition.max_score == that.heuristic.definition.max_score and \
-                             this.heuristic.definition.name == that.heuristic.definition.name and \
-                             this.heuristic.definition.score == that.heuristic.definition.score and \
-                             this.heuristic.definition.signature_score_map == \
-                             that.heuristic.definition.signature_score_map
+            this.heuristic.definition.classification == that.heuristic.definition.classification and \
+            this.heuristic.definition.description == that.heuristic.definition.description and \
+            this.heuristic.definition.filetype == that.heuristic.definition.filetype and \
+            this.heuristic.definition.heur_id == that.heuristic.definition.heur_id and \
+            this.heuristic.definition.id == that.heuristic.definition.id and \
+            this.heuristic.definition.max_score == that.heuristic.definition.max_score and \
+            this.heuristic.definition.name == that.heuristic.definition.name and \
+            this.heuristic.definition.score == that.heuristic.definition.score and \
+            this.heuristic.definition.signature_score_map == \
+            that.heuristic.definition.signature_score_map
 
         result_heuristic_equality = heuristic_equality and \
-                                    this.heuristic.attack_ids == that.heuristic.attack_ids and \
-                                    this.heuristic.frequency == that.heuristic.frequency and \
-                                    this.heuristic.heur_id == that.heuristic.heur_id and \
-                                    this.heuristic.score == that.heuristic.score and \
-                                    this.heuristic.score_map == that.heuristic.score_map and \
-                                    this.heuristic.signatures == that.heuristic.signatures
+            this.heuristic.attack_ids == that.heuristic.attack_ids and \
+            this.heuristic.frequency == that.heuristic.frequency and \
+            this.heuristic.heur_id == that.heuristic.heur_id and \
+            this.heuristic.score == that.heuristic.score and \
+            this.heuristic.score_map == that.heuristic.score_map and \
+            this.heuristic.signatures == that.heuristic.signatures
 
     elif not this.heuristic and not that.heuristic:
         result_heuristic_equality = True
@@ -78,12 +78,12 @@ def check_section_equality(this, that) -> bool:
 
     # Assuming we are given the "root section" at all times, it is safe to say that we don't need to confirm parent
     current_section_equality = result_heuristic_equality and \
-                               this.body == that.body and \
-                               this.body_format == that.body_format and \
-                               this.classification == that.classification and \
-                               this.depth == that.depth and \
-                               len(this.subsections) == len(that.subsections) and \
-                               this.title_text == that.title_text
+        this.body == that.body and \
+        this.body_format == that.body_format and \
+        this.classification == that.classification and \
+        this.depth == that.depth and \
+        len(this.subsections) == len(that.subsections) and \
+        this.title_text == that.title_text
 
     if not current_section_equality:
         return False
@@ -99,7 +99,8 @@ def check_section_equality(this, that) -> bool:
 def setup_module():
     if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
         open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n    name: blah\n    description: blah\n    filetype: '*'\n    score: 250")
+        open_manifest.write(
+            "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n    name: blah\n    description: blah\n    filetype: '*'\n    score: 250")
 
 
 def teardown_module():
@@ -110,11 +111,11 @@ def teardown_module():
 class TestEvent:
     @staticmethod
     @pytest.mark.parametrize("pid, image, timestamp, guid",
-        [
-            (None, None, None, None,),
-            (1, 1, "blah", "blah",),
-        ]
-    )
+                             [
+                                 (None, None, None, None,),
+                                 (1, 1, "blah", "blah",),
+                             ]
+                             )
     def test_init(pid, image, timestamp, guid):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid, image, timestamp, guid)
@@ -125,13 +126,13 @@ class TestEvent:
 
     @staticmethod
     @pytest.mark.parametrize("pid, image, timestamp, guid, expected_result",
-        [
-            (None, None, None, None,
-                {"image": None, "pid": None, "timestamp": None, "guid": None}),
-            (1, "blah", 1.0, "blah",
-                {"image": "blah", "pid": 1, "timestamp": 1.0, "guid": "blah"}),
-        ]
-    )
+                             [
+                                 (None, None, None, None,
+                                  {"image": None, "pid": None, "timestamp": None, "guid": None}),
+                                 (1, "blah", 1.0, "blah",
+                                  {"image": "blah", "pid": 1, "timestamp": 1.0, "guid": "blah"}),
+                             ]
+                             )
     def test_convert_event_to_dict(pid, image, timestamp, guid, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid=pid, image=image, timestamp=timestamp, guid=guid)
@@ -140,13 +141,13 @@ class TestEvent:
 
     @staticmethod
     @pytest.mark.parametrize("path, expected_result",
-        [
-            ("blah", "x86"),
-            ("C:\\program files\\blah", "x86"),
-            ("C:\\program files (x86)\\blah", "x86_64"),
-            ("C:\\syswow64\\blah", "x86_64"),
-        ]
-    )
+                             [
+                                 ("blah", "x86"),
+                                 ("C:\\program files\\blah", "x86"),
+                                 ("C:\\program files (x86)\\blah", "x86_64"),
+                                 ("C:\\syswow64\\blah", "x86_64"),
+                             ]
+                             )
     def test_determine_arch(path, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid=1, image=path, timestamp=0, guid="blah")
@@ -155,12 +156,12 @@ class TestEvent:
 
     @staticmethod
     @pytest.mark.parametrize("path, rule, expected_result",
-        [
-            ("blah", {"pattern": "", "replacement": ""}, "blah"),
-            ("blah", {"pattern": "ah", "replacement": "ue"}, "blah"),
-            ("blah", {"pattern": "bl", "replacement": "y"}, "yah"),
-        ]
-    )
+                             [
+                                 ("blah", {"pattern": "", "replacement": ""}, "blah"),
+                                 ("blah", {"pattern": "ah", "replacement": "ue"}, "blah"),
+                                 ("blah", {"pattern": "bl", "replacement": "y"}, "yah"),
+                             ]
+                             )
     def test_pattern_substitution(path, rule, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid=1, image=path, timestamp=0, guid="blah")
@@ -169,13 +170,13 @@ class TestEvent:
 
     @staticmethod
     @pytest.mark.parametrize("path, rule, expected_result",
-         [
-             ("blah", {"regex": "", "replacement": ""}, "blah"),
-             ("blah", {"regex": "bl*ah", "replacement": "bl"}, "blah"),
-             ("blah", {"regex": "\\bl*ah", "replacement": "bl"}, "blah"),
-             ("blaah", {"regex": "bl*ah", "replacement": "blue"}, "blue"),
-         ]
-     )
+                             [
+                                 ("blah", {"regex": "", "replacement": ""}, "blah"),
+                                 ("blah", {"regex": "bl*ah", "replacement": "bl"}, "blah"),
+                                 ("blah", {"regex": "\\bl*ah", "replacement": "bl"}, "blah"),
+                                 ("blaah", {"regex": "bl*ah", "replacement": "blue"}, "blue"),
+                             ]
+                             )
     def test_regex_substitution(path, rule, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid=1, image=path, timestamp=0, guid="blah")
@@ -184,19 +185,19 @@ class TestEvent:
 
     @staticmethod
     @pytest.mark.parametrize("path, arch, expected_result",
-        [
-            ("blah", None, "blah"),
-            ("C:\\Program Files\\Word.exe", None, "?pf86\\word.exe"),
-            ("C:\\Program Files (x86)\\Word.exe", None, "?pf86\\word.exe"),
-            ("C:\\Program Files (x86)\\Word.exe", "x86_64", "?pf86\\word.exe"),
-            ("C:\\Windows\\System32\\Word.exe", None, "?sys32\\word.exe"),
-            ("C:\\Windows\\SysWow64\\Word.exe", None, "?sys32\\word.exe"),
-            ("C:\\Windows\\SysWow64\\Word.exe", "x86", "?win\\syswow64\\word.exe"),
-            ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
-            ("C:\\Users\\buddy\\AppData\\Local\\Temp\\Word.exe", None, "?usrtmp\\word.exe"),
-            ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
-        ]
-    )
+                             [
+                                 ("blah", None, "blah"),
+                                 ("C:\\Program Files\\Word.exe", None, "?pf86\\word.exe"),
+                                 ("C:\\Program Files (x86)\\Word.exe", None, "?pf86\\word.exe"),
+                                 ("C:\\Program Files (x86)\\Word.exe", "x86_64", "?pf86\\word.exe"),
+                                 ("C:\\Windows\\System32\\Word.exe", None, "?sys32\\word.exe"),
+                                 ("C:\\Windows\\SysWow64\\Word.exe", None, "?sys32\\word.exe"),
+                                 ("C:\\Windows\\SysWow64\\Word.exe", "x86", "?win\\syswow64\\word.exe"),
+                                 ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
+                                 ("C:\\Users\\buddy\\AppData\\Local\\Temp\\Word.exe", None, "?usrtmp\\word.exe"),
+                                 ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
+                             ]
+                             )
     def test_normalize_path(path, arch, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid=1, image=path, timestamp=0, guid="blah")
@@ -207,11 +208,11 @@ class TestEvent:
 class TestProcessEvent:
     @staticmethod
     @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp",
-        [
-            (None, None, None, None, None),
-            (1, 1, "blah", "blah", 1.0),
-        ]
-    )
+                             [
+                                 (None, None, None, None, None),
+                                 (1, 1, "blah", "blah", 1.0),
+                             ]
+                             )
     def test_init(pid, ppid, image, command_line, timestamp):
         from assemblyline_v4_service.common.dynamic_service_helper import ProcessEvent
         p = ProcessEvent(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp)
@@ -225,14 +226,15 @@ class TestProcessEvent:
 class TestNetworkEvent:
     @staticmethod
     @pytest.mark.parametrize("protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp",
-        [
-            (None, None, None, None, None, None, None, None),
-            ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0),
-        ]
-    )
+                             [
+                                 (None, None, None, None, None, None, None, None),
+                                 ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0),
+                             ]
+                             )
     def test_init(protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp):
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkEvent
-        n = NetworkEvent(protocol=protocol, src_ip=src_ip, src_port=src_port, domain=domain, dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp)
+        n = NetworkEvent(protocol=protocol, src_ip=src_ip, src_port=src_port, domain=domain,
+                         dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp)
         assert n.protocol == protocol
         assert n.src_port == src_port
         assert n.domain == domain
@@ -245,12 +247,12 @@ class TestNetworkEvent:
 class TestArtifact:
     @staticmethod
     @pytest.mark.parametrize("name, path, description, to_be_extracted",
-        [
-            (None, None, None, None),
-            ("blah", "blah", "blah", True),
-            ("blah", "blah", "blah", False),
-        ]
-    )
+                             [
+                                 (None, None, None, None),
+                                 ("blah", "blah", "blah", True),
+                                 ("blah", "blah", "blah", False),
+                             ]
+                             )
     def test_init(name, path, description, to_be_extracted):
         from assemblyline_v4_service.common.dynamic_service_helper import Artifact
         if any(item is None for item in [name, path, description, to_be_extracted]):
@@ -266,7 +268,13 @@ class TestArtifact:
 
 class TestEvents:
     @staticmethod
-    @pytest.mark.parametrize("events, expected_events, expected_sorted_events, expected_process_events, expected_network_events", [([], [], [], [], [])])
+    @pytest.mark.parametrize(
+        "events, expected_events, expected_sorted_events, expected_process_events, expected_network_events",
+        [([],
+          [],
+          [],
+          [],
+          [])])
     def test_init(events, expected_events, expected_sorted_events, expected_process_events, expected_network_events):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
         e = Events(events=events)
@@ -276,13 +284,16 @@ class TestEvents:
         assert e.network_events == expected_network_events
 
     @staticmethod
-    @pytest.mark.parametrize("events, validated_events_num",
-        [
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}], 1),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
-            ([{}], 0),
-        ]
-    )
+    @pytest.mark.parametrize(
+        "events, validated_events_num",
+        [([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"}],
+          1),
+         ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+          1),
+         ([{}],
+          0), ])
     def test_validate_events(events, validated_events_num):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
         if validated_events_num:
@@ -292,24 +303,28 @@ class TestEvents:
                 Events._validate_events(events)
 
     @staticmethod
-    @pytest.mark.parametrize("events, validated_events_num",
-        [
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}], 1),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], 0),
-        ]
-    )
+    @pytest.mark.parametrize(
+        "events, validated_events_num",
+        [([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"}],
+          1),
+         ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+          0), ])
     def test_get_process_events(events, validated_events_num):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
         validated_events = Events._validate_events(events)
         assert len(Events._get_process_events(validated_events)) == validated_events_num
 
     @staticmethod
-    @pytest.mark.parametrize("events, validated_events_num",
-        [
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}], 0),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], 1),
-        ]
-    )
+    @pytest.mark.parametrize(
+        "events, validated_events_num",
+        [([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"}],
+          0),
+         ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+          1), ])
     def test_get_network_events(events, validated_events_num):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
         validated_events = Events._validate_events(events)
@@ -317,31 +332,31 @@ class TestEvents:
 
     @staticmethod
     @pytest.mark.parametrize("things_to_sort_by_timestamp, expected_result",
-        [
-            (None, []),
-            ([], []),
-            (
-                    [{"timestamp": 1}],
-                    [{"timestamp": 1}]
-            ),
-            (
-                    [{"timestamp": 1}, {"timestamp": 2}],
-                    [{"timestamp": 1}, {"timestamp": 2}]
-            ),
-            (
-                    [{"timestamp": 1}, {"timestamp": 1}],
-                    [{"timestamp": 1}, {"timestamp": 1}]
-            ),
-            (
-                    [{"timestamp": 2}, {"timestamp": 1}],
-                    [{"timestamp": 1}, {"timestamp": 2}]
-            ),
-            (
-                    [{"timestamp": 3}, {"timestamp": 2}, {"timestamp": 1}],
-                    [{"timestamp": 1}, {"timestamp": 2}, {"timestamp": 3}]
-            ),
-        ]
-    )
+                             [
+                                 (None, []),
+                                 ([], []),
+                                 (
+                                     [{"timestamp": 1}],
+                                     [{"timestamp": 1}]
+                                 ),
+                                 (
+                                     [{"timestamp": 1}, {"timestamp": 2}],
+                                     [{"timestamp": 1}, {"timestamp": 2}]
+                                 ),
+                                 (
+                                     [{"timestamp": 1}, {"timestamp": 1}],
+                                     [{"timestamp": 1}, {"timestamp": 1}]
+                                 ),
+                                 (
+                                     [{"timestamp": 2}, {"timestamp": 1}],
+                                     [{"timestamp": 1}, {"timestamp": 2}]
+                                 ),
+                                 (
+                                     [{"timestamp": 3}, {"timestamp": 2}, {"timestamp": 1}],
+                                     [{"timestamp": 1}, {"timestamp": 2}, {"timestamp": 3}]
+                                 ),
+                             ]
+                             )
     def test_sort_things_by_timestamp(things_to_sort_by_timestamp, expected_result, dummy_event_class):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
         dummy_things = []
@@ -359,15 +374,24 @@ class TestEvents:
 
     @staticmethod
     @pytest.mark.parametrize("events, expected_events_dict",
-        [
-            ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None}], {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1}}),
-            ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None}, {"pid": 2, "image": "blah", "timestamp": 1, "guid": None}], {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1}, 2: {'guid': None, 'image': 'blah', 'pid': 2, 'timestamp': 1}}),
-            ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": "a"}, {"pid": 2, "image": "blah", "timestamp": 1, "guid": "b"}], {"a": {'guid': "a", 'image': 'blah', 'pid': 1, 'timestamp': 1}, "b": {'guid': "b", 'image': 'blah', 'pid': 2, 'timestamp': 1}}),
-        ]
-    )
+                             [([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None}],
+                               {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1}}),
+                              ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None},
+                                {"pid": 2, "image": "blah", "timestamp": 1, "guid": None}],
+                               {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1},
+                                2: {'guid': None, 'image': 'blah', 'pid': 2, 'timestamp': 1}}),
+                              ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": "a"},
+                                {"pid": 2, "image": "blah", "timestamp": 1, "guid": "b"}],
+                               {"a": {'guid': "a", 'image': 'blah', 'pid': 1, 'timestamp': 1},
+                                "b": {'guid': "b", 'image': 'blah', 'pid': 2, 'timestamp': 1}}), ])
     def test_convert_events_to_dict(events, expected_events_dict):
         from assemblyline_v4_service.common.dynamic_service_helper import Event, Events
-        event_objects = [Event(pid=event["pid"], image=event["image"], timestamp=event["timestamp"], guid=event["guid"]) for event in events]
+        event_objects = [
+            Event(
+                pid=event["pid"],
+                image=event["image"],
+                timestamp=event["timestamp"],
+                guid=event["guid"]) for event in events]
         assert Events._convert_events_to_dict(event_objects) == expected_events_dict
 
 
@@ -381,168 +405,176 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize("processes_dict, expected_result",
-        [
-            # No processes
-            ({}, []),
-            # One process
-            (
-                    {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1}},
-                    [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []}]
-            ),
-            # One parent process and one child process
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                         "children":
-                             [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},]
-                        },
-                    ],
-            ),
-            # Two unrelated processes
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
-                        {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},
-                    ],
-            ),
-            # Three processes consisting of a parent-child relationship and a rando process
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
-                        {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah",
-                         "children":
-                             [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 3, "process_name": "blah", "children": []}]
-                         },
-                    ],
-            ),
-            # Three processes consisting of a grandparent-parent-child relationship and one rando process
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                        3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3},
-                        4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                         "children":
-                            [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
-                              "children":
-                                  [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 3, "process_name": "blah",
-                                    "children": []}, ]}]
-                         },
-                        {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 4, "process_name": "blah", "children": []}
-                    ],
-            ),
-            # Four processes consisting of a grandparent-parent-parent-child relationship
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                        3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
-                        4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                         "children":
                              [
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
-                                  "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,  "process_pid": 4, "process_name": "blah", "children": []}]},
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,  "process_pid": 3, "process_name": "blah", "children": []}
-                              ]
-                         },
-                    ],
-            ),
-            # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                        2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
-                        3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                        4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                         "children":
-                             [
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 3, "process_name": "blah",
-                                  "children": []},
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 2, "process_name": "blah",
-                                  "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "process_pid": 4, "process_name": "blah",
-                                        "children": []}]},
+                                 # No processes
+                                 ({}, []),
+                                 # One process
+                                 (
+                                     {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1}},
+                                     [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                                         "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []}]
+                                 ),
+                                 # One parent process and one child process
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                                          "children":
+                                          [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                                            "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []}, ]
+                                          },
+                                     ],
+                                 ),
+                                 # Two unrelated processes
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                                             "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                                         {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
+                                             "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},
+                                     ],
+                                 ),
+                                 # Three processes consisting of a parent-child relationship and a rando process
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                                             "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                                         {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah",
+                                          "children":
+                                          [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
+                                            "timestamp": 1, "process_pid": 3, "process_name": "blah", "children": []}]
+                                          },
+                                     ],
+                                 ),
+                                 # Three processes consisting of a grandparent-parent-child relationship and one rando process
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
+                                         3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3},
+                                         4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                                          "children":
+                                          [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
+                                            "children":
+                                            [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 3, "process_name": "blah",
+                                              "children": []}, ]}]
+                                          },
+                                         {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah",
+                                             "timestamp": 2, "process_pid": 4, "process_name": "blah", "children": []}
+                                     ],
+                                 ),
+                                 # Four processes consisting of a grandparent-parent-parent-child relationship
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
+                                         3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
+                                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                                          "children":
+                                          [
+                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
+                                               "children":
+                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,  "process_pid": 4, "process_name": "blah", "children": []}]},
+                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
+                                                  "timestamp": 3,  "process_pid": 3, "process_name": "blah", "children": []}
+                                          ]
+                                          },
+                                     ],
+                                 ),
+                                 # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
+                                         3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
+                                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                                          "children":
+                                          [
+                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 3, "process_name": "blah",
+                                               "children": []},
+                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 2, "process_name": "blah",
+                                               "children":
+                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "process_pid": 4, "process_name": "blah",
+                                                 "children": []}]},
+                                          ]
+                                          },
+                                     ],
+                                 ),
+                                 # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
+                                 (
+                                     {
+                                         "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None},
+                                         "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a"},
+                                         "c": {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a"},
+                                         "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b"},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "process_pid": 1, "process_name": "blah",
+                                          "children":
+                                          [
+                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a", "process_pid": 3, "process_name": "blah",
+                                               "children": []},
+                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a", "process_pid": 2, "process_name": "blah",
+                                               "children":
+                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b", "process_pid": 4, "process_name": "blah",
+                                                 "children": []}]},
+                                          ]
+                                          },
+                                     ],
+                                 ),
+                                 # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
+                                 (
+                                     {
+                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
+                                             "pguid": None},
+                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None,
+                                             "pguid": None},
+                                         3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None,
+                                             "pguid": None},
+                                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None,
+                                             "pguid": None},
+                                     },
+                                     [
+                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
+                                          "pguid": None, "process_pid": 1, "process_name": "blah",
+                                          "children":
+                                          [
+                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
+                                               "guid": None, "pguid": None, "process_pid": 3, "process_name": "blah",
+                                               "children": []},
+                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
+                                               "guid": None, "pguid": None, "process_pid": 2, "process_name": "blah",
+                                               "children":
+                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,
+                                                 "guid": None, "pguid": None, "process_pid": 4, "process_name": "blah",
+                                                 "children": []}]},
+                                          ]
+                                          },
+                                     ],
+                                 ),
                              ]
-                         },
-                    ],
-            ),
-            # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
-            (
-                    {
-                        "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None},
-                        "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a"},
-                        "c": {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a"},
-                        "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b"},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "process_pid": 1, "process_name": "blah",
-                         "children":
-                             [
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a", "process_pid": 3, "process_name": "blah",
-                                  "children": []},
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a", "process_pid": 2, "process_name": "blah",
-                                  "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b", "process_pid": 4, "process_name": "blah",
-                                        "children": []}]},
-                             ]
-                         },
-                    ],
-            ),
-            # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
-            (
-                    {
-                        1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
-                              "pguid": None},
-                        2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None,
-                              "pguid": None},
-                        3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None,
-                              "pguid": None},
-                        4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None,
-                              "pguid": None},
-                    },
-                    [
-                        {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
-                         "pguid": None, "process_pid": 1, "process_name": "blah",
-                         "children":
-                             [
-                                 {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
-                                  "guid": None, "pguid": None, "process_pid": 3, "process_name": "blah",
-                                  "children": []},
-                                 {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
-                                  "guid": None, "pguid": None, "process_pid": 2, "process_name": "blah",
-                                  "children":
-                                      [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,
-                                        "guid": None, "pguid": None, "process_pid": 4, "process_name": "blah",
-                                        "children": []}]},
-                             ]
-                         },
-                    ],
-            ),
-        ]
-    )
+                             )
     def test_convert_processes_dict_to_tree(processes_dict, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         actual_result = SandboxOntology._convert_processes_dict_to_tree(processes_dict)
@@ -550,12 +582,12 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize("artifact_list",
-        [
-            None,
-            [],
-            [{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}],
-        ]
-    )
+                             [
+                                 None,
+                                 [],
+                                 [{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}],
+                             ]
+                             )
     def test_validate_artifacts(artifact_list):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact
         actual_validated_artifact_list = SandboxOntology._validate_artifacts(artifact_list)
@@ -572,14 +604,18 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize("artifact, expected_result_section_title",
-        [
-            (None, None),
-            ({"path": "blah", "name": "blah", "description": "blah", "to_be_extracted": True}, None),
-            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.exe", "description": "blah", "to_be_extracted": True}, "HollowsHunter Injected Portable Executable"),
-            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc", "description": "blah", "to_be_extracted": True}, None),
-            ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.dll", "description": "blah", "to_be_extracted": True}, "HollowsHunter DLL"),
-        ]
-    )
+                             [(None, None),
+                              ({"path": "blah", "name": "blah", "description": "blah", "to_be_extracted": True},
+                               None),
+                              ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.exe",
+                                "description": "blah", "to_be_extracted": True},
+                               "HollowsHunter Injected Portable Executable"),
+                              ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc",
+                                "description": "blah", "to_be_extracted": True},
+                               None),
+                              ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.dll",
+                                "description": "blah", "to_be_extracted": True},
+                               "HollowsHunter Injected Portable Executable"), ])
     def test_handle_artifact(artifact, expected_result_section_title):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact
         from assemblyline_v4_service.common.result import ResultSection, Heuristic
@@ -595,7 +631,11 @@ class TestSandboxOntology:
             expected_result_section.add_tag("dynamic.process.file_name", artifact["path"])
             if expected_result_section_title == "HollowsHunter Injected Portable Executable":
                 heur = Heuristic(17)
-                heur.add_signature_id("hollowshunter_pe")
+                if ".exe" in artifact["name"]:
+                    heur.add_signature_id("hollowshunter_exe")
+                elif ".dll" in artifact["name"]:
+                    heur.add_signature_id("hollowshunter_dll")
+
                 expected_result_section.heuristic = heur
         parent_result_section = ResultSection("blah")
         a = Artifact(
@@ -616,16 +656,35 @@ class TestSandboxOntology:
             assert check_section_equality(actual_result_section, expected_result_section)
 
     @staticmethod
-    @pytest.mark.parametrize("process_list, signatures, expected_result",
-        [
-            (None, [], {}),
-            ([], [], {}),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None, "signatures": {"blah": 1}}}),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None, "signatures": {}}}),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {"a": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "signatures": {}}}),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}], [{"pid": 1, "name": "blah", "score": 1}], {"a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "signatures": {"blah": 1}}}),
-        ]
-    )
+    @pytest.mark.parametrize(
+        "process_list, signatures, expected_result",
+        [(None, [],
+          {}),
+         ([],
+          [],
+          {}),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          {1:
+           {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None,
+            "signatures": {"blah": 1}}}),
+         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          {2:
+           {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None,
+            "signatures": {}}}),
+         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          {
+             "a":
+             {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None,
+              "signatures": {}}}),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          {
+             "a":
+             {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None,
+              "signatures": {"blah": 1}}}), ])
     def test_match_signatures_to_process_events(process_list, signatures, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
@@ -633,15 +692,50 @@ class TestSandboxOntology:
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("process_list, safelist, expected_result", 
-        [
-            (None, [], []), 
-            ([], [], []),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [], [{'pid': 1, 'image': 'blah', 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah', 'children': []}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}, {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2", "pguid": "blah"}], [], [{'pid': 1, 'image': 'blah', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah', 'children': [{'pid': 2, 'image': 'blah2', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2', 'children': [], 'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}], 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52'}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}, {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2", "pguid": "blah"}, {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "timestamp": 1, "guid": "blah3", "pguid": "blah3"}, {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "timestamp": 2, "guid": "blah4", "pguid": "blah3"}], ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"], [{'pid': 1, 'image': 'blah', 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah', 'children': [{'pid': 2, 'image': 'blah2', 'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2', 'children': []}]}]),
-        ]
-    )
+    @pytest.mark.parametrize("process_list, safelist, expected_result",
+                             [(None, [],
+                               []),
+                              ([],
+                               [],
+                               []),
+                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+                               [],
+                               [{'pid': 1, 'image': 'blah',
+                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+                                 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah',
+                                 'process_pid': 1, 'process_name': 'blah', 'children': []}]),
+                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"},
+                                {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2,
+                                 "guid": "blah2", "pguid": "blah"}],
+                               [],
+                               [{'pid': 1, 'image': 'blah', 'timestamp': 1, 'guid': 'blah', 'ppid': 1,
+                                 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah',
+                                 'children':
+                                 [{'pid': 2, 'image': 'blah2', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1,
+                                   'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2',
+                                   'children': [],
+                                   'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}],
+                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52'}]),
+                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"},
+                                {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2,
+                                 "guid": "blah2", "pguid": "blah"},
+                                {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "timestamp": 1,
+                                 "guid": "blah3", "pguid": "blah3"},
+                                {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "timestamp": 2,
+                                 "guid": "blah4", "pguid": "blah3"}],
+                               ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
+                               [{'pid': 1, 'image': 'blah',
+                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+                                 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah',
+                                 'process_pid': 1, 'process_name': 'blah',
+                                 'children':
+                                 [{'pid': 2, 'image': 'blah2',
+                                   'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1',
+                                   'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2',
+                                   'process_pid': 2, 'process_name': 'blah2', 'children': []}]}]), ])
     def test_get_process_tree(process_list, safelist, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
@@ -650,15 +744,45 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize("process_list, signatures, safelist, expected_result",
-        [
-            (None, [], [], []),
-            ([], [], [], []),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], [], [{"children": [], "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah", 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {"blah": 1}}]),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], [], [{"children": [], "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {}}]),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], ["blah"], [{"children": [], "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah", 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah", "signatures": {}}]),
-            ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah"}], [{"pid": 1, "name": "blah", "score": 1}], ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"], []),
-        ]
-    )
+                             [(None, [],
+                               [],
+                               []),
+                              ([],
+                               [],
+                               [],
+                               []),
+                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+                               [{"pid": 1, "name": "blah", "score": 1}],
+                               [],
+                               [{"children": [],
+                                 "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah",
+                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
+                                 "signatures": {"blah": 1}}]),
+                              ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+                               [{"pid": 1, "name": "blah", "score": 1}],
+                               [],
+                               [{"children": [],
+                                 "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah",
+                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
+                                 "signatures": {}}]),
+                              ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+                               [{"pid": 1, "name": "blah", "score": 1}],
+                               ["blah"],
+                               [{"children": [],
+                                 "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah",
+                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
+                                 "signatures": {}}]),
+                              ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+                               [{"pid": 1, "name": "blah", "score": 1}],
+                               ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
+                               []), ])
     def test_get_process_tree_with_signatures(process_list, signatures, safelist, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
@@ -673,8 +797,8 @@ class TestSandboxOntology:
                   "children": [{"image": "image number 2", "children": []},
                                {"image": "image number 3", "children": []}]},
                 {"image": "got the image", "tree_id": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
-                  "children": [{"image": "image number 2", "tree_id": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17", "children": []},
-                               {"image": "image number 3", "tree_id": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129", "children": []}]},
+                 "children": [{"image": "image number 2", "tree_id": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17", "children": []},
+                              {"image": "image number 3", "tree_id": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129", "children": []}]},
              ['294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17',
               '0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129']),
             ("blahblah", {"image": "got the image", "children": [{"image": "image number 2", "children": []}, {"image": "image number 3", "children": []}]},
@@ -693,128 +817,56 @@ class TestSandboxOntology:
         assert node == expected_node
 
     @staticmethod
-    @pytest.mark.parametrize(
-        "process_tree, expected_process_tree, expected_process_tree_ids",
-        [
-            (
-                [
-                    {
-                        "image": "?pf86\\microsoft office\\office14\\excel.exe",
-                        "children":
-                            [
-                                {
-                                    "image": "?sys32\\wbem\\wmic1.exe",
-                                    "children":
-                                        [
-                                            {
-                                                "image": "?sys32\\wbem\\wmic11.exe",
-                                                "children":
-                                                    [
-                                                        {
-                                                            "image": "?sys32\\wbem\\wmic111.exe",
-                                                            "children": []
-                                                        }
-                                                    ]
-                                            },
-                                            {
-                                                "image": "?sys32\\wbem\\wmic12.exe",
-                                                "children": []
-                                            }
-                                        ]
-                                },
-                                {
-                                    "image": "?sys32\\wbem\\wmic2.exe",
-                                    "children": []
-                                },
-                                {
-                                    "image": "?sys32\\wbem\\wmic3.exe",
-                                    "children":
-                                        [
-                                            {
-                                                "image": "?sys32\\wbem\\wmic31.exe",
-                                                "children": []
-                                            },
-                                            {
-                                                "image": "?sys32\\wbem\\wmic32.exe",
-                                                "children": []
-                                            },
-                                            {
-                                                "image": "?sys32\\wbem\\wmic33.exe",
-                                                "children": []
-                                            }
-                                        ]
-                                }
-                            ]
-                    }
-                ],
-                [
-                    {
-                        "image": "?pf86\\microsoft office\\office14\\excel.exe",
-                        "tree_id": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62",
-                        "children":
-                            [
-                                {
-                                    "image": "?sys32\\wbem\\wmic1.exe",
-                                    "tree_id": "444ba8aca3c500c14d6b9948e6564864ffe3533b17c8a7970b20ff4145884448",
-                                    "children":
-                                        [
-                                            {
-                                                "image": "?sys32\\wbem\\wmic11.exe",
-                                                "tree_id": "29ee5e07066a9f5c9f66856c8cadaf706439b1eaef79ddad74f3cac929b54464",
-                                                "children":
-                                                    [
-                                                        {
-                                                             "image": "?sys32\\wbem\\wmic111.exe",
-                                                             "tree_id": "63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac",
-                                                             "children": []
-                                                        }
-                                                    ]
-                                            },
-                                            {
-                                                "image": "?sys32\\wbem\\wmic12.exe",
-                                                "tree_id": "6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d",
-                                                "children": []
-                                            }
-                                        ]
-                                },
-                                {
-                                    "image": "?sys32\\wbem\\wmic2.exe",
-                                    "tree_id": "a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b",
-                                    "children": []
-                                },
-                                {
-                                    "image": "?sys32\\wbem\\wmic3.exe",
-                                    "tree_id": "878e93a9cb19e3d8d659dbb3bd4945e53055f3b22c79ac49fac3070b3cc1acd7",
-                                    "children":
-                                        [
-                                            {
-                                                "image": "?sys32\\wbem\\wmic31.exe",
-                                                "tree_id": "6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40",
-                                                "children": []
-                                            },
-                                            {
-                                                "image": "?sys32\\wbem\\wmic32.exe",
-                                                "tree_id": "099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd",
-                                                "children": []
-                                            },
-                                            {
-                                                "image": "?sys32\\wbem\\wmic33.exe",
-                                                "tree_id": "4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5",
-                                                "children": []
-                                            }
-                                        ]
-                                }
-                            ]
-                    }
-                ],
-                [['63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac',
-                 '6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d',
-                 'a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b',
-                 '6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40',
-                 '099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd',
-                 '4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5']]),
-        ]
-    )
+    @pytest.mark.parametrize("process_tree, expected_process_tree, expected_process_tree_ids",
+                             [([{"image": "?pf86\\microsoft office\\office14\\excel.exe",
+                                 "children":
+                                 [{"image": "?sys32\\wbem\\wmic1.exe",
+                                   "children":
+                                   [{"image": "?sys32\\wbem\\wmic11.exe",
+                                     "children": [{"image": "?sys32\\wbem\\wmic111.exe", "children": []}]},
+                                    {"image": "?sys32\\wbem\\wmic12.exe", "children": []}]},
+                                  {"image": "?sys32\\wbem\\wmic2.exe", "children": []},
+                                  {"image": "?sys32\\wbem\\wmic3.exe",
+                                   "children":
+                                   [{"image": "?sys32\\wbem\\wmic31.exe", "children": []},
+                                    {"image": "?sys32\\wbem\\wmic32.exe", "children": []},
+                                    {"image": "?sys32\\wbem\\wmic33.exe", "children": []}]}]}],
+                               [{"image": "?pf86\\microsoft office\\office14\\excel.exe",
+                                 "tree_id": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62",
+                                 "children":
+                                 [{"image": "?sys32\\wbem\\wmic1.exe",
+                                   "tree_id": "444ba8aca3c500c14d6b9948e6564864ffe3533b17c8a7970b20ff4145884448",
+                                   "children":
+                                   [{"image": "?sys32\\wbem\\wmic11.exe",
+                                     "tree_id": "29ee5e07066a9f5c9f66856c8cadaf706439b1eaef79ddad74f3cac929b54464",
+                                     "children":
+                                     [{"image": "?sys32\\wbem\\wmic111.exe",
+                                       "tree_id": "63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac",
+                                       "children": []}]},
+                                    {"image": "?sys32\\wbem\\wmic12.exe",
+                                     "tree_id": "6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d",
+                                     "children": []}]},
+                                  {"image": "?sys32\\wbem\\wmic2.exe",
+                                   "tree_id": "a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b",
+                                   "children": []},
+                                  {"image": "?sys32\\wbem\\wmic3.exe",
+                                   "tree_id": "878e93a9cb19e3d8d659dbb3bd4945e53055f3b22c79ac49fac3070b3cc1acd7",
+                                   "children":
+                                   [{"image": "?sys32\\wbem\\wmic31.exe",
+                                     "tree_id": "6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40",
+                                     "children": []},
+                                    {"image": "?sys32\\wbem\\wmic32.exe",
+                                     "tree_id": "099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd",
+                                     "children": []},
+                                    {"image": "?sys32\\wbem\\wmic33.exe",
+                                     "tree_id": "4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5",
+                                     "children": []}]}]}],
+                               [['63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac',
+                                 '6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d',
+                                 'a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b',
+                                 '6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40',
+                                 '099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd',
+                                 '4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5']]), ])
     def test_create_tree_ids(process_tree, expected_process_tree, expected_process_tree_ids):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         tree_ids = SandboxOntology._create_tree_ids(process_tree)
@@ -845,53 +897,204 @@ class TestSandboxOntology:
         assert node == expected_node
 
     @staticmethod
-    @pytest.mark.parametrize(
-        'process_tree, safe_tree_ids, expected_process_tree',
-        [
-            ([{"image": "a", "children": [], "tree_id": "blah"}], [], [{"image": "a", "children": [], "tree_id": "blah"}]),
-            ([{"image": "a", "children": [], "tree_id": "blah"}], ["blah"], []),
-            ([{"image": "a", "children": [], "tree_id": "blah"}, {"image": "b", "children": [], "tree_id": "blahblah"}], ["blah"], [{"image": "b", "children": [], "tree_id": "blahblah"}]),
-            ([{"image": "a", "children": [], "tree_id": "blah"}, {"image": "b", "children": [], "tree_id": "blahblah"}], ["blahblah"], [{"image": "a", "children": [], "tree_id": "blah"}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}], [], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}], ["a"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "b"}], "tree_id": "a"}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}], ["b"], [{"image": "c", "children": [{"image": "d", "children": [], "tree_id": "d"}], "tree_id": "c"}]),
-        ]
-    )
+    @pytest.mark.parametrize('process_tree, safe_tree_ids, expected_process_tree',
+                             [([{"image": "a", "children": [],
+                                 "tree_id": "blah"}],
+                               [],
+                               [{"image": "a", "children": [],
+                                 "tree_id": "blah"}]),
+                              ([{"image": "a", "children": [],
+                                 "tree_id": "blah"}],
+                               ["blah"],
+                               []),
+                              ([{"image": "a", "children": [],
+                                 "tree_id": "blah"},
+                                {"image": "b", "children": [],
+                                 "tree_id": "blahblah"}],
+                               ["blah"],
+                               [{"image": "b", "children": [],
+                                 "tree_id": "blahblah"}]),
+                              ([{"image": "a", "children": [],
+                                 "tree_id": "blah"},
+                                {"image": "b", "children": [],
+                                 "tree_id": "blahblah"}],
+                               ["blahblah"],
+                               [{"image": "a", "children": [],
+                                 "tree_id": "blah"}]),
+                              ([{"image": "a", "children": [{"image": "b", "children": [],
+                                                             "tree_id": "b"}],
+                                 "tree_id": "a"},
+                                {"image": "c", "children": [{"image": "d", "children": [],
+                                                             "tree_id": "d"}],
+                                 "tree_id": "c"}],
+                               [],
+                               [{"image": "a", "children": [{"image": "b", "children": [],
+                                                             "tree_id": "b"}],
+                                 "tree_id": "a"},
+                                {"image": "c", "children": [{"image": "d", "children": [],
+                                                             "tree_id": "d"}],
+                                 "tree_id": "c"}]),
+                              ([{"image": "a", "children": [{"image": "b", "children": [],
+                                                             "tree_id": "b"}],
+                                 "tree_id": "a"},
+                                {"image": "c", "children": [{"image": "d", "children": [],
+                                                             "tree_id": "d"}],
+                                 "tree_id": "c"}],
+                               ["a"],
+                               [{"image": "a", "children": [{"image": "b", "children": [],
+                                                             "tree_id": "b"}],
+                                 "tree_id": "a"},
+                                {"image": "c", "children": [{"image": "d", "children": [],
+                                                             "tree_id": "d"}],
+                                 "tree_id": "c"}]),
+                              ([{"image": "a", "children": [{"image": "b", "children": [],
+                                                             "tree_id": "b"}],
+                                 "tree_id": "a"},
+                                {"image": "c", "children": [{"image": "d", "children": [],
+                                                             "tree_id": "d"}],
+                                 "tree_id": "c"}],
+                               ["b"],
+                               [{"image": "c", "children": [{"image": "d", "children": [],
+                                                             "tree_id": "d"}],
+                                 "tree_id": "c"}]), ])
     def test_remove_safe_leaves(process_tree, safe_tree_ids, expected_process_tree):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         SandboxOntology._remove_safe_leaves(process_tree, safe_tree_ids)
         assert process_tree == expected_process_tree
 
     @staticmethod
-    @pytest.mark.parametrize(
-        "process_tree, safe_tree_ids, expected_process_tree",
-        [
-            ([], [], []),
-            ([{"image": "a", "children": [], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], [], [{"image": "a", "children": [], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
-            ([{"image": "a", "children": [], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"], []),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], [], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"], []),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}], ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}, {"image": "c", "children": [{"image": "d", "children": [], 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}], ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"], [{'children': [{'children': [], 'image': 'd', 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], 'image': 'c', 'tree_id': '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}, {"image": "c", "children": [{"image": "d", "children": [], 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}], ["2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}], "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}, {"image": "c", "children": [{"image": "d", "children": [], "tree_id": 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}]),
-            ([{"image": "a", "children": [{"image": "b", "children": [], "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}], "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}, {"image": "c", "children": [{"image": "d", "children": [], 'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}], "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}], ["c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"], [{"image": "a", "children": [{"image": "b", "children": [], "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}], "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}]),
-        ])
+    @pytest.mark.parametrize("process_tree, safe_tree_ids, expected_process_tree",
+                             [([],
+                               [],
+                               []),
+                              ([{"image": "a", "children": [],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}],
+                               [],
+                               [{"image": "a", "children": [],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
+                              ([{"image": "a", "children": [],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}],
+                               ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],
+                               []),
+                              ([{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}],
+                               [],
+                               [{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
+                              ([{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}],
+                               ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"],
+                               []),
+                              ([{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}],
+                               ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],
+                               [{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}]),
+                              ([{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"},
+                                {"image": "c",
+                                 "children":
+                                 [{"image": "d", "children": [],
+                                   'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}],
+                                 "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}],
+                               ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"],
+                               [{
+                                   'children':
+                                   [{'children': [],
+                                     'image': 'd',
+                                     'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}],
+                                   'image': 'c',
+                                   'tree_id': '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}]),
+                              ([{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"},
+                                {"image": "c",
+                                 "children":
+                                 [{"image": "d", "children": [],
+                                   'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}],
+                                 "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}],
+                               ["2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"],
+                               [{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}],
+                                 "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'},
+                                {"image": "c",
+                                 "children":
+                                 [{"image": "d", "children": [],
+                                   "tree_id": 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}],
+                                 "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}]),
+                              ([{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}],
+                                 "tree_id": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"},
+                                {"image": "c",
+                                 "children":
+                                 [{"image": "d", "children": [],
+                                   'tree_id': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}],
+                                 "tree_id": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}],
+                               ["c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"],
+                               [{"image": "a",
+                                 "children":
+                                 [{"image": "b", "children": [],
+                                   "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}],
+                                 "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}]), ])
     def test_filter_process_tree_against_safe_tree_ids(process_tree, safe_tree_ids, expected_process_tree):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         filtered_process_tree = SandboxOntology._filter_process_tree_against_safe_tree_ids(process_tree, safe_tree_ids)
         assert filtered_process_tree == expected_process_tree
 
     @staticmethod
-    @pytest.mark.parametrize("events, expected_result",
-        [
-            (None, []),
-            ([], []),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}]),
-            ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
-            ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah", "pguid": "blah"}, {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}], [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1, "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}, {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah", "pguid": "blah"}]),
-        ]
-    )
+    @pytest.mark.parametrize(
+        "events, expected_result",
+        [(None, []),
+         ([],
+          []),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"}],
+          [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"}]),
+         ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+          [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"},
+           {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+          [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
+            "pguid": "blah"},
+           {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah",
+            "pguid": "blah"},
+           {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+          [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"},
+           {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah",
+            "pguid": "blah"}]), ])
     def test_get_events(events, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         so = SandboxOntology(events=events)
@@ -908,17 +1111,16 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize("artifact_list, expected_result",
-        [
-            (None, None),
-            ([], None),
-            ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}], None),
-            ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": False}], None),
-        ]
-    )
+                             [(None, None),
+                              ([],
+                               None),
+                              ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}],
+                               None),
+                              ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": False}],
+                               None), ])
     def test_handle_artifacts(artifact_list, expected_result, dummy_request_class):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         r = dummy_request_class()
         o = SandboxOntology()
         actual_result = o.handle_artifacts(artifact_list, r)
         assert actual_result == expected_result
-
