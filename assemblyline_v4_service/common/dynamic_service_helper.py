@@ -230,9 +230,9 @@ class Events:
         if not things_to_sort_by_timestamp:
             return []
         if isinstance(things_to_sort_by_timestamp[0], Dict):
-            timestamp = lambda x: x["timestamp"]
+            def timestamp(x): return x["timestamp"]
         else:
-            timestamp = lambda x: x.timestamp
+            def timestamp(x): return x.timestamp
         sorted_things = sorted(things_to_sort_by_timestamp, key=timestamp)
         return sorted_things
 
@@ -358,22 +358,20 @@ class SandboxOntology(Events):
             raise Exception("Artifact cannot be None")
 
         # This is a dict who's key-value pairs follow the format {regex: result_section_title}
-        artifact_map = {
-            HOLLOWSHUNTER_EXE_REGEX: "HollowsHunter Injected Portable Executable",
-            HOLLOWSHUNTER_DLL_REGEX: "HollowsHunter DLL",
-        }
         artifact_result_section = None
 
-        for regex, title in artifact_map.items():
+        for regex in [HOLLOWSHUNTER_EXE_REGEX, HOLLOWSHUNTER_DLL_REGEX]:
             pattern = compile(regex)
             if pattern.match(artifact.name):
-                artifact_result_section = ResultSection(title)
+                artifact_result_section = ResultSection("HollowsHunter Injected Portable Executable")
                 artifact_result_section.add_tag("dynamic.process.file_name", artifact.path)
+                # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
+                heur = Heuristic(17)
+                artifact_result_section.heuristic = heur
                 if regex in [HOLLOWSHUNTER_EXE_REGEX]:
-                    # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
-                    heur = Heuristic(17)
-                    heur.add_signature_id("hollowshunter_pe")
-                    artifact_result_section.heuristic = heur
+                    heur.add_signature_id("hollowshunter_exe")
+                elif regex in [HOLLOWSHUNTER_DLL_REGEX]:
+                    heur.add_signature_id("hollowshunter_dll")
 
         if artifact_result_section is not None:
             artifacts_result_section.add_subsection(artifact_result_section)
@@ -420,8 +418,8 @@ class SandboxOntology(Events):
         if safelist:
             process_tree_with_signatures = \
                 SandboxOntology._filter_process_tree_against_safe_tree_ids(process_tree_with_signatures, safelist)
-        return process_tree_with_signatures    
-    
+        return process_tree_with_signatures
+
     @staticmethod
     def _create_hashed_node(parent: str, node: Dict[str, Any], tree_ids: List[str]) -> None:
         """
@@ -465,7 +463,7 @@ class SandboxOntology(Events):
     @staticmethod
     def _remove_safe_leaves_helper(node: Dict[str, Any], safe_tree_ids: List[str]) -> Union[str, None]:
         """
-        This method is used to recursively remove safe branches from the given node. It removes a branch from the leaf 
+        This method is used to recursively remove safe branches from the given node. It removes a branch from the leaf
         up until it is reaches a node that is not safelisted
         :param node: A dictionary of a process tree node (root)
         :param safe_tree_ids: All of the safe leaf tree IDs (the safelist)
@@ -491,7 +489,7 @@ class SandboxOntology(Events):
                 return tree_id
             else:
                 return None
-        
+
     @staticmethod
     def _remove_safe_leaves(process_tree: List[Dict[str, Any]], safe_tree_ids: List[str]) -> None:
         """
@@ -514,7 +512,7 @@ class SandboxOntology(Events):
         :param process_tree: A list of processes in a tree structure
         :param safe_tree_ids: A List of tree IDs representing safe leaf nodes/branches
         :return: A list of processes in a tree structure, with the safe branches filtered out
-        """        
+        """
         SandboxOntology._remove_safe_leaves(process_tree, safe_tree_ids)
         return process_tree
 
