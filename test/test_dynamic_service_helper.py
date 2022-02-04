@@ -617,7 +617,7 @@ class TestSandboxOntology:
                                 "description": "blah", "to_be_extracted": True},
                                "HollowsHunter Injected Portable Executable"), ])
     def test_handle_artifact(artifact, expected_result_section_title):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact, HOLLOWSHUNTER_TITLE
         from assemblyline_v4_service.common.result import ResultSection, Heuristic
 
         if artifact is None:
@@ -628,8 +628,10 @@ class TestSandboxOntology:
         expected_result_section = None
         if expected_result_section_title is not None:
             expected_result_section = ResultSection(expected_result_section_title)
-            expected_result_section.add_tag("dynamic.process.file_name", artifact["path"])
-            if expected_result_section_title == "HollowsHunter Injected Portable Executable":
+            expected_result_section.add_line("HollowsHunter dumped the following:")
+            expected_result_section.add_line(f"\t- {artifact['name']}")
+            expected_result_section.add_tag("dynamic.process.file_name", artifact["name"])
+            if expected_result_section_title == HOLLOWSHUNTER_TITLE:
                 heur = Heuristic(17)
                 if ".exe" in artifact["name"]:
                     heur.add_signature_id("hollowshunter_exe")
@@ -653,6 +655,15 @@ class TestSandboxOntology:
         if expected_result_section is None and actual_result_section is None:
             assert True
         else:
+            assert check_section_equality(actual_result_section, expected_result_section)
+
+            additional_artifact = Artifact(name="321_hollowshunter/hh_process_321_blah.dll",
+                                           path="blah", description="blah", to_be_extracted=False)
+            SandboxOntology._handle_artifact(additional_artifact, parent_result_section)
+            expected_result_section.add_line(f"\t- {additional_artifact.name}")
+            expected_result_section.add_tag("dynamic.process.file_name", additional_artifact.name)
+            expected_result_section.heuristic.add_signature_id("hollowshunter_dll")
+
             assert check_section_equality(actual_result_section, expected_result_section)
 
     @staticmethod
