@@ -125,6 +125,10 @@ class ServiceUpdater(ThreadedCoreBase):
             'Run source updates': self._run_source_updates,
             'Run local updates': self._run_local_updates,
         }
+        # Only used by updater with 'generates_signatures: false'
+        self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
+        if not os.path.exists(self.latest_updates_dir):
+            os.mkdir(self.latest_updates_dir)
 
     def trigger_update(self):
         self.source_update_flag.set()
@@ -373,8 +377,10 @@ class ServiceUpdater(ThreadedCoreBase):
         raise NotImplementedError()
 
     # Define how to prepare the output directory before being served, must return the path of the directory to serve.
-    def prepare_output_directory() -> str:
-        raise NotImplementedError()
+    def prepare_output_directory(self) -> str:
+        output_directory = tempfile.mkdtemp()
+        shutil.copytree(self.latest_updates_dir, output_directory, dirs_exist_ok=True)
+        return output_directory
 
     def _run_source_updates(self):
         # Wait until basic data is loaded
