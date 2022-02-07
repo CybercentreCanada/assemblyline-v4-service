@@ -116,15 +116,6 @@ class ServiceUpdater(ThreadedCoreBase):
         self.local_update_flag = threading.Event()
         self.local_update_start = threading.Event()
 
-        # Cleanup update directory
-        if os.path.exists(UPDATER_DIR):
-            for files in os.scandir(UPDATER_DIR):
-                path = os.path.join(UPDATER_DIR, files)
-                try:
-                    shutil.rmtree(path)
-                except OSError:
-                    os.remove(path)
-
         # Load threads
         self._internal_server = None
         self.expected_threads = {
@@ -134,6 +125,10 @@ class ServiceUpdater(ThreadedCoreBase):
             'Run source updates': self._run_source_updates,
             'Run local updates': self._run_local_updates,
         }
+        # Only used by updater with 'generates_signatures: false'
+        self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
+        if not os.path.exists(self.latest_updates_dir):
+            os.mkdir(self.latest_updates_dir)
 
     def trigger_update(self):
         self.source_update_flag.set()
@@ -260,64 +255,69 @@ class ServiceUpdater(ThreadedCoreBase):
         old_update_time = self.get_local_update_time()
         if not os.path.exists(UPDATER_DIR):
             os.makedirs(UPDATER_DIR)
-        output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
+
         _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
+        if self._service.update_config.generates_signatures:
+            output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
 
-        self.log.info("Setup service account.")
-        username = self.ensure_service_account()
-        self.log.info("Create temporary API key.")
-        with temporary_api_key(self.datastore, username) as api_key:
-            self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-            al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+            self.log.info("Setup service account.")
+            username = self.ensure_service_account()
+            self.log.info("Create temporary API key.")
+            with temporary_api_key(self.datastore, username) as api_key:
+                self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
 
-            # Check if new signatures have been added
-            self.log.info("Check for new signatures.")
-            if al_client.signature.update_available(
-                    since=epoch_to_iso(old_update_time) or '', sig_type=self.updater_type)['update_available']:
-                self.log.info("An update is available for download from the datastore")
+                # Check if new signatures have been added
+                self.log.info("Check for new signatures.")
+                if al_client.signature.update_available(
+                        since=epoch_to_iso(old_update_time) or '', sig_type=self.updater_type)['update_available']:
+                    self.log.info("An update is available for download from the datastore")
 
-                self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
+                    self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
 
-                extracted_zip = False
-                attempt = 0
+                    extracted_zip = False
+                    attempt = 0
 
-                # Sometimes a zip file isn't always returned, will affect service's use of signature source. Patience..
-                while not extracted_zip and attempt < 5:
-                    temp_zip_file = os.path.join(output_directory, 'temp.zip')
-                    al_client.signature.download(
-                        output=temp_zip_file, query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
+                    # Sometimes a zip file isn't always returned, will affect service's use of signature source. Patience..
+                    while not extracted_zip and attempt < 5:
+                        temp_zip_file = os.path.join(output_directory, 'temp.zip')
+                        al_client.signature.download(
+                            output=temp_zip_file, query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
 
-                    self.log.debug(f"Downloading update to {temp_zip_file}")
-                    if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
-                        self.log.debug(f"Type of file ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file)}")
-                        try:
-                            with ZipFile(temp_zip_file, 'r') as zip_f:
-                                zip_f.extractall(output_directory)
-                                extracted_zip = True
-                                self.log.info("Zip extracted.")
-                        except BadZipFile:
-                            attempt += 1
-                            self.log.warning(f"[{attempt}/5] Bad zip. Trying again after 30s...")
-                            time.sleep(30)
-                        except Exception as e:
-                            self.log.error(f'Problem while extracting signatures to disk: {e}')
-                            break
+                        self.log.debug(f"Downloading update to {temp_zip_file}")
+                        if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
+                            self.log.debug(f"Type of file ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file)}")
+                            try:
+                                with ZipFile(temp_zip_file, 'r') as zip_f:
+                                    zip_f.extractall(output_directory)
+                                    extracted_zip = True
+                                    self.log.info("Zip extracted.")
+                            except BadZipFile:
+                                attempt += 1
+                                self.log.warning(f"[{attempt}/5] Bad zip. Trying again after 30s...")
+                                time.sleep(30)
+                            except Exception as e:
+                                self.log.error(f'Problem while extracting signatures to disk: {e}')
+                                break
 
-                        os.remove(temp_zip_file)
+                            os.remove(temp_zip_file)
 
-                if extracted_zip:
-                    self.log.info("New ruleset successfully downloaded and ready to use")
-                    self.serve_directory(output_directory, time_keeper)
+                    if extracted_zip:
+                        self.log.info("New ruleset successfully downloaded and ready to use")
+                        self.serve_directory(output_directory, time_keeper)
+                    else:
+                        self.log.error("Signatures aren't saved to disk.")
+                        shutil.rmtree(output_directory, ignore_errors=True)
+                        if os.path.exists(time_keeper):
+                            os.unlink(time_keeper)
                 else:
-                    self.log.error("Signatures aren't saved to disk.")
+                    self.log.info("No signature updates available.")
                     shutil.rmtree(output_directory, ignore_errors=True)
                     if os.path.exists(time_keeper):
                         os.unlink(time_keeper)
-            else:
-                self.log.info("No signature updates available.")
-                shutil.rmtree(output_directory, ignore_errors=True)
-                if os.path.exists(time_keeper):
-                    os.unlink(time_keeper)
+        else:
+            output_directory = self.prepare_output_directory()
+            self.serve_directory(output_directory, time_keeper)
 
     def do_source_update(self, service: Service) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
@@ -375,6 +375,12 @@ class ServiceUpdater(ThreadedCoreBase):
     def import_update(self, files_sha256: List[Tuple[str, str]], client: Client, source_name: str,
                       default_classification=None):
         raise NotImplementedError()
+
+    # Define how to prepare the output directory before being served, must return the path of the directory to serve.
+    def prepare_output_directory(self) -> str:
+        output_directory = tempfile.mkdtemp()
+        shutil.copytree(self.latest_updates_dir, output_directory, dirs_exist_ok=True)
+        return output_directory
 
     def _run_source_updates(self):
         # Wait until basic data is loaded
