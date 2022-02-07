@@ -93,6 +93,11 @@ heuristics:
     name: Config decoding
     score: 100
     attack_id: [T1027, T1127]
+  - description: This suspicious heuristic fakes an high entropy pe section
+    filetype: "*"
+    heur_id: 5
+    name: High entropy PE section
+    score: 100
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
