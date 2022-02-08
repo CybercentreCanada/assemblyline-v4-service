@@ -297,19 +297,21 @@ class ResultSample(ServiceBase):
             # Use the TableRow class to help adding row to the Table section
             table_section.add_row(TableRow(a_str="Some string1",
                                   extra_column_here="confirmed", a_bool=False, an_int=101))
-            table_section.add_row(TableRow(a_str="Some string2", a_bool=True, an_int=102))
+            table_section.add_row(TableRow({"a_str": "Some string2",
+                                            "a_bool": True, "an_int": "to_be_overriden_by_kwargs"}, an_int=102))
             table_section.add_row(TableRow(a_str="Some string3", a_bool=False, an_int=103))
             # Valid values for the items in the TableRow are: str, int, bool, None, or dict of those values
-            table_section.add_row(TableRow(a_str="Some string4", a_bool=None, an_int=-1000000000000000000,
-                                  extra_column_there="confirmed", nested_key_value_pair={
-                                      "a_str": "Some string3",
-                                      "a_bool": False,
-                                      "nested_kv_thats_too_deep": {
-                                          "a_str": "Some string3",
-                                          "a_bool": False,
-                                          "an_int": 103,
-                                      },
-                                  }))
+            table_section.add_row(TableRow(
+                {"a_str": "Some string4", "a_bool": None, "an_int": -1000000000000000000},
+                {"extra_column_there": "confirmed", "nested_key_value_pair": {
+                    "a_str": "Some string3",
+                    "a_bool": False,
+                    "nested_kv_thats_too_deep": {
+                        "a_str": "Some string3",
+                        "a_bool": False,
+                        "an_int": 103,
+                    },
+                }}))
             result.add_section(table_section)
 
             # ==================================================================

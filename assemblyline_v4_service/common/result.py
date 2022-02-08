@@ -311,8 +311,12 @@ class ProcessTreeSectionBody(SectionBody):
 
 
 class TableRow(dict):
-    def __init__(self, **kwargs) -> None:
-        return super().__init__(**kwargs)
+    def __init__(self, *args, **kwargs) -> None:
+        data = {}
+        for arg in args:
+            data.update(arg)
+        data.update(kwargs)
+        return super().__init__(**data)
 
 
 class TableSectionBody(SectionBody):
