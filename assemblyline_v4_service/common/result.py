@@ -28,7 +28,8 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TABLE', 7),
     ('IMAGE', 8),
     ('MULTI', 9),
-    ('DIVIDER', 10)  # This is not a real result section and can only be use inside a multi section
+    ('DIVIDER', 10),  # This is not a real result section and can only be use inside a multi section
+    ('ORDERED_KEY_VALUE', 11)
 ])
 
 
@@ -247,6 +248,14 @@ class KVSectionBody(SectionBody):
 
     def update_items(self, new_dict: dict):
         self._data.update(new_dict)
+
+
+class OrderedKVSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[])
+
+    def add_item(self, key: str, value: Union[str, bool, int]) -> None:
+        self._data.append((key, value))
 
 
 class JSONSectionBody(SectionBody):
@@ -545,6 +554,14 @@ class ResultKeyValueSection(TypeSpecificResultSection):
 
     def update_items(self, new_dict):
         self.section_body.update_items(new_dict)
+
+
+class ResultOrderedKeyValueSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, OrderedKVSectionBody(), **kwargs)
+
+    def add_item(self, key: str, value: Union[str, bool, int]) -> None:
+        self.section_body.add_item(key, value)
 
 
 class ResultJSONSection(TypeSpecificResultSection):

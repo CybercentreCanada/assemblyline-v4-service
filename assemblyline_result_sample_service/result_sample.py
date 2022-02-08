@@ -11,7 +11,7 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, ProcessItem, \
     ResultGraphSection, ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, \
     ResultMultiSection, ResultProcessTreeSection, ResultSection, BODY_FORMAT, Heuristic, ResultTextSection, \
-    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result
+    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -200,6 +200,18 @@ class ResultSample(ServiceBase):
                 "an_int": 102,
             })
             result.add_section(kv_section)
+
+            # ==================================================================
+            # ORDERED_KEY_VALUE section:
+            #     This section provides the same functionality as the KEY_VALUE section except the order of the fields
+            #     are garanteed to be preserved in the order in which the fields are added to the section. Also with
+            #     this section, you can repeat the same key name multiple times
+            oredered_kv_section = ResultOrderedKeyValueSection('Example of an ORDERED_KEY_VALUE section')
+            # You can add items individually
+            for x in range(random.randint(3, 6)):
+                oredered_kv_section.add_item(f'key{x}', f"value{x}")
+
+            result.add_section(oredered_kv_section)
 
             # ==================================================================
             # JSON section:
