@@ -8,10 +8,10 @@ from assemblyline.common.attack_map import software_map, attack_map, group_map, 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import GraphSectionBody, KVSectionBody, ProcessItem, Result, \
+from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, ProcessItem, \
     ResultGraphSection, ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, \
     ResultMultiSection, ResultProcessTreeSection, ResultSection, BODY_FORMAT, Heuristic, ResultTextSection, \
-    ResultURLSection, ResultTableSection, TableRow, TextSectionBody
+    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -372,14 +372,20 @@ class ResultSample(ServiceBase):
             #     This type of section allows the service writer to display multiple section types
             #     in the same result section. Here's a concrete exemple of this:
             multi_section = ResultMultiSection('Example of Multi-typed section')
-            graph_part = GraphSectionBody()
-            graph_part.set_colormap(0, 8, [7 + random.random() for _ in range(20)])
-            multi_section.add_section_part(TextSectionBody(body="We have detected very high entropy in this section "
+            multi_section.add_section_part(TextSectionBody(body="We have detected very high entropy multiple sections "
                                                                 "of your file, this section is most-likely packed or "
-                                                                "encrypted."))
-            multi_section.add_section_part(KVSectionBody(section_name=".UPX", offset='0x008000', size='4196 bytes'))
-            multi_section.add_section_part(graph_part)
-            multi_section.add_tag("file.pe.sections.name", ".UPX")
+                                                                "encrypted.\n\nHere are affected sections:"))
+            section_count = random.randint(1, 4)
+            for x in range(section_count):
+                multi_section.add_section_part(
+                    KVSectionBody(section_name=f".UPX{x}", offset=f'0x00{8+x}000', size='4196 bytes'))
+                graph_part = GraphSectionBody()
+                graph_part.set_colormap(0, 8, [7 + random.random() for _ in range(20)])
+                multi_section.add_section_part(graph_part)
+                if x != section_count - 1:
+                    multi_section.add_section_part(DividerSectionBody())
+                multi_section.add_tag("file.pe.sections.name", f".UPX{x}")
+
             multi_section.set_heuristic(5)
             result.add_section(multi_section)
 

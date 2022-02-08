@@ -28,6 +28,7 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TABLE', 7),
     ('IMAGE', 8),
     ('MULTI', 9),
+    ('DIVIDER', 10)  # This is not a real result section and can only be use inside a multi section
 ])
 
 
@@ -330,6 +331,11 @@ class MultiSectionBody(SectionBody):
 
     def add_section_body(self, section_body: SectionBody) -> str:
         self._data.append((section_body.format, section_body._data))
+
+
+class DividerSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.DIVIDER, body=None)
 
 
 class ResultSection:
