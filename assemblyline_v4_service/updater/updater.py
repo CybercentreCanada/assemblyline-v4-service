@@ -128,7 +128,7 @@ class ServiceUpdater(ThreadedCoreBase):
         # Only used by updater with 'generates_signatures: false'
         self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
         if not os.path.exists(self.latest_updates_dir):
-            os.mkdir(self.latest_updates_dir)
+            os.makedirs(self.latest_updates_dir)
 
     def trigger_update(self):
         self.source_update_flag.set()
