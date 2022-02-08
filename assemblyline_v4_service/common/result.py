@@ -77,13 +77,13 @@ class Heuristic:
                                             f"the service manifest before using it.")
 
         # Set default values
-        self.definition = HEUR_LIST[heur_id]
-        self.heur_id = heur_id
-        self.attack_ids = []
-        self.frequency = 0
+        self._definition = HEUR_LIST[heur_id]
+        self._heur_id = heur_id
+        self._attack_ids = []
+        self._frequency = 0
 
         # Live score map is either score_map or an empty map
-        self.score_map = score_map or {}
+        self._score_map = score_map or {}
 
         # Default attack_id list is either empty or received attack_ids parameter
         attack_ids = attack_ids or []
@@ -93,84 +93,108 @@ class Heuristic:
             attack_ids.append(attack_id)
 
         # If no attack_id are set, check heuristic definition for a default attack id
-        if not attack_ids and self.definition.attack_id:
-            attack_ids.extend(self.definition.attack_id)
+        if not attack_ids and self._definition.attack_id:
+            attack_ids.extend(self._definition.attack_id)
 
         # Validate that all attack_ids are in the attack_map
         for a_id in attack_ids:
             if a_id in attack_map or a_id in software_map or a_id in group_map:
-                self.attack_ids.append(a_id)
+                self._attack_ids.append(a_id)
             elif a_id in revoke_map:
-                self.attack_ids.append(revoke_map[a_id])
+                self._attack_ids.append(revoke_map[a_id])
             else:
                 log.warning(f"Invalid attack_id '{a_id}' for heuristic '{heur_id}'. Ignoring it.")
 
         # Signature map is either the provided value or an empty map
-        self.signatures = signatures or {}
+        self._signatures = signatures or {}
 
         # If a signature is provided, add it to the map and increment its frequency
         if signature:
-            self.signatures.setdefault(signature, 0)
-            self.signatures[signature] += frequency
+            self._signatures.setdefault(signature, 0)
+            self._signatures[signature] += frequency
 
         # If there are no signatures, add an empty signature with frequency of one (signatures drives the score)
-        if not self.signatures:
-            self.frequency = frequency
+        if not self._signatures:
+            self._frequency = frequency
+
+    @property
+    def attack_ids(self):
+        return self._attack_ids
+
+    @property
+    def frequency(self):
+        return self._frequency
+
+    @property
+    def heur_id(self):
+        return self._heur_id
 
     @property
     def score(self):
         temp_score = 0
-        if len(self.signatures) > 0:
+        if len(self._signatures) > 0:
             # There are signatures associated to the heuristic, loop through them and compute a score
-            for sig_name, freq in self.signatures.items():
+            for sig_name, freq in self._signatures.items():
                 # Find which score we should use for this signature (In order of importance)
                 #   1. Heuristic's signature score map
                 #   2. Live service submitted score map
                 #   3. Heuristic's default signature
-                sig_score = self.definition.signature_score_map.get(sig_name,
-                                                                    self.score_map.get(sig_name,
-                                                                                       self.definition.score))
+                sig_score = self._definition.signature_score_map.get(sig_name,
+                                                                     self._score_map.get(sig_name,
+                                                                                         self._definition.score))
                 temp_score += sig_score * freq
         else:
             # There are no signatures associated to the heuristic, compute the new score based of that new frequency
-            frequency = self.frequency or 1
-            temp_score = self.definition.score * frequency
+            frequency = self._frequency or 1
+            temp_score = self._definition.score * frequency
 
         # Checking score boundaries
-        if self.definition.max_score:
-            temp_score = min(temp_score, self.definition.max_score)
+        if self._definition.max_score:
+            temp_score = min(temp_score, self._definition.max_score)
 
         return temp_score
 
+    @property
+    def score_map(self):
+        return self._score_map
+
+    @property
+    def signatures(self):
+        return self._signatures
+
     def add_attack_id(self, attack_id: str):
-        if attack_id not in self.attack_ids:
+        if attack_id not in self._attack_ids:
             if attack_id in attack_map or attack_id in software_map or attack_id in group_map:
-                self.attack_ids.append(attack_id)
+                self._attack_ids.append(attack_id)
             elif attack_id in revoke_map:
                 new_attack_id = revoke_map[attack_id]
-                if new_attack_id not in self.attack_ids:
-                    self.attack_ids.append(new_attack_id)
+                if new_attack_id not in self._attack_ids:
+                    self._attack_ids.append(new_attack_id)
             else:
-                log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self.heur_id}'. Ignoring it.")
+                log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self._heur_id}'. Ignoring it.")
 
     def add_signature_id(self, signature: str, score: int = None, frequency: int = 1):
         # Add the signature to the map and adds it new frequency to the old value
-        self.signatures.setdefault(signature, 0)
-        self.signatures[signature] += frequency
+        self._signatures.setdefault(signature, 0)
+        self._signatures[signature] += frequency
 
         # If a new score is assigned to the signature save it here
         if score is not None:
-            self.score_map[signature] = score
+            self._score_map[signature] = score
 
     def increment_frequency(self, frequency: int = 1):
         # Increment the signature less frequency of the heuristic
-        self.frequency += frequency
+        self._frequency += frequency
 
 
 class SectionBody:
     def __init__(self, body_format: BODY_FORMAT, body=None):
-        self.format = body_format
+        self._format = body_format
         self._data = body
+
+    @property
+    def format(self):
+        return self._format
 
     @property
     def body(self):
@@ -329,12 +353,12 @@ class TableSectionBody(SectionBody):
 
 class ImageSectionBody(SectionBody):
     def __init__(self, request):
-        self.request = request
+        self._request = request
         return super().__init__(BODY_FORMAT.IMAGE, body=[])
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None) -> bool:
-        res = self.request.add_image(path, name, description, classification)
+        res = self._request.add_image(path, name, description, classification)
         self._data.append(res)
 
 
@@ -368,17 +392,17 @@ class ResultSection:
         self._finalized: bool = False
         self.parent = parent
         self._section = None
-        self.subsections: List[ResultSection] = []
+        self._subsections: List[ResultSection] = []
         if isinstance(body, SectionBody):
-            self.body_format = body.body_format
+            self._body_format = body.format
             self._body = body.body
         else:
-            self.body_format: BODY_FORMAT = body_format
+            self._body_format: BODY_FORMAT = body_format
             self._body: str = body
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.depth: int = 0
-        self.tags = tags or {}
-        self.heuristic = None
+        self._tags = tags or {}
+        self._heuristic = None
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
         self.zeroize_on_sig_safe = zeroize_on_sig_safe
@@ -391,7 +415,7 @@ class ResultSection:
             if not isinstance(heuristic, Heuristic):
                 log.warning(f"This is not a valid Heuristic object: {str(heuristic)}")
             else:
-                self.heuristic = heuristic
+                self._heuristic = heuristic
 
         if parent is not None:
             if isinstance(parent, ResultSection):
@@ -402,6 +426,22 @@ class ResultSection:
     @property
     def body(self):
         return self._body
+
+    @property
+    def body_format(self):
+        return self._body_format
+
+    @property
+    def heuristic(self):
+        return self._heuristic
+
+    @property
+    def subsections(self):
+        return self._subsections
+
+    @property
+    def tags(self):
+        return self._tags
 
     def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
@@ -434,20 +474,20 @@ class ResultSection:
         :param on_top: Display this result section on top of other subsections
         """
         if on_top:
-            self.subsections.insert(0, subsection)
+            self._subsections.insert(0, subsection)
         else:
-            self.subsections.append(subsection)
+            self._subsections.append(subsection)
         subsection.parent = self
 
     def add_tag(self, tag_type: str, value: Union[str, bytes]) -> None:
         if isinstance(value, bytes):
             value = value.decode()
 
-        if tag_type not in self.tags:
-            self.tags[tag_type] = []
+        if tag_type not in self._tags:
+            self._tags[tag_type] = []
 
-        if value not in self.tags[tag_type]:
-            self.tags[tag_type].append(value)
+        if value not in self._tags[tag_type]:
+            self._tags[tag_type].append(value)
 
     def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
@@ -464,20 +504,21 @@ class ResultSection:
 
         tmp_subs = []
         self.depth = depth
-        for subsection in self.subsections:
+        for subsection in self._subsections:
             if subsection.finalize(depth=depth+1):
                 tmp_subs.append(subsection)
-        self.subsections = tmp_subs
+        self._subsections = tmp_subs
 
         return True
 
-    def set_body(self, body: Union[str, SectionBody], body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
+    def set_body(self, body: Union[str, SectionBody], body_format: BODY_FORMAT = None) -> None:
         if isinstance(body, SectionBody):
             self._body = body.body
-            self.body_format = body.body_format
+            self._body_format = body.body_format
         else:
             self._body = body
-            self.body_format = body_format
+            if body_format:
+                self._body_format = body_format
 
     def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
         """
@@ -489,11 +530,11 @@ class ResultSection:
         :param signature: (optional) Signature Name that triggered the heuristic
         """
 
-        if self.heuristic:
+        if self._heuristic:
             raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
                                             f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
 
-        self.heuristic = Heuristic(heur_id, attack_id=attack_id, signature=signature)
+        self._heuristic = Heuristic(heur_id, attack_id=attack_id, signature=signature)
 
 
 class TypeSpecificResultSection(ResultSection):
