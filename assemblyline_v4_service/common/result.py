@@ -27,6 +27,9 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('PROCESS_TREE', 6),
     ('TABLE', 7),
     ('IMAGE', 8),
+    ('MULTI', 9),
+    ('DIVIDER', 10),  # This is not a real result section and can only be use inside a multi section
+    ('ORDERED_KEY_VALUE', 11)
 ])
 
 
@@ -164,11 +167,191 @@ class Heuristic:
         self.frequency += frequency
 
 
+class SectionBody:
+    def __init__(self, body_format: BODY_FORMAT, body=None):
+        self.format = body_format
+        self._data = body
+
+    @property
+    def body(self):
+        if not self._data:
+            return None
+        elif not isinstance(self._data, str):
+            return json.dumps(self._data)
+        else:
+            return self._data
+
+    def set_body(self, body):
+        self._data = body
+
+
+class TextSectionBody(SectionBody):
+    def __init__(self, body=None):
+        return super().__init__(BODY_FORMAT.TEXT, body=body)
+
+    def add_line(self, text: Union[str, List]) -> None:
+        # add_line with a list should join without newline seperator.
+        # use add_lines if list should be split one element per line.
+        if isinstance(text, list):
+            text = ''.join(text)
+        textstr = safe_str(text)
+        if self._data:
+            self._data = f"{self._data}\n{textstr}"
+        else:
+            self._data = textstr
+        return self._data
+
+    def add_lines(self, line_list: List[str]) -> None:
+        segment = safe_str('\n'.join(line_list))
+        if self._data is None:
+            self._data = segment
+        else:
+            self._data = f"{self._data}\n{segment}"
+        return self._data
+
+
+class MemorydumpSectionBody(SectionBody):
+    def __init__(self, body=None):
+        return super().__init__(BODY_FORMAT.MEMORY_DUMP, body=body)
+
+
+class URLSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.URL, body=[])
+
+    def add_url(self, url: str, name: Optional[str] = None) -> None:
+        url_data = {'url': url}
+        if name:
+            url_data['name'] = name
+        self._data.append(url_data)
+
+
+class GraphSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.GRAPH_DATA)
+
+    def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
+        cmap = {'type': 'colormap',
+                'data': {
+                    'domain': [cmap_min, cmap_max],
+                    'values': values
+                }}
+        self._data = cmap
+
+
+class KVSectionBody(SectionBody):
+    def __init__(self, **kwargs):
+        return super().__init__(BODY_FORMAT.KEY_VALUE, body=kwargs)
+
+    def set_item(self, key: str, value: Union[str, bool, int]) -> None:
+        self._data[key] = value
+
+    def update_items(self, new_dict: dict):
+        self._data.update(new_dict)
+
+
+class OrderedKVSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[])
+
+    def add_item(self, key: str, value: Union[str, bool, int]) -> None:
+        self._data.append((key, value))
+
+
+class JSONSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.JSON, body={})
+
+    def set_json(self, json_body: dict) -> None:
+        self._data = json_body
+
+    def update_json(self, json_body: dict) -> None:
+        self._data.update(json_body)
+
+
+class ProcessItem:
+    def __init__(
+            self, pid: int, name: str, cmd: str, signatures: Optional[Dict[str, int]] = None,
+            children: Optional[List[ProcessItem]] = None):
+
+        self.pid = pid
+        self.name = name
+        self.cmd = cmd
+        if not signatures:
+            self.signatures = {}
+        else:
+            self.signatures = signatures
+        if not children:
+            self.children = []
+        else:
+            self.children = children
+
+    def add_signature(self, name: str, score: int):
+        self.signatures[name] = score
+
+    def add_child_process(self, process: ProcessItem):
+        self.children.append(process)
+
+    def as_primitives(self):
+        return {
+            "process_pid": self.pid,
+            "process_name": self.name,
+            "command_line": self.cmd,
+            "signatures": self.signatures,
+            "children": [c.as_primitives() for c in self.children]
+        }
+
+
+class ProcessTreeSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.PROCESS_TREE, body=[])
+
+    def add_process(self, process: ProcessItem) -> None:
+        self._data.append(process.as_primitives())
+
+
+class TableRow(dict):
+    def __init__(self, **kwargs) -> None:
+        return super().__init__(**kwargs)
+
+
+class TableSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.TABLE, body=[])
+
+    def add_row(self, row: TableRow) -> None:
+        self._data.append(row)
+
+
+class ImageSectionBody(SectionBody):
+    def __init__(self, request):
+        self.request = request
+        return super().__init__(BODY_FORMAT.IMAGE, body=[])
+
+    def add_image(self, path: str, name: str, description: str,
+                  classification: Optional[Classification] = None) -> bool:
+        res = self.request.add_image(path, name, description, classification)
+        self._data.append(res)
+
+
+class MultiSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.MULTI, body=[])
+
+    def add_section_body(self, section_body: SectionBody) -> str:
+        self._data.append((section_body.format, section_body._data))
+
+
+class DividerSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.DIVIDER, body=None)
+
+
 class ResultSection:
     def __init__(
             self,
             title_text: Union[str, List],
-            body: Optional[Union[str, Dict]] = None,
+            body: Optional[Union[str, SectionBody]] = None,
             classification: Optional[Classification] = None,
             body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
             heuristic: Optional[Heuristic] = None,
@@ -182,9 +365,13 @@ class ResultSection:
         self.parent = parent
         self._section = None
         self.subsections: List[ResultSection] = []
-        self.body: str = body
+        if isinstance(body, SectionBody):
+            self.body_format = body.body_format
+            self._body = body.body
+        else:
+            self.body_format: BODY_FORMAT = body_format
+            self._body: str = body
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
-        self.body_format: BODY_FORMAT = body_format
         self.depth: int = 0
         self.tags = tags or {}
         self.heuristic = None
@@ -208,17 +395,21 @@ class ResultSection:
             elif isinstance(parent, Result):
                 parent.add_section(self)
 
+    @property
+    def body(self):
+        return self._body
+
     def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):
             text = ''.join(text)
         textstr = safe_str(text)
-        if self.body:
+        if self._body:
             textstr = '\n' + textstr
-            self.body = self.body + textstr
+            self._body = self._body + textstr
         else:
-            self.body = textstr
+            self._body = textstr
 
     def add_lines(self, line_list: List[str]) -> None:
         if not isinstance(line_list, list):
@@ -226,10 +417,10 @@ class ResultSection:
             return
 
         segment = '\n'.join(line_list)
-        if self.body is None:
-            self.body = segment
+        if self._body is None:
+            self._body = segment
         else:
-            self.body = self.body + '\n' + segment
+            self._body = self._body + '\n' + segment
 
     def add_subsection(self, subsection: ResultSection, on_top: bool = False) -> None:
         """
@@ -276,9 +467,13 @@ class ResultSection:
 
         return True
 
-    def set_body(self, body: str, body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
-        self.body = body
-        self.body_format = body_format
+    def set_body(self, body: Union[str, SectionBody], body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
+        if isinstance(body, SectionBody):
+            self._body = body.body
+            self.body_format = body.body_format
+        else:
+            self._body = body
+            self.body_format = body_format
 
     def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
         """
@@ -297,45 +492,120 @@ class ResultSection:
         self.heuristic = Heuristic(heur_id, attack_id=attack_id, signature=signature)
 
 
-class ResultImageSection(ResultSection):
-    def __init__(self,
-                 request,
-                 title_text: Union[str, List],
-                 classification: Optional[Classification] = None,
-                 heuristic: Optional[Heuristic] = None,
-                 tags: Optional[Dict[str, List[str]]] = None,
-                 parent: Optional[Union[ResultSection, Result]] = None,
-                 zeroize_on_tag_safe: bool = False,
-                 auto_collapse: bool = False,
-                 zeroize_on_sig_safe: bool = True):
-        body = []
-        body_format = BODY_FORMAT.IMAGE
-        super().__init__(title_text, body=body, classification=classification, body_format=body_format,
-                         heuristic=heuristic, tags=tags, parent=parent, zeroize_on_tag_safe=zeroize_on_tag_safe,
-                         auto_collapse=auto_collapse, zeroize_on_sig_safe=zeroize_on_sig_safe)
-        self.request = request
+class TypeSpecificResultSection(ResultSection):
+    def __init__(self, title_text: Union[str, List], section_body: SectionBody, **kwargs):
+        # Not allowed to specified body_format since it will come from the section body
+        kwargs.pop('body_format', None)
+        kwargs.pop('body', None)
+
+        self.section_body = section_body
+        super().__init__(title_text, body_format=self.section_body.format, **kwargs)
+
+    @property
+    def body(self):
+        return self.section_body.body
+
+    def add_line(self, text: Union[str, List]) -> None:
+        raise InvalidFunctionException("Do not use default add_line method in a type specific section.")
+
+    def add_lines(self, line_list: List[str]) -> None:
+        raise InvalidFunctionException("Do not use default add_lines method in a type specific section.")
+
+    def set_body(self, body: Union[str, SectionBody], body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
+        raise InvalidFunctionException("Do not use default set_body method in a type specific section.")
+
+
+class ResultTextSection(ResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        # Not allowed to specified body_format since locked to TEXT
+        kwargs.pop('body_format', None)
+        super().__init__(title_text, body_format=BODY_FORMAT.TEXT, **kwargs)
+
+
+class ResultMemoryDumpSection(ResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        # Not allowed to specified body_format since locked to MEMORY_DUMP
+        kwargs.pop('body_format', None)
+        super().__init__(title_text, body_format=BODY_FORMAT.MEMORY_DUMP, **kwargs)
+
+
+class ResultGraphSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List],  **kwargs):
+        super().__init__(title_text, GraphSectionBody(), **kwargs)
+
+    def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
+        self.section_body.set_colormap(cmap_min, cmap_max, values)
+
+
+class ResultURLSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, URLSectionBody(), **kwargs)
+
+    def add_url(self, url: str, name: Optional[str] = None) -> None:
+        self.section_body.add_url(url, name=name)
+
+
+class ResultKeyValueSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, KVSectionBody(), **kwargs)
+
+    def set_item(self, key: str, value: Union[str, bool, int]) -> None:
+        self.section_body.set_item(key, value)
+
+    def update_items(self, new_dict):
+        self.section_body.update_items(new_dict)
+
+
+class ResultOrderedKeyValueSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, OrderedKVSectionBody(), **kwargs)
+
+    def add_item(self, key: str, value: Union[str, bool, int]) -> None:
+        self.section_body.add_item(key, value)
+
+
+class ResultJSONSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, JSONSectionBody(), **kwargs)
+
+    def set_json(self, json_body: dict) -> None:
+        self.section_body.set_json(json_body)
+
+    def update_json(self, json_body: dict) -> None:
+        self.section_body.update_json(json_body)
+
+
+class ResultProcessTreeSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, ProcessTreeSectionBody(), **kwargs)
+
+    def add_process(self, process: ProcessItem) -> None:
+        self.section_body.add_process(process)
+
+
+class ResultTableSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, TableSectionBody(), **kwargs)
+
+    def add_row(self, row: TableRow) -> None:
+        self.section_body.add_row(row)
+
+
+class ResultImageSection(TypeSpecificResultSection):
+    def __init__(self, request, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text, ImageSectionBody(request), **kwargs)
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None) -> bool:
-        res = self.request.add_image(path, name, description, classification)
-        self.body.append(res)
+        self.section_body.add_image(path, name, description, classification)
 
-    def add_line(self, text: Union[str, List]) -> None:
-        raise InvalidFunctionException("Do not use add_line in an Image section, use add_image instead.")
 
-    def add_lines(self, line_list: List[str]) -> None:
-        raise InvalidFunctionException("Do not use add_lines in an Image section, loop through your "
-                                       "files and use add_image instead.")
+class ResultMultiSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text,  MultiSectionBody(), **kwargs)
 
-    def set_body(self, body: str, body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
-        raise InvalidFunctionException("Do not use set_body in an Image section, loop through your "
-                                       "files and use add_image instead.")
-
-    def finalize(self, depth: int = 0) -> bool:
-        if self.body:
-            self.body = json.dumps(self.body)
-
-        return super().finalize(depth=depth)
+    def add_section_part(self, section_part: SectionBody) -> bool:
+        self.section_body.add_section_body(section_part)
 
 
 class Result:
