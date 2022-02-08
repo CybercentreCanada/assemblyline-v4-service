@@ -505,7 +505,7 @@ class SandboxOntology(Events):
         :param safe_tree_ids: A list containing the tree IDs of each safe branch
         :return: None
         """
-        for root in process_tree:
+        for root in process_tree[:]:
             _ = SandboxOntology._remove_safe_leaves_helper(root, safe_tree_ids)
             if root['tree_id'] in safe_tree_ids and not root["children"]:
                 process_tree.remove(root)
