@@ -618,7 +618,7 @@ class TestSandboxOntology:
                                "HollowsHunter Injected Portable Executable"), ])
     def test_handle_artifact(artifact, expected_result_section_title):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact, HOLLOWSHUNTER_TITLE
-        from assemblyline_v4_service.common.result import ResultSection, Heuristic
+        from assemblyline_v4_service.common.result import ResultSection
 
         if artifact is None:
             with pytest.raises(Exception):
@@ -632,13 +632,12 @@ class TestSandboxOntology:
             expected_result_section.add_line(f"\t- {artifact['name']}")
             expected_result_section.add_tag("dynamic.process.file_name", artifact["name"])
             if expected_result_section_title == HOLLOWSHUNTER_TITLE:
-                heur = Heuristic(17)
+                expected_result_section.set_heuristic(17)
                 if ".exe" in artifact["name"]:
-                    heur.add_signature_id("hollowshunter_exe")
+                    expected_result_section.heuristic.add_signature_id("hollowshunter_exe")
                 elif ".dll" in artifact["name"]:
-                    heur.add_signature_id("hollowshunter_dll")
+                    expected_result_section.heuristic.add_signature_id("hollowshunter_dll")
 
-                expected_result_section.heuristic = heur
         parent_result_section = ResultSection("blah")
         a = Artifact(
             name=artifact["name"],
