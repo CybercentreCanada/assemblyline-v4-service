@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Any, Union
 from re import compile, escape, sub
 from logging import getLogger
 from assemblyline.common import log as al_log
-from assemblyline_v4_service.common.result import ResultSection, Heuristic
+from assemblyline_v4_service.common.result import ResultSection
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from hashlib import sha256
@@ -369,8 +369,7 @@ class SandboxOntology(Events):
                     None)
                 if artifact_result_section is None:
                     artifact_result_section = ResultSection(HOLLOWSHUNTER_TITLE)
-                    heur = Heuristic(17)
-                    artifact_result_section.heuristic = heur
+                    artifact_result_section.set_heuristic(17)
                     artifact_result_section.add_line("HollowsHunter dumped the following:")
                 artifact_result_section.add_line(f"\t- {artifact.name}")
                 artifact_result_section.add_tag("dynamic.process.file_name", artifact.name)

@@ -51,20 +51,7 @@ def check_section_equality(this, that) -> bool:
 
     # Heuristics also need their own equality checks
     if this.heuristic and that.heuristic:
-        heuristic_equality = this.heuristic.definition.attack_id == that.heuristic.definition.attack_id and \
-            this.heuristic.definition.classification == that.heuristic.definition.classification and \
-            this.heuristic.definition.description == that.heuristic.definition.description and \
-            this.heuristic.definition.filetype == that.heuristic.definition.filetype and \
-            this.heuristic.definition.heur_id == that.heuristic.definition.heur_id and \
-            this.heuristic.definition.id == that.heuristic.definition.id and \
-            this.heuristic.definition.max_score == that.heuristic.definition.max_score and \
-            this.heuristic.definition.name == that.heuristic.definition.name and \
-            this.heuristic.definition.score == that.heuristic.definition.score and \
-            this.heuristic.definition.signature_score_map == \
-            that.heuristic.definition.signature_score_map
-
-        result_heuristic_equality = heuristic_equality and \
-            this.heuristic.attack_ids == that.heuristic.attack_ids and \
+        result_heuristic_equality = this.heuristic.attack_ids == that.heuristic.attack_ids and \
             this.heuristic.frequency == that.heuristic.frequency and \
             this.heuristic.heur_id == that.heuristic.heur_id and \
             this.heuristic.score == that.heuristic.score and \
@@ -618,7 +605,7 @@ class TestSandboxOntology:
                                "HollowsHunter Injected Portable Executable"), ])
     def test_handle_artifact(artifact, expected_result_section_title):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact, HOLLOWSHUNTER_TITLE
-        from assemblyline_v4_service.common.result import ResultSection, Heuristic
+        from assemblyline_v4_service.common.result import ResultSection
 
         if artifact is None:
             with pytest.raises(Exception):
@@ -632,13 +619,12 @@ class TestSandboxOntology:
             expected_result_section.add_line(f"\t- {artifact['name']}")
             expected_result_section.add_tag("dynamic.process.file_name", artifact["name"])
             if expected_result_section_title == HOLLOWSHUNTER_TITLE:
-                heur = Heuristic(17)
+                expected_result_section.set_heuristic(17)
                 if ".exe" in artifact["name"]:
-                    heur.add_signature_id("hollowshunter_exe")
+                    expected_result_section.heuristic.add_signature_id("hollowshunter_exe")
                 elif ".dll" in artifact["name"]:
-                    heur.add_signature_id("hollowshunter_dll")
+                    expected_result_section.heuristic.add_signature_id("hollowshunter_dll")
 
-                expected_result_section.heuristic = heur
         parent_result_section = ResultSection("blah")
         a = Artifact(
             name=artifact["name"],
