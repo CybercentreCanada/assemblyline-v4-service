@@ -100,7 +100,8 @@ def setup_module():
     if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
         open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
         open_manifest.write(
-            "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n    name: blah\n    description: blah\n    filetype: '*'\n    score: 250")
+            "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n"
+            "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250")
 
 
 def teardown_module():
@@ -404,177 +405,186 @@ class TestSandboxOntology:
         assert so.events == expected_events
 
     @staticmethod
-    @pytest.mark.parametrize("processes_dict, expected_result",
-                             [
-                                 # No processes
-                                 ({}, []),
-                                 # One process
-                                 (
-                                     {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1}},
-                                     [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                                         "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []}]
-                                 ),
-                                 # One parent process and one child process
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                                          "children":
-                                          [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                            "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []}, ]
-                                          },
-                                     ],
-                                 ),
-                                 # Two unrelated processes
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                                             "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
-                                         {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
-                                             "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},
-                                     ],
-                                 ),
-                                 # Three processes consisting of a parent-child relationship and a rando process
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                                             "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
-                                         {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 2, "process_name": "blah",
-                                          "children":
-                                          [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
-                                            "timestamp": 1, "process_pid": 3, "process_name": "blah", "children": []}]
-                                          },
-                                     ],
-                                 ),
-                                 # Three processes consisting of a grandparent-parent-child relationship and one rando process
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                                         3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3},
-                                         4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                                          "children":
-                                          [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
-                                            "children":
-                                            [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 3, "process_name": "blah",
-                                              "children": []}, ]}]
-                                          },
-                                         {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah",
-                                             "timestamp": 2, "process_pid": 4, "process_name": "blah", "children": []}
-                                     ],
-                                 ),
-                                 # Four processes consisting of a grandparent-parent-parent-child relationship
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                                         3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
-                                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                                          "children":
-                                          [
-                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 2, "process_name": "blah",
-                                               "children":
-                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,  "process_pid": 4, "process_name": "blah", "children": []}]},
-                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
-                                                  "timestamp": 3,  "process_pid": 3, "process_name": "blah", "children": []}
-                                          ]
-                                          },
-                                     ],
-                                 ),
-                                 # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
-                                         3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
-                                          "children":
-                                          [
-                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "process_pid": 3, "process_name": "blah",
-                                               "children": []},
-                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "process_pid": 2, "process_name": "blah",
-                                               "children":
-                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "process_pid": 4, "process_name": "blah",
+    @pytest.mark.parametrize(
+        "processes_dict, expected_result",
+        [
+            # No processes
+            ({}, []),
+            # One process
+            (
+                {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1}},
+                [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                  "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []}]
+            ),
+            # One parent process and one child process
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah",
+                     "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []}, ]
+                     },
+                ],
+            ),
+            # Two unrelated processes
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                    {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},
+                ],
+            ),
+            # Three processes consisting of a parent-child relationship and a rando process
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                    {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 2, "process_name": "blah",
+                     "children": [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
+                                   "timestamp": 1, "process_pid": 3, "process_name": "blah", "children": []}]
+                     },
+                ],
+            ),
+            # Three processes consisting of a grandparent-parent-child relationship and one rando process
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
+                    3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3},
+                    4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 2, "process_pid": 2, "process_name": "blah",
+                                   "children": [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
+                                                 "timestamp": 3, "process_pid": 3, "process_name": "blah",
+                                                 "children": []}, ]}]
+                     },
+                    {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah",
+                     "timestamp": 2, "process_pid": 4, "process_name": "blah", "children": []}
+                ],
+            ),
+            # Four processes consisting of a grandparent-parent-parent-child relationship
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
+                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
+                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 2, "process_pid": 2, "process_name": "blah",
+                                   "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
+                                                 "timestamp": 4,  "process_pid": 4, "process_name": "blah",
                                                  "children": []}]},
-                                          ]
-                                          },
-                                     ],
-                                 ),
-                                 # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
-                                 (
-                                     {
-                                         "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None},
-                                         "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a"},
-                                         "c": {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a"},
-                                         "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b"},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None, "process_pid": 1, "process_name": "blah",
-                                          "children":
-                                          [
-                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": "c", "pguid": "a", "process_pid": 3, "process_name": "blah",
-                                               "children": []},
-                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": "b", "pguid": "a", "process_pid": 2, "process_name": "blah",
-                                               "children":
-                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": "d", "pguid": "b", "process_pid": 4, "process_name": "blah",
+                                  {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 3,  "process_pid": 3, "process_name": "blah",
+                                   "children": []}
+                                  ]
+                     },
+                ],
+            ),
+            # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
+                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
+                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 2, "process_pid": 3, "process_name": "blah",
+                                   "children": []},
+                                  {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 3, "process_pid": 2, "process_name": "blah",
+                                   "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
+                                                 "timestamp": 4, "process_pid": 4, "process_name": "blah",
                                                  "children": []}]},
-                                          ]
-                                          },
-                                     ],
-                                 ),
-                                 # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times using guids
-                                 (
-                                     {
-                                         1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
-                                             "pguid": None},
-                                         2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None,
-                                             "pguid": None},
-                                         3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None,
-                                             "pguid": None},
-                                         4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None,
-                                             "pguid": None},
-                                     },
-                                     [
-                                         {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
-                                          "pguid": None, "process_pid": 1, "process_name": "blah",
-                                          "children":
-                                          [
-                                              {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
-                                               "guid": None, "pguid": None, "process_pid": 3, "process_name": "blah",
-                                               "children": []},
-                                              {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
-                                               "guid": None, "pguid": None, "process_pid": 2, "process_name": "blah",
-                                               "children":
-                                               [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4,
-                                                 "guid": None, "pguid": None, "process_pid": 4, "process_name": "blah",
+                                  ]
+                     },
+                ],
+            ),
+            # Four processes consisting of a grandparent-parent-parent-child relationship
+            # with non-ordered times using guids
+            (
+                {
+                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
+                          "timestamp": 1, "guid": "a", "pguid": None},
+                    "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                          "timestamp": 3, "guid": "b", "pguid": "a"},
+                    "c": {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
+                          "timestamp": 2, "guid": "c", "pguid": "a"},
+                    "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
+                          "timestamp": 4, "guid": "d", "pguid": "b"},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a",
+                     "pguid": None, "process_pid": 1, "process_name": "blah",
+                     "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 2, "guid": "c", "pguid": "a", "process_pid": 3, "process_name": "blah",
+                                   "children": []},
+                                  {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
+                                   "timestamp": 3, "guid": "b", "pguid": "a", "process_pid": 2, "process_name": "blah",
+                                   "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
+                                                 "timestamp": 4, "guid": "d", "pguid": "b", "process_pid": 4,
+                                                 "process_name": "blah",
                                                  "children": []}]},
-                                          ]
-                                          },
-                                     ],
-                                 ),
-                             ]
-                             )
+                                  ]
+                     },
+                ],
+            ),
+            # Four processes consisting of a grandparent-parent-parent-child relationship
+            # with non-ordered times using guids
+            (
+                {
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
+                                             "pguid": None},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None,
+                                             "pguid": None},
+                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None,
+                                             "pguid": None},
+                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None,
+                                             "pguid": None},
+                },
+                [
+                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None,
+                     "pguid": None, "process_pid": 1, "process_name": "blah",
+                     "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
+                                  "guid": None, "pguid": None, "process_pid": 3, "process_name": "blah",
+                                   "children": []},
+                                  {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
+                                  "guid": None, "pguid": None, "process_pid": 2, "process_name": "blah",
+                                   "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
+                                                "timestamp": 4, "guid": None, "pguid": None, "process_pid": 4,
+                                                 "process_name": "blah", "children": []}]}, ]
+                     },
+                ],
+            ),
+        ]
+    )
     def test_convert_processes_dict_to_tree(processes_dict, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         actual_result = SandboxOntology._convert_processes_dict_to_tree(processes_dict)
@@ -638,7 +648,7 @@ class TestSandboxOntology:
                 elif ".dll" in artifact["name"]:
                     heur.add_signature_id("hollowshunter_dll")
 
-                expected_result_section.heuristic = heur
+                expected_result_section.set_heuristic(heur)
         parent_result_section = ResultSection("blah")
         a = Artifact(
             name=artifact["name"],
@@ -807,15 +817,25 @@ class TestSandboxOntology:
             ("", {"image": "got the image",
                   "children": [{"image": "image number 2", "children": []},
                                {"image": "image number 3", "children": []}]},
-                {"image": "got the image", "tree_id": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
-                 "children": [{"image": "image number 2", "tree_id": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17", "children": []},
-                              {"image": "image number 3", "tree_id": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129", "children": []}]},
+                {"image": "got the image",
+                 "tree_id": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
+                 "children": [{"image": "image number 2",
+                               "tree_id": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17",
+                               "children": []},
+                              {"image": "image number 3",
+                               "tree_id": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129",
+                               "children": []}]},
              ['294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17',
               '0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129']),
-            ("blahblah", {"image": "got the image", "children": [{"image": "image number 2", "children": []}, {"image": "image number 3", "children": []}]},
+            ("blahblah", {"image": "got the image", "children": [{"image": "image number 2", "children": []},
+                                                                 {"image": "image number 3", "children": []}]},
              {"image": "got the image", "tree_id": "66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
-              "children": [{"image": "image number 2", "tree_id": "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154", "children": []},
-                           {"image": "image number 3", "tree_id": "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d", "children": []}]},
+              "children": [{"image": "image number 2",
+                            "tree_id": "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154",
+                            "children": []},
+                           {"image": "image number 3",
+                            "tree_id": "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d",
+                            "children": []}]},
              ['9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154',
               '020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d'])
         ]
@@ -890,16 +910,58 @@ class TestSandboxOntology:
         [
             ({"image": "a", "tree_id": "a", "children": []}, [], {"image": "a", "tree_id": "a", "children": []}),
             ({"image": "a", "tree_id": "a", "children": []}, ["a"], {"image": "a", "tree_id": "a", "children": []}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}, [], {"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}, ["b"], {'children': [], 'image': 'a', 'tree_id': 'b'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}, ["a"], {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": []}]}, [], {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}, {'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": []}]}, ["b"], {'children': [{'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": []}]}, ["c"], {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": [{"image": "d", "tree_id": "d", "children": []}]}, {"image": "c", "tree_id": "c", "children": []}]}, ["c"], {'children': [{'children': [{"image": "d", "tree_id": "d", "children": []}], 'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": [{"image": "d", "tree_id": "d", "children": []}]}, {"image": "c", "tree_id": "c", "children": []}]}, ["d"], {'children': [{'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": [{"image": "d", "tree_id": "d", "children": []}]}]}, ["d"], {"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}]}),
-            ({"image": "a", "tree_id": "a", "children": [{"image": "b", "tree_id": "b", "children": []}, {"image": "c", "tree_id": "c", "children": [{"image": "d", "tree_id": "d", "children": []}]}]}, ["b"], {"image": "a", "tree_id": "a", "children": [{"image": "c", "tree_id": "c", "children": [{"image": "d", "tree_id": "d", "children": []}]}]}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []}]}, [],
+             {"image": "a", "tree_id": "a", "children": [
+                 {"image": "b", "tree_id": "b", "children": []}]}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []}]}, ["b"],
+             {'children': [], 'image': 'a', 'tree_id': 'b'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []}]}, ["a"],
+             {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}],
+              'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []},
+                           {"image": "c", "tree_id": "c", "children": []}]}, [],
+             {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'},
+                           {'children': [], 'image': 'c', 'tree_id': 'c'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []},
+                           {"image": "c", "tree_id": "c", "children": []}]}, ["b"],
+             {'children': [{'children': [], 'image': 'c', 'tree_id': 'c'}],
+              'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []},
+                           {"image": "c", "tree_id": "c", "children": []}]}, ["c"],
+             {'children': [{'children': [], 'image': 'b', 'tree_id': 'b'}],
+              'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b",
+                            "children": [{"image": "d", "tree_id": "d", "children": []}]},
+                           {"image": "c", "tree_id": "c", "children": []}]}, ["c"],
+             {'children': [{'children': [{"image": "d", "tree_id": "d", "children": []}],
+                            'image': 'b', 'tree_id': 'b'}], 'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b",
+                            "children": [{"image": "d", "tree_id": "d", "children": []}]},
+                           {"image": "c", "tree_id": "c", "children": []}]}, ["d"],
+             {'children': [{'children': [], 'image': 'c', 'tree_id': 'c'}],
+              'image': 'a', 'tree_id': 'a'}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []},
+                           {"image": "c", "tree_id": "c",
+                            "children": [{"image": "d", "tree_id": "d", "children": []}]}]}, ["d"],
+             {"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []}]}),
+            ({"image": "a", "tree_id": "a",
+              "children": [{"image": "b", "tree_id": "b", "children": []},
+                           {"image": "c", "tree_id": "c",
+                            "children": [{"image": "d", "tree_id": "d", "children": []}]}]}, ["b"],
+             {"image": "a", "tree_id": "a",
+              "children": [{"image": "c", "tree_id": "c",
+                            "children": [{"image": "d", "tree_id": "d",
+                                          "children": []}]}]}),
         ]
     )
     def test_remove_safe_leaves_helper(node, safe_tree_ids, expected_node):
