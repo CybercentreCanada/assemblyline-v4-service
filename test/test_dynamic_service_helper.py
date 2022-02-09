@@ -114,13 +114,12 @@ class TestEvent:
 
     @staticmethod
     @pytest.mark.parametrize("pid, image, timestamp, guid, expected_result",
-                             [
-                                 (None, None, None, None,
-                                  {"image": None, "pid": None, "timestamp": None, "guid": None}),
-                                 (1, "blah", 1.0, "blah",
-                                  {"image": "blah", "pid": 1, "timestamp": 1.0, "guid": "blah"}),
-                             ]
-                             )
+                             [(None, None, None, None,
+                               {"image": None, "pid": None, "timestamp": None, "guid": None, "pguid": None,
+                                "signatures": {}}),
+                              (1, "blah", 1.0, "blah",
+                               {"image": "blah", "pid": 1, "timestamp": 1.0, "guid": "blah", "pguid": None,
+                                "signatures": {}}), ])
     def test_convert_event_to_dict(pid, image, timestamp, guid, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Event
         e = Event(pid=pid, image=image, timestamp=timestamp, guid=guid)
@@ -195,34 +194,37 @@ class TestEvent:
 
 class TestProcessEvent:
     @staticmethod
-    @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp",
+    @pytest.mark.parametrize("pid, ppid, image, command_line, timestamp, guid, pguid",
                              [
-                                 (None, None, None, None, None),
-                                 (1, 1, "blah", "blah", 1.0),
+                                 (None, None, None, None, None, None, None),
+                                 (1, 1, "blah", "blah", 1.0, "blah", "blah"),
                              ]
                              )
-    def test_init(pid, ppid, image, command_line, timestamp):
+    def test_init(pid, ppid, image, command_line, timestamp, guid, pguid):
         from assemblyline_v4_service.common.dynamic_service_helper import ProcessEvent
-        p = ProcessEvent(pid=pid, ppid=ppid, image=image, command_line=command_line, timestamp=timestamp)
+        p = ProcessEvent(pid=pid, ppid=ppid, image=image, command_line=command_line,
+                         timestamp=timestamp, guid=guid, pguid=pguid)
         assert p.pid == pid
         assert p.ppid == ppid
         assert p.image == image
         assert p.command_line == command_line
         assert p.timestamp == timestamp
+        assert p.guid == guid
+        assert p.pguid == pguid
 
 
 class TestNetworkEvent:
     @staticmethod
-    @pytest.mark.parametrize("protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp",
+    @pytest.mark.parametrize("protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp, guid",
                              [
-                                 (None, None, None, None, None, None, None, None),
-                                 ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0),
+                                 (None, None, None, None, None, None, None, None, None),
+                                 ("blah", "blah", 1, "blah", "blah", 1, 1, 1.0, "blah"),
                              ]
                              )
-    def test_init(protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp):
+    def test_init(protocol, src_ip, src_port, domain, dest_ip, dest_port, pid, timestamp, guid):
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkEvent
         n = NetworkEvent(protocol=protocol, src_ip=src_ip, src_port=src_port, domain=domain,
-                         dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp)
+                         dest_ip=dest_ip, dest_port=dest_port, pid=pid, timestamp=timestamp, guid=guid)
         assert n.protocol == protocol
         assert n.src_port == src_port
         assert n.domain == domain
@@ -230,6 +232,7 @@ class TestNetworkEvent:
         assert n.dest_port == dest_port
         assert n.pid == pid
         assert n.timestamp == timestamp
+        assert n.guid == guid
 
 
 class TestArtifact:
@@ -257,19 +260,26 @@ class TestArtifact:
 class TestEvents:
     @staticmethod
     @pytest.mark.parametrize(
-        "events, expected_events, expected_sorted_events, expected_process_events, expected_network_events",
+        "events, expected_events, expected_sorted_events, expected_process_events, expected_network_events, expected_process_event_dicts, expected_network_event_dicts, expected_event_dicts",
         [([],
           [],
           [],
           [],
-          [])])
-    def test_init(events, expected_events, expected_sorted_events, expected_process_events, expected_network_events):
+          [],
+          {},
+          {},
+          {})])
+    def test_init(events, expected_events, expected_sorted_events, expected_process_events, expected_network_events,
+                  expected_process_event_dicts, expected_network_event_dicts, expected_event_dicts):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
         e = Events(events=events)
         assert e.events == expected_events
         assert e.sorted_events == expected_sorted_events
         assert e.process_events == expected_process_events
         assert e.network_events == expected_network_events
+        assert e.process_event_dicts == expected_process_event_dicts
+        assert e.network_event_dicts == expected_network_event_dicts
+        assert e.event_dicts == expected_event_dicts
 
     @staticmethod
     @pytest.mark.parametrize(
@@ -278,7 +288,7 @@ class TestEvents:
             "pguid": "blah"}],
           1),
          ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": None}],
           1),
          ([{}],
           0), ])
@@ -297,7 +307,7 @@ class TestEvents:
             "pguid": "blah"}],
           1),
          ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": None}],
           0), ])
     def test_get_process_events(events, validated_events_num):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
@@ -311,7 +321,7 @@ class TestEvents:
             "pguid": "blah"}],
           0),
          ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": None}],
           1), ])
     def test_get_network_events(events, validated_events_num):
         from assemblyline_v4_service.common.dynamic_service_helper import Events
@@ -362,16 +372,16 @@ class TestEvents:
 
     @staticmethod
     @pytest.mark.parametrize("events, expected_events_dict",
-                             [([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None}],
-                               {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1}}),
-                              ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None},
-                                {"pid": 2, "image": "blah", "timestamp": 1, "guid": None}],
-                               {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1},
-                                2: {'guid': None, 'image': 'blah', 'pid': 2, 'timestamp': 1}}),
-                              ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": "a"},
-                                {"pid": 2, "image": "blah", "timestamp": 1, "guid": "b"}],
-                               {"a": {'guid': "a", 'image': 'blah', 'pid': 1, 'timestamp': 1},
-                                "b": {'guid': "b", 'image': 'blah', 'pid': 2, 'timestamp': 1}}), ])
+                             [([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None, "pguid": None}],
+                               {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1, "pguid": None, "signatures": {}}}),
+                              ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                                {"pid": 2, "image": "blah", "timestamp": 1, "guid": None, "pguid": None}],
+                               {1: {'guid': None, 'image': 'blah', 'pid': 1, 'timestamp': 1, "pguid": None, "signatures": {}},
+                                2: {'guid': None, 'image': 'blah', 'pid': 2, 'timestamp': 1, "pguid": None, "signatures": {}}}),
+                              ([{"pid": 1, "image": "blah", "timestamp": 1, "guid": "a", "pguid": None},
+                                {"pid": 2, "image": "blah", "timestamp": 1, "guid": "b", "pguid": None}],
+                               {"a": {'guid': "a", 'image': 'blah', 'pid': 1, 'timestamp': 1, "pguid": None, "signatures": {}},
+                                "b": {'guid': "b", 'image': 'blah', 'pid': 2, 'timestamp': 1, "pguid": None, "signatures": {}}}), ])
     def test_convert_events_to_dict(events, expected_events_dict):
         from assemblyline_v4_service.common.dynamic_service_helper import Event, Events
         event_objects = [
@@ -393,124 +403,124 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize(
-        "processes_dict, expected_result",
+        "events_dict, expected_result",
         [
             # No processes
             ({}, []),
             # One process
             (
-                {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1}},
+                {1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None}},
                 [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                  "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []}]
+                  "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}}]
             ),
             # One parent process and one child process
             (
                 {
-                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
                 },
                 [
                     {"pid": 1, "ppid": 1, "image": "blah",
-                     "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "command_line": "blah", "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None,
                      "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []}, ]
+                                   "timestamp": 1, "process_pid": 2, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}}, ], "signatures": {}
                      },
                 ],
             ),
             # Two unrelated processes
             (
                 {
-                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
                 },
                 [
                     {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}},
                     {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 2, "process_name": "blah", "children": []},
+                     "timestamp": 1, "process_pid": 2, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}},
                 ],
             ),
             # Three processes consisting of a parent-child relationship and a rando process
             (
                 {
-                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1},
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    2: {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
                 },
                 [
                     {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "children": []},
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}},
                     {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 2, "process_name": "blah",
+                     "timestamp": 1, "process_pid": 2, "process_name": "blah", "guid": None, "pguid": None,
                      "children": [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
-                                   "timestamp": 1, "process_pid": 3, "process_name": "blah", "children": []}]
+                                   "timestamp": 1, "process_pid": 3, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}}], "signatures": {}
                      },
                 ],
             ),
             # Three processes consisting of a grandparent-parent-child relationship and one rando process
             (
                 {
-                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                    3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3},
-                    4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2},
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None, "pguid": None},
+                    3: {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None, "pguid": None},
+                    4: {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None, "pguid": None},
                 },
                 [
                     {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None,
                      "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "timestamp": 2, "process_pid": 2, "process_name": "blah",
+                                   "timestamp": 2, "process_pid": 2, "process_name": "blah", "guid": None, "pguid": None,
                                    "children": [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
-                                                 "timestamp": 3, "process_pid": 3, "process_name": "blah",
-                                                 "children": []}, ]}]
+                                                 "timestamp": 3, "process_pid": 3, "process_name": "blah", "guid": None, "pguid": None,
+                                                 "children": [], "signatures": {}}, ], "signatures": {}}], "signatures": {}
                      },
                     {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah",
-                     "timestamp": 2, "process_pid": 4, "process_name": "blah", "children": []}
+                     "timestamp": 2, "process_pid": 4, "process_name": "blah", "guid": None, "pguid": None, "children": [], "signatures": {}}
                 ],
             ),
             # Four processes consisting of a grandparent-parent-parent-child relationship
             (
                 {
-                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
-                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None, "pguid": None},
+                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None, "pguid": None},
+                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None, "pguid": None},
                 },
                 [
                     {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None,
                      "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "timestamp": 2, "process_pid": 2, "process_name": "blah",
+                                   "timestamp": 2, "process_pid": 2, "process_name": "blah", "guid": None, "pguid": None,
                                    "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
-                                                 "timestamp": 4,  "process_pid": 4, "process_name": "blah",
-                                                 "children": []}]},
+                                                 "timestamp": 4,  "process_pid": 4, "process_name": "blah", "guid": None, "pguid": None,
+                                                 "children": [], "signatures": {}}], "signatures": {}},
                                   {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "timestamp": 3,  "process_pid": 3, "process_name": "blah",
-                                   "children": []}
-                                  ]
+                                   "timestamp": 3,  "process_pid": 3, "process_name": "blah", "guid": None, "pguid": None,
+                                   "children": [], "signatures": {}}
+                                  ], "signatures": {}
                      },
                 ],
             ),
             # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times
             (
                 {
-                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1},
-                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3},
-                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2},
-                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4},
+                    1: {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": None, "pguid": None},
+                    2: {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3, "guid": None, "pguid": None},
+                    3: {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2, "guid": None, "pguid": None},
+                    4: {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "timestamp": 4, "guid": None, "pguid": None},
                 },
                 [
                     {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "timestamp": 1, "process_pid": 1, "process_name": "blah",
+                     "timestamp": 1, "process_pid": 1, "process_name": "blah", "guid": None, "pguid": None,
                      "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "timestamp": 2, "process_pid": 3, "process_name": "blah",
-                                   "children": []},
+                                   "timestamp": 2, "process_pid": 3, "process_name": "blah", "guid": None, "pguid": None,
+                                   "children": [], "signatures": {}},
                                   {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "timestamp": 3, "process_pid": 2, "process_name": "blah",
+                                   "timestamp": 3, "process_pid": 2, "process_name": "blah", "guid": None, "pguid": None,
                                    "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
-                                                 "timestamp": 4, "process_pid": 4, "process_name": "blah",
-                                                 "children": []}]},
-                                  ]
+                                                 "timestamp": 4, "process_pid": 4, "process_name": "blah", "guid": None, "pguid": None,
+                                                 "children": [], "signatures": {}}], "signatures": {}},
+                                  ], "signatures": {}
                      },
                 ],
             ),
@@ -532,14 +542,14 @@ class TestSandboxOntology:
                      "pguid": None, "process_pid": 1, "process_name": "blah",
                      "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
                                    "timestamp": 2, "guid": "c", "pguid": "a", "process_pid": 3, "process_name": "blah",
-                                   "children": []},
+                                   "children": [], "signatures": {}},
                                   {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
                                    "timestamp": 3, "guid": "b", "pguid": "a", "process_pid": 2, "process_name": "blah",
                                    "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
                                                  "timestamp": 4, "guid": "d", "pguid": "b", "process_pid": 4,
                                                  "process_name": "blah",
-                                                 "children": []}]},
-                                  ]
+                                                 "children": [], "signatures": {}}], "signatures": {}},
+                                  ], "signatures": {}
                      },
                 ],
             ),
@@ -561,20 +571,20 @@ class TestSandboxOntology:
                      "pguid": None, "process_pid": 1, "process_name": "blah",
                      "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2,
                                   "guid": None, "pguid": None, "process_pid": 3, "process_name": "blah",
-                                   "children": []},
+                                   "children": [], "signatures": {}},
                                   {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 3,
                                   "guid": None, "pguid": None, "process_pid": 2, "process_name": "blah",
                                    "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
                                                 "timestamp": 4, "guid": None, "pguid": None, "process_pid": 4,
-                                                 "process_name": "blah", "children": []}]}, ]
+                                                 "process_name": "blah", "children": [], "signatures": {}}], "signatures": {}}, ], "signatures": {}
                      },
                 ],
             ),
         ]
     )
-    def test_convert_processes_dict_to_tree(processes_dict, expected_result):
+    def test_convert_events_dict_to_tree(events_dict, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
-        actual_result = SandboxOntology._convert_processes_dict_to_tree(processes_dict)
+        actual_result = SandboxOntology._convert_events_dict_to_tree(events_dict)
         assert expected_result == actual_result
 
     @staticmethod
@@ -693,108 +703,127 @@ class TestSandboxOntology:
              "a":
              {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "a", "pguid": None,
               "signatures": {"blah": 1}}}), ])
-    def test_match_signatures_to_process_events(process_list, signatures, expected_result):
+    def test_match_signatures_to_events(process_list, signatures, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         o = SandboxOntology(process_list)
-        actual_result = o._match_signatures_to_process_events(signature_dicts=signatures)
+        actual_result = o._match_signatures_to_events(o.event_dicts, signature_dicts=signatures)
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("process_list, safelist, expected_result",
-                             [(None, [],
-                               []),
-                              ([],
-                               [],
-                               []),
-                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+    @pytest.mark.parametrize(
+        "event_list, signatures, safelist, expected_result, tree_type",
+        [(None, None, [],
+          [],
+          "PROCESS"),
+         ([],
+          None, [],
+          [],
+          "PROCESS"),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
+            "pguid": "blahblah"}],
+          None, [],
+          [{'pid': 1, 'image': 'blah', 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+            'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1,
+            'process_name': 'blah', 'children': [], "signatures": {}}],
+          "PROCESS"),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
+            "pguid": "blahblah"},
+           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2",
+            "pguid": "blah"}],
+          None, [],
+          [{'pid': 1, 'image': 'blah', 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah',
+            'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah',
+            'children':
+            [{'pid': 2, 'image': 'blah2', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah',
+              'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2', 'children': [],
+              'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1', "signatures": {}}],
+            'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "signatures": {}}],
+          "PROCESS"),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
+            "pguid": "blahblah"},
+           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2",
+            "pguid": "blah"},
+           {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "timestamp": 1, "guid": "blah3",
+            "pguid": "blah3"},
+           {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "timestamp": 2, "guid": "blah4",
+            "pguid": "blah3"}],
+          None, ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
+          [{'pid': 1, 'image': 'blah', 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+            'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1,
+            'process_name': 'blah',
+            'children':
+            [{'pid': 2, 'image': 'blah2', 'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1',
+              'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2,
+              'process_name': 'blah2', 'children': [], "signatures": {}}], "signatures": {}}],
+          "PROCESS"),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
+            "pguid": "blahblah"},
+           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2",
+            "pguid": "blah"},
+           {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "timestamp": 1, "guid": "blah3",
+            "pguid": "blah3"},
+           {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "timestamp": 2, "guid": "blah4",
+            "pguid": "blah3"},
+           {"pid": 4, "image": "blah4", "timestamp": 3, "guid": "blah5", "pguid": "blah4", "dest_ip": "1.1.1.1",
+            "dest_port": 443, "domain": "blah.com", "protocol": "tcp", "src_ip": "2.2.2.2", "src_port": 9999}],
+          None, ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
+          [{'pid': 1, 'image': 'blah', 'timestamp': 1, 'guid': 'blah', 'pguid': 'blahblah', 'ppid': 1,
+            'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah',
+            'children':
+            [{'pid': 2, 'image': 'blah2', 'timestamp': 2, 'guid': 'blah2', 'pguid': 'blah', 'ppid': 1,
+              'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2', 'children': [], "signatures": {},
+              'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}],
+            'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "signatures": {}},
+           {'pid': 3, 'image': 'blah3', 'timestamp': 1, 'guid': 'blah3', 'pguid': 'blah3', 'ppid': 3,
+            'command_line': 'blah3', 'process_pid': 3, 'process_name': 'blah3',
+            'children':
+            [{'pid': 4, 'image': 'blah4', 'timestamp': 2, 'guid': 'blah4', 'pguid': 'blah3', 'ppid': 3,
+              'command_line': 'blah4', 'process_pid': 4, 'process_name': 'blah4',
+              'children':
+              [{'pid': 4, 'image': 'blah4', 'timestamp': 3, 'guid': 'blah5', 'pguid': 'blah4', 'protocol': 'tcp',
+                'src_ip': '2.2.2.2', 'src_port': 9999, 'domain': 'blah.com', 'dest_ip': '1.1.1.1', 'dest_port': 443,
+                'children': [], "signatures": {}, "process_pid": 4, "process_name": "blah4",
+                'tree_id': 'b917df6cdf06e8aced76547e77c77d9fe1fdd5fa6d84604690b26ac17ab6de35'}], "signatures": {},
+              'tree_id': '55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c'}], "signatures": {},
+            'tree_id': '15405363bfd90e1733ceb9803c8998c5223966ce0273608f8c6c4d82906267b7', "signatures": {}}],
+          "EVENT"),
+         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+             "guid": "blah", "pguid": "blahblah"}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          [],
+          [{"children": [],
+            "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah",
+            'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
+                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
+                                 "signatures": {"blah": 1}}], "EVENT"),
+         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
                                  "guid": "blah", "pguid": "blahblah"}],
-                               [],
-                               [{'pid': 1, 'image': 'blah',
+          [{"pid": 1, "name": "blah", "score": 1}],
+          [],
+          [{"children": [],
+            "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah",
                                  'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
-                                 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah',
-                                 'process_pid': 1, 'process_name': 'blah', 'children': []}]),
-                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
-                                 "guid": "blah", "pguid": "blahblah"},
-                                {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2,
-                                 "guid": "blah2", "pguid": "blah"}],
-                               [],
-                               [{'pid': 1, 'image': 'blah', 'timestamp': 1, 'guid': 'blah', 'ppid': 1,
-                                 'pguid': 'blahblah', 'command_line': 'blah', 'process_pid': 1, 'process_name': 'blah',
-                                 'children':
-                                 [{'pid': 2, 'image': 'blah2', 'timestamp': 2, 'guid': 'blah2', 'ppid': 1,
-                                   'pguid': 'blah', 'command_line': 'blah2', 'process_pid': 2, 'process_name': 'blah2',
-                                   'children': [],
-                                   'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}],
-                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52'}]),
-                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
-                                 "guid": "blah", "pguid": "blahblah"},
-                                {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2,
-                                 "guid": "blah2", "pguid": "blah"},
-                                {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "timestamp": 1,
-                                 "guid": "blah3", "pguid": "blah3"},
-                                {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "timestamp": 2,
-                                 "guid": "blah4", "pguid": "blah3"}],
-                               ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
-                               [{'pid': 1, 'image': 'blah',
+                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
+                                 "signatures": {}}], "EVENT"),
+         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          ["blah"],
+          [{"children": [],
+            "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah",
                                  'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
-                                 'timestamp': 1, 'guid': 'blah', 'ppid': 1, 'pguid': 'blahblah', 'command_line': 'blah',
-                                 'process_pid': 1, 'process_name': 'blah',
-                                 'children':
-                                 [{'pid': 2, 'image': 'blah2',
-                                   'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1',
-                                   'timestamp': 2, 'guid': 'blah2', 'ppid': 1, 'pguid': 'blah', 'command_line': 'blah2',
-                                   'process_pid': 2, 'process_name': 'blah2', 'children': []}]}]), ])
-    def test_get_process_tree(process_list, safelist, expected_result):
+                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
+                                 "signatures": {}}], "EVENT"),
+         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
+                                 "guid": "blah", "pguid": "blahblah"}],
+          [{"pid": 1, "name": "blah", "score": 1}],
+          ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
+          [], "EVENT")
+         ])
+    def test_get_event_tree(event_list, signatures, safelist, expected_result, tree_type):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
-        o = SandboxOntology(process_list)
-        actual_result = o.get_process_tree(safelist)
-        assert actual_result == expected_result
-
-    @staticmethod
-    @pytest.mark.parametrize("process_list, signatures, safelist, expected_result",
-                             [(None, [],
-                               [],
-                               []),
-                              ([],
-                               [],
-                               [],
-                               []),
-                              ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
-                                 "guid": "blah", "pguid": "blahblah"}],
-                               [{"pid": 1, "name": "blah", "score": 1}],
-                               [],
-                               [{"children": [],
-                                 "pid": 1, "ppid": 1, "process_name": "blah", "process_pid": 1, "image": "blah",
-                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
-                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
-                                 "signatures": {"blah": 1}}]),
-                              ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
-                                 "guid": "blah", "pguid": "blahblah"}],
-                               [{"pid": 1, "name": "blah", "score": 1}],
-                               [],
-                               [{"children": [],
-                                 "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah",
-                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
-                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
-                                 "signatures": {}}]),
-                              ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
-                                 "guid": "blah", "pguid": "blahblah"}],
-                               [{"pid": 1, "name": "blah", "score": 1}],
-                               ["blah"],
-                               [{"children": [],
-                                 "pid": 2, "ppid": 1, "process_name": "blah", "process_pid": 2, "image": "blah",
-                                 'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52',
-                                 "command_line": "blah", "timestamp": 1, "guid": "blah", "pguid": "blahblah",
-                                 "signatures": {}}]),
-                              ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1,
-                                 "guid": "blah", "pguid": "blahblah"}],
-                               [{"pid": 1, "name": "blah", "score": 1}],
-                               ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
-                               []), ])
-    def test_get_process_tree_with_signatures(process_list, signatures, safelist, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
-        o = SandboxOntology(process_list)
-        actual_result = o.get_process_tree_with_signatures(signatures=signatures, safelist=safelist)
+        o = SandboxOntology(event_list)
+        actual_result = o.get_event_tree(signatures=signatures, tree_type=tree_type, safelist=safelist)
         assert actual_result == expected_result
 
     @staticmethod
@@ -1023,7 +1052,7 @@ class TestSandboxOntology:
         assert process_tree == expected_process_tree
 
     @staticmethod
-    @pytest.mark.parametrize("process_tree, safe_tree_ids, expected_process_tree",
+    @pytest.mark.parametrize("event_tree, safe_tree_ids, expected_event_tree",
                              [([],
                                [],
                                []),
@@ -1120,10 +1149,10 @@ class TestSandboxOntology:
                                  [{"image": "b", "children": [],
                                    "tree_id": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}],
                                  "tree_id": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}]), ])
-    def test_filter_process_tree_against_safe_tree_ids(process_tree, safe_tree_ids, expected_process_tree):
+    def test_filter_event_tree_against_safe_tree_ids(event_tree, safe_tree_ids, expected_event_tree):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
-        filtered_process_tree = SandboxOntology._filter_process_tree_against_safe_tree_ids(process_tree, safe_tree_ids)
-        assert filtered_process_tree == expected_process_tree
+        filtered_event_tree = SandboxOntology._filter_event_tree_against_safe_tree_ids(event_tree, safe_tree_ids)
+        assert filtered_event_tree == expected_event_tree
 
     @staticmethod
     @pytest.mark.parametrize(
@@ -1134,27 +1163,27 @@ class TestSandboxOntology:
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
             "pguid": "blah"}],
           [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
-            "pguid": "blah"}]),
+            "pguid": "blah", "signatures": {}}]),
          ([{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}],
           [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah", "signatures": {}}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
             "pguid": "blah"},
            {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}],
           [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0, "guid": "blah",
-            "pguid": "blah"},
+            "pguid": "blah", "signatures": {}},
            {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}]),
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah", "signatures": {}}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah",
             "pguid": "blah"},
            {"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"}],
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah"}],
           [{"protocol": "blah", "src_ip": "blah", "src_port": 1, "domain": "blah", "dest_ip": "blah", "dest_port": 1,
-            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah"},
+            "pid": 1, "image": "blah", "timestamp": 1.0, "guid": "blah", "pguid": "blah", "signatures": {}},
            {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 2.0, "guid": "blah",
-            "pguid": "blah"}]), ])
+            "pguid": "blah", "signatures": {}}]), ])
     def test_get_events(events, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         so = SandboxOntology(events=events)
