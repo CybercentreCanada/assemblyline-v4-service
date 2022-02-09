@@ -40,7 +40,7 @@ class TestSectionReducer:
         from assemblyline_v4_service.common.result import ResultSection
         section = ResultSection("blah")
         subsection = ResultSection("subblah")
-        for t_type, t_values in tags:
+        for t_type, t_values in tags.items():
             for t_value in t_values:
                 subsection.add_tag(t_type, t_value)
         section.add_subsection(subsection)
