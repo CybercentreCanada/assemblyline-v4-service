@@ -566,7 +566,7 @@ class TypeSpecificResultSection(ResultSection):
         self.section_body = section_body
         super().__init__(title_text, body_format=self.section_body.format, **kwargs)
 
-    @ property
+    @property
     def body(self):
         return self.section_body.body
 
