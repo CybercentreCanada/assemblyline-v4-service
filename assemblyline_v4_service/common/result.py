@@ -122,12 +122,20 @@ class Heuristic:
         return self._attack_ids
 
     @property
+    def description(self):
+        return self._definition.description
+
+    @property
     def frequency(self):
         return self._frequency
 
     @property
     def heur_id(self):
         return self._heur_id
+
+    @property
+    def name(self):
+        return self._definition.name
 
     @property
     def score(self):
@@ -268,10 +276,10 @@ class KVSectionBody(SectionBody):
         return super().__init__(BODY_FORMAT.KEY_VALUE, body=kwargs)
 
     def set_item(self, key: str, value: Union[str, bool, int]) -> None:
-        self._data[key] = value
+        self._data[str(key)] = value
 
     def update_items(self, new_dict: dict):
-        self._data.update(new_dict)
+        self._data.update({str(k): v for k, v in new_dict.items()})
 
 
 class OrderedKVSectionBody(SectionBody):
@@ -279,7 +287,7 @@ class OrderedKVSectionBody(SectionBody):
         return super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[])
 
     def add_item(self, key: str, value: Union[str, bool, int]) -> None:
-        self._data.append((key, value))
+        self._data.append((str(key), value))
 
 
 class JSONSectionBody(SectionBody):
@@ -423,23 +431,23 @@ class ResultSection:
             elif isinstance(parent, Result):
                 parent.add_section(self)
 
-    @property
+    @ property
     def body(self):
         return self._body
 
-    @property
+    @ property
     def body_format(self):
         return self._body_format
 
-    @property
+    @ property
     def heuristic(self):
         return self._heuristic
 
-    @property
+    @ property
     def subsections(self):
         return self._subsections
 
-    @property
+    @ property
     def tags(self):
         return self._tags
 
@@ -558,7 +566,7 @@ class TypeSpecificResultSection(ResultSection):
         self.section_body = section_body
         super().__init__(title_text, body_format=self.section_body.format, **kwargs)
 
-    @property
+    @ property
     def body(self):
         return self.section_body.body
 
