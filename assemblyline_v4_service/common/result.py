@@ -529,7 +529,7 @@ class ResultSection:
                 self._body_format = body_format
 
     def set_heuristic(
-            self, heur: Union[int, Heuristic],
+            self, heur: Union[int, Heuristic, None],
             attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
         """
         Set a heuristic for a result section/subsection.
@@ -539,12 +539,13 @@ class ResultSection:
         :param attack_id: (optional) Attack ID related to the heuristic
         :param signature: (optional) Signature Name that triggered the heuristic
         """
-
-        if self._heuristic:
+        if heur is None:
+            self._heuristic = None
+        elif self._heuristic:
             heur_id = heur.heur_id if isinstance(heur, Heuristic) else heur
             raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
                                             f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
-        if isinstance(heur, Heuristic):
+        elif isinstance(heur, Heuristic):
             if attack_id:
                 heur.add_attack_id(attack_id)
             if signature:
