@@ -431,23 +431,23 @@ class ResultSection:
             elif isinstance(parent, Result):
                 parent.add_section(self)
 
-    @ property
+    @property
     def body(self):
         return self._body
 
-    @ property
+    @property
     def body_format(self):
         return self._body_format
 
-    @ property
+    @property
     def heuristic(self):
         return self._heuristic
 
-    @ property
+    @property
     def subsections(self):
         return self._subsections
 
-    @ property
+    @property
     def tags(self):
         return self._tags
 
