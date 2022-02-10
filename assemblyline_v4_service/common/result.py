@@ -520,21 +520,30 @@ class ResultSection:
             if body_format:
                 self._body_format = body_format
 
-    def set_heuristic(self, heur_id: int, attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
+    def set_heuristic(
+            self, heur: Union[int, Heuristic],
+            attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
         """
         Set a heuristic for a result section/subsection.
         A heuristic is required to assign a score to a result section/subsection.
 
-        :param heur_id: Heuristic ID as set in the service manifest
+        :param heur: Heuristic ID as set in the service manifest or Heuristic Instance
         :param attack_id: (optional) Attack ID related to the heuristic
         :param signature: (optional) Signature Name that triggered the heuristic
         """
 
         if self._heuristic:
+            heur_id = heur.heur_id if isinstance(heur, Heuristic) else heur
             raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
                                             f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
-
-        self._heuristic = Heuristic(heur_id, attack_id=attack_id, signature=signature)
+        if isinstance(heur, Heuristic):
+            if attack_id:
+                heur.add_attack_id(attack_id)
+            if signature:
+                heur.add_signature_id(signature)
+            self._heuristic = heur
+        else:
+            self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
 
 
 class TypeSpecificResultSection(ResultSection):
