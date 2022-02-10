@@ -147,9 +147,9 @@ def reduce_uri_tags(uris=None) -> List[str]:
                         for key in val.keys():
                             placeholders = []
                             # since each of these items is a list of lists
-                            for item in val[key]:
+                            for val_item in val[key]:
                                 # use regex to determine the parameter type
-                                value = item[0]
+                                value = val_item[0]
                                 placeholder = _get_placeholder(value)
                                 placeholders.append(placeholder)
                             if len(set(placeholders)) == 1:
