@@ -545,6 +545,9 @@ class ResultSection:
         else:
             self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
 
+    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]):
+        self._tags = tags
+
 
 class TypeSpecificResultSection(ResultSection):
     def __init__(self, title_text: Union[str, List], section_body: SectionBody, **kwargs):
