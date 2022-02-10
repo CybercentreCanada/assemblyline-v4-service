@@ -506,7 +506,7 @@ class ResultSection:
             return False
 
         if not self.body and self.body is not None:
-            self.body = None
+            self._body = None
 
         self._finalized = True
 
