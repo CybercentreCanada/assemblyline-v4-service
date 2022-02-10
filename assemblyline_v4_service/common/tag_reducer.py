@@ -1,6 +1,8 @@
 import re
-from copy import deepcopy
 import os.path
+
+from copy import deepcopy
+from typing import List
 from urllib.parse import urlparse, parse_qs, urlunparse, urlencode, unquote
 
 NUMBER_REGEX = re.compile("[0-9]*")
@@ -10,7 +12,7 @@ BASE64_REGEX = re.compile("(?:[A-Za-z0-9+/]{4})*(?:[A-Za-z0-9+/]{2}==|[A-Za-z0-9
 DO_NOT_REDUCE = ["netloc", "hostname"]
 
 
-def reduce_uri_tags(uris=None) -> []:
+def reduce_uri_tags(uris=None) -> List[str]:
     """
     The purpose of this helper function is to reduce the amount of unique uris to be tagged.
     ex. If a sample makes a hundred network calls to four unqiue domains, with only one parameter
@@ -145,9 +147,9 @@ def reduce_uri_tags(uris=None) -> []:
                         for key in val.keys():
                             placeholders = []
                             # since each of these items is a list of lists
-                            for l in val[key]:
+                            for item in val[key]:
                                 # use regex to determine the parameter type
-                                value = l[0]
+                                value = item[0]
                                 placeholder = _get_placeholder(value)
                                 placeholders.append(placeholder)
                             if len(set(placeholders)) == 1:
