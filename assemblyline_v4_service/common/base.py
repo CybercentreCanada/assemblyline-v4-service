@@ -295,6 +295,8 @@ class ServiceBase:
         except Exception as e:
             self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
+        # If the service raise heuristics, dump them into a separate file for analysis
+
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
         url_base = f"http://{self.dependencies['updates']['host']}:{self.dependencies['updates']['port']}/"
