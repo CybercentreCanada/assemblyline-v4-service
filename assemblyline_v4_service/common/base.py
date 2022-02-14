@@ -296,6 +296,14 @@ class ServiceBase:
             self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
         # If the service raise heuristics, dump them into a separate file for analysis
+        try:
+            heuristic_dump = os.path.join(self.working_directory, 'heuristic_dump.json')
+            open(heuristic_dump, 'w').write(json.dumps(heur_tag_map))
+            request.add_supplementary(
+                path=heuristic_dump, name=f'{request.file_name}_{request.task.service_name}_heuristic_dump.json',
+                description="Heuristic Dump", classification=max_result_classification)
+        except Exception as e:
+            self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
