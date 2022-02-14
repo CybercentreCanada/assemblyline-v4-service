@@ -214,30 +214,41 @@ class ServiceBase:
             # Nothing additional to append from the service
             return
 
+        # Required meta
         service_result = {
-            'service_info': {
-                'version' : request.task.service_version,
-                'tool_version' :  request.task.service_tool_version,
-                'date' : request.task._service_completed,
-                'classification' : request.task._classification
-            },
-            'file_info': {
-                'md5': request.md5,
-                'sha1': request.sha1,
-                'sha256': request.sha256,
-                'type': request.file_type,
-                'size': len(request.file_contents)
-            }
+            'md5': request.md5,
+            'sha1': request.sha1,
+            'sha256': request.sha256,
+            'type': request.file_type,
+            'size': request.file_size,
+            'filename': request.file_name,
+            'date': request.task._service_started,
+            'classification': request.task._classification,
+            'service_name': request.task.service_name,
+            'service_version': request.task.service_version,
+            'service_tool_version': request.task.service_tool_version,
         }
 
+        # Optional meta
+        service_result.update(
+            {
+                'sid': request.sid,
+                'submitted_classification': request.task._classification,
+                'tags': []
+            }
+        )
+
+        # request.task.result
         service_result.update(service_output)
         try:
             ontology_path = os.path.join(self.working_directory, 'result_ontology.json')
             open(ontology_path, 'w').write(ResultOntology(service_result).json())
-            request.add_supplementary(path=ontology_path, description="Ontological Result",
-            classification=request.task._classification)
+            request.add_supplementary(path=ontology_path, name=f'{request.file_name}_{request.task.service_name}',
+                                      description="Ontological Result", classification=request.task._classification)
         except Exception as e:
             self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
+
+        # If the service raise heuristics, dump them into a separate file for analysis
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
