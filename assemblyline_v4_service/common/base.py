@@ -1,7 +1,9 @@
 from __future__ import annotations
+from collections import defaultdict
 
 import hashlib
 import logging
+import json
 import os
 import requests
 import shutil
@@ -11,7 +13,7 @@ import time
 from typing import Dict, Optional
 from pathlib import Path
 
-from assemblyline.common import exceptions, log, version
+from assemblyline.common import exceptions, log, version, forge
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result_ontology import ResultOntology
@@ -214,6 +216,24 @@ class ServiceBase:
             # Nothing additional to append from the service
             return
 
+        def preprocess_result_for_dump(sections, current_max, heur_tag_map):
+            for section in sections:
+                # Determine max classification of the overall result
+                current_max = forge.get_classification().max_classification(section.classification, current_max)
+
+                # Append tags associated to heuristcs raised by the service, if any
+                if section.heuristic:
+                    heur_tag_map[f'{self.name.upper()}.{section.heuristic.heur_id}'].update(section.tags)
+
+                if section.subsections:
+                    current_max, heur_tag_map = preprocess_result_for_dump(
+                        section.subsections, current_max, heur_tag_map)
+
+            return current_max, heur_tag_map
+
+        max_result_classification, heur_tag_map = preprocess_result_for_dump(
+            request.result.sections, request.task.service_default_result_classification, defaultdict(dict))
+
         # Required meta
         service_result = {
             'md5': request.md5,
@@ -223,7 +243,7 @@ class ServiceBase:
             'size': request.file_size,
             'filename': request.file_name,
             'date': request.task._service_started,
-            'classification': request.task._classification,
+            'classification': max_result_classification,
             'service_name': request.task.service_name,
             'service_version': request.task.service_version,
             'service_tool_version': request.task.service_tool_version,
@@ -233,22 +253,30 @@ class ServiceBase:
         service_result.update(
             {
                 'sid': request.sid,
-                'submitted_classification': request.task._classification,
+                'submitted_classification': request.task.min_classification,
                 'tags': []
             }
         )
 
-        # request.task.result
         service_result.update(service_output)
         try:
             ontology_path = os.path.join(self.working_directory, 'result_ontology.json')
             open(ontology_path, 'w').write(ResultOntology(service_result).json())
-            request.add_supplementary(path=ontology_path, name=f'{request.file_name}_{request.task.service_name}',
-                                      description="Ontological Result", classification=request.task._classification)
+            request.add_supplementary(
+                path=ontology_path, name=f'{request.file_name}_{request.task.service_name}_result_ontology.json',
+                description="Ontological Result", classification=max_result_classification)
         except Exception as e:
             self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
         # If the service raise heuristics, dump them into a separate file for analysis
+        try:
+            heuristic_dump = os.path.join(self.working_directory, 'heuristic_dump.json')
+            open(heuristic_dump, 'w').write(json.dumps(heur_tag_map))
+            request.add_supplementary(
+                path=heuristic_dump, name=f'{request.file_name}_{request.task.service_name}_heuristic_dump.json',
+                description="Heuristic Dump", classification=max_result_classification)
+        except Exception as e:
+            self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
