@@ -26,7 +26,7 @@ def _section_traverser(section: ResultSection = None) -> ResultSection:
     for subsection in section.subsections:
         _section_traverser(subsection)
     if section.tags:
-        section.tags = _reduce_specific_tags(section.tags)
+        section.set_tags(_reduce_specific_tags(section.tags))
     return section
 
 
