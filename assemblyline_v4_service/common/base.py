@@ -15,8 +15,9 @@ from pathlib import Path
 
 from assemblyline.common import exceptions, log, version, forge
 from assemblyline.common.digests import get_sha256_for_file
-from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.result_ontology import ResultOntology
+from assemblyline.odm.messages.task import Classification, Task as ServiceTask
+from assemblyline.odm.models.ontology.meta import ResultOntology
+from assemblyline.odm.base import Model
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -147,8 +148,8 @@ class ServiceBase:
                              self.service_attributes.version, self.get_tool_version())
 
             request = ServiceRequest(self._task)
-            self._attach_service_ontology(request, self.execute(request))
-
+            self.execute(request)
+            self._attach_service_meta_ontology(request)
             self._success()
         except RuntimeError as re:
             if is_recoverable_runtime_error(re):
@@ -211,10 +212,24 @@ class ServiceBase:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
 
-    def _attach_service_ontology(self, request: ServiceRequest, service_output: dict = None) -> None:
-        if not service_output:
-            # Nothing additional to append from the service
-            return
+    def attach_ontological_result(self, request: ServiceRequest, modelType: Model, data: dict, validate_model=False,
+                                  suffix='', classification=None) -> None:
+
+        # Service version will enforce validation when running in production
+        if 'dev' not in self.service_attributes.version:
+            validate_model = True
+
+        # Properly distinguish between muliple Ontological Results of the same type
+        if suffix and not suffix.startswith('_'):
+            suffix = f'_{suffix}'
+
+        filepath = os.path.join(
+            self.working_directory,
+            f'{request.sha256}_{request.task.service_name}_result_ontology_{modelType.__name__}{suffix}.json')
+        open(filepath, 'w').write(modelType(data=data, ignore_extra_values=not validate_model).json)
+        request.add_supplementary(path=filepath, name=filepath, description=filepath, classification=classification)
+
+    def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
         def preprocess_result_for_dump(sections, current_max, heur_tag_map):
             for section in sections:
@@ -258,13 +273,12 @@ class ServiceBase:
             }
         )
 
-        service_result.update(service_output)
         try:
             ontology_path = os.path.join(self.working_directory, 'result_ontology.json')
             open(ontology_path, 'w').write(ResultOntology(service_result).json())
             request.add_supplementary(
-                path=ontology_path, name=f'{request.file_name}_{request.task.service_name}_result_ontology.json',
-                description="Ontological Result", classification=max_result_classification)
+                path=ontology_path, name=f'{request.sha256}_{request.task.service_name}_result_ontology_meta.json',
+                description="Ontological Service Result Metadata", classification=max_result_classification)
         except Exception as e:
             self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
 
