@@ -3,6 +3,7 @@ from subprocess import Popen, PIPE
 from assemblyline.common.str_utils import safe_str
 from typing import List
 
+
 class Certificate():
     def __init__(self):
         self.raw = ""
@@ -12,6 +13,7 @@ class Certificate():
         self.valid_from = ""
         self.valid_to = ""
 
+
 def keytool_printcert(cert_path: str) -> None:
     """
     This function runs the 'keytool -printcert' command against a provided file
@@ -20,7 +22,7 @@ def keytool_printcert(cert_path: str) -> None:
     :return: the string output of 'keytool -printcert' or None
     """
     stdout, _ = Popen(["keytool", "-printcert", "-file", cert_path],
-                                stderr=PIPE, stdout=PIPE).communicate()
+                      stderr=PIPE, stdout=PIPE).communicate()
     stdout = safe_str(stdout)
 
     if stdout and "keytool error" not in stdout:
@@ -28,17 +30,19 @@ def keytool_printcert(cert_path: str) -> None:
 
     return None
 
+
 def certificate_chain_from_printcert(printcert: str) -> List[Certificate]:
     """
     This function parses the output of 'keytool -printcert' and creates a list of Certificate objects.
     The input to this function is the output of keytool_printcert
 
     :param printcert: the string output of 'keytool -printcert'
-    :return: a list of the parsed out certificates. If only one certificate is present and not a chain, then the list will have one element.
+    :return: a list of the parsed out certificates. If only one certificate
+             is present and not a chain, then the list will have one element.
     """
     certs: List[Certificate] = []
 
-    for cert_str in split('Certificate\[\d+\]:', printcert): # split printcert output in case of certificate chain
+    for cert_str in split(r'Certificate\[\d+\]:', printcert):  # split printcert output in case of certificate chain
         if cert_str == '':
             continue
         cert = Certificate()
