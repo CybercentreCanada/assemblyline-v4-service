@@ -1,12 +1,16 @@
 import os
-from typing import Dict, Union
-
 import yaml
+
+from io import BytesIO
+from typing import Dict, Union
 
 from assemblyline.common.classification import Classification, InvalidDefinition
 from assemblyline.common.dict_utils import recursive_update
+from assemblyline.common.version import BUILD_MINOR, FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.odm.models.heuristic import Heuristic
 from assemblyline.odm.models.service import Service
+
+SERVICE_TAG = os.environ.get("SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0").encode("utf-8")
 
 
 def get_classification() -> Classification:
@@ -65,11 +69,17 @@ def get_service_manifest() -> Dict:
         service_manifest_yml = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
 
     if os.path.exists(service_manifest_yml):
-        with open(service_manifest_yml) as yml_fh:
-            yml_data = yaml.safe_load(yml_fh.read())
-            if yml_data:
-                return yml_data
-            else:
-                raise Exception("Service manifest is empty.")
+        bio = BytesIO()
+        with open(service_manifest_yml, "rb") as srv_manifest:
+            for line in srv_manifest.readlines():
+                bio.write(line.replace(b"$SERVICE_TAG", SERVICE_TAG))
+            bio.flush()
+        bio.seek(0)
+
+        yml_data = yaml.safe_load(bio)
+        if yml_data:
+            return yml_data
+        else:
+            raise Exception("Service manifest is empty.")
     else:
         raise Exception("Service manifest YAML file not found in root folder of service.")
