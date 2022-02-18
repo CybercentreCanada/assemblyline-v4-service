@@ -15,7 +15,7 @@ from pathlib import Path
 
 from assemblyline.common import exceptions, log, version, forge
 from assemblyline.common.digests import get_sha256_for_file
-from assemblyline.odm.messages.task import Classification, Task as ServiceTask
+from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.ontology.meta import ResultOntology
 from assemblyline.odm.base import Model
 from assemblyline_v4_service.common import helper
