@@ -214,6 +214,9 @@ class ServiceBase:
 
     def attach_ontological_result(self, request: ServiceRequest, modelType: Model, data: dict, validate_model=False,
                                   suffix='', classification=None) -> None:
+        if not data:
+            self.log.warning('No ontological data provided. Ignoring...')
+            return
 
         # Service version will enforce validation when running in production
         if 'dev' not in self.service_attributes.version:
