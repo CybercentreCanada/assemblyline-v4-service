@@ -884,7 +884,7 @@ class TestSandboxOntology:
             [{'process_pid': 4, 'process_name': 'blah4', 'command_line': 'blah4', 'signatures': {},
               'children': [],
               'network_events':
-              [{'process_pid': 4, 'process_name': 'blah4', 'protocol': 'tcp', 'domain': 'blah.com',
+              [{'protocol': 'tcp', 'domain': 'blah.com',
                 'dest_ip': '1.1.1.1', 'dest_port': 443}]}],
             'network_events': []}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",

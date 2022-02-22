@@ -366,8 +366,6 @@ class NetworkItem:
 
     def as_primitives(self):
         return {
-            "process_pid": self.pid,
-            "process_name": self.name,
             "protocol": self.protocol,
             "domain": self.domain,
             "dest_ip": self.dest_ip,
