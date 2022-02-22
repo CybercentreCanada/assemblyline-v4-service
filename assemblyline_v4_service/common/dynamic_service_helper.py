@@ -704,15 +704,11 @@ class SandboxOntology(Events):
         for child in event["children"][:]:
             if set(child.keys()) == network_keys_to_match:
                 c = NetworkItem(
-                    pid=child["pid"],
-                    name=child["image"],
                     protocol=child["protocol"],
                     dest_ip=child["dest_ip"],
                     dest_port=child["dest_port"],
                     domain=child["domain"],
                 )
-                for name, score in child["signatures"].items():
-                    c.add_signature(name, score)
 
                 e.add_network_event(c)
             elif child.keys() == process_keys_to_match:

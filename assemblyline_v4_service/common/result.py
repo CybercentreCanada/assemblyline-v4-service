@@ -347,22 +347,13 @@ class ProcessItem:
 
 class NetworkItem:
     def __init__(
-            self, pid: int, name: str, protocol: str, dest_ip: str, dest_port: Optional[str] = None,
-            domain: Optional[str] = None, signatures: Optional[Dict[str, int]] = None):
-        self.pid = pid
-        self.name = name
+            self, protocol: str, dest_ip: str, dest_port: Optional[str] = None,
+            domain: Optional[str] = None):
         self.protocol = protocol
         self.dest_ip = dest_ip
         self.dest_port = dest_port
         self.domain = domain
         self.type = NETWORK_TYPE
-        if not signatures:
-            self.signatures = {}
-        else:
-            self.signatures = signatures
-
-    def add_signature(self, name: str, score: int):
-        self.signatures[name] = score
 
     def as_primitives(self):
         return {
