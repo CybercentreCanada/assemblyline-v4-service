@@ -16,6 +16,8 @@ log = logging.getLogger('assemblyline.service.result')
 
 Classification = forge.get_classification()
 SERVICE_ATTRIBUTES = get_service_attributes()
+NETWORK_TYPE = "network"
+PROCESS_TYPE = "process"
 
 BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TEXT', 0),
@@ -304,11 +306,12 @@ class JSONSectionBody(SectionBody):
 class ProcessItem:
     def __init__(
             self, pid: int, name: str, cmd: str, signatures: Optional[Dict[str, int]] = None,
-            children: Optional[List[ProcessItem]] = None):
+            children: Optional[List[ProcessItem]] = None, network_events: Optional[List[NetworkItem]] = None):
 
         self.pid = pid
         self.name = name
         self.cmd = cmd
+        self.type = PROCESS_TYPE
         if not signatures:
             self.signatures = {}
         else:
@@ -317,6 +320,10 @@ class ProcessItem:
             self.children = []
         else:
             self.children = children
+        if not network_events:
+            self.network_events = []
+        else:
+            self.network_events = network_events
 
     def add_signature(self, name: str, score: int):
         self.signatures[name] = score
@@ -324,13 +331,47 @@ class ProcessItem:
     def add_child_process(self, process: ProcessItem):
         self.children.append(process)
 
+    def add_network_event(self, network_event: NetworkItem):
+        self.network_events.append(network_event)
+
     def as_primitives(self):
         return {
             "process_pid": self.pid,
             "process_name": self.name,
             "command_line": self.cmd,
             "signatures": self.signatures,
-            "children": [c.as_primitives() for c in self.children]
+            "children": [c.as_primitives() for c in self.children],
+            "network_events": [n.as_primitives() for n in self.network_events],
+        }
+
+
+class NetworkItem:
+    def __init__(
+            self, pid: int, name: str, protocol: str, dest_ip: str, dest_port: Optional[str] = None,
+            domain: Optional[str] = None, signatures: Optional[Dict[str, int]] = None):
+        self.pid = pid
+        self.name = name
+        self.protocol = protocol
+        self.dest_ip = dest_ip
+        self.dest_port = dest_port
+        self.domain = domain
+        self.type = NETWORK_TYPE
+        if not signatures:
+            self.signatures = {}
+        else:
+            self.signatures = signatures
+
+    def add_signature(self, name: str, score: int):
+        self.signatures[name] = score
+
+    def as_primitives(self):
+        return {
+            "process_pid": self.pid,
+            "process_name": self.name,
+            "protocol": self.protocol,
+            "domain": self.domain,
+            "dest_ip": self.dest_ip,
+            "dest_port": self.dest_port,
         }
 
 

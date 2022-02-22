@@ -8,7 +8,7 @@ from assemblyline.common.attack_map import software_map, attack_map, group_map, 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, ProcessItem, \
+from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, NetworkItem, ProcessItem, \
     ResultGraphSection, ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, \
     ResultMultiSection, ResultProcessTreeSection, ResultSection, BODY_FORMAT, Heuristic, ResultTextSection, \
     ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection
@@ -276,6 +276,14 @@ class ResultSample(ServiceBase):
             # Or even directly create the ProcessItem object with the signature in it
             evil_process_child_2 = ProcessItem(
                 345, "benignexe.exe", "C:\\benignexe.exe -f \"just kidding, i'm evil\"", signatures={"one": 2000})
+
+            # You can also add network events to a ProcessItem object
+            evil_process_child_2.add_network_event(
+                NetworkItem(345, "benignexe.exe", "dns", "10.10.10.10", None, "baddie.com")
+            )
+            evil_process_child_2.add_network_event(
+                NetworkItem(345, "benignexe.exe", "tcp", "10.10.10.10", 443, "baddie.com")
+            )
 
             evil_process.add_child_process(evil_process_child_1)
             evil_process.add_child_process(evil_process_child_2)
