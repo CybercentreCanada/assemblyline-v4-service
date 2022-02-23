@@ -8,10 +8,10 @@ from assemblyline.common.attack_map import software_map, attack_map, group_map, 
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, NetworkItem, ProcessItem, \
+from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, ProcessItem, \
     ResultGraphSection, ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, \
     ResultMultiSection, ResultProcessTreeSection, ResultSection, BODY_FORMAT, Heuristic, ResultTextSection, \
-    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection
+    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection, NetworkItem
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
