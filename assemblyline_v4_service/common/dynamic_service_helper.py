@@ -708,7 +708,7 @@ class SandboxOntology(Events):
                     dest_ip=child["dest_ip"],
                     dest_port=child["dest_port"],
                     domain=child["domain"],
-                    transport_protocol="udp" if child["protocol"] == "dns" else "tcp"
+                    transport_protocol="udp" if child["protocol"] in ["dns", "udp"] else "tcp"
                 )
 
                 e.add_network_event(c)
