@@ -347,20 +347,22 @@ class ProcessItem:
 
 class NetworkItem:
     def __init__(
-            self, protocol: str, dest_ip: str, dest_port: Optional[str] = None,
-            domain: Optional[str] = None):
-        self.protocol = protocol
+            self, transport_protocol: str, dest_ip: str, dest_port: Optional[str] = None,
+            domain: Optional[str] = None, protocol: str = None):
+        self.transport_protocol = transport_protocol
         self.dest_ip = dest_ip
         self.dest_port = dest_port
         self.domain = domain
+        self.protocol = protocol
         self.type = NETWORK_TYPE
 
     def as_primitives(self):
         return {
-            "protocol": self.protocol,
+            "transport_protocol": self.transport_protocol,
             "domain": self.domain,
             "dest_ip": self.dest_ip,
             "dest_port": self.dest_port,
+            "protocol": self.protocol,
         }
 
 

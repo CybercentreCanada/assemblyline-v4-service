@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Any, Union, Set
 from re import compile, escape, sub
 from logging import getLogger
 from assemblyline.common import log as al_log
-from assemblyline_v4_service.common.result import ResultSection, ProcessItem, NetworkItem, ResultProcessTreeSection, NETWORK_TYPE, PROCESS_TYPE
+from assemblyline_v4_service.common.result import ResultSection, ProcessItem, NetworkItem, ResultProcessTreeSection
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from hashlib import sha256
@@ -708,6 +708,7 @@ class SandboxOntology(Events):
                     dest_ip=child["dest_ip"],
                     dest_port=child["dest_port"],
                     domain=child["domain"],
+                    transport_protocol="udp" if child["protocol"] == "dns" else "tcp"
                 )
 
                 e.add_network_event(c)

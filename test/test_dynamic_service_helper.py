@@ -885,7 +885,7 @@ class TestSandboxOntology:
               'children': [],
               'network_events':
               [{'protocol': 'tcp', 'domain': 'blah.com',
-                'dest_ip': '1.1.1.1', 'dest_port': 443}]}],
+                'dest_ip': '1.1.1.1', 'dest_port': 443, "transport_protocol": "tcp"}]}],
             'network_events': []}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"}],

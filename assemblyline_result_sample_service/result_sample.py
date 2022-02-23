@@ -278,11 +278,17 @@ class ResultSample(ServiceBase):
                 345, "benignexe.exe", "C:\\benignexe.exe -f \"just kidding, i'm evil\"", signatures={"one": 2000})
 
             # You can also add network events to a ProcessItem object
+            # DNS
             evil_process_child_2.add_network_event(
-                NetworkItem(345, "benignexe.exe", "dns", "10.10.10.10", None, "baddie.com")
+                NetworkItem("udp", "10.10.10.10", None, "baddie.com", "dns")
             )
+            # HTTPS
             evil_process_child_2.add_network_event(
-                NetworkItem(345, "benignexe.exe", "tcp", "10.10.10.10", 443, "baddie.com")
+                NetworkItem("tcp", "10.10.10.10", 443, "baddie.com", "https")
+            )
+            # Regular old TCP!
+            evil_process_child_2.add_network_event(
+                NetworkItem("tcp", "10.10.10.10", 8000, "baddie.com")
             )
 
             evil_process.add_child_process(evil_process_child_1)
