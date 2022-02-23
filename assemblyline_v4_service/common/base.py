@@ -65,6 +65,8 @@ class ServiceBase:
         self._working_directory = None
         self.dependencies = self._get_dependencies_info()
 
+        self.ontologies: dict = None
+
         # Updater-related
         self.rules_directory: str = None
         self.rules_list: list = []
@@ -146,7 +148,7 @@ class ServiceBase:
             self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
-
+            self.ontologies = defaultdict(list)
             request = ServiceRequest(self._task)
             self.execute(request)
             self._attach_service_meta_ontology(request)
@@ -212,8 +214,7 @@ class ServiceBase:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
 
-    def attach_ontological_result(self, request: ServiceRequest, modelType: Model, data: dict, validate_model=True,
-                                  suffix='', classification=None) -> None:
+    def attach_ontological_result(self, modelType: Model, data: dict, validate_model=True) -> None:
         if not data:
             self.log.warning('No ontological data provided. Ignoring...')
             return
@@ -222,15 +223,10 @@ class ServiceBase:
         if 'dev' not in self.service_attributes.version:
             validate_model = True
 
-        # Properly distinguish between muliple Ontological Results of the same type
-        if suffix and not suffix.startswith('_'):
-            suffix = f'_{suffix}'
-
-        filepath = os.path.join(
-            self.working_directory,
-            f'{request.sha256}_{request.task.service_name}_result_ontology_{modelType.__name__}{suffix}.json')
-        open(filepath, 'w').write(modelType(data=data, ignore_extra_values=validate_model).json())
-        request.add_supplementary(path=filepath, name=filepath, description=filepath, classification=classification)
+        # Append ontologies to collection to get appended after execution
+        self.ontologies[modelType.__name__].append(
+            modelType(data=data, ignore_extra_values=validate_model).as_primitives()
+        )
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
@@ -276,34 +272,18 @@ class ServiceBase:
             }
         )
 
-        try:
-            ontology_path = os.path.join(self.working_directory, 'result_ontology.json')
-            open(ontology_path, 'w').write(ResultOntology(service_result).json())
-            request.add_supplementary(
-                path=ontology_path, name=f'{request.sha256}_{request.task.service_name}_result_ontology_meta.json',
-                description="Ontological Service Result Metadata", classification=max_result_classification)
-        except Exception as e:
-            self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
-
-        # If the service raise heuristics, dump them into a separate file for analysis
-        try:
-            heuristic_dump = os.path.join(self.working_directory, 'heuristic_dump.json')
-            open(heuristic_dump, 'w').write(json.dumps(heur_tag_map))
-            request.add_supplementary(
-                path=heuristic_dump, name=f'{request.file_name}_{request.task.service_name}_heuristic_dump.json',
-                description="Heuristic Dump", classification=max_result_classification)
-        except Exception as e:
-            self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
-
-        # If the service raise heuristics, dump them into a separate file for analysis
-        try:
-            heuristic_dump = os.path.join(self.working_directory, 'heuristic_dump.json')
-            open(heuristic_dump, 'w').write(json.dumps(heur_tag_map))
-            request.add_supplementary(
-                path=heuristic_dump, name=f'{request.file_name}_{request.task.service_name}_heuristic_dump.json',
-                description="Heuristic Dump", classification=max_result_classification)
-        except Exception as e:
-            self.log.error(f'An error occurred while compiling the result ontology: {e}. Discarding results..')
+        for type, data in self.ontologies.items():
+            for i, dv in enumerate(data):
+                ontology = {
+                    'header': ResultOntology(service_result).as_primitives(),
+                    f'{type}': dv
+                }
+                ontology_suffix = f'{type}_result_ontology_{i}.json'
+                ontology_path = os.path.join(self.working_directory, ontology_suffix)
+                open(ontology_path, 'w').write(json.dumps(ontology))
+                attachment_name = f'{request.sha256}_{request.task.service_name}_{ontology_suffix}'
+                request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
+                                          classification=max_result_classification)
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
