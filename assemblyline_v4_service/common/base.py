@@ -212,7 +212,7 @@ class ServiceBase:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
 
-    def attach_ontological_result(self, request: ServiceRequest, modelType: Model, data: dict, validate_model=False,
+    def attach_ontological_result(self, request: ServiceRequest, modelType: Model, data: dict, validate_model=True,
                                   suffix='', classification=None) -> None:
         if not data:
             self.log.warning('No ontological data provided. Ignoring...')
@@ -229,7 +229,7 @@ class ServiceBase:
         filepath = os.path.join(
             self.working_directory,
             f'{request.sha256}_{request.task.service_name}_result_ontology_{modelType.__name__}{suffix}.json')
-        open(filepath, 'w').write(modelType(data=data, ignore_extra_values=not validate_model).json)
+        open(filepath, 'w').write(modelType(data=data, ignore_extra_values=validate_model).json())
         request.add_supplementary(path=filepath, name=filepath, description=filepath, classification=classification)
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
