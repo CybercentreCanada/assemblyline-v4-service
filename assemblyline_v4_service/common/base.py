@@ -228,6 +228,7 @@ class ServiceBase:
             modelType(data=data, ignore_extra_values=validate_model).as_primitives()
         )
 
+
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
         def preprocess_result_for_dump(sections, current_max, heur_tag_map):
@@ -284,6 +285,7 @@ class ServiceBase:
                 attachment_name = f'{request.sha256}_{request.task.service_name}_{ontology_suffix}'
                 request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
                                           classification=max_result_classification)
+
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
