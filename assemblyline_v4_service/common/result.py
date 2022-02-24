@@ -16,8 +16,6 @@ log = logging.getLogger('assemblyline.service.result')
 
 Classification = forge.get_classification()
 SERVICE_ATTRIBUTES = get_service_attributes()
-NETWORK_TYPE = "network"
-PROCESS_TYPE = "process"
 
 BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TEXT', 0),
@@ -311,7 +309,6 @@ class ProcessItem:
         self.pid = pid
         self.name = name
         self.cmd = cmd
-        self.type = PROCESS_TYPE
         self.network_count = 0
         self.file_count = 0
         self.registry_count = 0
