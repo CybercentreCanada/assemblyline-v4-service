@@ -834,7 +834,7 @@ class TestSandboxOntology:
           None, [],
           [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {},
             'children': [],
-            'network_events': []}]),
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"},
            {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2",
@@ -844,8 +844,8 @@ class TestSandboxOntology:
             'children':
             [{'process_pid': 2, 'process_name': 'blah2', 'command_line': 'blah2', 'signatures': {},
               'children': [],
-              'network_events': []}],
-            'network_events': []}]),
+              'network_count': 0, 'file_count': 0, 'registry_count': 0}],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"},
            {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2",
@@ -859,8 +859,8 @@ class TestSandboxOntology:
             'children':
             [{'process_pid': 2, 'process_name': 'blah2', 'command_line': 'blah2', 'signatures': {},
               'children': [],
-              'network_events': []}],
-            'network_events': []}]),
+              'network_count': 0, 'file_count': 0, 'registry_count': 0}],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"},
            {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "timestamp": 2, "guid": "blah2",
@@ -877,31 +877,32 @@ class TestSandboxOntology:
             'children':
             [{'process_pid': 2, 'process_name': 'blah2', 'command_line': 'blah2', 'signatures': {},
               'children': [],
-              'network_events': []}],
-            'network_events': []},
+              'network_count': 0, 'file_count': 0, 'registry_count': 0}],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0},
            {'process_pid': 3, 'process_name': 'blah3', 'command_line': 'blah3', 'signatures': {},
             'children':
             [{'process_pid': 4, 'process_name': 'blah4', 'command_line': 'blah4', 'signatures': {},
               'children': [],
-              'network_events':
-              [{'protocol': 'tcp', 'domain': 'blah.com',
-                'dest_ip': '1.1.1.1', 'dest_port': 443, "transport_protocol": "tcp"}]}],
-            'network_events': []}]),
+              'network_count': 1, 'file_count': 0, 'registry_count': 0}],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"}],
           [{"pid": 1, "name": "blah", "score": 1}],
           [],
-          [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {'blah': 1}, 'children': [], 'network_events': []}]),
+          [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {'blah': 1}, 'children': [],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"}],
           [{"pid": 1, "name": "blah", "score": 1}],
           [],
-          [{'process_pid': 2, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {}, 'children': [], 'network_events': []}]),
+          [{'process_pid': 2, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {}, 'children': [],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"}],
           [{"pid": 1, "name": "blah", "score": 1}],
           ["blah"],
-          [{'process_pid': 2, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {}, 'children': [], 'network_events': []}]),
+          [{'process_pid': 2, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {}, 'children': [],
+            'network_count': 0, 'file_count': 0, 'registry_count': 0}]),
          ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1, "guid": "blah",
             "pguid": "blahblah"}],
           [{"pid": 1, "name": "blah", "score": 1}],
@@ -916,8 +917,8 @@ class TestSandboxOntology:
         assert isinstance(actual_result, ResultProcessTreeSection)
         assert actual_result.section_body.__dict__["_data"] == correct_section_body
 
-    @staticmethod
-    @pytest.mark.parametrize(
+    @ staticmethod
+    @ pytest.mark.parametrize(
         "parent, node, expected_node, expected_tree_ids",
         [
             ("", {"image": "got the image",
@@ -953,21 +954,21 @@ class TestSandboxOntology:
         assert tree_ids == expected_tree_ids
         assert node == expected_node
 
-    @staticmethod
-    @pytest.mark.parametrize("process_tree, expected_process_tree, expected_process_tree_ids",
-                             [([{"image": "?pf86\\microsoft office\\office14\\excel.exe",
+    @ staticmethod
+    @ pytest.mark.parametrize("process_tree, expected_process_tree, expected_process_tree_ids",
+                              [([{"image": "?pf86\\microsoft office\\office14\\excel.exe",
                                  "children":
-                                 [{"image": "?sys32\\wbem\\wmic1.exe",
+                                  [{"image": "?sys32\\wbem\\wmic1.exe",
                                    "children":
-                                   [{"image": "?sys32\\wbem\\wmic11.exe",
+                                    [{"image": "?sys32\\wbem\\wmic11.exe",
                                      "children": [{"image": "?sys32\\wbem\\wmic111.exe", "children": []}]},
-                                    {"image": "?sys32\\wbem\\wmic12.exe", "children": []}]},
-                                  {"image": "?sys32\\wbem\\wmic2.exe", "children": []},
-                                  {"image": "?sys32\\wbem\\wmic3.exe",
+                                     {"image": "?sys32\\wbem\\wmic12.exe", "children": []}]},
+                                   {"image": "?sys32\\wbem\\wmic2.exe", "children": []},
+                                   {"image": "?sys32\\wbem\\wmic3.exe",
                                    "children":
-                                   [{"image": "?sys32\\wbem\\wmic31.exe", "children": []},
-                                    {"image": "?sys32\\wbem\\wmic32.exe", "children": []},
-                                    {"image": "?sys32\\wbem\\wmic33.exe", "children": []}]}]}],
+                                    [{"image": "?sys32\\wbem\\wmic31.exe", "children": []},
+                                     {"image": "?sys32\\wbem\\wmic32.exe", "children": []},
+                                     {"image": "?sys32\\wbem\\wmic33.exe", "children": []}]}]}],
                                [{"image": "?pf86\\microsoft office\\office14\\excel.exe",
                                  "tree_id": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62",
                                  "children":
@@ -1010,8 +1011,8 @@ class TestSandboxOntology:
         assert tree_ids == expected_process_tree_ids
         assert process_tree == expected_process_tree
 
-    @staticmethod
-    @pytest.mark.parametrize(
+    @ staticmethod
+    @ pytest.mark.parametrize(
         'node, safe_tree_ids, expected_node',
         [
             ({"image": "a", "tree_id": "a", "children": []}, [], {"image": "a", "tree_id": "a", "children": []}),

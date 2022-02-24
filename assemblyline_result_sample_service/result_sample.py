@@ -277,19 +277,10 @@ class ResultSample(ServiceBase):
             evil_process_child_2 = ProcessItem(
                 345, "benignexe.exe", "C:\\benignexe.exe -f \"just kidding, i'm evil\"", signatures={"one": 2000})
 
-            # You can also add network events to a ProcessItem object
-            # DNS
-            evil_process_child_2.add_network_event(
-                NetworkItem("udp", "10.10.10.10", None, "baddie.com", "dns")
-            )
-            # HTTPS
-            evil_process_child_2.add_network_event(
-                NetworkItem("tcp", "10.10.10.10", 443, "baddie.com", "https")
-            )
-            # Regular old TCP!
-            evil_process_child_2.add_network_event(
-                NetworkItem("tcp", "10.10.10.10", 8000, "baddie.com")
-            )
+            # You can also add counts for network, file and registry events to a ProcessItem object
+            evil_process_child_2.add_network_events(4)
+            evil_process_child_2.add_file_events(7000)
+            evil_process_child_2.add_registry_events(10)
 
             evil_process.add_child_process(evil_process_child_1)
             evil_process.add_child_process(evil_process_child_2)

@@ -2,7 +2,7 @@ from typing import Dict, List, Optional, Any, Union, Set
 from re import compile, escape, sub
 from logging import getLogger
 from assemblyline.common import log as al_log
-from assemblyline_v4_service.common.result import ResultSection, ProcessItem, NetworkItem, ResultProcessTreeSection
+from assemblyline_v4_service.common.result import ResultSection, ProcessItem, ResultProcessTreeSection
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 from hashlib import sha256
@@ -703,15 +703,7 @@ class SandboxOntology(Events):
 
         for child in event["children"][:]:
             if set(child.keys()) == network_keys_to_match:
-                c = NetworkItem(
-                    protocol=child["protocol"],
-                    dest_ip=child["dest_ip"],
-                    dest_port=child["dest_port"],
-                    domain=child["domain"],
-                    transport_protocol="udp" if child["protocol"] in ["dns", "udp"] else "tcp"
-                )
-
-                e.add_network_event(c)
+                e.add_network_events()
             elif child.keys() == process_keys_to_match:
                 SandboxOntology._convert_event_tree_to_result_section(items, child, e)
             event["children"].remove(child)

@@ -306,12 +306,16 @@ class JSONSectionBody(SectionBody):
 class ProcessItem:
     def __init__(
             self, pid: int, name: str, cmd: str, signatures: Optional[Dict[str, int]] = None,
-            children: Optional[List[ProcessItem]] = None, network_events: Optional[List[NetworkItem]] = None):
+            children: Optional[List[ProcessItem]] = None):
 
         self.pid = pid
         self.name = name
         self.cmd = cmd
         self.type = PROCESS_TYPE
+        self.network_count = 0
+        self.file_count = 0
+        self.registry_count = 0
+
         if not signatures:
             self.signatures = {}
         else:
@@ -320,10 +324,6 @@ class ProcessItem:
             self.children = []
         else:
             self.children = children
-        if not network_events:
-            self.network_events = []
-        else:
-            self.network_events = network_events
 
     def add_signature(self, name: str, score: int):
         self.signatures[name] = score
@@ -331,8 +331,20 @@ class ProcessItem:
     def add_child_process(self, process: ProcessItem):
         self.children.append(process)
 
-    def add_network_event(self, network_event: NetworkItem):
-        self.network_events.append(network_event)
+    def add_network_events(self, val: int = 1):
+        if val < 1:
+            raise ValueError(f"Number of network events {val} to add must be > 0")
+        self.network_count += val
+
+    def add_file_events(self, val: int = 1):
+        if val < 1:
+            raise ValueError(f"Number of file events {val} to add must be > 0")
+        self.file_count += val
+
+    def add_registry_events(self, val: int = 1):
+        if val < 1:
+            raise ValueError(f"Number of registry events {val} to add must be > 0")
+        self.registry_count += val
 
     def as_primitives(self):
         return {
@@ -341,28 +353,9 @@ class ProcessItem:
             "command_line": self.cmd,
             "signatures": self.signatures,
             "children": [c.as_primitives() for c in self.children],
-            "network_events": [n.as_primitives() for n in self.network_events],
-        }
-
-
-class NetworkItem:
-    def __init__(
-            self, transport_protocol: str, dest_ip: str, dest_port: Optional[str] = None,
-            domain: Optional[str] = None, protocol: str = None):
-        self.transport_protocol = transport_protocol
-        self.dest_ip = dest_ip
-        self.dest_port = dest_port
-        self.domain = domain
-        self.protocol = protocol
-        self.type = NETWORK_TYPE
-
-    def as_primitives(self):
-        return {
-            "transport_protocol": self.transport_protocol,
-            "domain": self.domain,
-            "dest_ip": self.dest_ip,
-            "dest_port": self.dest_port,
-            "protocol": self.protocol,
+            "network_count": self.network_count,
+            "file_count": self.file_count,
+            "registry_count": self.registry_count,
         }
 
 
