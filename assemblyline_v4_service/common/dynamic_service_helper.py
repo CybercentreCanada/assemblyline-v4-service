@@ -25,7 +25,7 @@ class Event:
         self.pid = pid
         self.image = image
         self.timestamp = timestamp
-        self.guid = guid
+        self.guid = guid if guid else None
 
     def convert_event_to_dict(self) -> Dict[str, Any]:
         return self.__dict__
