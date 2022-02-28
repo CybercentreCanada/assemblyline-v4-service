@@ -24,6 +24,7 @@ class ServiceRequest:
         self.extracted = task.extracted
         self.file_name = task.file_name
         self.file_type = task.file_type
+        self.file_size = task.file_size
         self.max_extracted = task.max_extracted
         self.md5 = task.md5
         self.sha1 = task.sha1
