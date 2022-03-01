@@ -230,7 +230,7 @@ class ServiceBase:
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
-        def preprocess_result_for_dump(sections, current_max, heur_tag_map):
+        def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
             for section in sections:
                 # Determine max classification of the overall result
                 current_max = forge.get_classification().max_classification(section.classification, current_max)
@@ -239,14 +239,21 @@ class ServiceBase:
                 if section.heuristic:
                     heur_tag_map[f'{self.name.upper()}.{section.heuristic.heur_id}'].update(section.tags)
 
+                # Recurse through subsections
                 if section.subsections:
                     current_max, heur_tag_map = preprocess_result_for_dump(
-                        section.subsections, current_max, heur_tag_map)
+                        section.subsections, current_max, heur_tag_map, tag_map)
 
-            return current_max, heur_tag_map
+                # Append tags raised by the service, if any
+                if section.tags:
+                    tag_map.update(section.tags)
 
-        max_result_classification, heur_tag_map = preprocess_result_for_dump(
-            request.result.sections, request.task.service_default_result_classification, defaultdict(dict))
+            return current_max, heur_tag_map, tag_map
+
+        max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
+            request.result.sections,
+            request.task.service_default_result_classification, defaultdict(dict), defaultdict(list)
+            )
 
         # Required meta
         service_result = {
@@ -268,9 +275,19 @@ class ServiceBase:
             {
                 'sid': request.sid,
                 'submitted_classification': request.task.min_classification,
-                'tags': []
+                'tags': tag_map,
+                'heuristics': heur_tag_map
             }
         )
+        if not self.ontologies:
+            # Dump header information to disk
+            ontology_suffix = 'header.json'
+            ontology_path = os.path.join(self.working_directory, ontology_suffix)
+            open(ontology_path, 'w').write(json.dumps(service_result))
+            attachment_name = f'{request.sha256}_{request.task.service_name}_{ontology_suffix}'
+            request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
+                                      classification=max_result_classification)
+            return
 
         for type, data in self.ontologies.items():
             for i, dv in enumerate(data):
