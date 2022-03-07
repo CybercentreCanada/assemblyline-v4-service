@@ -44,6 +44,8 @@ def ocr_detections(image_path: str) -> Dict[str, List[str]]:
     # Iterate over the different indicators and include lines of detection in response
     for indicator, list_of_terms in OCR_INDICATORS_MAPPING.items():
         regex_exp = re.compile('|'.join(list_of_terms).lower())
-        detection_output[indicator] = [line for line in ocr_output.split('\n') if regex_exp.search(line.lower())]
+        list_of_strings = [line for line in ocr_output.split('\n') if regex_exp.search(line.lower())]
+        if list_of_strings:
+            detection_output[indicator] = list_of_strings
 
     return detection_output
