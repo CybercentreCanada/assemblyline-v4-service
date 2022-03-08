@@ -237,7 +237,7 @@ class ServiceBase:
 
                 # Append tags associated to heuristcs raised by the service, if any
                 if section.heuristic:
-                    heur_tag_map[f'{self.name.upper()}.{section.heuristic.heur_id}'].update(section.tags)
+                    heur_tag_map[f'{self.name.upper()}_{section.heuristic.heur_id}'].update(section.tags)
 
                 # Recurse through subsections
                 if section.subsections:
@@ -253,7 +253,7 @@ class ServiceBase:
         max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
             request.result.sections,
             request.task.service_default_result_classification, defaultdict(dict), defaultdict(list)
-            )
+        )
 
         # Required meta
         service_result = {
@@ -283,7 +283,7 @@ class ServiceBase:
             # Dump header information to disk
             ontology_suffix = 'header.json'
             ontology_path = os.path.join(self.working_directory, ontology_suffix)
-            open(ontology_path, 'w').write(json.dumps(service_result))
+            open(ontology_path, 'w').write(json.dumps(ResultOntology(service_result).as_primitives(strip_null=True)))
             attachment_name = f'{request.sha256}_{request.task.service_name}_{ontology_suffix}'
             request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
                                       classification=max_result_classification)
