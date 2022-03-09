@@ -1,4 +1,4 @@
-import re
+import regex as re
 import os.path
 
 from copy import deepcopy

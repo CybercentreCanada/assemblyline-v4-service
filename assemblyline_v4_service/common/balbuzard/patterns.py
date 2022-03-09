@@ -33,7 +33,7 @@ For more info and updates: http://www.decalage.info/balbuzard
 # OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-import re
+import regex as re
 from os import path
 from xml.etree import ElementTree
 
@@ -204,7 +204,7 @@ class PatternMatch(object):
                   rb'OSX|PAF|PDF|PNG|PPT|PPTX|PS1|RAR|RTF|SCR|SWF|SYS|[T]?BZ[2]?|TXT|TMP|VBE|VBS|WSF|WSH|XLS' \
                   rb'|XLSX|ZIP)\b'
     PAT_FILEPDB = rb'(?i)\b[-_A-Z0-9.\\]{0,200}\w\.PDB\b'
-    PAT_EMAIL = rb'(?i)\b[A-Z0-9._%+-]{3,}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
+    PAT_EMAIL = rb'(?i)\b[A-Z0-9._%+-]{3,200}@(?:[A-Z0-9-]+\.)+(?:XN--[A-Z0-9]{4,18}|[A-Z]{2,12})\b'
     PAT_IP = rb'\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b'
     PAT_REGIS = rb'(?i)\b[- _A-Z0-9.\\]{0,25}' \
                 rb'(?:controlset001|controlset002|currentcontrolset|currentversion|HKCC|HKCR|HKCU|HKDD|' \

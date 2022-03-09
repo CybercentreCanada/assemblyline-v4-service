@@ -121,7 +121,7 @@ import glob
 import optparse
 import os
 import os.path
-import re
+import regex as re
 import string
 import sys
 import time

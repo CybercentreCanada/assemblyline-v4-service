@@ -3,7 +3,7 @@ Base 64 encoded text
 """
 
 import binascii
-import re
+import regex as re
 import warnings
 
 from typing import Dict, List, Tuple

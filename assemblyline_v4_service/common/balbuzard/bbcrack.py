@@ -699,7 +699,7 @@ def xor_simple(a, b):
 
 def deobfuscate_simple(d, r, m):
     "Take mask and will create a key to unmask suspected data, then check if the xor'd data matches a regex pattern"
-    import re
+    import regex as re
     max_mask = m.lower()
     for i in range(1, len(max_mask)+1):
         t_mask = max_mask[:i]

@@ -1,6 +1,6 @@
 import certifi
 import os
-import re
+import regex as re
 import requests
 import shutil
 import tempfile
