@@ -50,6 +50,7 @@ setup(
         'pefile',
         'pillow',
         'python-Levenshtein',
+        'regex',
     ],
     extra_requires={
         'updater': [
