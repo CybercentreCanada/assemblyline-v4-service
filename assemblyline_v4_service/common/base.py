@@ -241,7 +241,7 @@ class ServiceBase:
 
                 # Recurse through subsections
                 if section.subsections:
-                    current_max, heur_tag_map = preprocess_result_for_dump(
+                    current_max, heur_tag_map, tag_map = preprocess_result_for_dump(
                         section.subsections, current_max, heur_tag_map, tag_map)
 
                 # Append tags raised by the service, if any
