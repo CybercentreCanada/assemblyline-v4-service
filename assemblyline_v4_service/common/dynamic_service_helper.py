@@ -359,17 +359,21 @@ class SandboxOntology(Events):
             raise Exception("Artifact cannot be None")
 
         artifact_result_section = None
+
         for regex in [HOLLOWSHUNTER_EXE_REGEX, HOLLOWSHUNTER_DLL_REGEX]:
             pattern = compile(regex)
             if pattern.match(artifact.name):
+
                 artifact_result_section = next(
                     (subsection for subsection in artifacts_result_section.subsections
                      if subsection.title_text == HOLLOWSHUNTER_TITLE),
                     None)
+
                 if artifact_result_section is None:
                     artifact_result_section = ResultSection(HOLLOWSHUNTER_TITLE)
                     artifact_result_section.set_heuristic(17)
                     artifact_result_section.add_line("HollowsHunter dumped the following:")
+
                 artifact_result_section.add_line(f"\t- {artifact.name}")
                 artifact_result_section.add_tag("dynamic.process.file_name", artifact.name)
                 # As of right now, heuristic ID 17 is associated with the Injection category in the Cuckoo service
@@ -378,7 +382,7 @@ class SandboxOntology(Events):
                 elif regex in [HOLLOWSHUNTER_DLL_REGEX]:
                     artifact_result_section.heuristic.add_signature_id("hollowshunter_dll")
 
-        if artifact_result_section is not None:
+        if artifact_result_section is not None and artifact_result_section not in artifacts_result_section.subsections:
             artifacts_result_section.add_subsection(artifact_result_section)
 
     def _match_signatures_to_process_events(self, signature_dicts: List[Dict[str, Any]]) -> Dict[str, Any]:
