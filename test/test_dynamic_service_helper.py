@@ -147,7 +147,9 @@ class TestProcess:
 
         default_p = Process()
         assert default_p.guid is None
+        assert default_p.tag is None
         assert default_p.pguid is None
+        assert default_p.ptag is None
         assert default_p.pimage is None
         assert default_p.pcommand_line is None
         assert default_p.ppid is None
@@ -157,12 +159,13 @@ class TestProcess:
         assert default_p.start_time is None
         assert default_p.end_time is None
         assert default_p.tree_id is None
-        assert default_p.tag is None
         assert default_p._normalize is False
 
         set_p = Process(
             guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah",
             pguid="{12345678-1234-5678-1234-567812345678}",
+            ptag="blah",
             pimage="C:\\Windows\\System32\\cmd.exe",
             pcommand_line="C:\\Windows\\System32\\cmd.exe -m bad.exe",
             ppid=123,
@@ -172,12 +175,13 @@ class TestProcess:
             start_time=1.0,
             end_time=1.0,
             tree_id="blah",
-            tag="blah",
             _normalize=True,
         )
 
         assert set_p.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert set_p.tag == "blah"
         assert set_p.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert set_p.ptag == "blah"
         assert set_p.pimage == "?sys32\\cmd.exe"
         assert set_p.pcommand_line == "?sys32\cmd.exe -m bad.exe"
         assert set_p.ppid == 123
@@ -187,7 +191,6 @@ class TestProcess:
         assert set_p.start_time == 1.0
         assert set_p.end_time == 1.0
         assert set_p.tree_id == "blah"
-        assert set_p.tag == "blah"
         assert set_p._normalize is True
 
         with pytest.raises(ValueError):
@@ -202,7 +205,9 @@ class TestProcess:
         p = Process()
         assert p.as_primitives() == {
             "guid": None,
+            "tag": None,
             "pguid": None,
+            "ptag": None,
             "pimage": None,
             "pcommand_line": None,
             "ppid": None,
@@ -212,7 +217,10 @@ class TestProcess:
             "start_time": None,
             "end_time": None,
             "tree_id": None,
-            "tag": None,
+            "rich_id": None,
+            "integrity_level": None,
+            "image_hash": None,
+            "original_file_name": None,
         }
 
     @staticmethod
@@ -227,10 +235,12 @@ class TestProcess:
     def test_set_parent():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
         child_p = Process()
-        parent_p = Process(guid="{12345678-1234-5678-1234-567812345678}", image="blah", command_line="blah", pid=123)
+        parent_p = Process(guid="{12345678-1234-5678-1234-567812345678}",
+                           image="blah", command_line="blah", pid=123, tag="blah")
         child_p.set_parent(parent_p)
 
         assert child_p.pguid == parent_p.guid
+        assert child_p.ptag == parent_p.tag
         assert child_p.pimage == parent_p.image
         assert child_p.pcommand_line == parent_p.command_line
         assert child_p.ppid == parent_p.pid
@@ -478,14 +488,17 @@ class TestNetworkDNS:
         assert default_nd.connection_details.direction is None
         assert default_nd.domain is None
         assert default_nd.resolved_ips == []
+        assert default_nd.lookup_type is None
 
         set_nd = NetworkDNS(
             domain="blah",
             resolved_ips=["blah"],
+            lookup_type="A"
         )
 
         assert set_nd.domain == "blah"
         assert set_nd.resolved_ips == ["blah"]
+        assert set_nd.lookup_type == "A"
 
     @staticmethod
     def test_network_dns_update():
@@ -545,6 +558,7 @@ class TestNetworkDNS:
             },
             "domain": None,
             "resolved_ips": [],
+            "lookup_type": None,
         }
 
 
@@ -561,29 +575,32 @@ class TestNetworkHTTP:
         assert default_nh.connection_details.destination_port is None
         assert default_nh.connection_details.transport_layer_protocol is None
         assert default_nh.connection_details.direction is None
-        assert default_nh.uri is None
+        assert default_nh.request_uri is None
         assert default_nh.request_headers == {}
         assert default_nh.request_method is None
         assert default_nh.response_status_code is None
+        assert default_nh.response_body is None
 
         set_nh = NetworkHTTP(
-            uri="blah",
+            request_uri="blah",
             request_headers={"a": "b"},
             request_method="blah",
             response_status_code=123,
+            response_body="blah",
         )
 
-        assert set_nh.uri == "blah"
+        assert set_nh.request_uri == "blah"
         assert set_nh.request_headers == {"a": "b"}
         assert set_nh.request_method == "blah"
         assert set_nh.response_status_code == 123
+        assert set_nh.response_body == "blah"
 
     @staticmethod
     def test_network_http_update():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
         default_nh = NetworkHTTP()
-        default_nh.update(uri="blah", invalid="blah")
-        assert default_nh.uri == "blah"
+        default_nh.update(request_uri="blah", invalid="blah")
+        assert default_nh.request_uri == "blah"
 
     @staticmethod
     def test_network_http_update_connection_details():
@@ -609,7 +626,7 @@ class TestNetworkHTTP:
     @staticmethod
     def test_network_http_set_network_connection():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP, NetworkConnection
-        default_nh = NetworkHTTP(uri="blah")
+        default_nh = NetworkHTTP(request_uri="blah")
         default_nc = NetworkConnection(destination_ip="1.1.1.1")
         default_nh.set_network_connection(default_nc)
         assert default_nh.connection_details.destination_ip == "1.1.1.1"
@@ -635,10 +652,11 @@ class TestNetworkHTTP:
                 "tree_id": None,
                 "tag": None,
             },
-            "uri": None,
+            "request_uri": None,
             "request_headers": {},
             "request_method": None,
             "response_status_code": None,
+            "response_body": None,
         }
 
 
@@ -1011,7 +1029,9 @@ class TestSandboxOntology:
         default_so.add_process(p)
         assert default_so.processes[0].as_primitives() == {
             "guid": "{12345678-1234-5678-1234-567812345678}",
+            "tag": None,
             "pguid": None,
+            "ptag": None,
             "pimage": None,
             "pcommand_line": None,
             "ppid": None,
@@ -1021,7 +1041,10 @@ class TestSandboxOntology:
             "start_time": float("-inf"),
             "end_time": float("inf"),
             "tree_id": None,
-            "tag": None,
+            "rich_id": None,
+            "integrity_level": None,
+            "image_hash": None,
+            "original_file_name": None,
         }
 
     @staticmethod
@@ -1064,13 +1087,15 @@ class TestSandboxOntology:
 
         so = SandboxOntology()
         parent_process = Process(guid="{12345678-1234-5678-1234-567812345678}",
-                                 image="blah.exe", start_time=2.0, end_time=3.0, pid=1)
+                                 image="blah.exe", start_time=2.0, end_time=3.0, pid=1, tag="blah")
         so.add_process(parent_process)
         p1 = Process(pguid="{12345678-1234-5678-1234-567812345678}")
         so.set_parent_details(p1)
         assert p1.as_primitives() == {
             "guid": None,
+            "tag": None,
             "pguid": "{12345678-1234-5678-1234-567812345678}",
+            "ptag": "blah",
             "pimage": "blah.exe",
             "pcommand_line": None,
             "ppid": 1,
@@ -1080,14 +1105,19 @@ class TestSandboxOntology:
             "start_time": None,
             "end_time": None,
             "tree_id": None,
-            "tag": None,
+            "rich_id": None,
+            "integrity_level": None,
+            "image_hash": None,
+            "original_file_name": None,
         }
 
         p2 = Process(ppid=1, start_time=3.0)
         so.set_parent_details(p2)
         assert p2.as_primitives() == {
             "guid": None,
+            "tag": None,
             "pguid": "{12345678-1234-5678-1234-567812345678}",
+            "ptag": "blah",
             "pimage": "blah.exe",
             "pcommand_line": None,
             "ppid": 1,
@@ -1097,7 +1127,10 @@ class TestSandboxOntology:
             "start_time": 3.0,
             "end_time": None,
             "tree_id": None,
-            "tag": None,
+            "rich_id": None,
+            "integrity_level": None,
+            "image_hash": None,
+            "original_file_name": None,
         }
 
     @staticmethod
@@ -1111,11 +1144,14 @@ class TestSandboxOntology:
         child_process2 = Process(guid="{12345678-1234-5678-1234-567812345670}", image="blah.exe",
                                  start_time=2.0, end_time=3.0, pid=3, ppid=2)
         so.add_process(child_process2)
-        parent = Process(guid="{12345678-1234-5678-1234-567812345679}", pid=2, start_time=2.0, image="parent.exe")
+        parent = Process(guid="{12345678-1234-5678-1234-567812345679}", pid=2,
+                         start_time=2.0, image="parent.exe", tag="blah")
         so.set_child_details(parent)
         assert child_process1.as_primitives() == {
             "guid": "{12345678-1234-5678-1234-567812345678}",
+            "tag": None,
             "pguid": "{12345678-1234-5678-1234-567812345679}",
+            "ptag": "blah",
             "pimage": "parent.exe",
             "pcommand_line": None,
             "ppid": 2,
@@ -1125,11 +1161,16 @@ class TestSandboxOntology:
             "start_time": 2.0,
             "end_time": 3.0,
             "tree_id": None,
-            "tag": None,
+            "rich_id": None,
+            "integrity_level": None,
+            "image_hash": None,
+            "original_file_name": None,
         }
         assert child_process2.as_primitives() == {
             "guid": "{12345678-1234-5678-1234-567812345670}",
+            "tag": None,
             "pguid": "{12345678-1234-5678-1234-567812345679}",
+            "ptag": "blah",
             "pimage": "parent.exe",
             "pcommand_line": None,
             "ppid": 2,
@@ -1139,7 +1180,10 @@ class TestSandboxOntology:
             "start_time": 2.0,
             "end_time": 3.0,
             "tree_id": None,
-            "tag": None,
+            "rich_id": None,
+            "integrity_level": None,
+            "image_hash": None,
+            "original_file_name": None,
         }
 
     @staticmethod
@@ -1359,6 +1403,7 @@ class TestSandboxOntology:
             },
             "domain": None,
             "resolved_ips": [],
+            "lookup_type": None,
         }
 
     @staticmethod
@@ -1390,8 +1435,8 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
 
         default_so = SandboxOntology()
-        nh = default_so.create_network_http(uri="blah")
-        assert nh.uri == "blah"
+        nh = default_so.create_network_http(request_uri="blah")
+        assert nh.request_uri == "blah"
 
         normalized_so = SandboxOntology(normalize_paths=True)
         nh = normalized_so.create_network_http()
@@ -1422,10 +1467,11 @@ class TestSandboxOntology:
                 "tree_id": None,
                 "tag": None,
             },
-            "uri": None,
+            "request_uri": None,
             "request_headers": {},
             "request_method": None,
             "response_status_code": None,
+            "response_body": None,
         }
 
     @staticmethod
@@ -1556,28 +1602,30 @@ class TestSandboxOntology:
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
             "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345679}"}],
           None, [],
-          [{'pid': 1, 'image': 'blah', 'tag': None,
+          [{'pid': 1, 'tag': None, 'image': 'blah',
             'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', 'start_time': 1,
             'end_time': float("inf"),
             'guid': "{12345678-1234-5678-1234-567812345678}", 'ppid': 1,
-            'pguid': "{12345678-1234-5678-1234-567812345679}", 'command_line': 'blah', 'pimage': None,
-            'pcommand_line': None, 'children': [],
-            "tag": None}]),
+            'pguid': "{12345678-1234-5678-1234-567812345679}", 'ptag': None, 'rich_id': None, 'integrity_level': None,
+            'image_hash': None, 'original_file_name': None, 'command_line': 'blah', 'pimage': None, 'pcommand_line':
+            None, 'children': []}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
             "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345678}"},
            {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "start_time": 2,
             "guid": "{12345678-1234-5678-1234-567812345679}", "pguid": "{12345678-1234-5678-1234-567812345678}"}],
           None, [],
-          [{'pid': 1, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
+          [{'pid': 1, 'tag': None, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
             'guid': "{12345678-1234-5678-1234-567812345678}", 'ppid': 1,
-            'pguid': "{12345678-1234-5678-1234-567812345678}", 'command_line': 'blah', 'pimage': None,
-            'pcommand_line': None, 'tag': None,
+            'pguid': "{12345678-1234-5678-1234-567812345678}", 'ptag': None, 'command_line': 'blah', 'pimage': None,
+            'pcommand_line': None, 'rich_id': None, 'integrity_level': None, 'image_hash': None,
+            'original_file_name': None,
             'children':
-            [{'pid': 2, 'image': 'blah2', 'start_time': 2, 'end_time': float("inf"),
+            [{'pid': 2, 'tag': None, 'image': 'blah2', 'start_time': 2, 'end_time': float("inf"),
               'guid': "{12345678-1234-5678-1234-567812345679}", 'ppid': 1,
-              'pguid': "{12345678-1234-5678-1234-567812345678}", 'command_line': 'blah2', 'pimage': "blah",
-              'pcommand_line': "blah", 'children': [],
-              'tag': None, 'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}],
+              'pguid': "{12345678-1234-5678-1234-567812345678}", 'ptag': None, 'command_line': 'blah2',
+              'pimage': "blah", 'pcommand_line': "blah", 'children': [],
+              'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
+              'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}],
             'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52'}]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
             "guid": "{12345678-1234-5678-1234-567812345671}", "pguid": "{12345678-1234-5678-1234-567812345671}"},
@@ -1588,14 +1636,16 @@ class TestSandboxOntology:
            {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "start_time": 2,
             "guid": "{12345678-1234-5678-1234-567812345674}", "pguid": "{12345678-1234-5678-1234-567812345673}"}],
           None, ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
-          [{'pid': 1, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
-            'guid': "{12345678-1234-5678-1234-567812345671}", 'pguid': "{12345678-1234-5678-1234-567812345671}", 'ppid':
-            1, 'command_line': 'blah', 'pimage': None, 'pcommand_line': None, 'tag': None,
+          [{'pid': 1, 'tag': None, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
+            'guid': "{12345678-1234-5678-1234-567812345671}", 'pguid': "{12345678-1234-5678-1234-567812345671}",
+            'ptag': None, 'ppid': 1, 'command_line': 'blah', 'pimage': None, 'pcommand_line': None, 'rich_id': None,
+            'integrity_level': None, 'image_hash': None, 'original_file_name': None,
             'children':
-            [{'pid': 2, 'image': 'blah2', 'start_time': 2, 'end_time': float("inf"),
+            [{'pid': 2, 'tag': None, 'image': 'blah2', 'start_time': 2, 'end_time': float("inf"),
               'guid': "{12345678-1234-5678-1234-567812345672}", 'pguid': "{12345678-1234-5678-1234-567812345671}",
-              'ppid': 1, 'command_line': 'blah2', 'children': [],
-              'pimage': "blah", 'pcommand_line': "blah", 'tag': None,
+              'ptag': None, 'ppid': 1, 'command_line': 'blah2', 'children': [],
+              'pimage': "blah", 'pcommand_line': "blah", 'rich_id': None, 'integrity_level': None, 'image_hash': None,
+              'original_file_name': None,
               'tree_id': '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1'}],
             'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52'}, ]),
          ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
@@ -1606,21 +1656,25 @@ class TestSandboxOntology:
             "pid": 1, "ppid": 1, "image": "blah", 'pimage': None, 'pcommand_line': None, 'tag': None,
             'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah",
             "start_time": 1, 'end_time': float("inf"),
-            "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345679}"}]),
+            'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
+            "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345679}",
+            'ptag': None}]),
          ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
             "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345679}"}],
           [{"process.pid": 1, "name": "blah", "score": 1}],
           [],
           [{"children": [],
-            "pid": 2, "ppid": 1, "image": "blah", 'pimage': None, 'pcommand_line': None, 'tag': None,
+            "pid": 2, "ppid": 1, 'ptag': None, "image": "blah", 'pimage': None, 'pcommand_line': None, 'tag': None,
             'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah",
             "start_time": 1, 'end_time': float("inf"),
+            'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
             "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345679}"}]),
          ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
             "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": "{12345678-1234-5678-1234-567812345679}"}],
           [{"process.pid": 1, "name": "blah", "score": 1}],
           ["blah"],
           [{"children": [],
+            'ptag': None, 'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
             "pid": 2, "ppid": 1, "image": "blah", 'pimage': None, 'pcommand_line': None, 'tag': None,
             'tree_id': '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "command_line": "blah",
             "start_time": 1, 'end_time': float("inf"),
@@ -1767,7 +1821,9 @@ class TestSandboxOntology:
                             "uri_path": None,
                             "process": {
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
                                 "pguid": "{12345678-1234-5678-1234-567812345678}",
+                                "ptag": "blah",
                                 "pimage": "blah",
                                 "pcommand_line": "blah",
                                 "ppid": "blah",
@@ -1777,13 +1833,18 @@ class TestSandboxOntology:
                                 "start_time": "blah",
                                 "end_time": "blah",
                                 "tree_id": "blah",
-                                "tag": "blah",
+                                "rich_id": "blah",
+                                "integrity_level": "blah",
+                                "image_hash": "blah",
+                                "original_file_name": "blah",
                             }
                         },
                     ],
                     "process": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
                         "pguid": "{12345678-1234-5678-1234-567812345678}",
+                        "ptag": "blah",
                         "pimage": "blah",
                         "pcommand_line": "blah",
                         "ppid": "blah",
@@ -1793,13 +1854,17 @@ class TestSandboxOntology:
                         "start_time": "blah",
                         "end_time": "blah",
                         "tree_id": "blah",
-                        "tag": "blah",
+                        "rich_id": "blah",
+                        "integrity_level": "blah",
+                        "image_hash": "blah",
+                        "original_file_name": "blah",
                     }
                 }
             ],
             "network_connections": [
                 {
                     "guid": "{12345678-1234-5678-1234-567812345678}",
+                    "tag": "blah",
                     "source_ip": "blah",
                     "source_port": "blah",
                     "destination_ip": "blah",
@@ -1808,10 +1873,11 @@ class TestSandboxOntology:
                     "direction": "blah",
                     "timestamp": "blah",
                     "tree_id": "blah",
-                    "tag": "blah",
                     "process": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
                         "pguid": "{12345678-1234-5678-1234-567812345678}",
+                        "ptag": "blah",
                         "pimage": "blah",
                         "pcommand_line": "blah",
                         "ppid": "blah",
@@ -1821,7 +1887,10 @@ class TestSandboxOntology:
                         "start_time": "blah",
                         "end_time": "blah",
                         "tree_id": "blah",
-                        "tag": "blah",
+                        "rich_id": "blah",
+                        "integrity_level": "blah",
+                        "image_hash": "blah",
+                        "original_file_name": "blah",
                     }
                 }
             ],
@@ -1829,8 +1898,10 @@ class TestSandboxOntology:
                 {
                     "domain": "blah",
                     "resolved_ips": ["blah"],
+                    "lookup_type": "blah",
                     "connection_details": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
                         "source_ip": "blah",
                         "source_port": "blah",
                         "destination_ip": "blah",
@@ -1839,10 +1910,11 @@ class TestSandboxOntology:
                         "direction": "blah",
                         "timestamp": "blah",
                         "tree_id": "blah",
-                        "tag": "blah",
                         "process": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
                             "pguid": "{12345678-1234-5678-1234-567812345678}",
+                            "ptag": "blah",
                             "pimage": "blah",
                             "pcommand_line": "blah",
                             "ppid": "blah",
@@ -1852,17 +1924,21 @@ class TestSandboxOntology:
                             "start_time": "blah",
                             "end_time": "blah",
                             "tree_id": "blah",
-                            "tag": "blah",
+                            "rich_id": "blah",
+                            "integrity_level": "blah",
+                            "image_hash": "blah",
+                            "original_file_name": "blah",
                         }
                     }
                 }
             ],
             "network_http": [
                 {
-                    "uri": "blah",
+                    "request_uri": "blah",
                     "request_headers": {"a": "b"},
                     "request_method": "blah",
                     "response_status_code": 123,
+                    "response_body": "blah",
                     "connection_details": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "source_ip": "blah",
@@ -1876,7 +1952,9 @@ class TestSandboxOntology:
                         "tag": "blah",
                         "process": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
                             "pguid": "{12345678-1234-5678-1234-567812345678}",
+                            "ptag": "blah",
                             "pimage": "blah",
                             "pcommand_line": "blah",
                             "ppid": "blah",
@@ -1886,7 +1964,10 @@ class TestSandboxOntology:
                             "start_time": "blah",
                             "end_time": "blah",
                             "tree_id": "blah",
-                            "tag": "blah",
+                            "rich_id": "blah",
+                            "integrity_level": "blah",
+                            "image_hash": "blah",
+                            "original_file_name": "blah",
                         }
                     }
                 }
@@ -1894,7 +1975,9 @@ class TestSandboxOntology:
             "processes": [
                 {
                     "guid": "{12345678-1234-5678-1234-567812345678}",
+                    "tag": "blah",
                     "pguid": "{12345678-1234-5678-1234-567812345678}",
+                    "ptag": "blah",
                     "pimage": "blah",
                     "pcommand_line": "blah",
                     "ppid": "blah",
@@ -1904,7 +1987,10 @@ class TestSandboxOntology:
                     "start_time": "blah",
                     "end_time": "blah",
                     "tree_id": "blah",
-                    "tag": "blah",
+                    "rich_id": "blah",
+                    "integrity_level": "blah",
+                    "image_hash": "blah",
+                    "original_file_name": "blah",
                 }
             ],
             "sandbox_name": "blah",
@@ -1939,7 +2025,9 @@ class TestSandboxOntology:
         assert default_so.signatures[0].iocs[1].uri_path is None
 
         assert default_so.signatures[0].iocs[1].process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.signatures[0].iocs[1].process.tag == "blah"
         assert default_so.signatures[0].iocs[1].process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.signatures[0].iocs[1].process.ptag == "blah"
         assert default_so.signatures[0].iocs[1].process.pimage == "blah"
         assert default_so.signatures[0].iocs[1].process.pcommand_line == "blah"
         assert default_so.signatures[0].iocs[1].process.ppid == "blah"
@@ -1949,12 +2037,18 @@ class TestSandboxOntology:
         assert default_so.signatures[0].iocs[1].process.start_time == "blah"
         assert default_so.signatures[0].iocs[1].process.end_time == "blah"
         assert default_so.signatures[0].iocs[1].process.tree_id == "blah"
-        assert default_so.signatures[0].iocs[1].process.tag == "blah"
+        assert default_so.signatures[0].iocs[1].process.rich_id == "blah"
+        assert default_so.signatures[0].iocs[1].process.integrity_level == "blah"
+        assert default_so.signatures[0].iocs[1].process.image_hash == "blah"
+        assert default_so.signatures[0].iocs[1].process.original_file_name == "blah"
+        assert default_so.signatures[0].iocs[1].process._normalize is False
 
         assert default_so.signatures[0]._normalize is False
 
         assert default_so.signatures[0].process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.signatures[0].process.tag == "blah"
         assert default_so.signatures[0].process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.signatures[0].process.ptag == "blah"
         assert default_so.signatures[0].process.pimage == "blah"
         assert default_so.signatures[0].process.pcommand_line == "blah"
         assert default_so.signatures[0].process.ppid == "blah"
@@ -1964,9 +2058,14 @@ class TestSandboxOntology:
         assert default_so.signatures[0].process.start_time == "blah"
         assert default_so.signatures[0].process.end_time == "blah"
         assert default_so.signatures[0].process.tree_id == "blah"
-        assert default_so.signatures[0].process.tag == "blah"
+        assert default_so.signatures[0].process.rich_id == "blah"
+        assert default_so.signatures[0].process.integrity_level == "blah"
+        assert default_so.signatures[0].process.image_hash == "blah"
+        assert default_so.signatures[0].process.original_file_name == "blah"
         assert default_so.signatures[0].process._normalize is False
 
+        assert default_so.network_connections[0].guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_connections[0].tag == "blah"
         assert default_so.network_connections[0].source_ip == "blah"
         assert default_so.network_connections[0].source_port == "blah"
         assert default_so.network_connections[0].destination_ip == "blah"
@@ -1974,11 +2073,12 @@ class TestSandboxOntology:
         assert default_so.network_connections[0].transport_layer_protocol == "blah"
         assert default_so.network_connections[0].direction == "blah"
         assert default_so.network_connections[0].tree_id == "blah"
-        assert default_so.network_connections[0].tag == "blah"
         assert default_so.network_connections[0]._normalize is False
 
         assert default_so.network_connections[0].process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_connections[0].process.tag == "blah"
         assert default_so.network_connections[0].process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_connections[0].process.ptag == "blah"
         assert default_so.network_connections[0].process.pimage == "blah"
         assert default_so.network_connections[0].process.pcommand_line == "blah"
         assert default_so.network_connections[0].process.ppid == "blah"
@@ -1988,12 +2088,18 @@ class TestSandboxOntology:
         assert default_so.network_connections[0].process.start_time == "blah"
         assert default_so.network_connections[0].process.end_time == "blah"
         assert default_so.network_connections[0].process.tree_id == "blah"
-        assert default_so.network_connections[0].process.tag == "blah"
+        assert default_so.network_connections[0].process.rich_id == "blah"
+        assert default_so.network_connections[0].process.integrity_level == "blah"
+        assert default_so.network_connections[0].process.image_hash == "blah"
+        assert default_so.network_connections[0].process.original_file_name == "blah"
         assert default_so.network_connections[0].process._normalize is False
 
         assert default_so.network_dns[0].domain == "blah"
         assert default_so.network_dns[0].resolved_ips == ["blah"]
+        assert default_so.network_dns[0].lookup_type == "blah"
 
+        assert default_so.network_dns[0].connection_details.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_dns[0].connection_details.tag == "blah"
         assert default_so.network_dns[0].connection_details.source_ip == "blah"
         assert default_so.network_dns[0].connection_details.source_port == "blah"
         assert default_so.network_dns[0].connection_details.destination_ip == "blah"
@@ -2001,11 +2107,12 @@ class TestSandboxOntology:
         assert default_so.network_dns[0].connection_details.transport_layer_protocol == "blah"
         assert default_so.network_dns[0].connection_details.direction == "blah"
         assert default_so.network_dns[0].connection_details.tree_id == "blah"
-        assert default_so.network_dns[0].connection_details.tag == "blah"
         assert default_so.network_dns[0].connection_details._normalize is False
 
         assert default_so.network_dns[0].connection_details.process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_dns[0].connection_details.process.tag == "blah"
         assert default_so.network_dns[0].connection_details.process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_dns[0].connection_details.process.ptag == "blah"
         assert default_so.network_dns[0].connection_details.process.pimage == "blah"
         assert default_so.network_dns[0].connection_details.process.pcommand_line == "blah"
         assert default_so.network_dns[0].connection_details.process.ppid == "blah"
@@ -2015,14 +2122,20 @@ class TestSandboxOntology:
         assert default_so.network_dns[0].connection_details.process.start_time == "blah"
         assert default_so.network_dns[0].connection_details.process.end_time == "blah"
         assert default_so.network_dns[0].connection_details.process.tree_id == "blah"
-        assert default_so.network_dns[0].connection_details.process.tag == "blah"
+        assert default_so.network_dns[0].connection_details.process.rich_id == "blah"
+        assert default_so.network_dns[0].connection_details.process.integrity_level == "blah"
+        assert default_so.network_dns[0].connection_details.process.image_hash == "blah"
+        assert default_so.network_dns[0].connection_details.process.original_file_name == "blah"
         assert default_so.network_dns[0].connection_details.process._normalize is False
 
-        assert default_so.network_http[0].uri == "blah"
+        assert default_so.network_http[0].request_uri == "blah"
         assert default_so.network_http[0].request_headers == {"a": "b"}
         assert default_so.network_http[0].request_method == "blah"
         assert default_so.network_http[0].response_status_code == 123
+        assert default_so.network_http[0].response_body == "blah"
 
+        assert default_so.network_http[0].connection_details.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_http[0].connection_details.tag == "blah"
         assert default_so.network_http[0].connection_details.source_ip == "blah"
         assert default_so.network_http[0].connection_details.source_port == "blah"
         assert default_so.network_http[0].connection_details.destination_ip == "blah"
@@ -2030,11 +2143,12 @@ class TestSandboxOntology:
         assert default_so.network_http[0].connection_details.transport_layer_protocol == "blah"
         assert default_so.network_http[0].connection_details.direction == "blah"
         assert default_so.network_http[0].connection_details.tree_id == "blah"
-        assert default_so.network_http[0].connection_details.tag == "blah"
         assert default_so.network_http[0].connection_details._normalize is False
 
         assert default_so.network_http[0].connection_details.process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_http[0].connection_details.process.tag == "blah"
         assert default_so.network_http[0].connection_details.process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_http[0].connection_details.process.ptag == "blah"
         assert default_so.network_http[0].connection_details.process.pimage == "blah"
         assert default_so.network_http[0].connection_details.process.pcommand_line == "blah"
         assert default_so.network_http[0].connection_details.process.ppid == "blah"
@@ -2044,11 +2158,16 @@ class TestSandboxOntology:
         assert default_so.network_http[0].connection_details.process.start_time == "blah"
         assert default_so.network_http[0].connection_details.process.end_time == "blah"
         assert default_so.network_http[0].connection_details.process.tree_id == "blah"
-        assert default_so.network_http[0].connection_details.process.tag == "blah"
+        assert default_so.network_http[0].connection_details.process.rich_id == "blah"
+        assert default_so.network_http[0].connection_details.process.integrity_level == "blah"
+        assert default_so.network_http[0].connection_details.process.image_hash == "blah"
+        assert default_so.network_http[0].connection_details.process.original_file_name == "blah"
         assert default_so.network_http[0].connection_details.process._normalize is False
 
         assert default_so.processes[0].guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.processes[0].tag == "blah"
         assert default_so.processes[0].pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.processes[0].ptag == "blah"
         assert default_so.processes[0].pimage == "blah"
         assert default_so.processes[0].pcommand_line == "blah"
         assert default_so.processes[0].ppid == "blah"
@@ -2058,7 +2177,10 @@ class TestSandboxOntology:
         assert default_so.processes[0].start_time == "blah"
         assert default_so.processes[0].end_time == "blah"
         assert default_so.processes[0].tree_id == "blah"
-        assert default_so.processes[0].tag == "blah"
+        assert default_so.processes[0].rich_id == "blah"
+        assert default_so.processes[0].integrity_level == "blah"
+        assert default_so.processes[0].image_hash == "blah"
+        assert default_so.processes[0].original_file_name == "blah"
         assert default_so.processes[0]._normalize is False
 
         assert default_so.sandbox_name == "blah"
@@ -2282,6 +2404,7 @@ class TestSandboxOntology:
         default_so = SandboxOntology()
         nc = default_so._load_network_connection_from_json({
             "guid": "{12345678-1234-5678-1234-567812345678}",
+            "tag": "blah",
             "source_ip": "blah",
             "source_port": "blah",
             "destination_ip": "blah",
@@ -2290,10 +2413,11 @@ class TestSandboxOntology:
             "direction": "blah",
             "timestamp": "blah",
             "tree_id": "blah",
-            "tag": "blah",
             "process": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
+                "tag": "blah",
                 "pguid": "{12345678-1234-5678-1234-567812345678}",
+                "ptag": "blah",
                 "pimage": "blah",
                 "pcommand_line": "blah",
                 "ppid": "blah",
@@ -2303,9 +2427,14 @@ class TestSandboxOntology:
                 "start_time": "blah",
                 "end_time": "blah",
                 "tree_id": "blah",
-                "tag": "blah",
+                "rich_id": "blah",
+                "integrity_level": "blah",
+                "image_hash": "blah",
+                "original_file_name": "blah",
             }
         })
+        assert nc.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nc.tag == "blah"
         assert nc.source_ip == "blah"
         assert nc.source_port == "blah"
         assert nc.destination_ip == "blah"
@@ -2313,10 +2442,11 @@ class TestSandboxOntology:
         assert nc.transport_layer_protocol == "blah"
         assert nc.direction == "blah"
         assert nc.tree_id == "blah"
-        assert nc.tag == "blah"
         assert nc._normalize is False
         assert nc.process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nc.process.tag == "blah"
         assert nc.process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert nc.process.ptag == "blah"
         assert nc.process.pimage == "blah"
         assert nc.process.pcommand_line == "blah"
         assert nc.process.ppid == "blah"
@@ -2326,7 +2456,10 @@ class TestSandboxOntology:
         assert nc.process.start_time == "blah"
         assert nc.process.end_time == "blah"
         assert nc.process.tree_id == "blah"
-        assert nc.process.tag == "blah"
+        assert nc.process.rich_id == "blah"
+        assert nc.process.integrity_level == "blah"
+        assert nc.process.image_hash == "blah"
+        assert nc.process.original_file_name == "blah"
         assert nc.process._normalize is False
 
     @staticmethod
@@ -2337,6 +2470,7 @@ class TestSandboxOntology:
         nd = default_so._load_network_dns_from_json({
             "domain": "blah",
             "resolved_ips": ["blah"],
+            "lookup_type": "blah",
             "connection_details": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "source_ip": "blah",
@@ -2350,7 +2484,9 @@ class TestSandboxOntology:
                 "tag": "blah",
                 "process": {
                     "guid": "{12345678-1234-5678-1234-567812345678}",
+                    "tag": "blah",
                     "pguid": "{12345678-1234-5678-1234-567812345678}",
+                    "ptag": "blah",
                     "pimage": "blah",
                     "pcommand_line": "blah",
                     "ppid": "blah",
@@ -2360,12 +2496,18 @@ class TestSandboxOntology:
                     "start_time": "blah",
                     "end_time": "blah",
                     "tree_id": "blah",
-                    "tag": "blah",
+                    "rich_id": "blah",
+                    "integrity_level": "blah",
+                    "image_hash": "blah",
+                    "original_file_name": "blah",
                 }
             }
         })
         assert nd.domain == "blah"
         assert nd.resolved_ips == ["blah"]
+        assert nd.lookup_type == "blah"
+        assert nd.connection_details.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nd.connection_details.tag == "blah"
         assert nd.connection_details.source_ip == "blah"
         assert nd.connection_details.source_port == "blah"
         assert nd.connection_details.destination_ip == "blah"
@@ -2373,10 +2515,11 @@ class TestSandboxOntology:
         assert nd.connection_details.transport_layer_protocol == "blah"
         assert nd.connection_details.direction == "blah"
         assert nd.connection_details.tree_id == "blah"
-        assert nd.connection_details.tag == "blah"
         assert nd.connection_details._normalize is False
         assert nd.connection_details.process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nd.connection_details.process.tag == "blah"
         assert nd.connection_details.process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert nd.connection_details.process.ptag == "blah"
         assert nd.connection_details.process.pimage == "blah"
         assert nd.connection_details.process.pcommand_line == "blah"
         assert nd.connection_details.process.ppid == "blah"
@@ -2386,7 +2529,10 @@ class TestSandboxOntology:
         assert nd.connection_details.process.start_time == "blah"
         assert nd.connection_details.process.end_time == "blah"
         assert nd.connection_details.process.tree_id == "blah"
-        assert nd.connection_details.process.tag == "blah"
+        assert nd.connection_details.process.rich_id == "blah"
+        assert nd.connection_details.process.integrity_level == "blah"
+        assert nd.connection_details.process.image_hash == "blah"
+        assert nd.connection_details.process.original_file_name == "blah"
         assert nd.connection_details.process._normalize is False
 
     @staticmethod
@@ -2395,12 +2541,14 @@ class TestSandboxOntology:
 
         default_so = SandboxOntology()
         nh = default_so._load_network_http_from_json({
-            "uri": "blah",
+            "request_uri": "blah",
             "request_headers": {"a": "b"},
             "request_method": "blah",
             "response_status_code": 123,
+            "response_body": "blah",
             "connection_details": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
+                "tag": "blah",
                 "source_ip": "blah",
                 "source_port": "blah",
                 "destination_ip": "blah",
@@ -2409,10 +2557,11 @@ class TestSandboxOntology:
                 "direction": "blah",
                 "timestamp": "blah",
                 "tree_id": "blah",
-                "tag": "blah",
                 "process": {
                     "guid": "{12345678-1234-5678-1234-567812345678}",
+                    "tag": "blah",
                     "pguid": "{12345678-1234-5678-1234-567812345678}",
+                    "ptag": "blah",
                     "pimage": "blah",
                     "pcommand_line": "blah",
                     "ppid": "blah",
@@ -2422,14 +2571,20 @@ class TestSandboxOntology:
                     "start_time": "blah",
                     "end_time": "blah",
                     "tree_id": "blah",
-                    "tag": "blah",
+                    "rich_id": "blah",
+                    "integrity_level": "blah",
+                    "image_hash": "blah",
+                    "original_file_name": "blah",
                 }
             }
         })
-        assert nh.uri == "blah"
+        assert nh.request_uri == "blah"
         assert nh.request_headers == {"a": "b"}
         assert nh.request_method == "blah"
         assert nh.response_status_code == 123
+        assert nh.response_body == "blah"
+        assert nh.connection_details.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nh.connection_details.tag == "blah"
         assert nh.connection_details.source_ip == "blah"
         assert nh.connection_details.source_port == "blah"
         assert nh.connection_details.destination_ip == "blah"
@@ -2437,10 +2592,11 @@ class TestSandboxOntology:
         assert nh.connection_details.transport_layer_protocol == "blah"
         assert nh.connection_details.direction == "blah"
         assert nh.connection_details.tree_id == "blah"
-        assert nh.connection_details.tag == "blah"
         assert nh.connection_details._normalize is False
         assert nh.connection_details.process.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nh.connection_details.process.tag == "blah"
         assert nh.connection_details.process.pguid == "{12345678-1234-5678-1234-567812345678}"
+        assert nh.connection_details.process.ptag == "blah"
         assert nh.connection_details.process.pimage == "blah"
         assert nh.connection_details.process.pcommand_line == "blah"
         assert nh.connection_details.process.ppid == "blah"
@@ -2450,7 +2606,10 @@ class TestSandboxOntology:
         assert nh.connection_details.process.start_time == "blah"
         assert nh.connection_details.process.end_time == "blah"
         assert nh.connection_details.process.tree_id == "blah"
-        assert nh.connection_details.process.tag == "blah"
+        assert nh.connection_details.process.rich_id == "blah"
+        assert nh.connection_details.process.integrity_level == "blah"
+        assert nh.connection_details.process.image_hash == "blah"
+        assert nh.connection_details.process.original_file_name == "blah"
         assert nh.connection_details.process._normalize is False
 
     @staticmethod
@@ -2508,34 +2667,41 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize("events, expected_events_dict",
-                             [([{"pid": 1, "image": "blah", "start_time": 1, "guid": None, "pguid": None}],
+                             [([{"pid": 1, "image": "blah", "start_time": 1, "guid": None}],
                                {1:
-                                {'guid': None, 'pguid': None, 'pimage': None, 'pcommand_line': None, 'ppid': None,
-                                 'pid': 1, 'image': 'blah', 'command_line': None, 'start_time': 1, 'end_time': None,
-                                 "tree_id": None, "tag": None}}),
-                              ([{"pid": 1, "image": "blah", "start_time": 1, "guid": None, "pguid": None},
-                                {"pid": 2, "image": "blah", "start_time": 1, "guid": None, "pguid": None}],
+                                {'guid': None, "tag": None, 'pguid': None, "ptag": None, 'pimage': None,
+                                 'pcommand_line': None, 'ppid': None, 'pid': 1, 'image': 'blah', 'command_line': None,
+                                 'start_time': 1, 'end_time': None, "tree_id": None, "rich_id": None,
+                                 "integrity_level": None, "image_hash": None, "original_file_name": None}}),
+                              ([{"pid": 1, "image": "blah", "start_time": 1, "guid": None},
+                                {"pid": 2, "image": "blah", "start_time": 1, "guid": None}],
                                {1:
-                                {'guid': None, 'pguid': None, 'pimage': None, 'pcommand_line': None, 'ppid': None,
-                                 'pid': 1, 'image': 'blah', 'command_line': None, 'start_time': 1, 'end_time': None,
-                                 "tree_id": None, "tag": None},
+                                {'guid': None, "tag": None, 'pguid': None, "ptag": None, 'pimage': None,
+                                 'pcommand_line': None, 'ppid': None, 'pid': 1, 'image': 'blah', 'command_line': None,
+                                 'start_time': 1, 'end_time': None, "tree_id": None, "rich_id": None,
+                                 "integrity_level": None, "image_hash": None, "original_file_name": None},
                                 2:
-                                {'guid': None, 'pguid': None, 'pimage': None, 'pcommand_line': None, 'ppid': None,
-                                 'pid': 2, 'image': 'blah', 'command_line': None, 'start_time': 1, 'end_time': None,
-                                 "tree_id": None, "tag": None}}),
+                                {'guid': None, "tag": None, 'pguid': None, "ptag": None, 'pimage': None,
+                                 'pcommand_line': None, 'ppid': None, 'pid': 2, 'image': 'blah', 'command_line': None,
+                                 'start_time': 1, 'end_time': None, "tree_id": None, "rich_id": None,
+                                 "integrity_level": None, "image_hash": None, "original_file_name": None}}),
                               ([{"pid": 1, "image": "blah", "start_time": 1,
-                                 "guid": "{12345678-1234-5678-1234-567812345678}", "pguid": None},
+                                 "guid": "{12345678-1234-5678-1234-567812345678}"},
                                 {"pid": 2, "image": "blah", "start_time": 1,
-                                 "guid": "{12345678-1234-5678-1234-567812345679}", "pguid": None}],
+                                 "guid": "{12345678-1234-5678-1234-567812345679}"}],
                                {
                                   '{12345678-1234-5678-1234-567812345678}':
-                                  {'guid': '{12345678-1234-5678-1234-567812345678}', 'pguid': None, 'pimage': None,
-                                   'pcommand_line': None, 'ppid': None, 'pid': 1, 'image': 'blah', 'command_line': None,
-                                   'start_time': 1, 'end_time': None, "tree_id": None, "tag": None},
+                                  {'guid': '{12345678-1234-5678-1234-567812345678}', "tag": None, 'pguid': None,
+                                   "ptag": None, 'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': 1,
+                                   'image': 'blah', 'command_line': None, 'start_time': 1, 'end_time': None,
+                                   "tree_id": None, "rich_id": None, "integrity_level": None, "image_hash": None,
+                                   "original_file_name": None},
                                   '{12345678-1234-5678-1234-567812345679}':
-                                  {'guid': '{12345678-1234-5678-1234-567812345679}', 'pguid': None, 'pimage': None,
-                                      'pcommand_line': None, 'ppid': None, 'pid': 2, 'image': 'blah', 'command_line': None,
-                                      'start_time': 1, 'end_time': None, "tree_id": None, "tag": None}}), ])
+                                  {'guid': '{12345678-1234-5678-1234-567812345679}', "tag": None, 'pguid': None,
+                                      "ptag": None, 'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': 2,
+                                      'image': 'blah', 'command_line': None, 'start_time': 1, 'end_time': None,
+                                      "tree_id": None, "rich_id": None, "integrity_level": None, "image_hash": None,
+                                      "original_file_name": None}}), ])
     def test_convert_events_to_dict(events, expected_events_dict):
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
         event_objects = [

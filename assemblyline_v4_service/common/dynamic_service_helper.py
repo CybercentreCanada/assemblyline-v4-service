@@ -91,13 +91,15 @@ class Process:
     VALUES_TO_NORMALIZE = ["image", "pimage", "command_line", "pcommand_line"]
 
     def __init__(
-            self, guid: str = None, pguid: str = None, pimage: str = None, pcommand_line: str = None, ppid: int = None,
+            self, guid: str = None, tag: str = None, pguid: str = None, ptag: str = None, pimage: str = None, pcommand_line: str = None, ppid: int = None,
             pid: int = None, image: str = None, command_line: str = None, start_time: float = None, end_time: float = None,
-            tree_id: str = None, tag: str = None, _normalize: bool = False) -> None:
+            tree_id: str = None, rich_id: str = None, integrity_level: str = None, image_hash: str = None, original_file_name: str = None, _normalize: bool = False) -> None:
         """
         This method initializes a process object
         :param guid: The GUID associated with the process
+        :param tag: The normalized tag of the object
         :param pguid: The GUID associated with the parent process
+        :param ptag: The tag associated with the parent process
         :param pimage: The image of the parent process that spawned this process
         :param pcommand_line: The command line that the parent process ran
         :param ppid: The process ID of the parent process
@@ -107,15 +109,20 @@ class Process:
         :param start_time: An EPOCH time representing when the process was created
         :param end_time: An EPOCH time representing when the process was terminated
         :param tree_id: The hash of the tree ID
-        :param tag: The normalized tag of the object
+        :param rich_id: Human readable tree ID (concatenation of process names)
+        :param integrity_level: The integrity level of the process
+        :param image_hash: The hash of the file run
+        :param original_file_name: The original name of the file
         :param _normalize: A boolean flag indicating if the path should be normalized
         :return: None
         """
         self.guid: str = f"{{{str(UUID(guid)).upper()}}}" if guid else None
-        self._normalize = _normalize if isinstance(_normalize, bool) else False
+        self.tag: str = tag
+        self._normalize: bool = _normalize if isinstance(_normalize, bool) else False
 
         # Parent process details
         self.pguid: str = pguid
+        self.ptag: str = ptag
         self.pimage: str = pimage
         self.pcommand_line: str = pcommand_line
         self.ppid: int = ppid
@@ -135,8 +142,11 @@ class Process:
         self.start_time: float = start_time if start_time else None
         self.end_time: float = end_time if end_time else None
 
-        self.tree_id = tree_id
-        self.tag = tag
+        self.tree_id: str = tree_id
+        self.rich_id: str = rich_id
+        self.integrity_level: str = integrity_level
+        self.image_hash: str = image_hash
+        self.original_file_name: str = original_file_name
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -161,6 +171,7 @@ class Process:
         if parent is None or parent == self:
             return
         self.pguid: str = parent.guid
+        self.ptag: str = parent.tag
         self.pimage: str = parent.image
         self.pcommand_line: str = parent.command_line
         self.ppid: int = parent.pid
@@ -318,12 +329,13 @@ class Process:
 
 
 class NetworkConnection:
-    def __init__(self, guid: str = None, process: Process = None, source_ip: str = None, source_port: int = None,
+    def __init__(self, guid: str = None, tag: str = None, process: Process = None, source_ip: str = None, source_port: int = None,
                  destination_ip: str = None, destination_port: int = None, transport_layer_protocol: str = None,
-                 direction: str = None, timestamp: float = None, _normalize: bool = False) -> None:
+                 direction: str = None, timestamp: float = None, tree_id: str = None, _normalize: bool = False) -> None:
         """
         Details for a low-level network connection by IP
         :param guid: The GUID associated with the network connection
+        :param tag: The normalized tag of the object
         :param process: The process that spawned the network connection
         :param source_ip: The source IP of the connection
         :param source_port: The source port of the connection
@@ -332,6 +344,7 @@ class NetworkConnection:
         :param transport_layer_protocol: The transport layer protocol of the connection
         :param direction: The direction of the network connection
         :param timestamp: The time at which the connection was spotted
+        :param tree_id: The hash of the tree ID
         :param _normalize: A boolean flag indicating if the path should be normalized
         :return: None
         """
@@ -339,6 +352,9 @@ class NetworkConnection:
             self.assign_guid()
         else:
             self.guid: str = f"{{{str(UUID(guid)).upper()}}}"
+
+        self.tag = tag
+        self._normalize = _normalize
 
         if isinstance(process, Process):
             if _normalize:
@@ -361,10 +377,7 @@ class NetworkConnection:
             raise ValueError(f"Invalid direction: {direction}")
         self.direction: str = direction
 
-        self.tree_id = None
-        self.tag = None
-
-        self._normalize = _normalize
+        self.tree_id = tree_id
 
     def assign_guid(self) -> None:
         """
@@ -406,12 +419,13 @@ class NetworkConnection:
 class NetworkDNS:
     def __init__(
             self, connection_details: NetworkConnection = None, domain: str = None,
-            resolved_ips: List[str] = None, _normalize: bool = False) -> None:
+            resolved_ips: List[str] = None, lookup_type: str = None, _normalize: bool = False) -> None:
         """
         Details for a DNS request
         :param connection_details: The low-level details of the DNS request
         :param domain: The domain requested
         :param resolved_ips: A list of IPs that were resolved
+        :param lookup_type: The type of DNS request
         :param _normalize: A boolean flag indicating if the path should be normalized
         :return: None
         """
@@ -424,6 +438,7 @@ class NetworkDNS:
 
         self.domain: str = domain
         self.resolved_ips: List[str] = resolved_ips if isinstance(resolved_ips, List) else []
+        self.lookup_type: str = lookup_type
 
     def update(self, **kwargs) -> None:
         """
@@ -473,15 +488,16 @@ class NetworkDNS:
 
 class NetworkHTTP:
     def __init__(
-            self, connection_details: NetworkConnection = None, uri: str = None, request_headers: Dict[str, str] = None,
-            request_method: str = None, response_status_code: int = None, _normalize: bool = False) -> None:
+            self, connection_details: NetworkConnection = None, request_uri: str = None, request_headers: Dict[str, str] = None,
+            request_method: str = None, response_status_code: int = None, response_body: str = None, _normalize: bool = False) -> None:
         """
         Details for an HTTP request
         :param connection_details: The low-level details of the DNS request
-        :param uri: The URI requested
+        :param request_uri: The URI requested
         :param request_headers: Headers included in the request
         :param request_method: The method of the request
         :param response_status_code: The status code of the response
+        :param response_body: The body of the response
         :param _normalize: A boolean flag indicating if the path should be normalized
         :return: None
         """
@@ -492,10 +508,11 @@ class NetworkHTTP:
         else:
             self.connection_details: NetworkConnection = NetworkConnection(_normalize=_normalize)
 
-        self.uri: str = uri
+        self.request_uri: str = request_uri
         self.request_headers: Dict[str, str] = request_headers if isinstance(request_headers, Dict) else {}
         self.request_method: str = request_method
         self.response_status_code: int = response_status_code
+        self.response_body: str = response_body
 
     def update(self, **kwargs) -> None:
         """
