@@ -279,12 +279,16 @@ class ServiceBase:
                 'heuristics': heur_tag_map
             }
         )
+
         if not self.ontologies:
+            ontology = {
+                'header': ResultOntology(service_result).as_primitives()
+            }
             # Dump header information to disk
-            ontology_suffix = 'header.json'
+            ontology_suffix = 'general.ontology'
             ontology_path = os.path.join(self.working_directory, ontology_suffix)
-            open(ontology_path, 'w').write(json.dumps(ResultOntology(service_result).as_primitives(strip_null=True)))
-            attachment_name = f'{request.sha256}_{request.task.service_name}_{ontology_suffix}'
+            open(ontology_path, 'w').write(json.dumps(ontology))
+            attachment_name = f'{request.task.service_name}_{ontology_suffix}'
             request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
                                       classification=max_result_classification)
             return
@@ -295,10 +299,10 @@ class ServiceBase:
                     'header': ResultOntology(service_result).as_primitives(),
                     f'{type}': dv
                 }
-                ontology_suffix = f'{type}_result_ontology_{i}.json'
+                ontology_suffix = f'{type}_{i}.ontology'
                 ontology_path = os.path.join(self.working_directory, ontology_suffix)
                 open(ontology_path, 'w').write(json.dumps(ontology))
-                attachment_name = f'{request.sha256}_{request.task.service_name}_{ontology_suffix}'
+                attachment_name = f'{request.task.service_name}_{ontology_suffix}'
                 request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
                                           classification=max_result_classification)
 
