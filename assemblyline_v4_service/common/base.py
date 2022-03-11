@@ -1,7 +1,9 @@
 from __future__ import annotations
+from collections import defaultdict
 
 import hashlib
 import logging
+import json
 import os
 import requests
 import shutil
@@ -11,9 +13,11 @@ import time
 from typing import Dict, Optional
 from pathlib import Path
 
-from assemblyline.common import exceptions, log, version
+from assemblyline.common import exceptions, log, version, forge
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline.odm.models.ontology.meta import ResultOntology
+from assemblyline.odm.base import Model
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -60,6 +64,8 @@ class ServiceBase:
 
         self._working_directory = None
         self.dependencies = self._get_dependencies_info()
+
+        self.ontologies: dict = None
 
         # Updater-related
         self.rules_directory: str = None
@@ -142,10 +148,10 @@ class ServiceBase:
             self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
-
+            self.ontologies = defaultdict(list)
             request = ServiceRequest(self._task)
             self.execute(request)
-
+            self._attach_service_meta_ontology(request)
             self._success()
         except RuntimeError as re:
             if is_recoverable_runtime_error(re):
@@ -208,7 +214,100 @@ class ServiceBase:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
 
+    def attach_ontological_result(self, modelType: Model, data: dict, validate_model=True) -> None:
+        if not data:
+            self.log.warning('No ontological data provided. Ignoring...')
+            return
+
+        # Service version will enforce validation when running in production
+        if 'dev' not in self.service_attributes.version:
+            validate_model = True
+
+        # Append ontologies to collection to get appended after execution
+        self.ontologies[modelType.__name__].append(
+            modelType(data=data, ignore_extra_values=validate_model).as_primitives()
+        )
+
+    def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
+
+        def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
+            for section in sections:
+                # Determine max classification of the overall result
+                current_max = forge.get_classification().max_classification(section.classification, current_max)
+
+                # Append tags associated to heuristcs raised by the service, if any
+                if section.heuristic:
+                    heur_tag_map[f'{self.name.upper()}_{section.heuristic.heur_id}'].update(section.tags)
+
+                # Recurse through subsections
+                if section.subsections:
+                    current_max, heur_tag_map, tag_map = preprocess_result_for_dump(
+                        section.subsections, current_max, heur_tag_map, tag_map)
+
+                # Append tags raised by the service, if any
+                if section.tags:
+                    tag_map.update(section.tags)
+
+            return current_max, heur_tag_map, tag_map
+
+        max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
+            request.result.sections,
+            request.task.service_default_result_classification, defaultdict(dict), defaultdict(list)
+        )
+
+        # Required meta
+        service_result = {
+            'md5': request.md5,
+            'sha1': request.sha1,
+            'sha256': request.sha256,
+            'type': request.file_type,
+            'size': request.file_size,
+            'filename': request.file_name,
+            'date': request.task._service_started,
+            'classification': max_result_classification,
+            'service_name': request.task.service_name,
+            'service_version': request.task.service_version,
+            'service_tool_version': request.task.service_tool_version,
+        }
+
+        # Optional meta
+        service_result.update(
+            {
+                'sid': request.sid,
+                'submitted_classification': request.task.min_classification,
+                'tags': tag_map,
+                'heuristics': heur_tag_map
+            }
+        )
+
+        if not self.ontologies:
+            ontology = {
+                'header': ResultOntology(service_result).as_primitives()
+            }
+            # Dump header information to disk
+            ontology_suffix = 'general.ontology'
+            ontology_path = os.path.join(self.working_directory, ontology_suffix)
+            open(ontology_path, 'w').write(json.dumps(ontology))
+            attachment_name = f'{request.task.service_name}_{ontology_suffix}'
+            request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
+                                      classification=max_result_classification)
+            return
+
+        for type, data in self.ontologies.items():
+            for i, dv in enumerate(data):
+                ontology = {
+                    'header': ResultOntology(service_result).as_primitives(),
+                    f'{type}': dv
+                }
+                ontology_suffix = f'{type}_{i}.ontology'
+                ontology_path = os.path.join(self.working_directory, ontology_suffix)
+                open(ontology_path, 'w').write(json.dumps(ontology))
+                attachment_name = f'{request.task.service_name}_{ontology_suffix}'
+                request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
+                                          classification=max_result_classification)
+
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
+
     def _download_rules(self):
         url_base = f"http://{self.dependencies['updates']['host']}:{self.dependencies['updates']['port']}/"
         headers = {
