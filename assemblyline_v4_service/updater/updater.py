@@ -282,11 +282,12 @@ class ServiceUpdater(ThreadedCoreBase):
                     while not extracted_zip and attempt < 5:
                         temp_zip_file = os.path.join(output_directory, 'temp.zip')
                         al_client.signature.download(
-                            output=temp_zip_file, query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
+                            output=temp_zip_file,
+                            query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
 
                         self.log.debug(f"Downloading update to {temp_zip_file}")
                         if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
-                            self.log.debug(f"Type of file ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file)}")
+                            self.log.debug(f"File type ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file)}")
                             try:
                                 with ZipFile(temp_zip_file, 'r') as zip_f:
                                     zip_f.extractall(output_directory)
@@ -347,13 +348,15 @@ class ServiceUpdater(ThreadedCoreBase):
 
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
+                        validated_files = list()
                         for file, sha256 in files:
                             files_sha256.setdefault(source_name, {})
                             if previous_hashes.get(source_name, {}).get(file, None) != sha256 and self.is_valid(file):
                                 files_sha256[source_name][file] = sha256
+                                validated_files.append((file, sha256))
 
                         # Import into Assemblyline
-                        self.import_update(files, al_client, source_name, default_classification)
+                        self.import_update(validated_files, al_client, source_name, default_classification)
 
                     except SkipSource:
                         # This source hasn't changed, no need to re-import into Assemblyline
