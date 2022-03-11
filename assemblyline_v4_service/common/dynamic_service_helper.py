@@ -488,14 +488,16 @@ class NetworkDNS:
 
 class NetworkHTTP:
     def __init__(
-            self, connection_details: NetworkConnection = None, request_uri: str = None, request_headers: Dict[str, str] = None,
-            request_method: str = None, response_status_code: int = None, response_body: str = None, _normalize: bool = False) -> None:
+            self, connection_details: NetworkConnection = None, request_uri: str = None, request_headers: Dict[str, str] = None, request_body: str = None,
+            request_method: str = None, response_headers: str = None, response_status_code: int = None, response_body: str = None, _normalize: bool = False) -> None:
         """
         Details for an HTTP request
         :param connection_details: The low-level details of the DNS request
         :param request_uri: The URI requested
         :param request_headers: Headers included in the request
+        :param request_body: The body of the request
         :param request_method: The method of the request
+        :param response_headers: The headers of the response
         :param response_status_code: The status code of the response
         :param response_body: The body of the response
         :param _normalize: A boolean flag indicating if the path should be normalized
@@ -510,7 +512,9 @@ class NetworkHTTP:
 
         self.request_uri: str = request_uri
         self.request_headers: Dict[str, str] = request_headers if isinstance(request_headers, Dict) else {}
+        self.request_body: str = request_body
         self.request_method: str = request_method
+        self.response_headers: Dict[str, str] = response_headers if isinstance(response_headers, Dict) else {}
         self.response_status_code: int = response_status_code
         self.response_body: str = response_body
 

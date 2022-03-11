@@ -584,14 +584,18 @@ class TestNetworkHTTP:
         set_nh = NetworkHTTP(
             request_uri="blah",
             request_headers={"a": "b"},
+            request_body="blah",
             request_method="blah",
+            response_headers={"a": "b"},
             response_status_code=123,
             response_body="blah",
         )
 
         assert set_nh.request_uri == "blah"
         assert set_nh.request_headers == {"a": "b"}
+        assert set_nh.request_body == "blah"
         assert set_nh.request_method == "blah"
+        assert set_nh.response_headers == {"a": "b"}
         assert set_nh.response_status_code == 123
         assert set_nh.response_body == "blah"
 
@@ -654,7 +658,9 @@ class TestNetworkHTTP:
             },
             "request_uri": None,
             "request_headers": {},
+            "request_body": None,
             "request_method": None,
+            "response_headers": {},
             "response_status_code": None,
             "response_body": None,
         }
@@ -1469,7 +1475,9 @@ class TestSandboxOntology:
             },
             "request_uri": None,
             "request_headers": {},
+            "request_body": None,
             "request_method": None,
+            "response_headers": {},
             "response_status_code": None,
             "response_body": None,
         }
@@ -1936,7 +1944,9 @@ class TestSandboxOntology:
                 {
                     "request_uri": "blah",
                     "request_headers": {"a": "b"},
+                    "request_body": "blah",
                     "request_method": "blah",
+                    "response_headers": {"a": "b"},
                     "response_status_code": 123,
                     "response_body": "blah",
                     "connection_details": {
@@ -2130,7 +2140,9 @@ class TestSandboxOntology:
 
         assert default_so.network_http[0].request_uri == "blah"
         assert default_so.network_http[0].request_headers == {"a": "b"}
+        assert default_so.network_http[0].request_body == "blah"
         assert default_so.network_http[0].request_method == "blah"
+        assert default_so.network_http[0].response_headers == {"a": "b"}
         assert default_so.network_http[0].response_status_code == 123
         assert default_so.network_http[0].response_body == "blah"
 
@@ -2543,7 +2555,9 @@ class TestSandboxOntology:
         nh = default_so._load_network_http_from_json({
             "request_uri": "blah",
             "request_headers": {"a": "b"},
+            "request_body": "blah",
             "request_method": "blah",
+            "response_headers": {"a": "b"},
             "response_status_code": 123,
             "response_body": "blah",
             "connection_details": {
