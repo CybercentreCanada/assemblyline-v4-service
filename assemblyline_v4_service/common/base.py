@@ -262,7 +262,7 @@ class ServiceBase:
             'sha256': request.sha256,
             'type': request.file_type,
             'size': request.file_size,
-            'filename': request.file_name,
+            'filename': request.file_name or request.sha256,
             'date': request.task._service_started,
             'classification': max_result_classification,
             'service_name': request.task.service_name,
