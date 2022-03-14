@@ -229,6 +229,9 @@ class ServiceBase:
         )
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
+        if not request.result or not request.result.sections:
+            # No service results, therefore no ontological output
+            return
 
         def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
             for section in sections:
