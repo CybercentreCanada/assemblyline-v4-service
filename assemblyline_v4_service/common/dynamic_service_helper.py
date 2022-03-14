@@ -91,9 +91,10 @@ class Process:
     VALUES_TO_NORMALIZE = ["image", "pimage", "command_line", "pcommand_line"]
 
     def __init__(
-            self, guid: str = None, tag: str = None, pguid: str = None, ptag: str = None, pimage: str = None, pcommand_line: str = None, ppid: int = None,
-            pid: int = None, image: str = None, command_line: str = None, start_time: float = None, end_time: float = None,
-            tree_id: str = None, rich_id: str = None, integrity_level: str = None, image_hash: str = None, original_file_name: str = None, _normalize: bool = False) -> None:
+            self, guid: str = None, tag: str = None, pguid: str = None, ptag: str = None, pimage: str = None,
+            pcommand_line: str = None, ppid: int = None, pid: int = None, image: str = None, command_line: str = None,
+            start_time: float = None, end_time: float = None, tree_id: str = None, rich_id: str = None, integrity_level:
+            str = None, image_hash: str = None, original_file_name: str = None, _normalize: bool = False) -> None:
         """
         This method initializes a process object
         :param guid: The GUID associated with the process
@@ -487,9 +488,10 @@ class NetworkDNS:
 
 
 class NetworkHTTP:
-    def __init__(
-            self, connection_details: NetworkConnection = None, request_uri: str = None, request_headers: Dict[str, str] = None, request_body: str = None,
-            request_method: str = None, response_headers: str = None, response_status_code: int = None, response_body: str = None, _normalize: bool = False) -> None:
+    def __init__(self, connection_details: NetworkConnection = None, request_uri: str = None,
+                 request_headers: Dict[str, str] = None, request_body: str = None, request_method: str = None,
+                 response_headers: str = None, response_status_code: int = None, response_body: str = None,
+                 request_body_path: str = None, response_body_path: str = None, _normalize: bool = False) -> None:
         """
         Details for an HTTP request
         :param connection_details: The low-level details of the DNS request
@@ -500,6 +502,8 @@ class NetworkHTTP:
         :param response_headers: The headers of the response
         :param response_status_code: The status code of the response
         :param response_body: The body of the response
+        :param request_body_path: The path to the file containing the request body
+        :param response_body_path: The path to the file containing the response body
         :param _normalize: A boolean flag indicating if the path should be normalized
         :return: None
         """
@@ -517,6 +521,8 @@ class NetworkHTTP:
         self.response_headers: Dict[str, str] = response_headers if isinstance(response_headers, Dict) else {}
         self.response_status_code: int = response_status_code
         self.response_body: str = response_body
+        self.request_body_path: str = request_body_path
+        self.response_body_path: str = response_body_path
 
     def update(self, **kwargs) -> None:
         """
@@ -561,7 +567,7 @@ class NetworkHTTP:
         This method returns the dictionary representation of the object
         :return: The dictionary representation of the object
         """
-        return {key: value if (not isinstance(value, Process) and not isinstance(value, NetworkConnection)) else value.as_primitives() for key, value in self.__dict__.items()}
+        return {key: value if (not isinstance(value, Process) and not isinstance(value, NetworkConnection)) else value.as_primitives() for key, value in self.__dict__.items() if key not in ["request_body_path", "response_body_path"]}
 
 
 class SandboxOntology:
@@ -1125,6 +1131,8 @@ class SandboxOntology:
     def get_network_connection_by_details(self, source_ip: str, source_port: int, destination_ip: str,
                                           destination_port: int, timestamp: float) -> NetworkConnection:
         for network_connection in self.get_network_connections():
+            if network_connection.timestamp is None or timestamp is None:
+                continue
             if network_connection.source_ip == source_ip and \
                 network_connection.source_port == source_port and \
                     network_connection.destination_ip == destination_ip and \
@@ -1208,10 +1216,24 @@ class SandboxOntology:
 
     def get_network_http(self) -> List[NetworkHTTP]:
         """
-        This method returns the network http
-        :return: The list of network http
+        This method returns the network HTTP
+        :return: The list of network HTTP
         """
         return self.network_http
+
+    def get_network_http_by_path(self, path: str) -> Optional[NetworkHTTP]:
+        """
+        This method returns the network HTTP call associated with a path
+        :param path: The path to a response/request body file
+        :return: The associated network HTTP call for the given path
+        """
+        network_http_with_path = [
+            http for http in self.get_network_http()
+            if http.response_body_path == path or http.request_body_path == path]
+        if not network_http_with_path:
+            return None
+        else:
+            return network_http_with_path[0]
 
     def create_signature(self, **kwargs) -> Signature:
         """
