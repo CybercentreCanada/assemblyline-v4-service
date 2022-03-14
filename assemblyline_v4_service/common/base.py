@@ -65,7 +65,7 @@ class ServiceBase:
         self._working_directory = None
         self.dependencies = self._get_dependencies_info()
 
-        self.ontologies: dict = None
+        self.ontologies: Dict = None
 
         # Updater-related
         self.rules_directory: str = None
@@ -73,7 +73,7 @@ class ServiceBase:
         self.update_time: int = None
         self.rules_hash: str = None
 
-    def _get_dependencies_info(self) -> dict:
+    def _get_dependencies_info(self) -> Dict[str, Dict[str, str]]:
         dependencies = {}
         dep_names = [e.split('_key')[0] for e in os.environ.keys() if e.endswith('_key')]
         for name in dep_names:
@@ -214,7 +214,7 @@ class ServiceBase:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
 
-    def attach_ontological_result(self, modelType: Model, data: dict, validate_model=True) -> None:
+    def attach_ontological_result(self, modelType: Model, data: Dict, validate_model=True) -> None:
         if not data:
             self.log.warning('No ontological data provided. Ignoring...')
             return
