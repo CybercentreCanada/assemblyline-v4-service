@@ -580,6 +580,8 @@ class TestNetworkHTTP:
         assert default_nh.request_method is None
         assert default_nh.response_status_code is None
         assert default_nh.response_body is None
+        assert default_nh.response_body_path is None
+        assert default_nh.request_body_path is None
 
         set_nh = NetworkHTTP(
             request_uri="blah",
@@ -589,6 +591,8 @@ class TestNetworkHTTP:
             response_headers={"a": "b"},
             response_status_code=123,
             response_body="blah",
+            response_body_path="blah",
+            request_body_path="blah",
         )
 
         assert set_nh.request_uri == "blah"
@@ -598,6 +602,8 @@ class TestNetworkHTTP:
         assert set_nh.response_headers == {"a": "b"}
         assert set_nh.response_status_code == 123
         assert set_nh.response_body == "blah"
+        assert set_nh.response_body_path == "blah"
+        assert set_nh.request_body_path == "blah"
 
     @staticmethod
     def test_network_http_update():
@@ -1490,6 +1496,17 @@ class TestSandboxOntology:
         nh = default_so.create_network_http()
         default_so.add_network_http(nh)
         assert default_so.get_network_http() == [nh]
+
+    @staticmethod
+    def test_get_network_http_by_path():
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+
+        default_so = SandboxOntology()
+        nh = default_so.create_network_http(request_body_path="/blah1", response_body_path="/blah2")
+        default_so.add_network_http(nh)
+
+        assert default_so.get_network_http_by_path("/blah1") == nh
+        assert default_so.get_network_http_by_path("/blah2") == nh
 
     @staticmethod
     def test_create_signature():
