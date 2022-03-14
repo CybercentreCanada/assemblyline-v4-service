@@ -41,6 +41,7 @@ class Task:
         self.extracted: List[Dict[str, str]] = []
         self.file_name = task.filename
         self.file_type = task.fileinfo.type
+        self.file_size = task.fileinfo.size
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.metadata = task.metadata
