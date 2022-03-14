@@ -300,7 +300,7 @@ class ServiceBase:
             ontology_suffix = 'general.ontology'
             ontology_path = os.path.join(self.working_directory, ontology_suffix)
             open(ontology_path, 'w').write(json.dumps(ontology))
-            attachment_name = f'{request.task.service_name}_{ontology_suffix}'
+            attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
             request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
                                       classification=max_result_classification)
             return
@@ -314,7 +314,7 @@ class ServiceBase:
                 ontology_suffix = f'{type}_{i}.ontology'
                 ontology_path = os.path.join(self.working_directory, ontology_suffix)
                 open(ontology_path, 'w').write(json.dumps(ontology))
-                attachment_name = f'{request.task.service_name}_{ontology_suffix}'
+                attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
                 request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
                                           classification=max_result_classification)
 
