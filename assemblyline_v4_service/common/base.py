@@ -14,10 +14,12 @@ from typing import Dict, Optional
 from pathlib import Path
 
 from assemblyline.common import exceptions, log, version, forge
+from assemblyline.common.dict_utils import flatten, unflatten
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.ontology.meta import ResultOntology
-from assemblyline.odm.base import Model
+from assemblyline.odm.models.tagging import Tagging
+from assemblyline.odm.base import Model, construct_safe
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -238,18 +240,25 @@ class ServiceBase:
                 # Determine max classification of the overall result
                 current_max = forge.get_classification().max_classification(section.classification, current_max)
 
-                # Append tags associated to heuristcs raised by the service, if any
+                # Cleanup invalid tagging from service results
+                def validate_tags(tag_map):
+                    tag_map, _ = construct_safe(Tagging, unflatten(tag_map))
+                    tag_map = flatten(tag_map.as_primitives(strip_null=True))
+                    return tag_map
+
+                # Append tags raised by the service, if any
+                section_tags = validate_tags(section.tags)
+                if section_tags:
+                    tag_map.update(section_tags)
+
+                # Append tags associated to heuristics raised by the service, if any
                 if section.heuristic:
-                    heur_tag_map[f'{self.name.upper()}_{section.heuristic.heur_id}'].update(section.tags)
+                    heur_tag_map[f'{self.name.upper()}_{section.heuristic.heur_id}'].update(section_tags)
 
                 # Recurse through subsections
                 if section.subsections:
                     current_max, heur_tag_map, tag_map = preprocess_result_for_dump(
                         section.subsections, current_max, heur_tag_map, tag_map)
-
-                # Append tags raised by the service, if any
-                if section.tags:
-                    tag_map.update(section.tags)
 
             return current_max, heur_tag_map, tag_map
 
