@@ -39,7 +39,12 @@ def ocr_detections(image_path: str) -> Dict[str, List[str]]:
 
     # Use OCR library to extract strings from an image file
     detection_output = dict()
-    ocr_output = pytesseract.image_to_string(Image.open(image_path))
+    ocr_output = str()
+    try:
+        ocr_output = pytesseract.image_to_string(Image.open(image_path))
+    except TypeError:
+        # Image given isn't supported therefore no OCR output can be given with tesseract
+        return detection_output
 
     # Iterate over the different indicators and include lines of detection in response
     for indicator, list_of_terms in OCR_INDICATORS_MAPPING.items():
