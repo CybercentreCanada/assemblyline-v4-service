@@ -232,6 +232,8 @@ class ServiceBase:
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
+        heuristics = helper.get_heuristics()
+
         def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
             for section in sections:
                 # Determine max classification of the overall result
@@ -243,6 +245,17 @@ class ServiceBase:
                     tag_map = flatten(tag_map.as_primitives(strip_null=True))
                     return tag_map
 
+                # Merge tags
+                def merge_tags(tag_a, tag_b):
+                    if not tag_a:
+                        return tag_b
+
+                    elif not tag_b:
+                        return tag_a
+
+                    all_keys = list(tag_a.keys()) + list(tag_b.keys())
+                    return {key: list(set(tag_a.get(key, []) + tag_b.get(key, []))) for key in all_keys}
+
                 # Append tags raised by the service, if any
                 section_tags = validate_tags(section.tags)
                 if section_tags:
@@ -250,7 +263,16 @@ class ServiceBase:
 
                 # Append tags associated to heuristics raised by the service, if any
                 if section.heuristic:
-                    heur_tag_map[f'{self.name.upper()}_{section.heuristic.heur_id}'].update(section_tags)
+                    heur = heuristics[section.heuristic.heur_id]
+                    key = f'{self.name.upper()}_{heur.heur_id}'
+                    update_value = {"name": heur.name, "tags": {}}
+                    if section_tags:
+                        update_value = \
+                            {
+                                "name": heur.name,
+                                "tags": merge_tags(heur_tag_map[key]["tags"], section_tags)
+                            }
+                    heur_tag_map[key].update(update_value)
 
                 # Recurse through subsections
                 if section.subsections:
@@ -264,9 +286,9 @@ class ServiceBase:
             return
 
         max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
-            request.result.sections,
-            request.task.service_default_result_classification, defaultdict(dict), defaultdict(list)
-        )
+            request.result.sections, request.task.service_default_result_classification,
+            defaultdict(lambda: {"tags": dict()}),
+            defaultdict(list))
 
         if not tag_map and not self.ontologies:
             # No tagging or ontologies found, therefore informational results
