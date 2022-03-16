@@ -231,9 +231,6 @@ class ServiceBase:
         )
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
-        if not request.result or not request.result.sections:
-            # No service results, therefore no ontological output
-            return
 
         def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
             for section in sections:
@@ -262,10 +259,18 @@ class ServiceBase:
 
             return current_max, heur_tag_map, tag_map
 
+        if not request.result or not request.result.sections:
+            # No service results, therefore no ontological output
+            return
+
         max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
             request.result.sections,
             request.task.service_default_result_classification, defaultdict(dict), defaultdict(list)
         )
+
+        if not tag_map and not self.ontologies:
+            # No tagging or ontologies found, therefore informational results
+            return
 
         # Required meta
         service_result = {
@@ -292,9 +297,10 @@ class ServiceBase:
             }
         )
 
+        header = ResultOntology(service_result).as_primitives(strip_null=True)
         if not self.ontologies:
             ontology = {
-                'header': ResultOntology(service_result).as_primitives()
+                'header': header
             }
             # Dump header information to disk
             ontology_suffix = 'general.ontology'
@@ -308,7 +314,7 @@ class ServiceBase:
         for type, data in self.ontologies.items():
             for i, dv in enumerate(data):
                 ontology = {
-                    'header': ResultOntology(service_result).as_primitives(),
+                    'header': header,
                     f'{type}': dv
                 }
                 ontology_suffix = f'{type}_{i}.ontology'
