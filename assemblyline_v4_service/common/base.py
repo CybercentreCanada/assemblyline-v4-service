@@ -264,13 +264,15 @@ class ServiceBase:
                 # Append tags associated to heuristics raised by the service, if any
                 if section.heuristic:
                     heur = heuristics[section.heuristic.heur_id]
+                    key = f'{self.name.upper()}_{heur.heur_id}'
+                    update_value = {"name": heur.name, "tags": {}}
                     if section_tags:
-                        key = f'{self.name.upper()}_{heur.heur_id}'
-                        heur_tag_map[key].update(
+                        update_value = \
                             {
                                 "name": heur.name,
                                 "tags": merge_tags(heur_tag_map[key]["tags"], section_tags)
-                            })
+                            }
+                    heur_tag_map[key].update(update_value)
 
                 # Recurse through subsections
                 if section.subsections:
