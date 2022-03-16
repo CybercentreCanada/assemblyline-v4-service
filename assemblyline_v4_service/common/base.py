@@ -268,8 +268,8 @@ class ServiceBase:
             request.task.service_default_result_classification, defaultdict(dict), defaultdict(list)
         )
 
-        if not tag_map:
-            # No tagging information found in results, therefore informational but nothing ontological
+        if not tag_map and not self.ontologies:
+            # No tagging or ontologies found, therefore informational results
             return
 
         # Required meta
