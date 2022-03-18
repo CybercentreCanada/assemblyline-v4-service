@@ -1617,6 +1617,17 @@ class TestSandboxOntology:
         assert len(actual_events) == 2
 
     @staticmethod
+    def test_get_non_safelisted_processes():
+        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        so = SandboxOntology()
+        safelist = ["blahblah"]
+        p1 = so.create_process(tree_id="blahblah")
+        p2 = so.create_process(tree_id="blahblahblah")
+        so.add_process(p1)
+        so.add_process(p2)
+        assert so.get_non_safelisted_processes(safelist) == [p2]
+
+    @staticmethod
     @pytest.mark.parametrize(
         "event_list, signatures, safelist, expected_result",
         [(None, None, [],

@@ -1328,6 +1328,18 @@ class SandboxOntology:
                                                                                               for network_connection in self.network_connections if network_connection.timestamp is not None]
         return self._sort_things_by_timestamp(events)
 
+    def get_non_safelisted_processes(self, safelist: List[str]) -> List[Process]:
+        """
+        This method filters events by their tree ID and returns the remaining events
+        :param safelist: All of the safe leaf tree IDs (the safelist)
+        :return: A list of non-safelisted process
+        """
+        # NOTE: This method must be called once tree IDs have been added to the process_event_dicts, most likely
+        # through calculating the process tree
+        filtered_processes = [process for process in self.get_processes() if process.tree_id not in safelist]
+        sorted_filtered_processes = self._sort_things_by_timestamp(filtered_processes)
+        return sorted_filtered_processes
+
     def get_process_tree(self, safelist: List[str] = None) -> List[Dict[str, Any]]:
         """
         This method generates the event tree
@@ -1419,20 +1431,23 @@ class SandboxOntology:
         :return: A boolean flag indicating that Process is valid
         """
         # Grab pids and guids to use for validation
-        pids: List[int] = [process.pid for process in self._guid_process_map.values()]
+        pids: List[int] = [process.pid for process in self._guid_process_map.values() if process.pid is not None]
         guids: List[str] = list(self._guid_process_map.keys())
 
-        if not process.guid and process.pid not in pids:
+        if process.guid is None and process.pid is None:
+            log.warning("Process requires at least a GUID or a PID, skipping...")
+            return False
+        elif not process.guid and process.pid not in pids:
             # This means we have a unique process that is not yet in the lookup table.
             # Before we add it, assign a GUID to it.
             process.assign_guid()
         elif process.guid in guids and process.pid in pids:
             # We cannot have two items in the table that share process IDs and GUIDs
-            log.warning("duplicate")
+            log.warning("Duplicate process, skipping...")
             return False
         elif process.guid in guids and process.pid not in pids:
             # We cannot have two items in the table that share GUIDs
-            log.warning("duplicate")
+            log.warning("Duplicate process, skipping...")
             return False
         elif process.guid not in guids and process.pid in pids:
             # We can have two items in the table that share PIDs that don't share GUIDs
