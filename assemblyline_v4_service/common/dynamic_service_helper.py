@@ -1345,6 +1345,8 @@ class SandboxOntology:
         This method generates the event tree
         :return: The event tree
         """
+        if safelist is None:
+            safelist: List[str] = []
         events = self.get_processes()
         events_dict = self._convert_events_to_dict(events)
         tree = self._convert_events_dict_to_tree(events_dict)
@@ -1359,10 +1361,12 @@ class SandboxOntology:
         :param safelist: A safelist of tree IDs that is to be applied to the events
         :return: The Typed ResultSection for the Process (Event) Tree
         """
+        if safelist is None:
+            safelist: List[str] = []
         tree = self.get_process_tree(safelist)
         items: List[ProcessItem] = []
         for event in tree:
-            self._convert_event_tree_to_result_section(items, event)
+            self._convert_event_tree_to_result_section(items, event, safelist)
         process_tree_result_section = ResultProcessTreeSection("Spawned Process Tree")
         for item in items:
             process_tree_result_section.add_process(item)
@@ -1622,12 +1626,16 @@ class SandboxOntology:
 
         return SandboxOntology._sort_things_by_timestamp(root["children"])
 
-    def _convert_event_tree_to_result_section(self, items: List[ProcessItem], event: Dict[str, Any],
-                                              parent: Optional[ProcessItem] = None) -> None:
+    def _convert_event_tree_to_result_section(
+            self, items: List[ProcessItem],
+            event: Dict[str, Any],
+            safelist: List[str],
+            parent: Optional[ProcessItem] = None) -> None:
         """
         This method converts the event tree into a ResultSection using recursion
         :param items: A list of ProcessItem objects
         :param event: A dictionary representing the Process to be converted
+        :param safelist: A safelist of tree IDs that is to be applied to the events
         :param parent: The ProcessItem of the event to be converted
         :return: None
         """
@@ -1641,11 +1649,14 @@ class SandboxOntology:
         # e.add_file_events(len(self.get_file_events_by_pid(e.pid)))
         # e.add_registry_events(len(self.get_registry_events_by_pid(e.pid)))
 
+        if event.get("tree_id") in safelist:
+            e.safelist()
+
         for signature in self.get_signatures_by_pid(event["pid"]):
             e.add_signature(signature.name, signature.score)
 
         for child in event["children"][:]:
-            self._convert_event_tree_to_result_section(items, child, e)
+            self._convert_event_tree_to_result_section(items, child, safelist, e)
             event["children"].remove(child)
 
         if not event["children"] and not parent:
