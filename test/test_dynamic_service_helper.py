@@ -2940,23 +2940,36 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
         so = SandboxOntology()
         actual_items = []
-        event = {"pid": 1, "image": "blah", "command_line": "blah", "children": [
+        event = {"pid": 1, "image": "blah", "command_line": "blah", "tree_id": "blahblah", "children": [
             {"pid": 2, "image": "blah", "command_line": "blah", "children": []}]}
-        so._convert_event_tree_to_result_section(actual_items, event)
-        assert actual_items[0].__dict__["pid"] == 1
-        assert actual_items[0].__dict__["name"] == "blah"
-        assert actual_items[0].__dict__["cmd"] == "blah"
-        assert actual_items[0].__dict__["signatures"] == {}
-        assert actual_items[0].__dict__["children"][0].__dict__ == {
-            "name": "blah",
-            "cmd": "blah",
-            "pid": 2,
-            "children": [],
+        safelist = ["blahblah"]
+        p = so.create_process(pid=2, start_time=1.0)
+        so.add_process(p)
+        sig = so.create_signature(process=p, name="bad", score=99)
+        so.add_signature(sig)
+        nc = so.create_network_connection(process=p, destination_ip="1.1.1.1")
+        so.add_network_connection(nc)
+        so._convert_event_tree_to_result_section(actual_items, event, safelist)
+        assert actual_items[0].as_primitives() == {
+            "process_name": "blah",
+            "command_line": "blah",
+            "process_pid": 1,
+            "children": [{
+                "process_name": "blah",
+                "command_line": "blah",
+                "process_pid": 2,
+                "children": [],
+                "signatures": {"bad": 99},
+                "file_count": 0,
+                "network_count": 1,
+                "registry_count": 0,
+                "safelisted": False,
+            }],
             "signatures": {},
             "file_count": 0,
             "network_count": 0,
             "registry_count": 0,
-            "safelisted": False,
+            "safelisted": True,
         }
 
     @staticmethod
