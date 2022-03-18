@@ -1607,12 +1607,12 @@ class SandboxOntology:
 
         return SandboxOntology._sort_things_by_timestamp(root["children"])
 
-    def _convert_event_tree_to_result_section(self, items: List[ProcessItem], event: Process,
+    def _convert_event_tree_to_result_section(self, items: List[ProcessItem], event: Dict[str, Any],
                                               parent: Optional[ProcessItem] = None) -> None:
         """
         This method converts the event tree into a ResultSection using recursion
         :param items: A list of ProcessItem objects
-        :param event: The Process to be converted
+        :param event: A dictionary representing the Process to be converted
         :param parent: The ProcessItem of the event to be converted
         :return: None
         """
@@ -1621,8 +1621,10 @@ class SandboxOntology:
             name=event["image"],
             cmd=event["command_line"],
         )
+        e.add_network_events(len(self.get_network_connection_by_pid(e.pid)))
         # TODO
-        # e.add_network_events(len(self.get_network_connection_by_pid(e.pid)))
+        # e.add_file_events(len(self.get_file_events_by_pid(e.pid)))
+        # e.add_registry_events(len(self.get_registry_events_by_pid(e.pid)))
 
         for signature in self.get_signatures_by_pid(event["pid"]):
             e.add_signature(signature.name, signature.score)
