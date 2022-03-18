@@ -277,6 +277,15 @@ class ResultSample(ServiceBase):
             evil_process_child_2 = ProcessItem(
                 345, "benignexe.exe", "C:\\benignexe.exe -f \"just kidding, i'm evil\"", signatures={"one": 2000})
 
+            # You can also add counts for network, file and registry events to a ProcessItem object
+            evil_process_child_2.add_network_events(4)
+            evil_process_child_2.add_file_events(7000)
+            evil_process_child_2.add_registry_events(10)
+
+            # You can also indicate if the process tree item has been safelisted
+            benign_process = ProcessItem(678, "trustme.exe", "C:\\trustme.exe")
+            benign_process.safelist()
+
             evil_process.add_child_process(evil_process_child_1)
             evil_process.add_child_process(evil_process_child_2)
 
@@ -284,6 +293,7 @@ class ResultSample(ServiceBase):
             process_tree_section.add_process(evil_process)
             process_tree_section.add_process(ProcessItem(
                 987, "runzeroday.exe", "C:\\runzeroday.exe -f insert_bad_spelling"))
+            process_tree_section.add_process(benign_process)
 
             result.add_section(process_tree_section)
 

@@ -304,11 +304,17 @@ class JSONSectionBody(SectionBody):
 class ProcessItem:
     def __init__(
             self, pid: int, name: str, cmd: str, signatures: Optional[Dict[str, int]] = None,
-            children: Optional[List[ProcessItem]] = None):
+            children: Optional[List[ProcessItem]] = None, network_count: int = 0, file_count: int = 0,
+            registry_count: int = 0, safelisted: bool = False):
 
         self.pid = pid
         self.name = name
         self.cmd = cmd
+        self.network_count = network_count
+        self.file_count = file_count
+        self.registry_count = registry_count
+        self.safelisted = safelisted
+
         if not signatures:
             self.signatures = {}
         else:
@@ -324,13 +330,35 @@ class ProcessItem:
     def add_child_process(self, process: ProcessItem):
         self.children.append(process)
 
+    def add_network_events(self, val: int = 1):
+        if val < 0:
+            raise ValueError(f"Number of network events {val} to add must be >= 0")
+        self.network_count += val
+
+    def add_file_events(self, val: int = 1):
+        if val < 0:
+            raise ValueError(f"Number of file events {val} to add must be >= 0")
+        self.file_count += val
+
+    def add_registry_events(self, val: int = 1):
+        if val < 0:
+            raise ValueError(f"Number of registry events {val} to add must be >= 0")
+        self.registry_count += val
+
+    def safelist(self):
+        self.safelisted = True
+
     def as_primitives(self):
         return {
             "process_pid": self.pid,
             "process_name": self.name,
             "command_line": self.cmd,
             "signatures": self.signatures,
-            "children": [c.as_primitives() for c in self.children]
+            "children": [c.as_primitives() for c in self.children],
+            "network_count": self.network_count,
+            "file_count": self.file_count,
+            "registry_count": self.registry_count,
+            "safelisted": self.safelisted,
         }
 
 
