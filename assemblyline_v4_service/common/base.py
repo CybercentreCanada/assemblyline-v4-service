@@ -227,7 +227,7 @@ class ServiceBase:
 
         # Append ontologies to collection to get appended after execution
         self.ontologies[modelType.__name__].append(
-            modelType(data=data, ignore_extra_values=validate_model).as_primitives()
+            modelType(data=data, ignore_extra_values=validate_model).as_primitives(strip_null=True)
         )
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
