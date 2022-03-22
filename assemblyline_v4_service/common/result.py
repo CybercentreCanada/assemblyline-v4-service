@@ -365,9 +365,13 @@ class ImageSectionBody(SectionBody):
         return super().__init__(BODY_FORMAT.IMAGE, body=[])
 
     def add_image(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None) -> bool:
-        res = self._request.add_image(path, name, description, classification)
+                  classification: Optional[Classification] = None,
+                  ocr_heuristic_id: Optional[int] = None) -> bool:
+        res = self._request.add_image(path, name, description, classification, ocr_heuristic_id)
+        sections = res.pop('ocr_section', None)
         self._data.append(res)
+
+        return sections
 
 
 class MultiSectionBody(SectionBody):
@@ -662,8 +666,9 @@ class ResultImageSection(TypeSpecificResultSection):
         super().__init__(title_text, ImageSectionBody(request), **kwargs)
 
     def add_image(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None) -> bool:
-        self.section_body.add_image(path, name, description, classification)
+                  classification: Optional[Classification] = None,
+                  ocr_heuristic_id: Optional[int] = None) -> bool:
+        return self.section_body.add_image(path, name, description, classification, ocr_heuristic_id)
 
 
 class ResultMultiSection(TypeSpecificResultSection):
