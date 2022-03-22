@@ -68,9 +68,9 @@ class ServiceRequest:
                 img = Image.open(path)
 
                 # Force image format switch to prevent exploit to cross-over
-                img_format = 'PNG'
+                img_format = 'WEBP'
                 if img.format == img_format:
-                    img_format = 'JPEG'
+                    img_format = 'PNG'
 
                 # Save and upload new image
                 img.save(outtmp.name, format=img_format)
