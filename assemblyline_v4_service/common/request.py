@@ -7,7 +7,8 @@ from typing import Dict, Optional, Any
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
-from assemblyline_v4_service.common.result import Result
+from assemblyline_v4_service.common.extractor.ocr import ocr_detections
+from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
 from assemblyline_v4_service.common.task import Task, MaxExtractedExceeded
 
 CLASSIFICATION = forge.get_classification()
@@ -51,7 +52,8 @@ class ServiceRequest:
             raise
 
     def add_image(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None) -> dict:
+                  classification: Optional[Classification] = None,
+                  ocr_heuristic_id: Optional[int] = None) -> dict:
         """
         Add a image file to be viewed in the result section.
 
@@ -68,9 +70,9 @@ class ServiceRequest:
                 img = Image.open(path)
 
                 # Force image format switch to prevent exploit to cross-over
-                img_format = 'PNG'
+                img_format = 'WEBP'
                 if img.format == img_format:
-                    img_format = 'JPEG'
+                    img_format = 'PNG'
 
                 # Save and upload new image
                 img.save(outtmp.name, format=img_format)
@@ -84,8 +86,20 @@ class ServiceRequest:
                                                         f"{description} (thumbnail)", classification,
                                                         is_section_image=True)
 
-        return {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
+        data = {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
                 'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
+
+        if ocr_heuristic_id:
+            detections = ocr_detections(path)
+            if detections:
+                heuristic = Heuristic(ocr_heuristic_id, signatures={k: len(v) for k, v in detections.items()})
+                ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
+                ocr_section.set_heuristic(heuristic)
+                for k, v in detections.items():
+                    ocr_section.set_item(k, v)
+                data['ocr_section'] = ocr_section
+
+        return data
 
     def add_supplementary(self, path: str, name: str, description: str,
                           classification: Optional[Classification] = None) -> bool:
