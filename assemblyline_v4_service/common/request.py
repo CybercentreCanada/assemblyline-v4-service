@@ -90,15 +90,17 @@ class ServiceRequest:
                 'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
 
         if ocr_heuristic_id:
-            detections = ocr_detections(path)
-            if detections:
-                heuristic = Heuristic(ocr_heuristic_id, signatures={k: len(v) for k, v in detections.items()})
-                ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
-                ocr_section.set_heuristic(heuristic)
-                for k, v in detections.items():
-                    ocr_section.set_item(k, v)
-                data['ocr_section'] = ocr_section
-
+            try:
+                detections = ocr_detections(path)
+                if detections:
+                    heuristic = Heuristic(ocr_heuristic_id, signatures={k: len(v) for k, v in detections.items()})
+                    ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
+                    ocr_section.set_heuristic(heuristic)
+                    for k, v in detections.items():
+                        ocr_section.set_item(k, v)
+                    data['ocr_section'] = ocr_section
+            except ImportError as e:
+                self.log.warning(str(e))
         return data
 
     def add_supplementary(self, path: str, name: str, description: str,
