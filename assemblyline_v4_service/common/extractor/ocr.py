@@ -2,7 +2,8 @@ import re
 
 from typing import Dict, List
 
-# TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
+# TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library),
+#       but will copy-paste for now
 OCR_INDICATORS_MAPPING = {
     'ransomware': [
         # https://github.com/cuckoosandbox/community/blob/master/modules/signatures/windows/ransomware_message.py
@@ -21,7 +22,8 @@ OCR_INDICATORS_MAPPING = {
         "personal code", "enter code", "your key", "unique key"
     ],
     'macros': [
-        # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/modules/signatures/windows/office_enablecontent_ocr.py
+        # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/
+        # modules/signatures/windows/office_enablecontent_ocr.py
         "enable macro",
         "enable content",
         "enable editing",

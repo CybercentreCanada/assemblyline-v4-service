@@ -98,6 +98,11 @@ heuristics:
     heur_id: 5
     name: High entropy PE section
     score: 100
+  - description: Suspicious string found during OCR analysis
+    filetype: "*"
+    heur_id: 6
+    name: Suspicious OCR Strings
+    score: 100
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
