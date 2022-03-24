@@ -10,7 +10,8 @@ def setup_module():
         open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
         open_manifest.write(
             "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n"
-            "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250")
+            "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250"
+        )
 
 
 def teardown_module():
@@ -23,12 +24,14 @@ def check_section_equality(this, that) -> bool:
 
     # Heuristics also need their own equality checks
     if this.heuristic and that.heuristic:
-        result_heuristic_equality = this.heuristic.attack_ids == that.heuristic.attack_ids and \
-            this.heuristic.frequency == that.heuristic.frequency and \
-            this.heuristic.heur_id == that.heuristic.heur_id and \
-            this.heuristic.score == that.heuristic.score and \
-            this.heuristic.score_map == that.heuristic.score_map and \
-            this.heuristic.signatures == that.heuristic.signatures
+        result_heuristic_equality = (
+            this.heuristic.attack_ids == that.heuristic.attack_ids
+            and this.heuristic.frequency == that.heuristic.frequency
+            and this.heuristic.heur_id == that.heuristic.heur_id
+            and this.heuristic.score == that.heuristic.score
+            and this.heuristic.score_map == that.heuristic.score_map
+            and this.heuristic.signatures == that.heuristic.signatures
+        )
 
     elif not this.heuristic and not that.heuristic:
         result_heuristic_equality = True
@@ -36,19 +39,23 @@ def check_section_equality(this, that) -> bool:
         result_heuristic_equality = False
 
     # Assuming we are given the "root section" at all times, it is safe to say that we don't need to confirm parent
-    current_section_equality = result_heuristic_equality and \
-        this.body == that.body and \
-        this.body_format == that.body_format and \
-        this.classification == that.classification and \
-        this.depth == that.depth and \
-        len(this.subsections) == len(that.subsections) and \
-        this.title_text == that.title_text
+    current_section_equality = (
+        result_heuristic_equality
+        and this.body == that.body
+        and this.body_format == that.body_format
+        and this.classification == that.classification
+        and this.depth == that.depth
+        and len(this.subsections) == len(that.subsections)
+        and this.title_text == that.title_text
+    )
 
     if not current_section_equality:
         return False
 
     for index, subsection in enumerate(this.subsections):
-        subsection_equality = check_section_equality(subsection, that.subsections[index])
+        subsection_equality = check_section_equality(
+            subsection, that.subsections[index]
+        )
         if not subsection_equality:
             return False
 
@@ -60,6 +67,7 @@ def dummy_object_class():
     class DummyObject:
         def __init__(self, id=None) -> None:
             self.id = id
+
     yield DummyObject
 
 
@@ -72,6 +80,7 @@ def dummy_timestamp_class():
 
         def __init__(self, item):
             self.objectid = self.DummyObjectID(item["objectid"])
+
     yield DummyEvent
 
 
@@ -81,6 +90,7 @@ def dummy_task_class():
         def __init__(self):
             self.supplementary = []
             self.extracted = []
+
     yield DummyTask
 
 
@@ -92,10 +102,14 @@ def dummy_request_class(dummy_task_class):
             self.task = dummy_task_class()
 
         def add_supplementary(self, path, name, description):
-            self.task.supplementary.append({"path": path, "name": name, "description": description})
+            self.task.supplementary.append(
+                {"path": path, "name": name, "description": description}
+            )
 
         def add_extracted(self, path, name, description):
-            self.task.extracted.append({"path": path, "name": name, "description": description})
+            self.task.extracted.append(
+                {"path": path, "name": name, "description": description}
+            )
 
     yield DummyRequest
 
@@ -103,9 +117,14 @@ def dummy_request_class(dummy_task_class):
 class TestModule:
     @staticmethod
     def test_update_object_items(dummy_object_class):
-        from assemblyline_v4_service.common.dynamic_service_helper import update_object_items
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            update_object_items,
+        )
+
         dummy = dummy_object_class()
-        update_object_items(dummy, {"id": "blah", "something": "blah", "blah": None, "blahblah": ""})
+        update_object_items(
+            dummy, {"id": "blah", "something": "blah", "blah": None, "blahblah": ""}
+        )
         assert dummy.id == "blah"
         assert dummy.__dict__ == {"id": "blah"}
         assert update_object_items(dummy, {"id": None}) is None
@@ -113,20 +132,32 @@ class TestModule:
 
 class TestArtifact:
     @staticmethod
-    @pytest.mark.parametrize("name, path, description, to_be_extracted",
-                             [
-                                 (None, None, None, None),
-                                 ("blah", "blah", "blah", True),
-                                 ("blah", "blah", "blah", False),
-                             ]
-                             )
+    @pytest.mark.parametrize(
+        "name, path, description, to_be_extracted",
+        [
+            (None, None, None, None),
+            ("blah", "blah", "blah", True),
+            ("blah", "blah", "blah", False),
+        ],
+    )
     def test_artifact_init(name, path, description, to_be_extracted):
         from assemblyline_v4_service.common.dynamic_service_helper import Artifact
+
         if any(item is None for item in [name, path, description, to_be_extracted]):
             with pytest.raises(Exception):
-                Artifact(name=name, path=path, description=description, to_be_extracted=to_be_extracted)
+                Artifact(
+                    name=name,
+                    path=path,
+                    description=description,
+                    to_be_extracted=to_be_extracted,
+                )
             return
-        a = Artifact(name=name, path=path, description=description, to_be_extracted=to_be_extracted)
+        a = Artifact(
+            name=name,
+            path=path,
+            description=description,
+            to_be_extracted=to_be_extracted,
+        )
         assert a.name == name
         assert a.path == path
         assert a.description == description
@@ -135,7 +166,10 @@ class TestArtifact:
     @staticmethod
     def test_artifact_as_primitives():
         from assemblyline_v4_service.common.dynamic_service_helper import Artifact
-        a = Artifact(name="blah", path="blah", description="blah", to_be_extracted="blah")
+
+        a = Artifact(
+            name="blah", path="blah", description="blah", to_be_extracted="blah"
+        )
         assert a.as_primitives() == {
             "name": "blah",
             "path": "blah",
@@ -153,18 +187,21 @@ class TestObjectID:
         assert default_oid.guid is None
         assert default_oid.tag is None
         assert default_oid.treeid is None
+        assert default_oid.richid is None
         assert default_oid.time_observed is None
 
         set_oid = ObjectID(
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            time_observed=1.0
+            richid="blah",
+            time_observed=1.0,
         )
 
         assert set_oid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_oid.tag == "blah"
         assert set_oid.treeid == "blah"
+        assert set_oid.richid == "blah"
         assert set_oid.time_observed == 1.0
 
         with pytest.raises(ValueError):
@@ -179,6 +216,7 @@ class TestObjectID:
             "guid": None,
             "tag": None,
             "treeid": None,
+            "richid": None,
             "time_observed": None,
         }
 
@@ -212,16 +250,21 @@ class TestObjectID:
 class TestProcess:
     @staticmethod
     def test_process_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import Process, ObjectID
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            Process,
+            ObjectID,
+        )
 
         default_p = Process()
         assert default_p.objectid.guid is None
         assert default_p.objectid.tag is None
         assert default_p.objectid.treeid is None
+        assert default_p.objectid.richid is None
         assert default_p.objectid.time_observed is None
         assert default_p.pobjectid.guid is None
         assert default_p.pobjectid.tag is None
         assert default_p.pobjectid.treeid is None
+        assert default_p.pobjectid.richid is None
         assert default_p.pobjectid.time_observed is None
         assert default_p.pimage is None
         assert default_p.pcommand_line is None
@@ -237,9 +280,11 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
+            richid="blah",
             pguid="{12345678-1234-5678-1234-567812345679}",
             ptag="blah",
             ptreeid="blah",
+            prichid="blah",
             pimage="C:\\Windows\\System32\\cmd.exe",
             pcommand_line="C:\\Windows\\System32\\cmd.exe -m bad.exe",
             ppid=123,
@@ -253,10 +298,12 @@ class TestProcess:
         assert set_p1.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_p1.objectid.tag == "?sys32\\cmd.exe"
         assert set_p1.objectid.treeid == "blah"
+        assert set_p1.objectid.richid == "blah"
         assert set_p1.objectid.time_observed == 1.0
         assert set_p1.pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert set_p1.pobjectid.tag == "?sys32\\cmd.exe"
         assert set_p1.pobjectid.treeid == "blah"
+        assert set_p1.pobjectid.richid == "blah"
         assert set_p1.pobjectid.time_observed is None
         assert set_p1.pimage == "C:\\Windows\\System32\\cmd.exe"
         assert set_p1.pcommand_line == "C:\\Windows\\System32\\cmd.exe -m bad.exe"
@@ -271,14 +318,16 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            time_observed=1.0
+            richid="blah",
+            time_observed=1.0,
         )
 
         pobjectid = ObjectID(
             guid="{12345678-1234-5678-1234-567812345679}",
             tag="blah",
             treeid="blah",
-            time_observed=1.0
+            richid="blah",
+            time_observed=1.0,
         )
 
         # With objectids
@@ -286,9 +335,11 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345671}",
             tag="blah1",
             treeid="blah1",
+            richid="blah1",
             pguid="{12345678-1234-5678-1234-567812345672}",
             ptag="blah1",
             ptreeid="blah1",
+            prichid="blah1",
             pimage="C:\\Windows\\System32\\cmd.exe",
             pcommand_line="C:\\Windows\\System32\\cmd.exe -m bad.exe",
             ppid=123,
@@ -304,10 +355,12 @@ class TestProcess:
         assert set_p2.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_p2.objectid.tag == "blah"
         assert set_p2.objectid.treeid == "blah"
+        assert set_p2.objectid.richid == "blah"
         assert set_p2.objectid.time_observed == 1.0
         assert set_p2.pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert set_p2.pobjectid.tag == "blah"
         assert set_p2.pobjectid.treeid == "blah"
+        assert set_p2.pobjectid.richid == "blah"
         assert set_p2.pobjectid.time_observed == 1.0
         assert set_p2.pimage == "C:\\Windows\\System32\\cmd.exe"
         assert set_p2.pcommand_line == "C:\\Windows\\System32\\cmd.exe -m bad.exe"
@@ -327,18 +380,21 @@ class TestProcess:
     @staticmethod
     def test_process_as_primitives():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         assert p.as_primitives() == {
             "objectid": {
                 "guid": None,
                 "tag": None,
                 "treeid": None,
+                "richid": None,
                 "time_observed": None,
             },
             "pobjectid": {
                 "guid": None,
                 "tag": None,
                 "treeid": None,
+                "richid": None,
                 "time_observed": None,
             },
             "pimage": None,
@@ -349,7 +405,6 @@ class TestProcess:
             "command_line": None,
             "start_time": None,
             "end_time": None,
-            "rich_id": None,
             "integrity_level": None,
             "image_hash": None,
             "original_file_name": None,
@@ -358,37 +413,70 @@ class TestProcess:
     @staticmethod
     def test_process_update():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process(image="blah")
 
         p.update(image=None)
         assert p.image == "blah"
 
-        p.update(objectid={"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah", "treeid": "blah", "time_observed": 1})
+        p.update(
+            objectid={
+                "guid": "{12345678-1234-5678-1234-567812345679}",
+                "tag": "blah",
+                "treeid": "blah",
+                "richid": "blah",
+                "time_observed": 1,
+            }
+        )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid == "blah"
+        assert p.objectid.richid == "blah"
         assert p.objectid.time_observed == 1
 
-        p.update(guid="{12345678-1234-5678-1234-567812345678}", tag="blah2", treeid="blah2", time_observed=2)
+        p.update(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah2",
+            treeid="blah2",
+            richid="blah2",
+            time_observed=2,
+        )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah2"
         assert p.objectid.treeid == "blah2"
+        assert p.objectid.richid == "blah2"
         assert p.objectid.time_observed == 2
 
         p.update(image="C:\\program files\\blah")
         assert p.image == "C:\\program files\\blah"
         assert p.objectid.tag == "?pf86\\blah"
 
-        p.update(pobjectid={"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah", "treeid": "blah", "time_observed": 1})
+        p.update(
+            pobjectid={
+                "guid": "{12345678-1234-5678-1234-567812345679}",
+                "tag": "blah",
+                "treeid": "blah",
+                "richid": "blah",
+                "time_observed": 1,
+            }
+        )
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert p.pobjectid.tag == "blah"
         assert p.pobjectid.treeid == "blah"
+        assert p.pobjectid.richid == "blah"
         assert p.pobjectid.time_observed == 1
 
-        p.update(pguid="{12345678-1234-5678-1234-567812345678}", ptag="blah2", ptreeid="blah2", ptime_observed=2)
+        p.update(
+            pguid="{12345678-1234-5678-1234-567812345678}",
+            ptag="blah2",
+            ptreeid="blah2",
+            prichid="blah2",
+            ptime_observed=2,
+        )
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.pobjectid.tag == "blah2"
         assert p.pobjectid.treeid == "blah2"
+        assert p.pobjectid.richid == "blah2"
         assert p.pobjectid.time_observed == 2
 
         p.update(pimage="C:\\program files\\blah")
@@ -401,14 +489,24 @@ class TestProcess:
     @staticmethod
     def test_set_parent():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         child_p = Process()
-        parent_p = Process(guid="{12345678-1234-5678-1234-567812345678}",
-                           image="blah", command_line="blah", pid=123, tag="blah", treeid="blah", start_time=1.0)
+        parent_p = Process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="blah",
+            command_line="blah",
+            pid=123,
+            tag="blah",
+            treeid="blah",
+            richid="blah",
+            start_time=1.0,
+        )
         child_p.set_parent(parent_p)
 
         assert child_p.pobjectid.guid == parent_p.objectid.guid
         assert child_p.pobjectid.tag == parent_p.objectid.tag
         assert child_p.pobjectid.treeid == parent_p.objectid.treeid
+        assert child_p.pobjectid.richid == parent_p.objectid.richid
         assert child_p.pobjectid.time_observed == parent_p.objectid.time_observed
         assert child_p.pimage == parent_p.image
         assert child_p.pcommand_line == parent_p.command_line
@@ -417,6 +515,7 @@ class TestProcess:
     @staticmethod
     def test_set_start_time():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         p.set_start_time(1.0)
         assert p.start_time == 1.0
@@ -424,6 +523,7 @@ class TestProcess:
     @staticmethod
     def test_set_end_time():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         p.set_end_time(1.0)
         assert p.end_time == 1.0
@@ -431,6 +531,7 @@ class TestProcess:
     @staticmethod
     def test_is_guid_a_match():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process(guid="{12345678-1234-5678-1234-567812345678}")
         assert p.is_guid_a_match("{12345678-1234-5678-1234-567812345678}")
         assert not p.is_guid_a_match("{12345678-1234-5678-1234-567812345670}")
@@ -438,6 +539,7 @@ class TestProcess:
     @staticmethod
     def test_set_objectid_tag():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         p.set_objectid_tag("C:\\program files\\blah")
         assert p.objectid.tag == "?pf86\\blah"
@@ -445,6 +547,7 @@ class TestProcess:
     @staticmethod
     def test_set_pobjectid_tag():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         p.set_pobjectid_tag("C:\\program files\\blah")
         assert p.pobjectid.tag == "?pf86\\blah"
@@ -452,94 +555,124 @@ class TestProcess:
     @staticmethod
     def test_process_update_objectid():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         p.update_objectid()
         assert p.objectid.guid is None
         assert p.objectid.tag is None
         assert p.objectid.treeid is None
+        assert p.objectid.richid is None
         assert p.objectid.time_observed is None
 
-        p.update_objectid(guid="{12345678-1234-5678-1234-567812345678}", tag="blah", treeid="blah", time_observed=1.0)
+        p.update_objectid(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah",
+            treeid="blah",
+            richid="blah",
+            time_observed=1.0,
+        )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid == "blah"
+        assert p.objectid.richid == "blah"
         assert p.objectid.time_observed == 1.0
 
     @staticmethod
     def test_process_update_pobjectid():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process()
         p.update_pobjectid()
         assert p.pobjectid.guid is None
         assert p.pobjectid.tag is None
         assert p.pobjectid.treeid is None
+        assert p.pobjectid.richid is None
         assert p.pobjectid.time_observed is None
 
-        p.update_pobjectid(guid="{12345678-1234-5678-1234-567812345678}", tag="blah", treeid="blah", time_observed=1.0)
+        p.update_pobjectid(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah",
+            treeid="blah",
+            richid="blah",
+            time_observed=1.0,
+        )
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.pobjectid.tag == "blah"
         assert p.pobjectid.treeid == "blah"
+        assert p.pobjectid.richid == "blah"
         assert p.pobjectid.time_observed == 1.0
 
     @staticmethod
-    @pytest.mark.parametrize("path, expected_result",
-                             [
-                                 ("blah", "x86"),
-                                 ("C:\\program files\\blah", "x86"),
-                                 ("C:\\program files (x86)\\blah", "x86_64"),
-                                 ("C:\\syswow64\\blah", "x86_64"),
-                             ]
-                             )
+    @pytest.mark.parametrize(
+        "path, expected_result",
+        [
+            ("blah", "x86"),
+            ("C:\\program files\\blah", "x86"),
+            ("C:\\program files (x86)\\blah", "x86_64"),
+            ("C:\\syswow64\\blah", "x86_64"),
+        ],
+    )
     def test_determine_arch(path, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         p = Process(image=path)
         actual_result = p._determine_arch(path)
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("path, rule, expected_result",
-                             [
-                                 ("blah", {"pattern": "", "replacement": ""}, "blah"),
-                                 ("blah", {"pattern": "ah", "replacement": "ue"}, "blah"),
-                                 ("blah", {"pattern": "bl", "replacement": "y"}, "yah"),
-                             ]
-                             )
+    @pytest.mark.parametrize(
+        "path, rule, expected_result",
+        [
+            ("blah", {"pattern": "", "replacement": ""}, "blah"),
+            ("blah", {"pattern": "ah", "replacement": "ue"}, "blah"),
+            ("blah", {"pattern": "bl", "replacement": "y"}, "yah"),
+        ],
+    )
     def test_pattern_substitution(path, rule, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         actual_result = Process._pattern_substitution(path, rule)
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("path, rule, expected_result",
-                             [
-                                 ("blah", {"regex": "", "replacement": ""}, "blah"),
-                                 ("blah", {"regex": "bl*ah", "replacement": "bl"}, "blah"),
-                                 ("blah", {"regex": "\\bl*ah", "replacement": "bl"}, "blah"),
-                                 ("blaah", {"regex": "bl*ah", "replacement": "blue"}, "blue"),
-                             ]
-                             )
+    @pytest.mark.parametrize(
+        "path, rule, expected_result",
+        [
+            ("blah", {"regex": "", "replacement": ""}, "blah"),
+            ("blah", {"regex": "bl*ah", "replacement": "bl"}, "blah"),
+            ("blah", {"regex": "\\bl*ah", "replacement": "bl"}, "blah"),
+            ("blaah", {"regex": "bl*ah", "replacement": "blue"}, "blue"),
+        ],
+    )
     def test_regex_substitution(path, rule, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         actual_result = Process._regex_substitution(path, rule)
         assert actual_result == expected_result
 
     @staticmethod
-    @pytest.mark.parametrize("path, arch, expected_result",
-                             [
-                                 ("blah", None, "blah"),
-                                 ("C:\\Program Files\\Word.exe", None, "?pf86\\word.exe"),
-                                 ("C:\\Program Files (x86)\\Word.exe", None, "?pf86\\word.exe"),
-                                 ("C:\\Program Files (x86)\\Word.exe", "x86_64", "?pf86\\word.exe"),
-                                 ("C:\\Windows\\System32\\Word.exe", None, "?sys32\\word.exe"),
-                                 ("C:\\Windows\\SysWow64\\Word.exe", None, "?sys32\\word.exe"),
-                                 ("C:\\Windows\\SysWow64\\Word.exe", "x86", "?win\\syswow64\\word.exe"),
-                                 ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
-                                 ("C:\\Users\\buddy\\AppData\\Local\\Temp\\Word.exe", None, "?usrtmp\\word.exe"),
-                                 ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
-                             ]
-                             )
+    @pytest.mark.parametrize(
+        "path, arch, expected_result",
+        [
+            ("blah", None, "blah"),
+            ("C:\\Program Files\\Word.exe", None, "?pf86\\word.exe"),
+            ("C:\\Program Files (x86)\\Word.exe", None, "?pf86\\word.exe"),
+            ("C:\\Program Files (x86)\\Word.exe", "x86_64", "?pf86\\word.exe"),
+            ("C:\\Windows\\System32\\Word.exe", None, "?sys32\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", None, "?sys32\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", "x86", "?win\\syswow64\\word.exe"),
+            ("C:\\Windows\\SysWow64\\Word.exe", "x86_64", "?sys32\\word.exe"),
+            (
+                "C:\\Users\\buddy\\AppData\\Local\\Temp\\Word.exe",
+                None,
+                "?usrtmp\\word.exe",
+            ),
+            ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
+        ],
+    )
     def test_normalize_path(path, arch, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
+
         actual_result = Process._normalize_path(path, arch)
         assert actual_result == expected_result
 
@@ -547,7 +680,11 @@ class TestProcess:
 class TestNetworkConnection:
     @staticmethod
     def test_network_connection_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection, Process, ObjectID
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+            Process,
+            ObjectID,
+        )
         from uuid import UUID
 
         default_nc = NetworkConnection()
@@ -560,6 +697,7 @@ class TestNetworkConnection:
         assert default_nc.direction is None
         assert str(UUID(default_nc.objectid.guid))
         assert default_nc.objectid.treeid is None
+        assert default_nc.objectid.richid is None
         assert default_nc.objectid.tag is None
         assert default_nc.objectid.time_observed is None
 
@@ -578,6 +716,7 @@ class TestNetworkConnection:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
+            richid="blah",
             time_observed=1.0,
             source_ip="blah",
             source_port=123,
@@ -590,6 +729,7 @@ class TestNetworkConnection:
         assert set_nc1.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_nc1.objectid.tag == "blah"
         assert set_nc1.objectid.treeid == "blah"
+        assert set_nc1.objectid.richid == "blah"
         assert set_nc1.objectid.time_observed == 1.0
         assert set_nc1.source_ip == "blah"
         assert set_nc1.source_port == 123
@@ -602,6 +742,7 @@ class TestNetworkConnection:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
+            richid="blah",
             time_observed=1.0,
         )
 
@@ -610,6 +751,7 @@ class TestNetworkConnection:
             guid="{12345678-1234-5678-1234-567812345671}",
             tag="blah1",
             treeid="blah1",
+            richid="blah1",
             time_observed=1.01,
             source_ip="blah",
             source_port=123,
@@ -623,6 +765,7 @@ class TestNetworkConnection:
         assert set_nc2.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_nc2.objectid.tag == "blah"
         assert set_nc2.objectid.treeid == "blah"
+        assert set_nc2.objectid.richid == "blah"
         assert set_nc2.objectid.time_observed == 1.0
         assert set_nc2.source_ip == "blah"
         assert set_nc2.source_port == 123
@@ -638,51 +781,95 @@ class TestNetworkConnection:
 
     @staticmethod
     def test_network_connection_update_objectid():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+        )
         from uuid import UUID
+
         nc = NetworkConnection()
         nc.update_objectid()
 
         assert str(UUID(nc.objectid.guid))
         assert nc.objectid.tag is None
         assert nc.objectid.treeid is None
+        assert nc.objectid.richid is None
         assert nc.objectid.time_observed is None
 
-        nc.update_objectid(guid="{12345678-1234-5678-1234-567812345678}", tag="blah", treeid="blah", time_observed=1.0)
+        nc.update_objectid(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah",
+            treeid="blah",
+            richid="blah",
+            time_observed=1.0,
+        )
         assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
+        assert nc.objectid.richid == "blah"
         assert nc.objectid.time_observed == 1.0
 
     @staticmethod
     def test_network_connection_update():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+        )
+
         nc = NetworkConnection(destination_ip="blah")
 
         nc.update(destination_ip=None)
         assert nc.destination_ip == "blah"
 
-        nc.update(objectid={"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah", "treeid": "blah", "time_observed": 1})
+        nc.update(
+            objectid={
+                "guid": "{12345678-1234-5678-1234-567812345679}",
+                "tag": "blah",
+                "treeid": "blah",
+                "richid": "blah",
+                "time_observed": 1,
+            }
+        )
         assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
+        assert nc.objectid.richid == "blah"
         assert nc.objectid.time_observed == 1
 
-        nc.update(guid="{12345678-1234-5678-1234-567812345678}", tag="blah2", treeid="blah2", time_observed=2)
+        nc.update(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah2",
+            treeid="blah2",
+            richid="blah2",
+            time_observed=2,
+        )
         assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.objectid.tag == "blah2"
         assert nc.objectid.treeid == "blah2"
+        assert nc.objectid.richid == "blah2"
         assert nc.objectid.time_observed == 2
 
         nc.update(destination_ip="blahblah")
         assert nc.destination_ip == "blahblah"
 
+        nc.update(process={})
+        assert nc.process is None
+
+        nc.update(process={"guid": "{12345678-1234-5678-1234-567812345678}"})
+        assert nc.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+
     @staticmethod
     def test_network_connection_update_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+        )
+
         default_nc = NetworkConnection()
-        default_nc.update_process(pid=123, invalid="blah", image="C:\\Windows\\System32\\cmd.exe",
-                                  pimage="C:\\Windows\\System32\\cmd.exe", integrity_level="BLAH")
+        default_nc.update_process(
+            pid=123,
+            invalid="blah",
+            image="C:\\Windows\\System32\\cmd.exe",
+            pimage="C:\\Windows\\System32\\cmd.exe",
+            integrity_level="BLAH",
+        )
         assert default_nc.process.pid == 123
         assert default_nc.process.image == "C:\\Windows\\System32\\cmd.exe"
         assert default_nc.process.objectid.tag == "?sys32\\cmd.exe"
@@ -693,26 +880,39 @@ class TestNetworkConnection:
 
     @staticmethod
     def test_network_connection_update_process_objectid():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+        )
         from uuid import UUID
+
         nc = NetworkConnection()
         nc.update_process_objectid()
 
         assert str(UUID(nc.objectid.guid))
         assert nc.objectid.tag is None
         assert nc.objectid.treeid is None
+        assert nc.objectid.richid is None
         assert nc.objectid.time_observed is None
 
-        nc.update_process_objectid(guid="{12345678-1234-5678-1234-567812345678}",
-                                   tag="blah", treeid="blah", time_observed=1.0)
+        nc.update_process_objectid(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            tag="blah",
+            treeid="blah",
+            richid="blah",
+            time_observed=1.0,
+        )
         assert nc.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.process.objectid.tag == "blah"
         assert nc.process.objectid.treeid == "blah"
+        assert nc.process.objectid.richid == "blah"
         assert nc.process.objectid.time_observed == 1.0
 
     @staticmethod
     def test_network_connection_set_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+            Process,
+        )
 
         default_nc = NetworkConnection()
         p1 = Process(pid=1)
@@ -720,8 +920,38 @@ class TestNetworkConnection:
         assert default_nc.process.pid == 1
 
     @staticmethod
+    def test_create_tag():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+            Process,
+        )
+
+        default_nc = NetworkConnection()
+
+        # destination ip is None
+        default_nc.create_tag()
+        assert default_nc.objectid.tag is None
+
+        # destination port is None
+        default_nc.create_tag("blah.com")
+        assert default_nc.objectid.tag is None
+
+        default_nc.update(destination_ip="1.1.1.1", destination_port=123)
+        default_nc.create_tag()
+        assert default_nc.objectid.tag == "1.1.1.1:123"
+
+        default_nc.create_tag("blah.com")
+        assert default_nc.objectid.tag == "1.1.1.1:123"
+
+        default_nc.update(direction="outbound")
+        default_nc.create_tag("blah.com")
+        assert default_nc.objectid.tag == "blah.com:123"
+
+    @staticmethod
     def test_network_connection_as_primitives():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkConnection,
+        )
         from uuid import UUID
 
         default_nc = NetworkConnection()
@@ -731,6 +961,7 @@ class TestNetworkConnection:
             "objectid": {
                 "tag": None,
                 "treeid": None,
+                "richid": None,
                 "time_observed": None,
             },
             "process": None,
@@ -761,16 +992,13 @@ class TestNetworkDNS:
         assert str(UUID(default_nd.connection_details.objectid.guid))
         assert default_nd.connection_details.objectid.tag is None
         assert default_nd.connection_details.objectid.treeid is None
+        assert default_nd.connection_details.objectid.richid is None
         assert default_nd.connection_details.objectid.time_observed is None
         assert default_nd.domain is None
         assert default_nd.resolved_ips == []
         assert default_nd.lookup_type is None
 
-        set_nd = NetworkDNS(
-            domain="blah",
-            resolved_ips=["blah"],
-            lookup_type="A"
-        )
+        set_nd = NetworkDNS(domain="blah", resolved_ips=["blah"], lookup_type="A")
 
         assert set_nd.domain == "blah"
         assert set_nd.resolved_ips == ["blah"]
@@ -779,39 +1007,70 @@ class TestNetworkDNS:
     @staticmethod
     def test_network_dns_update_process():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkDNS
+
         default_nd = NetworkDNS()
-        default_nd.update_process(pid=123, invalid="blah", image="C:\\Windows\\System32\\cmd.exe",
-                                  pimage="C:\\Windows\\System32\\cmd.exe", integrity_level="BLAH")
+        default_nd.update_process(
+            pid=123,
+            invalid="blah",
+            image="C:\\Windows\\System32\\cmd.exe",
+            pimage="C:\\Windows\\System32\\cmd.exe",
+            integrity_level="BLAH",
+        )
         assert default_nd.connection_details.process.pid == 123
-        assert default_nd.connection_details.process.image == "C:\\Windows\\System32\\cmd.exe"
-        assert default_nd.connection_details.process.pimage == "C:\\Windows\\System32\\cmd.exe"
+        assert (
+            default_nd.connection_details.process.image
+            == "C:\\Windows\\System32\\cmd.exe"
+        )
+        assert (
+            default_nd.connection_details.process.pimage
+            == "C:\\Windows\\System32\\cmd.exe"
+        )
         assert default_nd.connection_details.process.objectid.tag == "?sys32\\cmd.exe"
         assert default_nd.connection_details.process.pobjectid.tag == "?sys32\\cmd.exe"
         assert default_nd.connection_details.process.integrity_level == "blah"
 
         default_nd.update_process(image=None)
-        assert default_nd.connection_details.process.image == "C:\\Windows\\System32\\cmd.exe"
+        assert (
+            default_nd.connection_details.process.image
+            == "C:\\Windows\\System32\\cmd.exe"
+        )
 
     @staticmethod
     def test_network_dns_set_network_connection():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkDNS, NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkDNS,
+            NetworkConnection,
+        )
+
         default_nd = NetworkDNS(domain="blah")
         default_nc = NetworkConnection(destination_ip="1.1.1.1")
         default_nd.set_network_connection(default_nc)
         assert default_nd.connection_details.destination_ip == "1.1.1.1"
 
     @staticmethod
+    def test_network_dns_update_connection_details():
+        from assemblyline_v4_service.common.dynamic_service_helper import NetworkDNS
+
+        default_nd = NetworkDNS()
+        default_nd.update_connection_details(destination_ip="blah", invalid="blah")
+        assert default_nd.connection_details.destination_ip == "blah"
+
+    @staticmethod
     def test_network_dns_as_primitives():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkDNS
         from uuid import UUID
+
         default_nd = NetworkDNS()
         default_nd_as_primitives = default_nd.as_primitives()
-        assert str(UUID(default_nd_as_primitives["connection_details"]["objectid"].pop("guid")))
+        assert str(
+            UUID(default_nd_as_primitives["connection_details"]["objectid"].pop("guid"))
+        )
         assert default_nd_as_primitives == {
             "connection_details": {
                 "objectid": {
                     "tag": None,
                     "treeid": None,
+                    "richid": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -845,6 +1104,7 @@ class TestNetworkHTTP:
         assert str(UUID(default_nh.connection_details.objectid.guid))
         assert default_nh.connection_details.objectid.tag is None
         assert default_nh.connection_details.objectid.treeid is None
+        assert default_nh.connection_details.objectid.richid is None
         assert default_nh.connection_details.objectid.time_observed is None
         assert default_nh.request_uri is None
         assert default_nh.request_headers == {}
@@ -879,26 +1139,53 @@ class TestNetworkHTTP:
     @staticmethod
     def test_network_http_update_process():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
+
         default_nh = NetworkHTTP()
-        default_nh.update_process(pid=123, invalid="blah", image="C:\\Windows\\System32\\cmd.exe",
-                                  pimage="C:\\Windows\\System32\\cmd.exe", integrity_level="BLAH")
+        default_nh.update_process(
+            pid=123,
+            invalid="blah",
+            image="C:\\Windows\\System32\\cmd.exe",
+            pimage="C:\\Windows\\System32\\cmd.exe",
+            integrity_level="BLAH",
+        )
         assert default_nh.connection_details.process.pid == 123
-        assert default_nh.connection_details.process.image == "C:\\Windows\\System32\\cmd.exe"
-        assert default_nh.connection_details.process.pimage == "C:\\Windows\\System32\\cmd.exe"
+        assert (
+            default_nh.connection_details.process.image
+            == "C:\\Windows\\System32\\cmd.exe"
+        )
+        assert (
+            default_nh.connection_details.process.pimage
+            == "C:\\Windows\\System32\\cmd.exe"
+        )
         assert default_nh.connection_details.process.objectid.tag == "?sys32\\cmd.exe"
         assert default_nh.connection_details.process.pobjectid.tag == "?sys32\\cmd.exe"
         assert default_nh.connection_details.process.integrity_level == "blah"
 
         default_nh.update_process(image=None)
-        assert default_nh.connection_details.process.image == "C:\\Windows\\System32\\cmd.exe"
+        assert (
+            default_nh.connection_details.process.image
+            == "C:\\Windows\\System32\\cmd.exe"
+        )
 
     @staticmethod
     def test_network_http_set_network_connection():
-        from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP, NetworkConnection
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkHTTP,
+            NetworkConnection,
+        )
+
         default_nh = NetworkHTTP(request_uri="blah")
         default_nc = NetworkConnection(destination_ip="1.1.1.1")
         default_nh.set_network_connection(default_nc)
         assert default_nh.connection_details.destination_ip == "1.1.1.1"
+
+    @staticmethod
+    def test_network_http_update_connection_details():
+        from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
+
+        default_nh = NetworkHTTP()
+        default_nh.update_connection_details(destination_ip="blah", invalid="blah")
+        assert default_nh.connection_details.destination_ip == "blah"
 
     @staticmethod
     def test_network_http_as_primitives():
@@ -907,12 +1194,15 @@ class TestNetworkHTTP:
 
         default_nh = NetworkHTTP()
         default_nh_as_primitives = default_nh.as_primitives()
-        assert str(UUID(default_nh_as_primitives["connection_details"]["objectid"].pop("guid")))
+        assert str(
+            UUID(default_nh_as_primitives["connection_details"]["objectid"].pop("guid"))
+        )
         assert default_nh_as_primitives == {
             "connection_details": {
                 "objectid": {
                     "tag": None,
                     "treeid": None,
+                    "richid": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -936,7 +1226,9 @@ class TestNetworkHTTP:
 class TestMachineMetadata:
     @staticmethod
     def test_machine_metadata_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_mm = SandboxOntology.AnalysisMetadata.MachineMetadata()
         assert default_mm.ip is None
@@ -963,7 +1255,9 @@ class TestMachineMetadata:
 
     @staticmethod
     def test_machine_metadata_as_primitives():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_mm = SandboxOntology.AnalysisMetadata.MachineMetadata()
         assert default_mm.as_primitives() == {
@@ -977,17 +1271,21 @@ class TestMachineMetadata:
 
     @staticmethod
     def test_machine_metadata_load_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_mm = SandboxOntology.AnalysisMetadata.MachineMetadata()
-        default_mm.load_from_json({
-            "ip": "blah",
-            "hypervisor": "blah",
-            "hostname": "blah",
-            "platform": "blah",
-            "version": "blah",
-            "architecture": "blah",
-        })
+        default_mm.load_from_json(
+            {
+                "ip": "blah",
+                "hypervisor": "blah",
+                "hostname": "blah",
+                "platform": "blah",
+                "version": "blah",
+                "architecture": "blah",
+            }
+        )
         assert default_mm.ip == "blah"
         assert default_mm.hypervisor == "blah"
         assert default_mm.hostname == "blah"
@@ -999,7 +1297,9 @@ class TestMachineMetadata:
 class TestAnalysisMetadata:
     @staticmethod
     def test_analysis_metadata_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_am = SandboxOntology.AnalysisMetadata()
         assert default_am.task_id is None
@@ -1026,7 +1326,9 @@ class TestAnalysisMetadata:
 
     @staticmethod
     def test_analysis_metadata_as_primitives():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_am = SandboxOntology.AnalysisMetadata()
         assert default_am.as_primitives() == {
@@ -1046,23 +1348,27 @@ class TestAnalysisMetadata:
 
     @staticmethod
     def test_analysis_metadata_load_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_am = SandboxOntology.AnalysisMetadata()
-        default_am.load_from_json({
-            "task_id": "blah",
-            "start_time": "blah",
-            "end_time": "blah",
-            "routing": "blah",
-            "machine_metadata": {
-                "ip": "blah",
-                "hypervisor": "blah",
-                "hostname": "blah",
-                "platform": "blah",
-                "version": "blah",
-                "architecture": "blah",
-            },
-        })
+        default_am.load_from_json(
+            {
+                "task_id": "blah",
+                "start_time": "blah",
+                "end_time": "blah",
+                "routing": "blah",
+                "machine_metadata": {
+                    "ip": "blah",
+                    "hypervisor": "blah",
+                    "hostname": "blah",
+                    "platform": "blah",
+                    "version": "blah",
+                    "architecture": "blah",
+                },
+            }
+        )
         assert default_am.task_id == "blah"
         assert default_am.start_time == "blah"
         assert default_am.end_time == "blah"
@@ -1078,7 +1384,10 @@ class TestAnalysisMetadata:
 class TestSubject:
     @staticmethod
     def test_subject_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         default_subject = SandboxOntology.Signature.Subject()
         assert default_subject.ip is None
@@ -1104,17 +1413,28 @@ class TestSubject:
 
     @staticmethod
     def test_subject_update_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_subject = SandboxOntology.Signature.Subject()
-        default_subject.update_process(guid="blah", image="C:\\Windows\\System32\\cmd.exe")
-        assert default_subject.process.objectid.guid == "blah"
+        default_subject.update_process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="C:\\Windows\\System32\\cmd.exe",
+        )
+        assert (
+            default_subject.process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_subject.process.image == "C:\\Windows\\System32\\cmd.exe"
         assert default_subject.process.objectid.tag == "?sys32\\cmd.exe"
 
     @staticmethod
     def test_subject_set_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         default_subject = SandboxOntology.Signature.Subject()
         p1 = Process(pid=1)
@@ -1123,7 +1443,9 @@ class TestSubject:
 
     @staticmethod
     def test_subject_as_primitives():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_subject = SandboxOntology.Signature.Subject()
         assert default_subject.as_primitives() == {
@@ -1138,7 +1460,10 @@ class TestSubject:
 class TestSignature:
     @staticmethod
     def test_signature_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         default_sig = SandboxOntology.Signature()
         assert default_sig.process is None
@@ -1160,7 +1485,9 @@ class TestSignature:
 
     @staticmethod
     def test_signature_update():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
         default_sig.update(description="blah")
@@ -1168,11 +1495,19 @@ class TestSignature:
 
     @staticmethod
     def test_signature_update_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
-        default_sig.update_process(guid="blah", image="C:\\Windows\\System32\\cmd.exe")
-        assert default_sig.process.objectid.guid == "blah"
+        default_sig.update_process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="C:\\Windows\\System32\\cmd.exe",
+        )
+        assert (
+            default_sig.process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_sig.process.image == "C:\\Windows\\System32\\cmd.exe"
         assert default_sig.process.objectid.tag == "?sys32\\cmd.exe"
 
@@ -1181,7 +1516,10 @@ class TestSignature:
 
     @staticmethod
     def test_signature_set_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         default_sig = SandboxOntology.Signature()
         p1 = Process(pid=1)
@@ -1190,16 +1528,25 @@ class TestSignature:
 
     @staticmethod
     def test_add_attack_id():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
         default_sig.add_attack_id("T1187")
-        assert default_sig.attack == [{'attack_id': 'T1187', 'categories': [
-            'credential-access'], 'pattern': 'Forced Authentication'}]
+        assert default_sig.attack == [
+            {
+                "attack_id": "T1187",
+                "categories": ["credential-access"],
+                "pattern": "Forced Authentication",
+            }
+        ]
 
     @staticmethod
     def test_add_subject():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
         default_sig.add_subject(domain="blah")
@@ -1207,15 +1554,22 @@ class TestSignature:
 
     @staticmethod
     def test_add_process_subject():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
-        default_sig.add_process_subject(guid="blah")
-        assert default_sig.subjects[0].process.objectid.guid == "blah"
+        default_sig.add_process_subject(guid="{12345678-1234-5678-1234-567812345678}")
+        assert (
+            default_sig.subjects[0].process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
 
     @staticmethod
     def test_get_subjects():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
         default_sig.add_subject(domain="blah")
@@ -1223,7 +1577,9 @@ class TestSignature:
 
     @staticmethod
     def test_signature_as_primitives():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_sig = SandboxOntology.Signature()
         assert default_sig.as_primitives() == {
@@ -1238,7 +1594,9 @@ class TestSignature:
 class TestSandboxOntology:
     @staticmethod
     def test_sandbox_ontology_init():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         assert default_so.analysis_metadata.task_id is None
@@ -1265,7 +1623,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_update_analysis_metadata():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         default_so.update_analysis_metadata(task_id=123, invalid="blah")
@@ -1273,7 +1633,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_update_machine_metadata():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         default_so.update_machine_metadata(ip="blah", invalid="blah")
@@ -1281,18 +1643,24 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_sandbox_ontology_create_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        p = default_so.create_process(guid="{12345678-1234-5678-1234-567812345678}",
-                                      image="C:\\Windows\\System32\\cmd.exe")
+        p = default_so.create_process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="C:\\Windows\\System32\\cmd.exe",
+        )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.image == "C:\\Windows\\System32\\cmd.exe"
         assert p.objectid.tag == "?sys32\\cmd.exe"
 
     @staticmethod
     def test_add_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         assert default_so.processes == []
@@ -1304,12 +1672,13 @@ class TestSandboxOntology:
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": None,
                 "treeid": None,
-                "tag": None,
+                "richid": None,
                 "time_observed": None,
             },
             "pobjectid": {
                 "guid": None,
                 "treeid": None,
+                "richid": None,
                 "tag": None,
                 "time_observed": None,
             },
@@ -1321,7 +1690,6 @@ class TestSandboxOntology:
             "command_line": None,
             "start_time": float("-inf"),
             "end_time": float("inf"),
-            "rich_id": None,
             "integrity_level": None,
             "image_hash": None,
             "original_file_name": None,
@@ -1329,7 +1697,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_sandbox_ontology_update_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         p = default_so.create_process(guid="{12345678-1234-5678-1234-567812345678}")
@@ -1348,37 +1718,80 @@ class TestSandboxOntology:
         default_so.update_process(pid=None)
         assert default_so.processes[0].pid == 1
 
-        default_so.update_process(image="C:\\Windows\\System32\\cmd.exe",
-                                  pimage="C:\\Windows\\System32\\cmd.exe", pid=1, start_time=1.0)
+        default_so.update_process(
+            image="C:\\Windows\\System32\\cmd.exe",
+            pimage="C:\\Windows\\System32\\cmd.exe",
+            pid=1,
+            start_time=1.0,
+        )
         assert default_so.processes[0].image == "C:\\Windows\\System32\\cmd.exe"
         assert default_so.processes[0].objectid.tag == "?sys32\\cmd.exe"
         assert default_so.processes[0].pimage == "C:\\Windows\\System32\\cmd.exe"
         assert default_so.processes[0].pobjectid.tag == "?sys32\\cmd.exe"
 
     @staticmethod
-    def test_update_objectid():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+    def test_sandboxontology_update_objectid():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         so = SandboxOntology()
-        assert so.update_objectid() is None
-        assert so.update_objectid(thing=None) is None
-        assert so.update_objectid(thing="blah") is None
-        assert so.update_objectid(guid="blah") is None
+
         p = so.create_process(guid="{12345678-1234-5678-1234-567812345678}")
         so.add_process(p)
         nc = so.create_network_connection(guid="{12345678-1234-5678-1234-567812345679}")
         so.add_network_connection(nc)
-        assert so.update_objectid(guid="blah") is None
-        assert so.update_objectid(guid="{12345678-1234-5678-1234-567812345678}") == p
-        assert so.update_objectid(guid="{12345678-1234-5678-1234-567812345679}") == nc
+
+        so.update_objectid()
+        so.update_objectid(thing=None)
+        so.update_objectid(thing="blah")
+        so.update_objectid(guid="blah")
+
+        assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert p.objectid.tag is None
+        assert p.objectid.treeid is None
+        assert p.objectid.richid is None
+        assert p.objectid.time_observed is None
+
+        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+        assert nc.objectid.tag is None
+        assert nc.objectid.treeid is None
+        assert nc.objectid.richid is None
+        assert nc.objectid.time_observed is None
+
+        so.update_objectid(guid="{12345678-1234-5678-1234-567812345678}", tag="blah")
+
+        assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert p.objectid.tag == "blah"
+        assert p.objectid.treeid is None
+        assert p.objectid.richid is None
+        assert p.objectid.time_observed is None
+
+        so.update_objectid(guid="{12345678-1234-5678-1234-567812345679}", tag="blah")
+
+        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+        assert nc.objectid.tag == "blah"
+        assert nc.objectid.treeid is None
+        assert nc.objectid.richid is None
+        assert nc.objectid.time_observed is None
 
     @staticmethod
     def test_set_parent_details():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         so = SandboxOntology()
-        parent_process = Process(guid="{12345678-1234-5678-1234-567812345678}",
-                                 image="blah.exe", start_time=2.0, end_time=3.0, pid=1, tag="blah")
+        parent_process = Process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="blah.exe",
+            start_time=2.0,
+            end_time=3.0,
+            pid=1,
+            tag="blah",
+        )
         so.add_process(parent_process)
         p1 = Process(pguid="{12345678-1234-5678-1234-567812345678}")
         so.set_parent_details(p1)
@@ -1387,12 +1800,14 @@ class TestSandboxOntology:
                 "guid": None,
                 "tag": None,
                 "treeid": None,
+                "richid": None,
                 "time_observed": None,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": "blah.exe",
                 "treeid": None,
+                "richid": None,
                 "time_observed": 2.0,
             },
             "pimage": "blah.exe",
@@ -1403,7 +1818,6 @@ class TestSandboxOntology:
             "command_line": None,
             "start_time": None,
             "end_time": None,
-            "rich_id": None,
             "integrity_level": None,
             "image_hash": None,
             "original_file_name": None,
@@ -1416,12 +1830,14 @@ class TestSandboxOntology:
                 "guid": None,
                 "tag": None,
                 "treeid": None,
+                "richid": None,
                 "time_observed": 3.0,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": "blah.exe",
                 "treeid": None,
+                "richid": None,
                 "time_observed": 2.0,
             },
             "pimage": "blah.exe",
@@ -1432,7 +1848,6 @@ class TestSandboxOntology:
             "command_line": None,
             "start_time": 3.0,
             "end_time": None,
-            "rich_id": None,
             "integrity_level": None,
             "image_hash": None,
             "original_file_name": None,
@@ -1440,29 +1855,51 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_set_child_details():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
 
         so = SandboxOntology()
-        child_process1 = Process(guid="{12345678-1234-5678-1234-567812345678}", image="blah.exe",
-                                 start_time=2.0, end_time=3.0, pid=1, pguid="{12345678-1234-5678-1234-567812345679}")
+        child_process1 = Process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="blah.exe",
+            start_time=2.0,
+            end_time=3.0,
+            pid=1,
+            pguid="{12345678-1234-5678-1234-567812345679}",
+        )
         so.add_process(child_process1)
-        child_process2 = Process(guid="{12345678-1234-5678-1234-567812345670}", image="blah.exe",
-                                 start_time=2.0, end_time=3.0, pid=3, ppid=2)
+        child_process2 = Process(
+            guid="{12345678-1234-5678-1234-567812345670}",
+            image="blah.exe",
+            start_time=2.0,
+            end_time=3.0,
+            pid=3,
+            ppid=2,
+        )
         so.add_process(child_process2)
-        parent = Process(guid="{12345678-1234-5678-1234-567812345679}", pid=2,
-                         start_time=2.0, image="parent.exe", tag="blah")
+        parent = Process(
+            guid="{12345678-1234-5678-1234-567812345679}",
+            pid=2,
+            start_time=2.0,
+            image="parent.exe",
+            tag="blah",
+        )
         so.set_child_details(parent)
         assert child_process1.as_primitives() == {
             "objectid": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": "blah.exe",
                 "treeid": None,
+                "richid": None,
                 "time_observed": 2.0,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "parent.exe",
                 "treeid": None,
+                "richid": None,
                 "time_observed": 2.0,
             },
             "pimage": "parent.exe",
@@ -1473,7 +1910,6 @@ class TestSandboxOntology:
             "command_line": None,
             "start_time": 2.0,
             "end_time": 3.0,
-            "rich_id": None,
             "integrity_level": None,
             "image_hash": None,
             "original_file_name": None,
@@ -1483,12 +1919,14 @@ class TestSandboxOntology:
                 "guid": "{12345678-1234-5678-1234-567812345670}",
                 "tag": "blah.exe",
                 "treeid": None,
+                "richid": None,
                 "time_observed": 2.0,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "parent.exe",
                 "treeid": None,
+                "richid": None,
                 "time_observed": 2.0,
             },
             "pimage": "parent.exe",
@@ -1499,20 +1937,35 @@ class TestSandboxOntology:
             "command_line": None,
             "start_time": 2.0,
             "end_time": 3.0,
-            "rich_id": None,
             "integrity_level": None,
             "image_hash": None,
             "original_file_name": None,
         }
 
     @staticmethod
-    @pytest.mark.parametrize("events, validated_events_num",
-                             [([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "timestamp": 1.0,
-                                 "guid": "{12345678-1234-5678-1234-567812345678}",
-                                 "pguid": "{12345678-1234-5678-1234-567812345679}"}],
-                               1), ])
+    @pytest.mark.parametrize(
+        "events, validated_events_num",
+        [
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "timestamp": 1.0,
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "pguid": "{12345678-1234-5678-1234-567812345679}",
+                    }
+                ],
+                1,
+            ),
+        ],
+    )
     def test_get_processes(events, validated_events_num):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         for event in events:
@@ -1522,55 +1975,84 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_guid_by_pid_and_time():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         assert so.get_guid_by_pid_and_time(1, 0.0) is None
 
-        p = so.create_process(pid=1, start_time=0.0, end_time=1.0,
-                              guid="{12345678-1234-5678-1234-567812345678}")
+        p = so.create_process(
+            pid=1,
+            start_time=0.0,
+            end_time=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+        )
         so.add_process(p)
-        assert so.get_guid_by_pid_and_time(1, 0.5) == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            so.get_guid_by_pid_and_time(1, 0.5)
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
 
     @staticmethod
     def test_get_processes_by_ppid_and_time():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         assert so.get_processes_by_ppid_and_time(1, 0.0) == []
 
-        p = so.create_process(pid=1, start_time=0.0, end_time=1.0,
-                              guid="{12345678-1234-5678-1234-567812345678}", ppid=2)
+        p = so.create_process(
+            pid=1,
+            start_time=0.0,
+            end_time=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+            ppid=2,
+        )
         so.add_process(p)
         assert so.get_processes_by_ppid_and_time(2, 0.5) == [p]
 
     @staticmethod
     def test_get_pguid_by_pid_and_time():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         assert so.get_pguid_by_pid_and_time(1, 0.0) is None
 
-        child = so.create_process(pid=1, start_time=0.0, end_time=1.0, pguid="{12345678-1234-5678-1234-567812345678}")
+        child = so.create_process(
+            pid=1,
+            start_time=0.0,
+            end_time=1.0,
+            pguid="{12345678-1234-5678-1234-567812345678}",
+        )
         so.add_process(child)
-        assert so.get_pguid_by_pid_and_time(1, 0.5) == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            so.get_pguid_by_pid_and_time(1, 0.5)
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
 
     @staticmethod
     def test_is_guid_in_gpm():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         guid = "{12345678-1234-5678-1234-567812345678}"
         assert not so.is_guid_in_gpm(guid)
 
-        p = so.create_process(pid=1, start_time=0.0, end_time=1.0,
-                              guid=guid)
+        p = so.create_process(pid=1, start_time=0.0, end_time=1.0, guid=guid)
         so.add_process(p)
         assert so.is_guid_in_gpm(guid)
 
     @staticmethod
     def test_get_process_by_guid():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         assert not so.get_process_by_guid(None)
@@ -1584,7 +2066,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_process_by_pid_and_time():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         assert so.get_process_by_pid_and_time(None, 1.0) is None
@@ -1597,7 +2081,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_processes_by_pguid():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         assert not so.get_processes_by_pguid(None)
@@ -1611,28 +2097,35 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_create_network_connection():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        nc = default_so.create_network_connection(guid="{12345678-1234-5678-1234-567812345678}")
+        nc = default_so.create_network_connection(
+            guid="{12345678-1234-5678-1234-567812345678}"
+        )
         assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
 
     @staticmethod
     def test_add_network_connection():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
         from uuid import UUID
 
         default_so = SandboxOntology()
         assert default_so.network_connections == []
 
-        nc = default_so.create_network_connection()
-        default_so.add_network_connection(nc)
-        nc_as_primitives = default_so.network_connections[0].as_primitives()
-        assert str(UUID(nc_as_primitives["objectid"].pop("guid")))
-        assert nc_as_primitives == {
+        nc1 = default_so.create_network_connection()
+        default_so.add_network_connection(nc1)
+        nc1_as_primitives = default_so.network_connections[0].as_primitives()
+        assert str(UUID(nc1_as_primitives["objectid"].pop("guid")))
+        assert nc1_as_primitives == {
             "objectid": {
                 "tag": None,
                 "treeid": None,
+                "richid": None,
                 "time_observed": None,
             },
             "process": None,
@@ -1644,9 +2137,22 @@ class TestSandboxOntology:
             "direction": None,
         }
 
+        nc2 = default_so.create_network_connection(
+            source_ip="2.2.2.2",
+            source_port=321,
+            destination_ip="1.1.1.1",
+            destination_port=123,
+            direction="outbound",
+            time_observed=1,
+        )
+        default_so.add_network_connection(nc2)
+        assert nc2.objectid.tag == "1.1.1.1:123"
+
     @staticmethod
     def test_get_network_connections():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nc = default_so.create_network_connection()
@@ -1655,7 +2161,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_network_connection_by_pid():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nc = default_so.create_network_connection(destination_ip="1.1.1.1")
@@ -1665,25 +2173,48 @@ class TestSandboxOntology:
 
         p = default_so.create_process(pid=2, start_time=1.0, end_time=5.0)
         default_so.add_process(p)
-        nc2 = default_so.create_network_connection(destination_ip="1.1.1.1", timestamp=2.0)
+        nc2 = default_so.create_network_connection(
+            destination_ip="1.1.1.1", timestamp=2.0
+        )
         nc2.update_process(pid=2, start_time=2.0)
         default_so.add_network_connection(nc2)
-        assert default_so.get_network_connection_by_pid(2)[0].destination_ip == "1.1.1.1"
+        assert (
+            default_so.get_network_connection_by_pid(2)[0].destination_ip == "1.1.1.1"
+        )
 
     @staticmethod
     def test_get_network_connection_by_details():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nc = default_so.create_network_connection(
-            destination_ip="1.1.1.1", destination_port=1, source_ip="2.2.2.2", source_port=2, time_observed=1.5)
+            destination_ip="1.1.1.1",
+            destination_port=1,
+            source_ip="2.2.2.2",
+            source_port=2,
+            direction="outbound",
+            time_observed=1.5,
+        )
         default_so.add_network_connection(nc)
-        assert default_so.get_network_connection_by_details(
-            source_ip="2.2.2.2", source_port=2, destination_ip="1.1.1.1", destination_port=1, time_observed=2) == nc
+        assert (
+            default_so.get_network_connection_by_details(
+                source_ip="2.2.2.2",
+                source_port=2,
+                destination_ip="1.1.1.1",
+                destination_port=1,
+                direction="outbound",
+                time_observed=2,
+            )
+            == nc
+        )
 
     @staticmethod
     def test_create_network_dns():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nd = default_so.create_network_dns(domain="blah")
@@ -1691,7 +2222,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_add_network_dns():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
         from uuid import UUID
 
         default_so = SandboxOntology()
@@ -1706,6 +2239,7 @@ class TestSandboxOntology:
                 "objectid": {
                     "tag": None,
                     "treeid": None,
+                    "richid": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -1720,10 +2254,20 @@ class TestSandboxOntology:
             "resolved_ips": [],
             "lookup_type": None,
         }
+        assert default_so.get_network_connections()[0] == nd.connection_details
+
+        dns1 = default_so.create_network_dns(
+            domain="blah.com", resolved_ips=["1.1.1.1"]
+        )
+        dns1.update_connection_details(destination_port=123, direction="outbound")
+        default_so.add_network_dns(dns1)
+        assert dns1.connection_details.objectid.tag == "blah.com:123"
 
     @staticmethod
     def test_get_network_dns():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nd = default_so.create_network_dns()
@@ -1732,7 +2276,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_domain_by_destination_ip():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         assert default_so.get_domain_by_destination_ip("1.1.1.1") is None
@@ -1747,7 +2293,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_create_network_http():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nh = default_so.create_network_http(request_uri="blah")
@@ -1755,7 +2303,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_add_network_http():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
         from uuid import UUID
 
         default_so = SandboxOntology()
@@ -1770,6 +2320,7 @@ class TestSandboxOntology:
                 "objectid": {
                     "tag": None,
                     "treeid": None,
+                    "richid": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -1788,10 +2339,13 @@ class TestSandboxOntology:
             "response_status_code": None,
             "response_body": None,
         }
+        assert default_so.get_network_connections()[0] == nh.connection_details
 
     @staticmethod
     def test_get_network_http():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         nh = default_so.create_network_http()
@@ -1800,10 +2354,14 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_network_http_by_path():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        nh = default_so.create_network_http(request_body_path="/blah1", response_body_path="/blah2")
+        nh = default_so.create_network_http(
+            request_body_path="/blah1", response_body_path="/blah2"
+        )
         default_so.add_network_http(nh)
 
         assert default_so.get_network_http_by_path("/blah1") == nh
@@ -1811,7 +2369,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_create_signature():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         s = default_so.create_signature(name="blah", invalid="blah")
@@ -1819,7 +2379,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_add_signature():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         assert default_so.network_http == []
@@ -1836,7 +2398,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_signatures():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         sig = default_so.create_signature(name="blah")
@@ -1845,7 +2409,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_signatures_by_pid():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         sig = default_so.create_signature(name="blah")
@@ -1855,7 +2421,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_set_sandbox_name():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         default_so.set_sandbox_name("blah")
@@ -1863,7 +2431,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_set_sandbox_version():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         default_so.set_sandbox_version("blah")
@@ -1871,7 +2441,9 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_sandbox_ontology_as_primitives():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
         assert default_so.as_primitives() == {
@@ -1900,22 +2472,40 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_events():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         so = SandboxOntology()
-        p = so.create_process(pid=1, ppid=1, image="blah", command_line="blah", time_observed=1.0,
-                              guid="{12345678-1234-5678-1234-567812345678}",
-                              pguid="{12345678-1234-5678-1234-567812345679}")
+        p = so.create_process(
+            pid=1,
+            ppid=1,
+            image="blah",
+            command_line="blah",
+            time_observed=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+            pguid="{12345678-1234-5678-1234-567812345679}",
+        )
         so.add_process(p)
         nc = so.create_network_connection(
-            transport_layer_protocol="blah", source_ip="blah", source_port=1, destination_ip="blah", destination_port=1,
-            time_observed=1.0, guid="{12345678-1234-5678-1234-567812345670}")
+            transport_layer_protocol="blah",
+            source_ip="blah",
+            source_port=1,
+            destination_ip="blah",
+            destination_port=1,
+            time_observed=1.0,
+            guid="{12345678-1234-5678-1234-567812345670}",
+        )
         so.add_network_connection(nc)
         actual_events = so.get_events()
         assert len(actual_events) == 2
 
     @staticmethod
     def test_get_non_safelisted_processes():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         so = SandboxOntology()
         safelist = ["blahblah"]
         p1 = so.create_process(treeid="blahblah")
@@ -1927,278 +2517,1148 @@ class TestSandboxOntology:
     @staticmethod
     @pytest.mark.parametrize(
         "event_list, safelist, expected_result",
-        [(None, [],
-          []),
-         ([],
-          [],
-          []),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah", "treeid": None, "time_observed": None},
-            }],
-          [],
-          [{'pid': 1, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah", "treeid": None, "time_observed": None},
-            'ppid': 1, 'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None, 'command_line': 'blah', 'pimage': None, 'pcommand_line':
-            None, 'children': []}]),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": None},
-            },
-           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "start_time": 2,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah2", "treeid": None, "time_observed": 2},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": None},
-            }],
-          [],
-          [{'pid': 1, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": None},
-            'ppid': 1,
-            'command_line': 'blah', 'pimage': None,
-            'pcommand_line': None, 'rich_id': None, 'integrity_level': None, 'image_hash': None,
-            'original_file_name': None,
-            'children':
-            [{'pid': 2, 'image': 'blah2', 'start_time': 2, 'end_time': float("inf"),
-              "objectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah2", "treeid": '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1', "time_observed": 2},
-              "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-              'ppid': 1, 'command_line': 'blah2',
-              'pimage': "blah", 'pcommand_line': "blah", 'children': [],
-              'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
-              }], }]),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah", "treeid": None, "time_observed": None},
-            },
-           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "start_time": 2,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345672}", "tag": "blah2", "treeid": None, "time_observed": 2},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah", "treeid": None, "time_observed": 1},
-            },
-           {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345673}", "tag": "blah3", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345673}", "tag": "blah3", "treeid": None, "time_observed": 1},
-            },
-           {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "start_time": 2,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345674}", "tag": "blah4", "treeid": None, "time_observed": 2},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345673}", "tag": "blah3", "treeid": None, "time_observed": 1},
-            }],
-          ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
-          [{'pid': 1, 'image': 'blah', 'start_time': 1, 'end_time': float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah", "treeid": '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah", "treeid": None, "time_observed": None},
-            'ppid': 1, 'command_line': 'blah', 'pimage': None, 'pcommand_line': None, 'rich_id': None,
-            'integrity_level': None, 'image_hash': None, 'original_file_name': None,
-            'children':
-            [{'pid': 2, 'image': 'blah2', 'start_time': 2, 'end_time': float("inf"),
-                "objectid": {"guid": "{12345678-1234-5678-1234-567812345672}", "tag": "blah2", "treeid": '28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1', "time_observed": 2},
-                "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah", "treeid": None, "time_observed": 1},
-
-              'ppid': 1, 'command_line': 'blah2', 'children': [],
-              'pimage': "blah", 'pcommand_line': "blah", 'rich_id': None, 'integrity_level': None, 'image_hash': None,
-              'original_file_name': None,
-              }],
-            }, ]),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None},
-            }],
-          [],
-          [{"children": [],
-            "pid": 1, "ppid": 1, "image": "blah", 'pimage': None, 'pcommand_line': None,
-            "command_line": "blah",
-            "start_time": 1, 'end_time': float("inf"),
-            'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52", "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None},
-            }]),
-         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}, }],
-          [],
-          [{"children": [],
-            "pid": 2, "ppid": 1, "image": "blah", 'pimage': None, 'pcommand_line': None,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None},
-            "command_line": "blah",
-            "start_time": 1, 'end_time': float("inf"),
-            'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None}]),
-         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          ["blah"],
-          [{"children": [],
-            'rich_id': None, 'integrity_level': None, 'image_hash': None, 'original_file_name': None,
-            "pid": 2, "ppid": 1, "image": "blah", 'pimage': None, 'pcommand_line': None,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": '8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52', "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None},
-            "command_line": "blah",
-            "start_time": 1, 'end_time': float("inf"),
-            }]),
-         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
-          [])])
+        [
+            (None, [], []),
+            ([], [], []),
+            # One process, tags for both objectid and pobjectid
+            (
+                [
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                ["blah"],
+                [
+                    {
+                        "pid": 2,
+                        "image": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
+                            "richid": "blah",
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "ppid": 1,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                        "command_line": "blah",
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "children": [],
+                    }
+                ],
+            ),
+            # Two processes, one parent one child
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah2",
+                        "command_line": "blah2",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah2",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                ],
+                [],
+                [
+                    {
+                        "pid": 1,
+                        "image": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
+                            "richid": "blah",
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "ppid": 1,
+                        "command_line": "blah",
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                        "children": [
+                            {
+                                "pid": 2,
+                                "image": "blah2",
+                                "start_time": 2,
+                                "end_time": float("inf"),
+                                "objectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345679}",
+                                    "tag": "blah2",
+                                    "treeid": "28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1",
+                                    "richid": "blah>blah2",
+                                    "time_observed": 2,
+                                },
+                                "pobjectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345678}",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 1,
+                                },
+                                "ppid": 1,
+                                "command_line": "blah2",
+                                "pimage": "blah",
+                                "pcommand_line": "blah",
+                                "children": [],
+                                "integrity_level": None,
+                                "image_hash": None,
+                                "original_file_name": None,
+                            }
+                        ],
+                    }
+                ],
+            ),
+            # Four processes, two pairs of parent-child, one child is safelisted
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah2",
+                        "command_line": "blah2",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345672}",
+                            "tag": "blah2",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                    },
+                    {
+                        "pid": 3,
+                        "ppid": 3,
+                        "image": "blah3",
+                        "command_line": "blah3",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345673}",
+                            "tag": "blah3",
+                            "treeid": None,
+			                "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345673}",
+                            "tag": "blah3",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                    },
+                    {
+                        "pid": 4,
+                        "ppid": 3,
+                        "image": "blah4",
+                        "command_line": "blah4",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345674}",
+                            "tag": "blah4",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345673}",
+                            "tag": "blah3",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                    },
+                ],
+                ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
+                [
+                    {
+                        "pid": 1,
+                        "image": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah",
+                            "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
+                            "richid": "blah",
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "ppid": 1,
+                        "command_line": "blah",
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                        "children": [
+                            {
+                                "pid": 2,
+                                "image": "blah2",
+                                "start_time": 2,
+                                "end_time": float("inf"),
+                                "objectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345672}",
+                                    "tag": "blah2",
+                                    "treeid": "28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1",
+                                    "richid": "blah>blah2",
+                                    "time_observed": 2,
+                                },
+                                "pobjectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345671}",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 1,
+                                },
+                                "ppid": 1,
+                                "command_line": "blah2",
+                                "children": [],
+                                "pimage": "blah",
+                                "pcommand_line": "blah",
+                                "integrity_level": None,
+                                "image_hash": None,
+                                "original_file_name": None,
+                            }
+                        ],
+                    },
+                ],
+            ),
+            # One process, safelisted
+            (
+                [
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
+                [],
+            ),
+            # One network connection, tags for both objectid and pobjectid
+            (
+                [
+                    {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": None,
+                            "time_observed": "blah",
+                        },
+                        "source_ip": "blah",
+                        "source_port": "blah",
+                        "destination_ip": "blah",
+                        "destination_port": "blah",
+                        "transport_layer_protocol": "blah",
+                        "direction": "blah",
+                        "process": None,
+                    },
+                ],
+                ["blah"],
+                [
+                    {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah:blah",
+                            "treeid": "5f687d6145fb95eb502e4b6c1c83914aca058b35ce0aa6fe3d80f7e972e4f363",
+                            "richid": "blah:blah",
+                            "time_observed": "blah",
+                        },
+                        "source_ip": "blah",
+                        "source_port": "blah",
+                        "destination_ip": "blah",
+                        "destination_port": "blah",
+                        "transport_layer_protocol": "blah",
+                        "direction": "blah",
+                        "process": None,
+                        "children": [],
+                    },
+                ],
+            ),
+            # Two objects, one parent process, one child network connection
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": "blah>blah:blah",
+                            "time_observed": 2,
+                        },
+                        "source_ip": "blah",
+                        "source_port": "blah",
+                        "destination_ip": "blah",
+                        "destination_port": "blah",
+                        "transport_layer_protocol": "blah",
+                        "direction": "blah",
+                        "process": {
+                            "objectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}"
+                            }
+                        },
+                    },
+                ],
+                [],
+                [
+                    {
+                        "pid": 1,
+                        "image": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
+                            "richid": "blah",
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "ppid": 1,
+                        "command_line": "blah",
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                        "children": [
+                            {
+                                "objectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345679}",
+                                    "tag": "blah:blah",
+                                    "treeid": "81a167be9a70e6d9c9b14f4dec79c052e463c3fda116583731c1065143e8f277",
+                                    "richid": "blah>blah:blah",
+                                    "time_observed": 2,
+                                },
+                                "source_ip": "blah",
+                                "source_port": "blah",
+                                "destination_ip": "blah",
+                                "destination_port": "blah",
+                                "transport_layer_protocol": "blah",
+                                "direction": "blah",
+                                "process": {
+                                    "pid": 1,
+                                    "ppid": 1,
+                                    "image": "blah",
+                                    "command_line": "blah",
+                                    "start_time": 1,
+                                    "end_time": float("inf"),
+                                    "pimage": None,
+                                    "pcommand_line": None,
+                                    "integrity_level": None,
+                                    "image_hash": None,
+                                    "original_file_name": None,
+                                    "objectid": {
+                                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                                        "tag": "blah",
+                                        "treeid": None,
+                                        "richid": None,
+                                        "time_observed": 1,
+                                    },
+                                    "pobjectid": {
+                                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                                        "tag": "blah",
+                                        "treeid": None,
+                                        "richid": None,
+                                        "time_observed": None,
+                                    },
+                                },
+                                "children": [],
+                            },
+                        ],
+                    }
+                ],
+            ),
+        ],
+    )
     def test_get_process_tree(event_list, safelist, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         o = SandboxOntology()
         if event_list:
             for event in event_list:
-                p = o.create_process(**event)
-                o.add_process(p)
+                if "process" in event:
+                    nc = o.create_network_connection(**event)
+                    o.add_network_connection(nc)
+                else:
+                    p = o.create_process(**event)
+                    o.add_process(p)
         actual_result = o.get_process_tree(safelist=safelist)
         assert actual_result == expected_result
 
     @staticmethod
     @pytest.mark.parametrize(
         "event_list, signatures, safelist, correct_section_body",
-        [(None, None, [],
-          []),
-         ([],
-          None, [],
-          []),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          None, [],
-          [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {},
-            'children': [],
-            "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}]),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}},
-           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "start_time": 2, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": None, "treeid": None, "time_observed": None}}],
-          None, [],
-          [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {},
-            'children':
-            [{'process_pid': 2, 'process_name': 'blah2', 'command_line': 'blah2', 'signatures': {},
-              'children': [],
-              "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}],
-            "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}]),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": None, "treeid": None, "time_observed": None}},
-           {"pid": 2, "ppid": 1, "image": "blah2", "command_line": "blah2", "start_time": 2, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": "blah2", "treeid": None, "time_observed": 2},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1}},
-           {"pid": 3, "ppid": 3, "image": "blah3", "command_line": "blah3", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah3", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": None, "treeid": None, "time_observed": None}},
-           {"pid": 4, "ppid": 3, "image": "blah4", "command_line": "blah4", "start_time": 2, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345674}", "tag": "blah4", "treeid": None, "time_observed": 2},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345671}", "tag": "blah3", "treeid": None, "time_observed": 1}}],
-          None, ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
-          [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {},
-            'children':
-            [{'process_pid': 2, 'process_name': 'blah2', 'command_line': 'blah2', 'signatures': {},
-              'children': [],
-              "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}],
-            "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}]),
-         ([{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          [{"process.pid": 1, "name": "blah", "score": 1}],
-          [],
-          [{'process_pid': 1, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {'blah': 1},
-            'children': [],
-            "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}]),
-         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          [{"process.pid": 1, "name": "blah", "score": 1}],
-          [],
-          [{'process_pid': 2, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {},
-            'children': [],
-            "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}]),
-         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          [{"process.pid": 1, "name": "blah", "score": 1}],
-          ["blah"],
-          [{'process_pid': 2, 'process_name': 'blah', 'command_line': 'blah', 'signatures': {},
-            'children': [],
-            "file_count": 0, "file_count": 0, "network_count": 0, "registry_count": 0, "safelisted": False}]),
-         ([{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1, "end_time": float("inf"),
-            "objectid": {"guid": "{12345678-1234-5678-1234-567812345678}", "tag": "blah", "treeid": None, "time_observed": 1},
-            "pobjectid": {"guid": "{12345678-1234-5678-1234-567812345679}", "tag": None, "treeid": None, "time_observed": None}}],
-          [{"process.pid": 1, "name": "blah", "score": 1}],
-          ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
-          []), ])
-    def test_get_process_tree_result_section(event_list, signatures, safelist, correct_section_body):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        [
+            (None, None, [], []),
+            ([], None, [], []),
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                None,
+                [],
+                [
+                    {
+                        "process_pid": 1,
+                        "process_name": "blah",
+                        "command_line": "blah",
+                        "signatures": {},
+                        "children": [],
+                        "file_count": 0,
+                        "network_count": 0,
+                        "registry_count": 0,
+                        "safelisted": False,
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah2",
+                        "command_line": "blah2",
+                        "start_time": 2,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                ],
+                None,
+                [],
+                [
+                    {
+                        "process_pid": 1,
+                        "process_name": "blah",
+                        "command_line": "blah",
+                        "signatures": {},
+                        "children": [
+                            {
+                                "process_pid": 2,
+                                "process_name": "blah2",
+                                "command_line": "blah2",
+                                "signatures": {},
+                                "children": [],
+                                "file_count": 0,
+                                "network_count": 1,
+                                "registry_count": 0,
+                                "safelisted": False,
+                            }
+                        ],
+                        "file_count": 0,
+                        "network_count": 0,
+                        "registry_count": 0,
+                        "safelisted": False,
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah2",
+                        "command_line": "blah2",
+                        "start_time": 2,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah2",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                    },
+                    {
+                        "pid": 3,
+                        "ppid": 3,
+                        "image": "blah3",
+                        "command_line": "blah3",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah3",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    {
+                        "pid": 4,
+                        "ppid": 3,
+                        "image": "blah4",
+                        "command_line": "blah4",
+                        "start_time": 2,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345674}",
+                            "tag": "blah4",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345671}",
+                            "tag": "blah3",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                    },
+                ],
+                None,
+                ["55459caaa8ca94a90de5643a6a930e1b19bab480982607327081f46eb86f816c"],
+                [
+                    {
+                        "process_pid": 1,
+                        "process_name": "blah",
+                        "command_line": "blah",
+                        "signatures": {},
+                        "children": [
+                            {
+                                "process_pid": 2,
+                                "process_name": "blah2",
+                                "command_line": "blah2",
+                                "signatures": {},
+                                "children": [],
+                                "file_count": 0,
+                                "network_count": 1,
+                                "registry_count": 0,
+                                "safelisted": False,
+                            }
+                        ],
+                        "file_count": 0,
+                        "network_count": 0,
+                        "registry_count": 0,
+                        "safelisted": False,
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                [{"process.pid": 1, "name": "blah", "score": 1}],
+                [],
+                [
+                    {
+                        "process_pid": 1,
+                        "process_name": "blah",
+                        "command_line": "blah",
+                        "signatures": {"blah": 1},
+                        "children": [],
+                        "file_count": 0,
+                        "network_count": 0,
+                        "registry_count": 0,
+                        "safelisted": False,
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                [{"process.pid": 1, "name": "blah", "score": 1}],
+                [],
+                [
+                    {
+                        "process_pid": 2,
+                        "process_name": "blah",
+                        "command_line": "blah",
+                        "signatures": {},
+                        "children": [],
+                        "file_count": 0,
+                        "network_count": 0,
+                        "registry_count": 0,
+                        "safelisted": False,
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                [{"process.pid": 1, "name": "blah", "score": 1}],
+                ["blah"],
+                [
+                    {
+                        "process_pid": 2,
+                        "process_name": "blah",
+                        "command_line": "blah",
+                        "signatures": {},
+                        "children": [],
+                        "file_count": 0,
+                        "file_count": 0,
+                        "network_count": 0,
+                        "registry_count": 0,
+                        "safelisted": False,
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "end_time": float("inf"),
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
+                [{"process.pid": 1, "name": "blah", "score": 1}],
+                ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
+                [],
+            ),
+        ],
+    )
+    def test_get_process_tree_result_section(
+        event_list, signatures, safelist, correct_section_body
+    ):
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
         from assemblyline_v4_service.common.result import ResultProcessTreeSection
+
         o = SandboxOntology()
-        nc = o.create_network_connection(
-            **
-            {"destination_ip": "1.1.1.1", "destination_port": 443, "source_ip": "2.2.2.2", "source_port": 9999,
-             "transport_layer_protocol": "tcp"})
-        nc.update_process(**{"pid": 4, "image": "blah4", "start_time": 3, "end_time": float("inf"),
-                             "guid": "blah5", "pguid": "blah4"})
-        o.add_network_connection(nc)
-        if signatures:
-            for signature in signatures:
-                s = o.create_signature(**{k: v for k, v in signature.items() if "." not in k})
-                s.update_process(**{k.split(".")[1]: v for k, v in signature.items() if "." in k})
-                o.add_signature(s)
         if event_list:
             for event in event_list:
                 p = o.create_process(**event)
                 o.add_process(p)
+        nc = o.create_network_connection(
+            **{
+                "destination_ip": "1.1.1.1",
+                "destination_port": 443,
+                "source_ip": "2.2.2.2",
+                "source_port": 9999,
+                "transport_layer_protocol": "tcp",
+            }
+        )
+        nc.update_process(
+            **{
+                "pid": 2,
+                "image": "blah2",
+                "start_time": 2,
+                "end_time": float("inf"),
+                "guid": "{12345678-1234-5678-1234-567812345679}",
+                "pguid": "{12345678-1234-5678-1234-567812345673}",
+            }
+        )
+        o.add_network_connection(nc)
+        if signatures:
+            for signature in signatures:
+                s = o.create_signature(
+                    **{k: v for k, v in signature.items() if "." not in k}
+                )
+                s.update_process(
+                    **{k.split(".")[1]: v for k, v in signature.items() if "." in k}
+                )
+                o.add_signature(s)
         actual_result = o.get_process_tree_result_section(safelist=safelist)
         assert isinstance(actual_result, ResultProcessTreeSection)
         assert actual_result.section_body.__dict__["_data"] == correct_section_body
 
     @staticmethod
     def test_load_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        default_so.load_from_json({
-            "analysis_metadata": {
-                "task_id": "blah",
-                "start_time": "blah",
-                "end_time": "blah",
-                "routing": "blah",
-                "machine_metadata": {
-                    "ip": "blah",
-                    "hypervisor": "blah",
-                    "hostname": "blah",
-                    "platform": "blah",
-                    "version": "blah",
-                    "architecture": "blah",
+        default_so.load_from_json(
+            {
+                "analysis_metadata": {
+                    "task_id": "blah",
+                    "start_time": "blah",
+                    "end_time": "blah",
+                    "routing": "blah",
+                    "machine_metadata": {
+                        "ip": "blah",
+                        "hypervisor": "blah",
+                        "hostname": "blah",
+                        "platform": "blah",
+                        "version": "blah",
+                        "architecture": "blah",
+                    },
                 },
-            },
-            "signatures": [
-                {
-                    "name": "blah",
-                    "description": "blah",
-                    "attack": ["blah"],
-                    "subjects": [
-                        {
-                            "ip": "blah",
-                            "domain": None,
-                            "uri": None,
-                            "uri_path": None,
-                            "process": None,
+                "signatures": [
+                    {
+                        "name": "blah",
+                        "description": "blah",
+                        "attack": ["blah"],
+                        "subjects": [
+                            {
+                                "ip": "blah",
+                                "domain": None,
+                                "uri": None,
+                                "uri_path": None,
+                                "process": None,
+                            },
+                            {
+                                "ip": "blah",
+                                "domain": None,
+                                "uri": None,
+                                "uri_path": None,
+                                "process": {
+                                    "objectid": {
+                                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                                        "tag": "blah",
+                                        "treeid": "blah",
+                                        "richid": "blah",
+                                        "time_observed": "blah",
+                                    },
+                                    "pobjectid": {
+                                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                                        "tag": "blah",
+                                        "treeid": "blah",
+                                        "richid": "blah",
+                                        "time_observed": "blah",
+                                    },
+                                    "pimage": "blah",
+                                    "pcommand_line": "blah",
+                                    "ppid": "blah",
+                                    "pid": "blah",
+                                    "image": "blah",
+                                    "command_line": "blah",
+                                    "start_time": "blah",
+                                    "end_time": "blah",
+                                    "integrity_level": "blah",
+                                    "image_hash": "blah",
+                                    "original_file_name": "blah",
+                                },
+                            },
+                        ],
+                        "process": {
+                            "objectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "pobjectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "pimage": "blah",
+                            "pcommand_line": "blah",
+                            "ppid": "blah",
+                            "pid": "blah",
+                            "image": "blah",
+                            "command_line": "blah",
+                            "start_time": "blah",
+                            "end_time": "blah",
+                            "integrity_level": "blah",
+                            "image_hash": "blah",
+                            "original_file_name": "blah",
                         },
-                        {
-                            "ip": "blah",
-                            "domain": None,
-                            "uri": None,
-                            "uri_path": None,
+                    }
+                ],
+                "network_connections": [
+                    {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": "blah",
+                            "time_observed": "blah",
+                        },
+                        "source_ip": "blah",
+                        "source_port": "blah",
+                        "destination_ip": "blah",
+                        "destination_port": "blah",
+                        "transport_layer_protocol": "blah",
+                        "direction": "blah",
+                        "process": {
+                            "objectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "pobjectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "pimage": "blah",
+                            "pcommand_line": "blah",
+                            "ppid": "blah",
+                            "pid": "blah",
+                            "image": "blah",
+                            "command_line": "blah",
+                            "start_time": "blah",
+                            "end_time": "blah",
+                            "integrity_level": "blah",
+                            "image_hash": "blah",
+                            "original_file_name": "blah",
+                        },
+                    }
+                ],
+                "network_dns": [
+                    {
+                        "domain": "blah",
+                        "resolved_ips": ["blah"],
+                        "lookup_type": "blah",
+                        "connection_details": {
+                            "objectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "source_ip": "blah",
+                            "source_port": "blah",
+                            "destination_ip": "blah",
+                            "destination_port": "blah",
+                            "transport_layer_protocol": "blah",
+                            "direction": "blah",
                             "process": {
                                 "objectid": {
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": "blah",
+                                    "richid": "blah",
                                     "time_observed": "blah",
                                 },
                                 "pobjectid": {
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": "blah",
+                                    "richid": "blah",
                                     "time_observed": "blah",
                                 },
                                 "pimage": "blah",
@@ -2209,24 +3669,80 @@ class TestSandboxOntology:
                                 "command_line": "blah",
                                 "start_time": "blah",
                                 "end_time": "blah",
-                                "rich_id": "blah",
                                 "integrity_level": "blah",
                                 "image_hash": "blah",
                                 "original_file_name": "blah",
-                            }
+                            },
                         },
-                    ],
-                    "process": {
+                    }
+                ],
+                "network_http": [
+                    {
+                        "request_uri": "blah",
+                        "request_headers": {"a": "b"},
+                        "request_body": "blah",
+                        "request_method": "blah",
+                        "response_headers": {"a": "b"},
+                        "response_status_code": 123,
+                        "response_body": "blah",
+                        "connection_details": {
+                            "objectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "source_ip": "blah",
+                            "source_port": "blah",
+                            "destination_ip": "blah",
+                            "destination_port": "blah",
+                            "transport_layer_protocol": "blah",
+                            "direction": "blah",
+                            "process": {
+                                "objectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345678}",
+                                    "tag": "blah",
+                                    "treeid": "blah",
+                                    "richid": "blah",
+                                    "time_observed": "blah",
+                                },
+                                "pobjectid": {
+                                    "guid": "{12345678-1234-5678-1234-567812345678}",
+                                    "tag": "blah",
+                                    "treeid": "blah",
+                                    "richid": "blah",
+                                    "time_observed": "blah",
+                                },
+                                "pimage": "blah",
+                                "pcommand_line": "blah",
+                                "ppid": "blah",
+                                "pid": "blah",
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": "blah",
+                                "end_time": "blah",
+                                "integrity_level": "blah",
+                                "image_hash": "blah",
+                                "original_file_name": "blah",
+                            },
+                        },
+                    }
+                ],
+                "processes": [
+                    {
                         "objectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
+                            "richid": "blah",
                             "time_observed": "blah",
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
+                            "richid": "blah",
                             "time_observed": "blah",
                         },
                         "pimage": "blah",
@@ -2237,184 +3753,15 @@ class TestSandboxOntology:
                         "command_line": "blah",
                         "start_time": "blah",
                         "end_time": "blah",
-                        "rich_id": "blah",
                         "integrity_level": "blah",
                         "image_hash": "blah",
                         "original_file_name": "blah",
                     }
-                }
-            ],
-            "network_connections": [
-                {
-                    "objectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
-                        "tag": "blah",
-                        "treeid": "blah",
-                        "time_observed": "blah",
-                    },
-                    "source_ip": "blah",
-                    "source_port": "blah",
-                    "destination_ip": "blah",
-                    "destination_port": "blah",
-                    "transport_layer_protocol": "blah",
-                    "direction": "blah",
-                    "process": {
-                        "objectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "time_observed": "blah",
-                        },
-                        "pobjectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "time_observed": "blah",
-                        },
-                        "pimage": "blah",
-                        "pcommand_line": "blah",
-                        "ppid": "blah",
-                        "pid": "blah",
-                        "image": "blah",
-                        "command_line": "blah",
-                        "start_time": "blah",
-                        "end_time": "blah",
-                        "rich_id": "blah",
-                        "integrity_level": "blah",
-                        "image_hash": "blah",
-                        "original_file_name": "blah",
-                    }
-                }
-            ],
-            "network_dns": [
-                {
-                    "domain": "blah",
-                    "resolved_ips": ["blah"],
-                    "lookup_type": "blah",
-                    "connection_details": {
-                        "objectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "time_observed": "blah",
-                        },
-                        "source_ip": "blah",
-                        "source_port": "blah",
-                        "destination_ip": "blah",
-                        "destination_port": "blah",
-                        "transport_layer_protocol": "blah",
-                        "direction": "blah",
-                        "process": {
-                            "objectid": {
-                                "guid": "{12345678-1234-5678-1234-567812345678}",
-                                "tag": "blah",
-                                "treeid": "blah",
-                                "time_observed": "blah",
-                            },
-                            "pobjectid": {
-                                "guid": "{12345678-1234-5678-1234-567812345678}",
-                                "tag": "blah",
-                                "treeid": "blah",
-                                "time_observed": "blah",
-                            },
-                            "pimage": "blah",
-                            "pcommand_line": "blah",
-                            "ppid": "blah",
-                            "pid": "blah",
-                            "image": "blah",
-                            "command_line": "blah",
-                            "start_time": "blah",
-                            "end_time": "blah",
-                            "rich_id": "blah",
-                            "integrity_level": "blah",
-                            "image_hash": "blah",
-                            "original_file_name": "blah",
-                        }
-                    }
-                }
-            ],
-            "network_http": [
-                {
-                    "request_uri": "blah",
-                    "request_headers": {"a": "b"},
-                    "request_body": "blah",
-                    "request_method": "blah",
-                    "response_headers": {"a": "b"},
-                    "response_status_code": 123,
-                    "response_body": "blah",
-                    "connection_details": {
-                        "objectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "time_observed": "blah",
-                        },
-                        "source_ip": "blah",
-                        "source_port": "blah",
-                        "destination_ip": "blah",
-                        "destination_port": "blah",
-                        "transport_layer_protocol": "blah",
-                        "direction": "blah",
-                        "process": {
-                            "objectid": {
-                                "guid": "{12345678-1234-5678-1234-567812345678}",
-                                "tag": "blah",
-                                "treeid": "blah",
-                                "time_observed": "blah",
-                            },
-                            "pobjectid": {
-                                "guid": "{12345678-1234-5678-1234-567812345678}",
-                                "tag": "blah",
-                                "treeid": "blah",
-                                "time_observed": "blah",
-                            },
-                            "pimage": "blah",
-                            "pcommand_line": "blah",
-                            "ppid": "blah",
-                            "pid": "blah",
-                            "image": "blah",
-                            "command_line": "blah",
-                            "start_time": "blah",
-                            "end_time": "blah",
-                            "rich_id": "blah",
-                            "integrity_level": "blah",
-                            "image_hash": "blah",
-                            "original_file_name": "blah",
-                        }
-                    }
-                }
-            ],
-            "processes": [
-                {
-                    "objectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
-                        "tag": "blah",
-                        "treeid": "blah",
-                        "time_observed": "blah",
-                    },
-                    "pobjectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
-                        "tag": "blah",
-                        "treeid": "blah",
-                        "time_observed": "blah",
-                    },
-                    "pimage": "blah",
-                    "pcommand_line": "blah",
-                    "ppid": "blah",
-                    "pid": "blah",
-                    "image": "blah",
-                    "command_line": "blah",
-                    "start_time": "blah",
-                    "end_time": "blah",
-                    "rich_id": "blah",
-                    "integrity_level": "blah",
-                    "image_hash": "blah",
-                    "original_file_name": "blah",
-                }
-            ],
-            "sandbox_name": "blah",
-            "sandbox_version": "blah",
-        })
+                ],
+                "sandbox_name": "blah",
+                "sandbox_version": "blah",
+            }
+        )
 
         assert default_so.analysis_metadata.task_id == "blah"
         assert default_so.analysis_metadata.start_time == "blah"
@@ -2443,14 +3790,27 @@ class TestSandboxOntology:
         assert default_so.signatures[0].subjects[1].uri is None
         assert default_so.signatures[0].subjects[1].uri_path is None
 
-        assert default_so.signatures[0].subjects[1].process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.signatures[0].subjects[1].process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.signatures[0].subjects[1].process.objectid.tag == "blah"
         assert default_so.signatures[0].subjects[1].process.objectid.treeid == "blah"
-        assert default_so.signatures[0].subjects[1].process.objectid.time_observed == "blah"
-        assert default_so.signatures[0].subjects[1].process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.signatures[0].subjects[1].process.objectid.time_observed
+            == "blah"
+        )
+        assert (
+            default_so.signatures[0].subjects[1].process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.signatures[0].subjects[1].process.pobjectid.tag == "blah"
         assert default_so.signatures[0].subjects[1].process.pobjectid.treeid == "blah"
-        assert default_so.signatures[0].subjects[1].process.pobjectid.time_observed == "blah"
+        assert default_so.signatures[0].subjects[1].process.pobjectid.richid == "blah"
+        assert (
+            default_so.signatures[0].subjects[1].process.pobjectid.time_observed
+            == "blah"
+        )
         assert default_so.signatures[0].subjects[1].process.pimage == "blah"
         assert default_so.signatures[0].subjects[1].process.pcommand_line == "blah"
         assert default_so.signatures[0].subjects[1].process.ppid == "blah"
@@ -2459,18 +3819,24 @@ class TestSandboxOntology:
         assert default_so.signatures[0].subjects[1].process.command_line == "blah"
         assert default_so.signatures[0].subjects[1].process.start_time == "blah"
         assert default_so.signatures[0].subjects[1].process.end_time == "blah"
-        assert default_so.signatures[0].subjects[1].process.rich_id == "blah"
         assert default_so.signatures[0].subjects[1].process.integrity_level == "blah"
         assert default_so.signatures[0].subjects[1].process.image_hash == "blah"
         assert default_so.signatures[0].subjects[1].process.original_file_name == "blah"
 
-        assert default_so.signatures[0].process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.signatures[0].process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.signatures[0].process.objectid.tag == "blah"
         assert default_so.signatures[0].process.objectid.treeid == "blah"
         assert default_so.signatures[0].process.objectid.time_observed == "blah"
-        assert default_so.signatures[0].process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.signatures[0].process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.signatures[0].process.pobjectid.tag == "blah"
         assert default_so.signatures[0].process.pobjectid.treeid == "blah"
+        assert default_so.signatures[0].process.pobjectid.richid == "blah"
         assert default_so.signatures[0].process.pobjectid.time_observed == "blah"
         assert default_so.signatures[0].process.pimage == "blah"
         assert default_so.signatures[0].process.pcommand_line == "blah"
@@ -2480,14 +3846,17 @@ class TestSandboxOntology:
         assert default_so.signatures[0].process.command_line == "blah"
         assert default_so.signatures[0].process.start_time == "blah"
         assert default_so.signatures[0].process.end_time == "blah"
-        assert default_so.signatures[0].process.rich_id == "blah"
         assert default_so.signatures[0].process.integrity_level == "blah"
         assert default_so.signatures[0].process.image_hash == "blah"
         assert default_so.signatures[0].process.original_file_name == "blah"
 
-        assert default_so.network_connections[0].objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.network_connections[0].objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.network_connections[0].objectid.tag == "blah"
         assert default_so.network_connections[0].objectid.treeid == "blah"
+        assert default_so.network_connections[0].objectid.richid == "blah"
         assert default_so.network_connections[0].objectid.time_observed == "blah"
         assert default_so.network_connections[0].source_ip == "blah"
         assert default_so.network_connections[0].source_port == "blah"
@@ -2496,14 +3865,26 @@ class TestSandboxOntology:
         assert default_so.network_connections[0].transport_layer_protocol == "blah"
         assert default_so.network_connections[0].direction == "blah"
 
-        assert default_so.network_connections[0].process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.network_connections[0].process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.network_connections[0].process.objectid.tag == "blah"
         assert default_so.network_connections[0].process.objectid.treeid == "blah"
-        assert default_so.network_connections[0].process.objectid.time_observed == "blah"
-        assert default_so.network_connections[0].process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert default_so.network_connections[0].process.objectid.richid == "blah"
+        assert (
+            default_so.network_connections[0].process.objectid.time_observed == "blah"
+        )
+        assert (
+            default_so.network_connections[0].process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.network_connections[0].process.pobjectid.tag == "blah"
         assert default_so.network_connections[0].process.pobjectid.treeid == "blah"
-        assert default_so.network_connections[0].process.pobjectid.time_observed == "blah"
+        assert default_so.network_connections[0].process.pobjectid.richid == "blah"
+        assert (
+            default_so.network_connections[0].process.pobjectid.time_observed == "blah"
+        )
         assert default_so.network_connections[0].process.pimage == "blah"
         assert default_so.network_connections[0].process.pcommand_line == "blah"
         assert default_so.network_connections[0].process.ppid == "blah"
@@ -2512,7 +3893,6 @@ class TestSandboxOntology:
         assert default_so.network_connections[0].process.command_line == "blah"
         assert default_so.network_connections[0].process.start_time == "blah"
         assert default_so.network_connections[0].process.end_time == "blah"
-        assert default_so.network_connections[0].process.rich_id == "blah"
         assert default_so.network_connections[0].process.integrity_level == "blah"
         assert default_so.network_connections[0].process.image_hash == "blah"
         assert default_so.network_connections[0].process.original_file_name == "blah"
@@ -2521,37 +3901,86 @@ class TestSandboxOntology:
         assert default_so.network_dns[0].resolved_ips == ["blah"]
         assert default_so.network_dns[0].lookup_type == "blah"
 
-        assert default_so.network_dns[0].connection_details.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.network_dns[0].connection_details.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.network_dns[0].connection_details.objectid.tag == "blah"
         assert default_so.network_dns[0].connection_details.objectid.treeid == "blah"
-        assert default_so.network_dns[0].connection_details.objectid.time_observed == "blah"
+        assert default_so.network_dns[0].connection_details.objectid.richid == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.objectid.time_observed
+            == "blah"
+        )
         assert default_so.network_dns[0].connection_details.source_ip == "blah"
         assert default_so.network_dns[0].connection_details.source_port == "blah"
         assert default_so.network_dns[0].connection_details.destination_ip == "blah"
         assert default_so.network_dns[0].connection_details.destination_port == "blah"
-        assert default_so.network_dns[0].connection_details.transport_layer_protocol == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.transport_layer_protocol
+            == "blah"
+        )
         assert default_so.network_dns[0].connection_details.direction == "blah"
 
-        assert default_so.network_dns[0].connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
-        assert default_so.network_dns[0].connection_details.process.objectid.tag == "blah"
-        assert default_so.network_dns[0].connection_details.process.objectid.treeid == "blah"
-        assert default_so.network_dns[0].connection_details.process.objectid.time_observed == "blah"
-        assert default_so.network_dns[0].connection_details.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
-        assert default_so.network_dns[0].connection_details.process.pobjectid.tag == "blah"
-        assert default_so.network_dns[0].connection_details.process.pobjectid.treeid == "blah"
-        assert default_so.network_dns[0].connection_details.process.pobjectid.time_observed == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.objectid.tag == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.objectid.treeid
+            == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.objectid.richid
+            == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.objectid.time_observed
+            == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.pobjectid.tag == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.pobjectid.treeid
+            == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.pobjectid.richid
+            == "blah"
+        )
+        assert (
+            default_so.network_dns[0].connection_details.process.pobjectid.time_observed
+            == "blah"
+        )
         assert default_so.network_dns[0].connection_details.process.pimage == "blah"
-        assert default_so.network_dns[0].connection_details.process.pcommand_line == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.process.pcommand_line == "blah"
+        )
         assert default_so.network_dns[0].connection_details.process.ppid == "blah"
         assert default_so.network_dns[0].connection_details.process.pid == "blah"
         assert default_so.network_dns[0].connection_details.process.image == "blah"
-        assert default_so.network_dns[0].connection_details.process.command_line == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.process.command_line == "blah"
+        )
         assert default_so.network_dns[0].connection_details.process.start_time == "blah"
         assert default_so.network_dns[0].connection_details.process.end_time == "blah"
-        assert default_so.network_dns[0].connection_details.process.rich_id == "blah"
-        assert default_so.network_dns[0].connection_details.process.integrity_level == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.process.integrity_level
+            == "blah"
+        )
         assert default_so.network_dns[0].connection_details.process.image_hash == "blah"
-        assert default_so.network_dns[0].connection_details.process.original_file_name == "blah"
+        assert (
+            default_so.network_dns[0].connection_details.process.original_file_name
+            == "blah"
+        )
 
         assert default_so.network_http[0].request_uri == "blah"
         assert default_so.network_http[0].request_headers == {"a": "b"}
@@ -2561,45 +3990,110 @@ class TestSandboxOntology:
         assert default_so.network_http[0].response_status_code == 123
         assert default_so.network_http[0].response_body == "blah"
 
-        assert default_so.network_http[0].connection_details.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.network_http[0].connection_details.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.network_http[0].connection_details.objectid.tag == "blah"
         assert default_so.network_http[0].connection_details.objectid.treeid == "blah"
-        assert default_so.network_http[0].connection_details.objectid.time_observed == "blah"
+        assert default_so.network_http[0].connection_details.objectid.richid == "blah"
+        assert (
+            default_so.network_http[0].connection_details.objectid.time_observed
+            == "blah"
+        )
         assert default_so.network_http[0].connection_details.source_ip == "blah"
         assert default_so.network_http[0].connection_details.source_port == "blah"
         assert default_so.network_http[0].connection_details.destination_ip == "blah"
         assert default_so.network_http[0].connection_details.destination_port == "blah"
-        assert default_so.network_http[0].connection_details.transport_layer_protocol == "blah"
+        assert (
+            default_so.network_http[0].connection_details.transport_layer_protocol
+            == "blah"
+        )
         assert default_so.network_http[0].connection_details.direction == "blah"
 
-        assert default_so.network_http[0].connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
-        assert default_so.network_http[0].connection_details.process.objectid.tag == "blah"
-        assert default_so.network_http[0].connection_details.process.objectid.treeid == "blah"
-        assert default_so.network_http[0].connection_details.process.objectid.time_observed == "blah"
-        assert default_so.network_http[0].connection_details.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
-        assert default_so.network_http[0].connection_details.process.pobjectid.tag == "blah"
-        assert default_so.network_http[0].connection_details.process.pobjectid.treeid == "blah"
-        assert default_so.network_http[0].connection_details.process.pobjectid.time_observed == "blah"
+        assert (
+            default_so.network_http[0].connection_details.process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.objectid.tag == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.objectid.treeid
+            == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.objectid.richid
+            == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.objectid.time_observed
+            == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.pobjectid.tag
+            == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.pobjectid.treeid
+            == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.pobjectid.richid
+            == "blah"
+        )
+        assert (
+            default_so.network_http[
+                0
+            ].connection_details.process.pobjectid.time_observed
+            == "blah"
+        )
         assert default_so.network_http[0].connection_details.process.pimage == "blah"
-        assert default_so.network_http[0].connection_details.process.pcommand_line == "blah"
+        assert (
+            default_so.network_http[0].connection_details.process.pcommand_line
+            == "blah"
+        )
         assert default_so.network_http[0].connection_details.process.ppid == "blah"
         assert default_so.network_http[0].connection_details.process.pid == "blah"
         assert default_so.network_http[0].connection_details.process.image == "blah"
-        assert default_so.network_http[0].connection_details.process.command_line == "blah"
-        assert default_so.network_http[0].connection_details.process.start_time == "blah"
+        assert (
+            default_so.network_http[0].connection_details.process.command_line == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.start_time == "blah"
+        )
         assert default_so.network_http[0].connection_details.process.end_time == "blah"
-        assert default_so.network_http[0].connection_details.process.rich_id == "blah"
-        assert default_so.network_http[0].connection_details.process.integrity_level == "blah"
-        assert default_so.network_http[0].connection_details.process.image_hash == "blah"
-        assert default_so.network_http[0].connection_details.process.original_file_name == "blah"
+        assert (
+            default_so.network_http[0].connection_details.process.integrity_level
+            == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.image_hash == "blah"
+        )
+        assert (
+            default_so.network_http[0].connection_details.process.original_file_name
+            == "blah"
+        )
 
-        assert default_so.processes[0].objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.processes[0].objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.processes[0].objectid.tag == "blah"
         assert default_so.processes[0].objectid.treeid == "blah"
+        assert default_so.processes[0].objectid.richid == "blah"
         assert default_so.processes[0].objectid.time_observed == "blah"
-        assert default_so.processes[0].pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            default_so.processes[0].pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert default_so.processes[0].pobjectid.tag == "blah"
         assert default_so.processes[0].pobjectid.treeid == "blah"
+        assert default_so.processes[0].pobjectid.richid == "blah"
         assert default_so.processes[0].pobjectid.time_observed == "blah"
         assert default_so.processes[0].pimage == "blah"
         assert default_so.processes[0].pcommand_line == "blah"
@@ -2609,7 +4103,6 @@ class TestSandboxOntology:
         assert default_so.processes[0].command_line == "blah"
         assert default_so.processes[0].start_time == "blah"
         assert default_so.processes[0].end_time == "blah"
-        assert default_so.processes[0].rich_id == "blah"
         assert default_so.processes[0].integrity_level == "blah"
         assert default_so.processes[0].image_hash == "blah"
         assert default_so.processes[0].original_file_name == "blah"
@@ -2618,16 +4111,40 @@ class TestSandboxOntology:
         assert default_so.sandbox_version == "blah"
 
     @staticmethod
-    @pytest.mark.parametrize("artifact_list, expected_result",
-                             [(None, None),
-                              ([],
-                               None),
-                              ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}],
-                               None),
-                              ([{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": False}],
-                               None), ])
+    @pytest.mark.parametrize(
+        "artifact_list, expected_result",
+        [
+            (None, None),
+            ([], None),
+            (
+                [
+                    {
+                        "name": "blah",
+                        "path": "blah",
+                        "description": "blah",
+                        "to_be_extracted": True,
+                    }
+                ],
+                None,
+            ),
+            (
+                [
+                    {
+                        "name": "blah",
+                        "path": "blah",
+                        "description": "blah",
+                        "to_be_extracted": False,
+                    }
+                ],
+                None,
+            ),
+        ],
+    )
     def test_handle_artifacts(artifact_list, expected_result, dummy_request_class):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         r = dummy_request_class()
         o = SandboxOntology()
         actual_result = o.handle_artifacts(artifact_list, r)
@@ -2635,17 +4152,27 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_get_guids():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         so = SandboxOntology()
-        p = so.create_process(pid=1, start_time=0.0, end_time=1.0,
-                              guid="{12345678-1234-5678-1234-567812345678}")
+        p = so.create_process(
+            pid=1,
+            start_time=0.0,
+            end_time=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+        )
         so.add_process(p)
         assert so._get_guids() == ["{12345678-1234-5678-1234-567812345678}"]
 
     @staticmethod
     def test_validate_process():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
         from uuid import UUID
+
         so = SandboxOntology()
 
         # if not p.guid and p.pid not in pids:
@@ -2655,25 +4182,48 @@ class TestSandboxOntology:
         so.add_process(p1)
 
         # else
-        p2 = so.create_process(pid=2, start_time=0.0, end_time=1.0, guid="{12345678-1234-5678-1234-567812345678}")
+        p2 = so.create_process(
+            pid=2,
+            start_time=0.0,
+            end_time=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+        )
         assert so._validate_process(p2)
         so.add_process(p2)
 
         # elif p.guid in guids and p.pid in pids:
-        p3 = so.create_process(pid=2, start_time=0.0, end_time=1.0, guid="{12345678-1234-5678-1234-567812345678}")
+        p3 = so.create_process(
+            pid=2,
+            start_time=0.0,
+            end_time=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+        )
         assert not so._validate_process(p3)
 
         # elif p.guid in guids and p.pid not in pids:
-        p4 = so.create_process(pid=4, start_time=0.0, end_time=1.0, guid="{12345678-1234-5678-1234-567812345678}")
+        p4 = so.create_process(
+            pid=4,
+            start_time=0.0,
+            end_time=1.0,
+            guid="{12345678-1234-5678-1234-567812345678}",
+        )
         assert not so._validate_process(p4)
 
         # elif p.guid not in guids and p.pid in pids:
-        p5 = so.create_process(pid=3, start_time=1.0, end_time=2.0, guid="{87654321-1234-5678-1234-567812345678}")
+        p5 = so.create_process(
+            pid=3,
+            start_time=1.0,
+            end_time=2.0,
+            guid="{87654321-1234-5678-1234-567812345678}",
+        )
         assert so._validate_process(p5)
 
     @staticmethod
     def test_handle_pid_match():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         so = SandboxOntology()
 
         # Test where no process is added
@@ -2704,38 +4254,46 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_load_process_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        p = default_so._load_process_from_json({
-            "objectid": {
-                "guid": "{12345678-1234-5678-1234-567812345678}",
-                "tag": "blah",
-                "treeid": "blah",
-                "time_observed": "blah",
-            },
-            "pobjectid": {
-                "guid": "{12345678-1234-5678-1234-567812345678}",
-                "tag": "blah",
-                "treeid": "blah",
-                "time_observed": "blah",
-            },
-            "pimage": "blah",
-            "pcommand_line": "blah",
-            "ppid": "blah",
-            "pid": "blah",
-            "image": "blah",
-            "command_line": "blah",
-            "start_time": "blah",
-            "end_time": "blah",
-        })
+        p = default_so._load_process_from_json(
+            {
+                "objectid": {
+                    "guid": "{12345678-1234-5678-1234-567812345678}",
+                    "tag": "blah",
+                    "treeid": "blah",
+                    "richid": "blah",
+                    "time_observed": "blah",
+                },
+                "pobjectid": {
+                    "guid": "{12345678-1234-5678-1234-567812345678}",
+                    "tag": "blah",
+                    "treeid": "blah",
+                    "richid": "blah",
+                    "time_observed": "blah",
+                },
+                "pimage": "blah",
+                "pcommand_line": "blah",
+                "ppid": "blah",
+                "pid": "blah",
+                "image": "blah",
+                "command_line": "blah",
+                "start_time": "blah",
+                "end_time": "blah",
+            }
+        )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid == "blah"
+        assert p.objectid.richid == "blah"
         assert p.objectid.time_observed == "blah"
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.pobjectid.tag == "blah"
         assert p.pobjectid.treeid == "blah"
+        assert p.pobjectid.richid == "blah"
         assert p.pobjectid.time_observed == "blah"
         assert p.pimage == "blah"
         assert p.pcommand_line == "blah"
@@ -2748,77 +4306,96 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_load_signature_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        s = default_so._load_signature_from_json({
-            "name": "blah",
-            "description": "blah",
-            "attack": [{'attack_id': 'T1187', 'categories': ['credential-access'], 'pattern': 'Forced Authentication'}],
-            "subjects": [
-                {
-                    "ip": "blah",
-                    "domain": None,
-                    "uri": None,
-                    "uri_path": None,
-                    "process": None,
-                },
-                {
-                    "ip": "blah",
-                    "domain": None,
-                    "uri": None,
-                    "uri_path": None,
-                    "process": {
-                        "objectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "time_observed": "blah",
-                        },
-                        "pobjectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "time_observed": "blah",
-                        },
-                        "pimage": "blah",
-                        "pcommand_line": "blah",
-                        "ppid": "blah",
-                        "pid": "blah",
-                        "image": "blah",
-                        "command_line": "blah",
-                        "start_time": "blah",
-                        "end_time": "blah",
+        s = default_so._load_signature_from_json(
+            {
+                "name": "blah",
+                "description": "blah",
+                "attack": [
+                    {
+                        "attack_id": "T1187",
+                        "categories": ["credential-access"],
+                        "pattern": "Forced Authentication",
                     }
+                ],
+                "subjects": [
+                    {
+                        "ip": "blah",
+                        "domain": None,
+                        "uri": None,
+                        "uri_path": None,
+                        "process": None,
+                    },
+                    {
+                        "ip": "blah",
+                        "domain": None,
+                        "uri": None,
+                        "uri_path": None,
+                        "process": {
+                            "objectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "pobjectid": {
+                                "guid": "{12345678-1234-5678-1234-567812345678}",
+                                "tag": "blah",
+                                "treeid": "blah",
+                                "richid": "blah",
+                                "time_observed": "blah",
+                            },
+                            "pimage": "blah",
+                            "pcommand_line": "blah",
+                            "ppid": "blah",
+                            "pid": "blah",
+                            "image": "blah",
+                            "command_line": "blah",
+                            "start_time": "blah",
+                            "end_time": "blah",
+                        },
+                    },
+                ],
+                "process": {
+                    "objectid": {
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
+                        "treeid": "blah",
+                        "richid": "blah",
+                        "time_observed": "blah",
+                    },
+                    "pobjectid": {
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
+                        "treeid": "blah",
+                        "richid": "blah",
+                        "time_observed": "blah",
+                    },
+                    "pimage": "blah",
+                    "pcommand_line": "blah",
+                    "ppid": "blah",
+                    "pid": "blah",
+                    "image": "blah",
+                    "command_line": "blah",
+                    "start_time": "blah",
+                    "end_time": "blah",
                 },
-            ],
-            "process": {
-                "objectid": {
-                    "guid": "{12345678-1234-5678-1234-567812345678}",
-                    "tag": "blah",
-                    "treeid": "blah",
-                    "time_observed": "blah",
-                },
-                "pobjectid": {
-                    "guid": "{12345678-1234-5678-1234-567812345678}",
-                    "tag": "blah",
-                    "treeid": "blah",
-                    "time_observed": "blah",
-                },
-                "pimage": "blah",
-                "pcommand_line": "blah",
-                "ppid": "blah",
-                "pid": "blah",
-                "image": "blah",
-                "command_line": "blah",
-                "start_time": "blah",
-                "end_time": "blah",
             }
-        })
+        )
         assert s.name == "blah"
         assert s.description == "blah"
-        assert s.attack == [{'attack_id': 'T1187', 'categories': [
-            'credential-access'], 'pattern': 'Forced Authentication'}]
+        assert s.attack == [
+            {
+                "attack_id": "T1187",
+                "categories": ["credential-access"],
+                "pattern": "Forced Authentication",
+            }
+        ]
         assert s.subjects[0].ip == "blah"
         assert s.subjects[0].domain is None
         assert s.subjects[0].uri is None
@@ -2828,13 +4405,21 @@ class TestSandboxOntology:
         assert s.subjects[1].domain is None
         assert s.subjects[1].uri is None
         assert s.subjects[1].uri_path is None
-        assert s.subjects[1].process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            s.subjects[1].process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert s.subjects[1].process.objectid.tag == "blah"
         assert s.subjects[1].process.objectid.treeid == "blah"
+        assert s.subjects[1].process.objectid.richid == "blah"
         assert s.subjects[1].process.objectid.time_observed == "blah"
-        assert s.subjects[1].process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            s.subjects[1].process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert s.subjects[1].process.pobjectid.tag == "blah"
         assert s.subjects[1].process.pobjectid.treeid == "blah"
+        assert s.subjects[1].process.pobjectid.richid == "blah"
         assert s.subjects[1].process.pobjectid.time_observed == "blah"
         assert s.subjects[1].process.pimage == "blah"
         assert s.subjects[1].process.pcommand_line == "blah"
@@ -2847,10 +4432,12 @@ class TestSandboxOntology:
         assert s.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert s.process.objectid.tag == "blah"
         assert s.process.objectid.treeid == "blah"
+        assert s.process.objectid.richid == "blah"
         assert s.process.objectid.time_observed == "blah"
         assert s.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert s.process.pobjectid.tag == "blah"
         assert s.process.pobjectid.treeid == "blah"
+        assert s.process.pobjectid.richid == "blah"
         assert s.process.pobjectid.time_observed == "blah"
         assert s.process.pimage == "blah"
         assert s.process.pcommand_line == "blah"
@@ -2863,52 +4450,59 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_load_network_connection_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        nc = default_so._load_network_connection_from_json({
-            "objectid": {
-                "guid": "{12345678-1234-5678-1234-567812345678}",
-                "tag": "blah",
-                "treeid": "blah",
-                "time_observed": "blah",
-            },
-            "source_ip": "blah",
-            "source_port": "blah",
-            "destination_ip": "blah",
-            "destination_port": "blah",
-            "transport_layer_protocol": "blah",
-            "direction": "blah",
-            "process": {
+        nc = default_so._load_network_connection_from_json(
+            {
                 "objectid": {
                     "guid": "{12345678-1234-5678-1234-567812345678}",
                     "tag": "blah",
                     "treeid": "blah",
+                    "richid": "blah",
                     "time_observed": "blah",
                 },
-                "pobjectid": {
-                    "guid": "{12345678-1234-5678-1234-567812345678}",
-                    "tag": "blah",
-                    "treeid": "blah",
-                    "time_observed": "blah",
+                "source_ip": "blah",
+                "source_port": "blah",
+                "destination_ip": "blah",
+                "destination_port": "blah",
+                "transport_layer_protocol": "blah",
+                "direction": "blah",
+                "process": {
+                    "objectid": {
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
+                        "treeid": "blah",
+                        "richid": "blah",
+                        "time_observed": "blah",
+                    },
+                    "pobjectid": {
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "tag": "blah",
+                        "treeid": "blah",
+                        "richid": "blah",
+                        "time_observed": "blah",
+                    },
+                    "pimage": "blah",
+                    "pcommand_line": "blah",
+                    "ppid": "blah",
+                    "pid": "blah",
+                    "image": "blah",
+                    "command_line": "blah",
+                    "start_time": "blah",
+                    "end_time": "blah",
+                    "integrity_level": "blah",
+                    "image_hash": "blah",
+                    "original_file_name": "blah",
                 },
-                "pimage": "blah",
-                "pcommand_line": "blah",
-                "ppid": "blah",
-                "pid": "blah",
-                "image": "blah",
-                "command_line": "blah",
-                "start_time": "blah",
-                "end_time": "blah",
-                "rich_id": "blah",
-                "integrity_level": "blah",
-                "image_hash": "blah",
-                "original_file_name": "blah",
             }
-        })
+        )
         assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
+        assert nc.objectid.richid == "blah"
         assert nc.objectid.time_observed == "blah"
         assert nc.source_ip == "blah"
         assert nc.source_port == "blah"
@@ -2919,10 +4513,12 @@ class TestSandboxOntology:
         assert nc.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.process.objectid.tag == "blah"
         assert nc.process.objectid.treeid == "blah"
+        assert nc.process.objectid.richid == "blah"
         assert nc.process.objectid.time_observed == "blah"
         assert nc.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.process.pobjectid.tag == "blah"
         assert nc.process.pobjectid.treeid == "blah"
+        assert nc.process.pobjectid.richid == "blah"
         assert nc.process.pobjectid.time_observed == "blah"
         assert nc.process.pimage == "blah"
         assert nc.process.pcommand_line == "blah"
@@ -2932,67 +4528,76 @@ class TestSandboxOntology:
         assert nc.process.command_line == "blah"
         assert nc.process.start_time == "blah"
         assert nc.process.end_time == "blah"
-        assert nc.process.rich_id == "blah"
         assert nc.process.integrity_level == "blah"
         assert nc.process.image_hash == "blah"
         assert nc.process.original_file_name == "blah"
 
     @staticmethod
     def test_load_network_dns_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        nd = default_so._load_network_dns_from_json({
-            "domain": "blah",
-            "resolved_ips": ["blah"],
-            "lookup_type": "blah",
-            "connection_details": {
-                "objectid": {
-                    "guid": "{12345678-1234-5678-1234-567812345678}",
-                    "tag": "blah",
-                    "treeid": "blah",
-                    "time_observed": "blah",
-                },
-                "source_ip": "blah",
-                "source_port": "blah",
-                "destination_ip": "blah",
-                "destination_port": "blah",
-                "transport_layer_protocol": "blah",
-                "direction": "blah",
-                "process": {
+        nd = default_so._load_network_dns_from_json(
+            {
+                "domain": "blah",
+                "resolved_ips": ["blah"],
+                "lookup_type": "blah",
+                "connection_details": {
                     "objectid": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
+                        "richid": "blah",
                         "time_observed": "blah",
                     },
-                    "pobjectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
-                        "tag": "blah",
-                        "treeid": "blah",
-                        "time_observed": "blah",
+                    "source_ip": "blah",
+                    "source_port": "blah",
+                    "destination_ip": "blah",
+                    "destination_port": "blah",
+                    "transport_layer_protocol": "blah",
+                    "direction": "blah",
+                    "process": {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": "blah",
+                            "time_observed": "blah",
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": "blah",
+                            "time_observed": "blah",
+                        },
+                        "pimage": "blah",
+                        "pcommand_line": "blah",
+                        "ppid": "blah",
+                        "pid": "blah",
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": "blah",
+                        "end_time": "blah",
+                        "integrity_level": "blah",
+                        "image_hash": "blah",
+                        "original_file_name": "blah",
                     },
-                    "pimage": "blah",
-                    "pcommand_line": "blah",
-                    "ppid": "blah",
-                    "pid": "blah",
-                    "image": "blah",
-                    "command_line": "blah",
-                    "start_time": "blah",
-                    "end_time": "blah",
-                    "rich_id": "blah",
-                    "integrity_level": "blah",
-                    "image_hash": "blah",
-                    "original_file_name": "blah",
-                }
+                },
             }
-        })
+        )
         assert nd.domain == "blah"
         assert nd.resolved_ips == ["blah"]
         assert nd.lookup_type == "blah"
-        assert nd.connection_details.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            nd.connection_details.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert nd.connection_details.objectid.tag == "blah"
         assert nd.connection_details.objectid.treeid == "blah"
+        assert nd.connection_details.objectid.richid == "blah"
         assert nd.connection_details.objectid.time_observed == "blah"
         assert nd.connection_details.source_ip == "blah"
         assert nd.connection_details.source_port == "blah"
@@ -3000,13 +4605,21 @@ class TestSandboxOntology:
         assert nd.connection_details.destination_port == "blah"
         assert nd.connection_details.transport_layer_protocol == "blah"
         assert nd.connection_details.direction == "blah"
-        assert nd.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            nd.connection_details.process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert nd.connection_details.process.objectid.tag == "blah"
         assert nd.connection_details.process.objectid.treeid == "blah"
+        assert nd.connection_details.process.objectid.richid == "blah"
         assert nd.connection_details.process.objectid.time_observed == "blah"
-        assert nd.connection_details.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            nd.connection_details.process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert nd.connection_details.process.pobjectid.tag == "blah"
         assert nd.connection_details.process.pobjectid.treeid == "blah"
+        assert nd.connection_details.process.pobjectid.richid == "blah"
         assert nd.connection_details.process.pobjectid.time_observed == "blah"
         assert nd.connection_details.process.pimage == "blah"
         assert nd.connection_details.process.pcommand_line == "blah"
@@ -3016,73 +4629,82 @@ class TestSandboxOntology:
         assert nd.connection_details.process.command_line == "blah"
         assert nd.connection_details.process.start_time == "blah"
         assert nd.connection_details.process.end_time == "blah"
-        assert nd.connection_details.process.rich_id == "blah"
         assert nd.connection_details.process.integrity_level == "blah"
         assert nd.connection_details.process.image_hash == "blah"
         assert nd.connection_details.process.original_file_name == "blah"
 
     @staticmethod
     def test_load_network_http_from_json():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        nh = default_so._load_network_http_from_json({
-            "request_uri": "blah",
-            "request_headers": {"a": "b"},
-            "request_body": "blah",
-            "request_method": "blah",
-            "response_headers": {"a": "b"},
-            "response_status_code": 123,
-            "response_body": "blah",
-            "connection_details": {
-                "objectid": {
-                    "guid": "{12345678-1234-5678-1234-567812345678}",
-                    "tag": "blah",
-                    "treeid": "blah",
-                    "time_observed": "blah",
-                },
-                "source_ip": "blah",
-                "source_port": "blah",
-                "destination_ip": "blah",
-                "destination_port": "blah",
-                "transport_layer_protocol": "blah",
-                "direction": "blah",
-                "process": {
+        nh = default_so._load_network_http_from_json(
+            {
+                "request_uri": "blah",
+                "request_headers": {"a": "b"},
+                "request_body": "blah",
+                "request_method": "blah",
+                "response_headers": {"a": "b"},
+                "response_status_code": 123,
+                "response_body": "blah",
+                "connection_details": {
                     "objectid": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
+                        "richid": "blah",
                         "time_observed": "blah",
                     },
-                    "pobjectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
-                        "tag": "blah",
-                        "treeid": "blah",
-                        "time_observed": "blah",
+                    "source_ip": "blah",
+                    "source_port": "blah",
+                    "destination_ip": "blah",
+                    "destination_port": "blah",
+                    "transport_layer_protocol": "blah",
+                    "direction": "blah",
+                    "process": {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": "blah",
+                            "time_observed": "blah",
+                        },
+                        "pobjectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": "blah",
+                            "richid": "blah",
+                            "time_observed": "blah",
+                        },
+                        "pimage": "blah",
+                        "pcommand_line": "blah",
+                        "ppid": "blah",
+                        "pid": "blah",
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": "blah",
+                        "end_time": "blah",
+                        "integrity_level": "blah",
+                        "image_hash": "blah",
+                        "original_file_name": "blah",
                     },
-                    "pimage": "blah",
-                    "pcommand_line": "blah",
-                    "ppid": "blah",
-                    "pid": "blah",
-                    "image": "blah",
-                    "command_line": "blah",
-                    "start_time": "blah",
-                    "end_time": "blah",
-                    "rich_id": "blah",
-                    "integrity_level": "blah",
-                    "image_hash": "blah",
-                    "original_file_name": "blah",
-                }
+                },
             }
-        })
+        )
         assert nh.request_uri == "blah"
         assert nh.request_headers == {"a": "b"}
         assert nh.request_method == "blah"
         assert nh.response_status_code == 123
         assert nh.response_body == "blah"
-        assert nh.connection_details.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            nh.connection_details.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert nh.connection_details.objectid.tag == "blah"
         assert nh.connection_details.objectid.treeid == "blah"
+        assert nh.connection_details.objectid.richid == "blah"
         assert nh.connection_details.objectid.time_observed == "blah"
         assert nh.connection_details.source_ip == "blah"
         assert nh.connection_details.source_port == "blah"
@@ -3090,13 +4712,21 @@ class TestSandboxOntology:
         assert nh.connection_details.destination_port == "blah"
         assert nh.connection_details.transport_layer_protocol == "blah"
         assert nh.connection_details.direction == "blah"
-        assert nh.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            nh.connection_details.process.objectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert nh.connection_details.process.objectid.tag == "blah"
         assert nh.connection_details.process.objectid.treeid == "blah"
+        assert nh.connection_details.process.objectid.richid == "blah"
         assert nh.connection_details.process.objectid.time_observed == "blah"
-        assert nh.connection_details.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert (
+            nh.connection_details.process.pobjectid.guid
+            == "{12345678-1234-5678-1234-567812345678}"
+        )
         assert nh.connection_details.process.pobjectid.tag == "blah"
         assert nh.connection_details.process.pobjectid.treeid == "blah"
+        assert nh.connection_details.process.pobjectid.richid == "blah"
         assert nh.connection_details.process.pobjectid.time_observed == "blah"
         assert nh.connection_details.process.pimage == "blah"
         assert nh.connection_details.process.pcommand_line == "blah"
@@ -3106,45 +4736,80 @@ class TestSandboxOntology:
         assert nh.connection_details.process.command_line == "blah"
         assert nh.connection_details.process.start_time == "blah"
         assert nh.connection_details.process.end_time == "blah"
-        assert nh.connection_details.process.rich_id == "blah"
         assert nh.connection_details.process.integrity_level == "blah"
         assert nh.connection_details.process.image_hash == "blah"
         assert nh.connection_details.process.original_file_name == "blah"
 
     @staticmethod
-    @pytest.mark.parametrize("things_to_sort_by_time_observed, expected_result",
-                             [(None, []),
-                              ([],
-                               []),
-                              ([{"objectid": {"time_observed": 1}}],
-                               [{"objectid": {"time_observed": 1}}]),
-                              ([{"objectid": {"time_observed": 1}},
-                                {"objectid": {"time_observed": 2}}],
-                               [{"objectid": {"time_observed": 1}},
-                                {"objectid": {"time_observed": 2}}]),
-                              ([{"objectid": {"time_observed": 1}},
-                                {"objectid": {"time_observed": 1}}],
-                               [{"objectid": {"time_observed": 1}},
-                                {"objectid": {"time_observed": 1}}]),
-                              ([{"objectid": {"time_observed": 2}},
-                                {"objectid": {"time_observed": 1}}],
-                               [{"objectid": {"time_observed": 1}},
-                                {"objectid": {"time_observed": 2}}]),
-                              ([{"objectid": {"time_observed": 3}},
-                                {"objectid": {"time_observed": 2}},
-                                {"objectid": {"time_observed": 1}}],
-                               [{"objectid": {"time_observed": 1}},
-                                {"objectid": {"time_observed": 2}},
-                                {"objectid": {"time_observed": 3}}]), ])
-    def test_sort_things_by_time_observed(things_to_sort_by_time_observed, expected_result, dummy_timestamp_class):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+    @pytest.mark.parametrize(
+        "things_to_sort_by_time_observed, expected_result",
+        [
+            (None, []),
+            ([], []),
+            (
+                [{"objectid": {"time_observed": 1}}],
+                [{"objectid": {"time_observed": 1}}],
+            ),
+            (
+                [
+                    {"objectid": {"time_observed": 1}},
+                    {"objectid": {"time_observed": 2}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1}},
+                    {"objectid": {"time_observed": 2}},
+                ],
+            ),
+            (
+                [
+                    {"objectid": {"time_observed": 1}},
+                    {"objectid": {"time_observed": 1}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1}},
+                    {"objectid": {"time_observed": 1}},
+                ],
+            ),
+            (
+                [
+                    {"objectid": {"time_observed": 2}},
+                    {"objectid": {"time_observed": 1}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1}},
+                    {"objectid": {"time_observed": 2}},
+                ],
+            ),
+            (
+                [
+                    {"objectid": {"time_observed": 3}},
+                    {"objectid": {"time_observed": 2}},
+                    {"objectid": {"time_observed": 1}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1}},
+                    {"objectid": {"time_observed": 2}},
+                    {"objectid": {"time_observed": 3}},
+                ],
+            ),
+        ],
+    )
+    def test_sort_things_by_time_observed(
+        things_to_sort_by_time_observed, expected_result, dummy_timestamp_class
+    ):
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         dummy_things = []
         dummy_results = []
         if things_to_sort_by_time_observed is None:
             assert SandboxOntology._sort_things_by_time_observed(dummy_things) == []
             return
 
-        actual_result = SandboxOntology._sort_things_by_time_observed(things_to_sort_by_time_observed)
+        actual_result = SandboxOntology._sort_things_by_time_observed(
+            things_to_sort_by_time_observed
+        )
         for index, item in enumerate(actual_result):
             assert item == expected_result[index]
 
@@ -3156,51 +4821,148 @@ class TestSandboxOntology:
             dummy_results.append(dummy_timestamp_class(result))
         actual_result = SandboxOntology._sort_things_by_time_observed(dummy_things)
         for index, item in enumerate(actual_result):
-            assert item.__dict__["objectid"].__dict__ == dummy_results[index].__dict__["objectid"].__dict__
+            assert (
+                item.__dict__["objectid"].__dict__
+                == dummy_results[index].__dict__["objectid"].__dict__
+            )
 
     @staticmethod
-    @pytest.mark.parametrize("events, expected_events_dict",
-                             [([{"pid": 1, "image": "blah", "start_time": 1, "guid": '{12345678-1234-5678-1234-567812345678}'}],
-                               {'{12345678-1234-5678-1234-567812345678}':
-                                {'objectid': {'guid': '{12345678-1234-5678-1234-567812345678}', 'tag': "blah", 'treeid': None, 'time_observed': 1},
-                                 'pobjectid': {'guid': None, 'tag': None, 'treeid': None, 'time_observed': None},
-                                 'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': 1, 'image': 'blah',
-                                 'command_line': None, 'start_time': 1, 'end_time': None, "rich_id": None,
-                                 "integrity_level": None, "image_hash": None, "original_file_name": None}}),
-                              ([{"pid": 1, "image": "blah", "start_time": 1, "guid": None}],
-                               {}),
-                              ([{"pid": 1, "image": "blah", "start_time": 1,
-                                 "guid": "{12345678-1234-5678-1234-567812345678}"},
-                                {"pid": 2, "image": "blah", "start_time": 1,
-                                 "guid": "{12345678-1234-5678-1234-567812345679}"}],
-                               {
-                                  '{12345678-1234-5678-1234-567812345678}':
-                                  {
-                                      'objectid':
-                                      {'guid': '{12345678-1234-5678-1234-567812345678}', 'tag': "blah", 'treeid': None,
-                                       'time_observed': 1},
-                                      'pobjectid': {'guid': None, 'tag': None, 'treeid': None, 'time_observed': None},
-                                      'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': 1, 'image': 'blah',
-                                      'command_line': None, 'start_time': 1, 'end_time': None, "rich_id": None,
-                                      "integrity_level": None, "image_hash": None, "original_file_name": None},
-                                  '{12345678-1234-5678-1234-567812345679}':
-                                  {
-                                      'objectid':
-                                      {'guid': '{12345678-1234-5678-1234-567812345679}', 'tag': "blah", 'treeid': None,
-                                       'time_observed': 1},
-                                      'pobjectid': {'guid': None, 'tag': None, 'treeid': None, 'time_observed': None},
-                                      'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': 2, 'image': 'blah',
-                                      'command_line': None, 'start_time': 1, 'end_time': None, "rich_id": None,
-                                      "integrity_level": None, "image_hash": None, "original_file_name": None}}), ])
+    @pytest.mark.parametrize(
+        "events, expected_events_dict",
+        [
+            (
+                [
+                    {
+                        "pid": 1,
+                        "image": "blah",
+                        "start_time": 1,
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                    }
+                ],
+                {
+                    "{12345678-1234-5678-1234-567812345678}": {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "ppid": None,
+                        "pid": 1,
+                        "image": "blah",
+                        "command_line": None,
+                        "start_time": 1,
+                        "end_time": None,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                    }
+                },
+            ),
+            ([{"pid": 1, "image": "blah", "start_time": 1, "guid": None}], {}),
+            (
+                [
+                    {
+                        "pid": 1,
+                        "image": "blah",
+                        "start_time": 1,
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                    },
+                    {
+                        "pid": 2,
+                        "image": "blah",
+                        "start_time": 1,
+                        "guid": "{12345678-1234-5678-1234-567812345679}",
+                    },
+                ],
+                {
+                    "{12345678-1234-5678-1234-567812345678}": {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "ppid": None,
+                        "pid": 1,
+                        "image": "blah",
+                        "command_line": None,
+                        "start_time": 1,
+                        "end_time": None,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                    },
+                    "{12345678-1234-5678-1234-567812345679}": {
+                        "objectid": {
+                            "guid": "{12345678-1234-5678-1234-567812345679}",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "pimage": None,
+                        "pcommand_line": None,
+                        "ppid": None,
+                        "pid": 2,
+                        "image": "blah",
+                        "command_line": None,
+                        "start_time": 1,
+                        "end_time": None,
+                        "integrity_level": None,
+                        "image_hash": None,
+                        "original_file_name": None,
+                    },
+                },
+            ),
+        ],
+    )
     def test_convert_events_to_dict(events, expected_events_dict):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Process
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Process,
+        )
+
         event_objects = [
             Process(
                 pid=event["pid"],
                 image=event["image"],
                 start_time=event["start_time"],
-                guid=event["guid"]) for event in events]
-        assert SandboxOntology._convert_events_to_dict(event_objects) == expected_events_dict
+                guid=event["guid"],
+            )
+            for event in events
+        ]
+        assert (
+            SandboxOntology._convert_events_to_dict(event_objects)
+            == expected_events_dict
+        )
 
     @staticmethod
     @pytest.mark.parametrize(
@@ -3210,216 +4972,1233 @@ class TestSandboxOntology:
             ({}, []),
             # One process
             (
-                {"a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                       "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                       "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}}},
-                [{"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                  "start_time": 1, "children": [],
-                  "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                  "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}}]
+                {
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                },
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "children": [],
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    }
+                ],
             ),
             # One parent process and one child process
             (
                 {
-                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None}}
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "a",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
                 },
                 [
-                    {"pid": 1, "ppid": 1, "image": "blah",
-                     "command_line": "blah", "start_time": 1,
-                     "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                        "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None},
-                     "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "start_time": 1,
-                                   "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                                   "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None},
-                                   "children": []}]
-                     },
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "pid": 2,
+                                "ppid": 1,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 1,
+                                "objectid": {
+                                    "guid": "b",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 1,
+                                },
+                                "pobjectid": {
+                                    "guid": "a",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [],
+                            }
+                        ],
+                    },
                 ],
             ),
             # Two unrelated processes
             (
                 {
-                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "b": {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "pid": 2,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
                 },
                 [
-                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}, "children": []},
-                    {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}, "children": []},
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [],
+                    },
+                    {
+                        "pid": 2,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [],
+                    },
                 ],
             ),
             # Three processes consisting of a parent-child relationship and a rando process
             (
                 {
-                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "b": {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "c": {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None}},
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "pid": 2,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "c": {
+                        "pid": 3,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "c",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
                 },
                 [
-                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}, "children": []},
-                    {"pid": 2, "ppid": 2, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None},
-                     "children": [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
-                                   "start_time": 1,
-                                   "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 1},
-                                   "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None}, "children": []}]
-                     },
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [],
+                    },
+                    {
+                        "pid": 2,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "pid": 3,
+                                "ppid": 2,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 1,
+                                "objectid": {
+                                    "guid": "c",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 1,
+                                },
+                                "pobjectid": {
+                                    "guid": "b",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [],
+                            }
+                        ],
+                    },
                 ],
             ),
             # Three processes consisting of a grandparent-parent-child relationship and one rando process
             (
                 {
-                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 2,
-                          "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None}},
-                    "c": {"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah", "start_time": 3,
-                          "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None}},
-                    "d": {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah", "start_time": 2,
-                          "objectid": {"guid": "d", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "a",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "c": {
+                        "pid": 3,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 3,
+                        "objectid": {
+                            "guid": "c",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "d": {
+                        "pid": 4,
+                        "ppid": 4,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "d",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
                 },
                 [
-                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None},
-                     "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "start_time": 2,
-                                   "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 1},
-                                   "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None},
-                                   "children": [{"pid": 3, "ppid": 2, "image": "blah", "command_line": "blah",
-                                                 "start_time": 3,
-                                                 "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 1},
-                                                 "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None},
-                                                 "children": []}, ]}]
-                     },
-                    {"pid": 4, "ppid": 4, "image": "blah", "command_line": "blah",
-                     "start_time": 2,
-                     "objectid": {"guid": "d", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}, "children": []}
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "pid": 2,
+                                "ppid": 1,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 2,
+                                "objectid": {
+                                    "guid": "b",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 1,
+                                },
+                                "pobjectid": {
+                                    "guid": "a",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [
+                                    {
+                                        "pid": 3,
+                                        "ppid": 2,
+                                        "image": "blah",
+                                        "command_line": "blah",
+                                        "start_time": 3,
+                                        "objectid": {
+                                            "guid": "c",
+                                            "tag": "blah",
+                                            "treeid": None,
+                                            "richid": None,
+                                            "time_observed": 1,
+                                        },
+                                        "pobjectid": {
+                                            "guid": "b",
+                                            "tag": None,
+                                            "treeid": None,
+                                            "richid": None,
+                                            "time_observed": None,
+                                        },
+                                        "children": [],
+                                    },
+                                ],
+                            }
+                        ],
+                    },
+                    {
+                        "pid": 4,
+                        "ppid": 4,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "d",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [],
+                    },
                 ],
             ),
             # Four processes consisting of a grandparent-parent-parent-child relationship
             (
                 {
-                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 2,
-                          "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 2},
-                          "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None}},
-                    "c": {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 3,
-                          "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 3},
-                          "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None}},
-                    "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "start_time": 4,
-                          "objectid": {"guid": "d", "tag": "blah", "treeid": None, "time_observed": 4},
-                          "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None}},
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "a",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "c": {
+                        "pid": 3,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 3,
+                        "objectid": {
+                            "guid": "c",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 3,
+                        },
+                        "pobjectid": {
+                            "guid": "a",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "d": {
+                        "pid": 4,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 4,
+                        "objectid": {
+                            "guid": "d",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 4,
+                        },
+                        "pobjectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
                 },
                 [
-                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None},
-                     "children": [{"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "start_time": 2,
-                                   "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 2},
-                                   "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None},
-                                   "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
-                                                 "start_time": 4,
-                                                 "objectid": {"guid": "d", "tag": "blah", "treeid": None, "time_observed": 4},
-                                                 "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None},
-                                                 "children": []}]},
-                                  {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "start_time": 3,
-                                   "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 3},
-                                   "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None},
-                                   "children": []}
-                                  ]
-                     },
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "pid": 2,
+                                "ppid": 1,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 2,
+                                "objectid": {
+                                    "guid": "b",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 2,
+                                },
+                                "pobjectid": {
+                                    "guid": "a",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [
+                                    {
+                                        "pid": 4,
+                                        "ppid": 2,
+                                        "image": "blah",
+                                        "command_line": "blah",
+                                        "start_time": 4,
+                                        "objectid": {
+                                            "guid": "d",
+                                            "tag": "blah",
+                                            "treeid": None,
+                                            "richid": None,
+                                            "time_observed": 4,
+                                        },
+                                        "pobjectid": {
+                                            "guid": "b",
+                                            "tag": None,
+                                            "treeid": None,
+                                            "richid": None,
+                                            "time_observed": None,
+                                        },
+                                        "children": [],
+                                    }
+                                ],
+                            },
+                            {
+                                "pid": 3,
+                                "ppid": 1,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 3,
+                                "objectid": {
+                                    "guid": "c",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 3,
+                                },
+                                "pobjectid": {
+                                    "guid": "a",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [],
+                            },
+                        ],
+                    },
                 ],
             ),
             # Four processes consisting of a grandparent-parent-parent-child relationship with non-ordered times
             (
                 {
-                    "a": {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 1,
-                          "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                          "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None}},
-                    "b": {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 3,
-                          "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 3},
-                          "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None}},
-                    "c": {"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah", "start_time": 2,
-                          "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 2},
-                          "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None}},
-                    "d": {"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah", "start_time": 4,
-                          "objectid": {"guid": "d", "tag": "blah", "treeid": None, "time_observed": 4},
-                          "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None}},
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "pid": 2,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 3,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 3,
+                        },
+                        "pobjectid": {
+                            "guid": "a",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "c": {
+                        "pid": 3,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 2,
+                        "objectid": {
+                            "guid": "c",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "pobjectid": {
+                            "guid": "a",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "d": {
+                        "pid": 4,
+                        "ppid": 2,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 4,
+                        "objectid": {
+                            "guid": "d",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 4,
+                        },
+                        "pobjectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
                 },
                 [
-                    {"pid": 1, "ppid": 1, "image": "blah", "command_line": "blah",
-                     "start_time": 1,
-                     "objectid": {"guid": "a", "tag": "blah", "treeid": None, "time_observed": 1},
-                     "pobjectid": {"guid": None, "tag": None, "treeid": None, "time_observed": None},
-                     "children": [{"pid": 3, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "start_time": 2,
-                                   "objectid": {"guid": "c", "tag": "blah", "treeid": None, "time_observed": 2},
-                                   "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None},
-                                   "children": []},
-                                  {"pid": 2, "ppid": 1, "image": "blah", "command_line": "blah",
-                                   "start_time": 3,
-                                   "objectid": {"guid": "b", "tag": "blah", "treeid": None, "time_observed": 3},
-                                   "pobjectid": {"guid": "a", "tag": None, "treeid": None, "time_observed": None},
-                                   "children": [{"pid": 4, "ppid": 2, "image": "blah", "command_line": "blah",
-                                                 "start_time": 4,
-                                                 "objectid": {"guid": "d", "tag": "blah", "treeid": None, "time_observed": 4},
-                                                 "pobjectid": {"guid": "b", "tag": None, "treeid": None, "time_observed": None},
-                                                 "children": []}]},
-                                  ]
-                     },
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "pid": 3,
+                                "ppid": 1,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 2,
+                                "objectid": {
+                                    "guid": "c",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 2,
+                                },
+                                "pobjectid": {
+                                    "guid": "a",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [],
+                            },
+                            {
+                                "pid": 2,
+                                "ppid": 1,
+                                "image": "blah",
+                                "command_line": "blah",
+                                "start_time": 3,
+                                "objectid": {
+                                    "guid": "b",
+                                    "tag": "blah",
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 3,
+                                },
+                                "pobjectid": {
+                                    "guid": "a",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": None,
+                                },
+                                "children": [
+                                    {
+                                        "pid": 4,
+                                        "ppid": 2,
+                                        "image": "blah",
+                                        "command_line": "blah",
+                                        "start_time": 4,
+                                        "objectid": {
+                                            "guid": "d",
+                                            "tag": "blah",
+                                            "treeid": None,
+                                            "richid": None,
+                                            "time_observed": 4,
+                                        },
+                                        "pobjectid": {
+                                            "guid": "b",
+                                            "tag": None,
+                                            "treeid": None,
+                                            "richid": None,
+                                            "time_observed": None,
+                                        },
+                                        "children": [],
+                                    }
+                                ],
+                            },
+                        ],
+                    },
                 ],
             ),
-        ]
+            # One process and one unrelated network connection with no process
+            (
+                {
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "process": None,
+                        "source_ip": None,
+                        "source_port": None,
+                        "destination_ip": None,
+                        "destination_port": None,
+                        "transport_layer_protocol": None,
+                        "direction": None,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                    },
+                },
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [],
+                    },
+                    {
+                        "process": None,
+                        "source_ip": None,
+                        "source_port": None,
+                        "destination_ip": None,
+                        "destination_port": None,
+                        "transport_layer_protocol": None,
+                        "direction": None,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                        "children": [],
+                    },
+                ],
+            ),
+            # One process and one child network connection
+            (
+                {
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "process": {"objectid": {"guid": "a"}},
+                        "source_ip": None,
+                        "source_port": None,
+                        "destination_ip": None,
+                        "destination_port": None,
+                        "transport_layer_protocol": None,
+                        "direction": None,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                    },
+                },
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "process": {"objectid": {"guid": "a"}},
+                                "source_ip": None,
+                                "source_port": None,
+                                "destination_ip": None,
+                                "destination_port": None,
+                                "transport_layer_protocol": None,
+                                "direction": None,
+                                "objectid": {
+                                    "guid": "b",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 2,
+                                },
+                                "children": [],
+                            }
+                        ],
+                    }
+                ],
+            ),
+            # One process and two child network connections, unordered times
+            (
+                {
+                    "a": {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                    },
+                    "b": {
+                        "process": {"objectid": {"guid": "a"}},
+                        "source_ip": None,
+                        "source_port": None,
+                        "destination_ip": None,
+                        "destination_port": None,
+                        "transport_layer_protocol": None,
+                        "direction": None,
+                        "objectid": {
+                            "guid": "b",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 3,
+                        },
+                    },
+                    "c": {
+                        "process": {"objectid": {"guid": "a"}},
+                        "source_ip": None,
+                        "source_port": None,
+                        "destination_ip": None,
+                        "destination_port": None,
+                        "transport_layer_protocol": None,
+                        "direction": None,
+                        "objectid": {
+                            "guid": "c",
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 2,
+                        },
+                    },
+                },
+                [
+                    {
+                        "pid": 1,
+                        "ppid": 1,
+                        "image": "blah",
+                        "command_line": "blah",
+                        "start_time": 1,
+                        "objectid": {
+                            "guid": "a",
+                            "tag": "blah",
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": 1,
+                        },
+                        "pobjectid": {
+                            "guid": None,
+                            "tag": None,
+                            "treeid": None,
+                            "richid": None,
+                            "time_observed": None,
+                        },
+                        "children": [
+                            {
+                                "process": {"objectid": {"guid": "a"}},
+                                "source_ip": None,
+                                "source_port": None,
+                                "destination_ip": None,
+                                "destination_port": None,
+                                "transport_layer_protocol": None,
+                                "direction": None,
+                                "objectid": {
+                                    "guid": "c",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 2,
+                                },
+                                "children": [],
+                            },
+                            {
+                                "process": {"objectid": {"guid": "a"}},
+                                "source_ip": None,
+                                "source_port": None,
+                                "destination_ip": None,
+                                "destination_port": None,
+                                "transport_layer_protocol": None,
+                                "direction": None,
+                                "objectid": {
+                                    "guid": "b",
+                                    "tag": None,
+                                    "treeid": None,
+                                    "richid": None,
+                                    "time_observed": 3,
+                                },
+                                "children": [],
+                            },
+                        ],
+                    }
+                ],
+            ),
+        ],
     )
     def test_convert_events_dict_to_tree(events_dict, expected_result):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         actual_result = SandboxOntology._convert_events_dict_to_tree(events_dict)
         assert actual_result == expected_result
 
     @staticmethod
     def test_convert_event_tree_to_result_section():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         so = SandboxOntology()
         actual_items = []
-        event = {"pid": 1, "image": "blah", "command_line": "blah", "treeid": "blahblah", "children": [
-            {"pid": 2, "image": "blah", "command_line": "blah", "children": []}]}
+        event = {
+            "pid": 1,
+            "image": "blah",
+            "command_line": "blah",
+            "treeid": "blahblah",
+            "richid": "blahblah",
+            "children": [
+                {"pid": 2, "image": "blah", "command_line": "blah", "children": []}
+            ],
+        }
         safelist = ["blahblah"]
         p = so.create_process(pid=2, start_time=1.0)
         so.add_process(p)
@@ -3432,17 +6211,19 @@ class TestSandboxOntology:
             "process_name": "blah",
             "command_line": "blah",
             "process_pid": 1,
-            "children": [{
-                "process_name": "blah",
-                "command_line": "blah",
-                "process_pid": 2,
-                "children": [],
-                "signatures": {"bad": 99},
-                "file_count": 0,
-                "network_count": 1,
-                "registry_count": 0,
-                "safelisted": False,
-            }],
+            "children": [
+                {
+                    "process_name": "blah",
+                    "command_line": "blah",
+                    "process_pid": 2,
+                    "children": [],
+                    "signatures": {"bad": 99},
+                    "file_count": 0,
+                    "network_count": 1,
+                    "registry_count": 0,
+                    "safelisted": False,
+                }
+            ],
             "signatures": {},
             "file_count": 0,
             "network_count": 0,
@@ -3451,359 +6232,1065 @@ class TestSandboxOntology:
         }
 
     @staticmethod
-    @pytest.mark.parametrize("parent, node, expected_node, expected_treeids",
-                             [("",
-                               {"objectid": {"tag": "got the image", "guid": "{12345678-1234-5678-1234-567812345678}"},
-                                "children":
-                                [{"objectid": {"tag": "image number 2", "guid": "{12345678-1234-5678-1234-567812345679}"},
-                                  "children": []},
-                                 {"objectid": {"tag": "image number 3", "guid": "{12345678-1234-5678-1234-567812345670}"},
-                                  "children": []}]},
-                               {"objectid": {"tag": "got the image", "guid": "{12345678-1234-5678-1234-567812345678}",
-                                "treeid": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b"},
-                                "children":
-                                [{"objectid": {"tag": "image number 2",
-                                  "treeid": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17",
-                                               "guid": "{12345678-1234-5678-1234-567812345679}"}, "children": []},
-                                 {"objectid": {"tag": "image number 3",
-                                  "treeid": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129",
-                                               "guid": "{12345678-1234-5678-1234-567812345670}"}, "children": []}]},
-                               ["b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
-                                "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17",
-                                "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129"]),
-                              ("blahblah",
-                               {"objectid": {"tag": "got the image", "guid": "{12345678-1234-5678-1234-567812345678}"},
-                                "children":
-                                [{"objectid": {"tag": "image number 2", "guid": "{12345678-1234-5678-1234-567812345679}"},
-                                  "children": []},
-                                 {"objectid": {"tag": "image number 3", "guid": "{12345678-1234-5678-1234-567812345670}"},
-                                  "children": []}]},
-                               {"objectid": {"tag": "got the image",
-                                             "treeid": "66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
-                                             "guid": "{12345678-1234-5678-1234-567812345678}"},
-                                "children":
-                                [{"objectid": {"tag": "image number 2",
-                                  "treeid": "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154",
-                                               "guid": "{12345678-1234-5678-1234-567812345679}"}, "children": []},
-                                 {"objectid": {"tag": "image number 3",
-                                               "treeid": "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d",
-                                               "guid": "{12345678-1234-5678-1234-567812345670}"}, "children": []}]},
-                               ["66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
-                                "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154",
-                                "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d"])])
-    def test_create_hashed_node(parent, node, expected_node, expected_treeids):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+    @pytest.mark.parametrize(
+        "parent_treeid, parent_richid, node, expected_node, expected_treeids, expected_richids",
+        [
+            (
+                "",
+                "",
+                {
+                    "objectid": {
+                        "tag": "got the image",
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                    },
+                    "children": [
+                        {
+                            "objectid": {
+                                "tag": "image number 2",
+                                "guid": "{12345678-1234-5678-1234-567812345679}",
+                            },
+                            "children": [],
+                        },
+                        {
+                            "objectid": {
+                                "tag": "image number 3",
+                                "guid": "{12345678-1234-5678-1234-567812345670}",
+                            },
+                            "children": [],
+                        },
+                    ],
+                },
+                {
+                    "objectid": {
+                        "tag": "got the image",
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                        "treeid": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
+                        "richid": "got the image",
+                    },
+                    "children": [
+                        {
+                            "objectid": {
+                                "tag": "image number 2",
+                                "treeid": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17",
+                                "richid": "got the image>image number 2",
+                                "guid": "{12345678-1234-5678-1234-567812345679}",
+                            },
+                            "children": [],
+                        },
+                        {
+                            "objectid": {
+                                "tag": "image number 3",
+                                "treeid": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129",
+                                "richid": "got the image>image number 3",
+                                "guid": "{12345678-1234-5678-1234-567812345670}",
+                            },
+                            "children": [],
+                        },
+                    ],
+                },
+                [
+                    "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
+                    "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17",
+                    "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129",
+                ],
+                [
+                    'got the image',
+                    'got the image>image number 2',
+                    'got the image>image number 3',
+                ],
+            ),
+            (
+                "blahblah",
+                "blahblah",
+                {
+                    "objectid": {
+                        "tag": "got the image",
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                    },
+                    "children": [
+                        {
+                            "objectid": {
+                                "tag": "image number 2",
+                                "guid": "{12345678-1234-5678-1234-567812345679}",
+                            },
+                            "children": [],
+                        },
+                        {
+                            "objectid": {
+                                "tag": "image number 3",
+                                "guid": "{12345678-1234-5678-1234-567812345670}",
+                            },
+                            "children": [],
+                        },
+                    ],
+                },
+                {
+                    "objectid": {
+                        "tag": "got the image",
+                        "treeid": "66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
+                        "richid": "blahblah>got the image",
+                        "guid": "{12345678-1234-5678-1234-567812345678}",
+                    },
+                    "children": [
+                        {
+                            "objectid": {
+                                "tag": "image number 2",
+                                "treeid": "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154",
+                                "richid": "blahblah>got the image>image number 2",
+                                "guid": "{12345678-1234-5678-1234-567812345679}",
+                            },
+                            "children": [],
+                        },
+                        {
+                            "objectid": {
+                                "tag": "image number 3",
+                                "treeid": "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d",
+                                "richid": "blahblah>got the image>image number 3",
+                                "guid": "{12345678-1234-5678-1234-567812345670}",
+                            },
+                            "children": [],
+                        },
+                    ],
+                },
+                [
+                    "66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
+                    "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154",
+                    "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d",
+                ],
+                [
+                    'blahblah>got the image',
+                    'blahblah>got the image>image number 2',
+                    'blahblah>got the image>image number 3',
+                ],
+            ),
+        ],
+    )
+    def test_create_hashed_node(
+        parent_treeid,
+        parent_richid,
+        node,
+        expected_node,
+        expected_treeids,
+        expected_richids,
+    ):
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         default_so = SandboxOntology()
-        p = default_so.create_process(guid="{12345678-1234-5678-1234-567812345678}", pid=1)
-        p1 = default_so.create_process(guid="{12345678-1234-5678-1234-567812345679}", pid=2)
-        p2 = default_so.create_process(guid="{12345678-1234-5678-1234-567812345670}", pid=3)
+        p = default_so.create_process(
+            guid="{12345678-1234-5678-1234-567812345678}", pid=1
+        )
+        p1 = default_so.create_process(
+            guid="{12345678-1234-5678-1234-567812345679}", pid=2
+        )
+        p2 = default_so.create_process(
+            guid="{12345678-1234-5678-1234-567812345670}", pid=3
+        )
         default_so.add_process(p)
         default_so.add_process(p1)
         default_so.add_process(p2)
 
-        default_so._create_hashed_node(parent, node)
+        default_so._create_hashed_node(parent_treeid, parent_richid, node)
         assert node == expected_node
-        assert [proc.objectid.treeid for proc in default_so.get_processes()] == expected_treeids
+        assert [
+            proc.objectid.treeid for proc in default_so.get_processes()
+        ] == expected_treeids
+        assert [
+            proc.objectid.richid for proc in default_so.get_processes()
+        ] == expected_richids
 
     @staticmethod
-    @pytest.mark.parametrize("process_tree, expected_process_tree",
-                             [([{"objectid": {"tag": "?pf86\\microsoft office\\office14\\excel.exe"},
-                                 "children":
-                                 [{"objectid": {"tag": "?sys32\\wbem\\wmic1.exe"},
-                                   "children":
-                                   [{"objectid": {"tag": "?sys32\\wbem\\wmic11.exe"},
-                                     "children": [{"objectid": {"tag": "?sys32\\wbem\\wmic111.exe"}, "children": []}]},
-                                     {"objectid": {"tag": "?sys32\\wbem\\wmic12.exe"}, "children": []}]},
-                                  {"objectid": {"tag": "?sys32\\wbem\\wmic2.exe"}, "children": []},
-                                  {"objectid": {"tag": "?sys32\\wbem\\wmic3.exe"},
-                                   "children":
-                                   [{"objectid": {"tag": "?sys32\\wbem\\wmic31.exe"}, "children": []},
-                                    {"objectid": {"tag": "?sys32\\wbem\\wmic32.exe"}, "children": []},
-                                    {"objectid": {"tag": "?sys32\\wbem\\wmic33.exe"}, "children": []}]}]}],
-                               [{"objectid": {"tag": "?pf86\\microsoft office\\office14\\excel.exe",
-                                 "treeid": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62"},
-                                 "children":
-                                 [{"objectid": {"tag": "?sys32\\wbem\\wmic1.exe",
-                                   "treeid": "444ba8aca3c500c14d6b9948e6564864ffe3533b17c8a7970b20ff4145884448"},
-                                   "children":
-                                   [{"objectid": {"tag": "?sys32\\wbem\\wmic11.exe",
-                                     "treeid": "29ee5e07066a9f5c9f66856c8cadaf706439b1eaef79ddad74f3cac929b54464"},
-                                     "children":
-                                     [{"objectid": {"tag": "?sys32\\wbem\\wmic111.exe",
-                                       "treeid": "63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac"},
-                                       "children": []}]},
-                                    {"objectid": {"tag": "?sys32\\wbem\\wmic12.exe",
-                                     "treeid": "6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d"},
-                                     "children": []}]},
-                                  {"objectid": {"tag": "?sys32\\wbem\\wmic2.exe",
-                                   "treeid": "a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b"},
-                                   "children": []},
-                                  {"objectid": {"tag": "?sys32\\wbem\\wmic3.exe",
-                                   "treeid": "878e93a9cb19e3d8d659dbb3bd4945e53055f3b22c79ac49fac3070b3cc1acd7"},
-                                   "children":
-                                   [{"objectid": {"tag": "?sys32\\wbem\\wmic31.exe",
-                                     "treeid": "6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40"},
-                                     "children": []},
-                                    {"objectid": {"tag": "?sys32\\wbem\\wmic32.exe",
-                                     "treeid": "099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd"},
-                                     "children": []},
-                                    {"objectid": {"tag": "?sys32\\wbem\\wmic33.exe",
-                                     "treeid": "4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5"},
-                                     "children": []}]}]}]), ])
+    @pytest.mark.parametrize(
+        "process_tree, expected_process_tree",
+        [
+            (
+                [
+                    {
+                        "objectid": {
+                            "tag": "?pf86\\microsoft office\\office14\\excel.exe"
+                        },
+                        "children": [
+                            {
+                                "objectid": {"tag": "?sys32\\wbem\\wmic1.exe"},
+                                "children": [
+                                    {
+                                        "objectid": {"tag": "?sys32\\wbem\\wmic11.exe"},
+                                        "children": [
+                                            {
+                                                "objectid": {
+                                                    "tag": "?sys32\\wbem\\wmic111.exe"
+                                                },
+                                                "children": [],
+                                            }
+                                        ],
+                                    },
+                                    {
+                                        "objectid": {"tag": "?sys32\\wbem\\wmic12.exe"},
+                                        "children": [],
+                                    },
+                                ],
+                            },
+                            {
+                                "objectid": {"tag": "?sys32\\wbem\\wmic2.exe"},
+                                "children": [],
+                            },
+                            {
+                                "objectid": {"tag": "?sys32\\wbem\\wmic3.exe"},
+                                "children": [
+                                    {
+                                        "objectid": {"tag": "?sys32\\wbem\\wmic31.exe"},
+                                        "children": [],
+                                    },
+                                    {
+                                        "objectid": {"tag": "?sys32\\wbem\\wmic32.exe"},
+                                        "children": [],
+                                    },
+                                    {
+                                        "objectid": {"tag": "?sys32\\wbem\\wmic33.exe"},
+                                        "children": [],
+                                    },
+                                ],
+                            },
+                        ],
+                    }
+                ],
+                [
+                    {
+                        "objectid": {
+                            "tag": "?pf86\\microsoft office\\office14\\excel.exe",
+                            "treeid": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62",
+                            "richid": "?pf86\\microsoft office\\office14\\excel.exe",
+                        },
+                        "children": [
+                            {
+                                "objectid": {
+                                    "tag": "?sys32\\wbem\\wmic1.exe",
+                                    "treeid": "444ba8aca3c500c14d6b9948e6564864ffe3533b17c8a7970b20ff4145884448",
+                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe",
+                                },
+                                "children": [
+                                    {
+                                        "objectid": {
+                                            "tag": "?sys32\\wbem\\wmic11.exe",
+                                            "treeid": "29ee5e07066a9f5c9f66856c8cadaf706439b1eaef79ddad74f3cac929b54464",
+                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe>?sys32\\wbem\\wmic11.exe",
+                                        },
+                                        "children": [
+                                            {
+                                                "objectid": {
+                                                    "tag": "?sys32\\wbem\\wmic111.exe",
+                                                    "treeid": "63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac",
+                                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe>?sys32\\wbem\\wmic11.exe>?sys32\\wbem\\wmic111.exe",
+                                                },
+                                                "children": [],
+                                            }
+                                        ],
+                                    },
+                                    {
+                                        "objectid": {
+                                            "tag": "?sys32\\wbem\\wmic12.exe",
+                                            "treeid": "6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d",
+                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe>?sys32\\wbem\\wmic12.exe",
+                                        },
+                                        "children": [],
+                                    },
+                                ],
+                            },
+                            {
+                                "objectid": {
+                                    "tag": "?sys32\\wbem\\wmic2.exe",
+                                    "treeid": "a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b",
+                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic2.exe",
+                                },
+                                "children": [],
+                            },
+                            {
+                                "objectid": {
+                                    "tag": "?sys32\\wbem\\wmic3.exe",
+                                    "treeid": "878e93a9cb19e3d8d659dbb3bd4945e53055f3b22c79ac49fac3070b3cc1acd7",
+                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe",
+                                },
+                                "children": [
+                                    {
+                                        "objectid": {
+                                            "tag": "?sys32\\wbem\\wmic31.exe",
+                                            "treeid": "6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40",
+                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe>?sys32\\wbem\\wmic31.exe",
+                                        },
+                                        "children": [],
+                                    },
+                                    {
+                                        "objectid": {
+                                            "tag": "?sys32\\wbem\\wmic32.exe",
+                                            "treeid": "099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd",
+                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe>?sys32\\wbem\\wmic32.exe",
+                                        },
+                                        "children": [],
+                                    },
+                                    {
+                                        "objectid": {
+                                            "tag": "?sys32\\wbem\\wmic33.exe",
+                                            "treeid": "4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5",
+                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe>?sys32\\wbem\\wmic33.exe",
+                                        },
+                                        "children": [],
+                                    },
+                                ],
+                            },
+                        ],
+                    }
+                ],
+            ),
+        ],
+    )
     def test_create_treeids(process_tree, expected_process_tree):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         default_so = SandboxOntology()
         default_so._create_treeids(process_tree)
         assert process_tree == expected_process_tree
 
     @staticmethod
     @pytest.mark.parametrize(
-        'node, safe_treeids, expected_node',
+        "node, safe_treeids, expected_node",
         [
-            ({"image": "a", "objectid": {"treeid": "a"}, "children": []}, [],
-             {"image": "a", "objectid": {"treeid": "a"}, "children": []}),
-            ({"image": "a", "objectid": {"treeid": "a"}, "children": []}, [
-             "a"], {"image": "a", "objectid": {"treeid": "a"}, "children": []}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []}]}, [],
-             {"image": "a", "objectid": {"treeid": "a"}, "children": [
-                 {"image": "b", "objectid": {"treeid": "b"}, "children": []}]}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []}]}, ["b"],
-             {'children': [], 'image': 'a', "objectid": {'treeid': 'b'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []}]}, ["a"],
-             {'children': [{'children': [], 'image': 'b', "objectid": {'treeid': 'b'}}],
-              'image': 'a', "objectid": {'treeid': 'a'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []},
-                           {"image": "c", "objectid": {"treeid": "c"}, "children": []}]}, [],
-             {'children': [{'children': [], 'image': 'b', "objectid": {'treeid': 'b'}},
-                           {'children': [], 'image': 'c', "objectid": {'treeid': 'c'}}], 'image': 'a', "objectid": {'treeid': 'a'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []},
-                           {"image": "c", "objectid": {"treeid": "c"}, "children": []}]}, ["b"],
-             {'children': [{'children': [], 'image': 'c', "objectid": {'treeid': 'c'}}],
-              'image': 'a', "objectid": {'treeid': 'a'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []},
-                           {"image": "c", "objectid": {"treeid": "c"}, "children": []}]}, ["c"],
-             {'children': [{'children': [], 'image': 'b', "objectid": {'treeid': 'b'}}],
-              'image': 'a', "objectid": {'treeid': 'a'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"},
-                            "children": [{"image": "d", "objectid": {"treeid": "d"}, "children": []}]},
-                           {"image": "c", "objectid": {"treeid": "c"}, "children": []}]}, ["c"],
-             {'children': [{'children': [{"image": "d", "objectid": {"treeid": "d"}, "children": []}],
-                            'image': 'b', "objectid": {'treeid': 'b'}}], 'image': 'a', "objectid": {'treeid': 'a'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"},
-                            "children": [{"image": "d", "objectid": {"treeid": "d"}, "children": []}]},
-                           {"image": "c", "objectid": {"treeid": "c"}, "children": []}]}, ["d"],
-             {'children': [{'children': [], 'image': 'c', "objectid": {'treeid': 'c'}}],
-              'image': 'a', "objectid": {'treeid': 'a'}}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []},
-                           {"image": "c", "objectid": {"treeid": "c"},
-                            "children": [{"image": "d", "objectid": {"treeid": "d"}, "children": []}]}]}, ["d"],
-             {"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []}]}),
-            ({"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "b", "objectid": {"treeid": "b"}, "children": []},
-                           {"image": "c", "objectid": {"treeid": "c"},
-                            "children": [{"image": "d", "objectid": {"treeid": "d"}, "children": []}]}]}, ["b"],
-             {"image": "a", "objectid": {"treeid": "a"},
-              "children": [{"image": "c", "objectid": {"treeid": "c"},
-                            "children": [{"image": "d", "objectid": {"treeid": "d"},
-                                          "children": []}]}]}),
-        ]
+            (
+                {"image": "a", "objectid": {"treeid": "a"}, "children": []},
+                [],
+                {"image": "a", "objectid": {"treeid": "a"}, "children": []},
+            ),
+            (
+                {"image": "a", "objectid": {"treeid": "a"}, "children": []},
+                ["a"],
+                {"image": "a", "objectid": {"treeid": "a"}, "children": []},
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []}
+                    ],
+                },
+                [],
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []}
+                    ],
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []}
+                    ],
+                },
+                ["b"],
+                {"children": [], "image": "a", "objectid": {"treeid": "b"}},
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []}
+                    ],
+                },
+                ["a"],
+                {
+                    "children": [
+                        {"children": [], "image": "b", "objectid": {"treeid": "b"}}
+                    ],
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []},
+                        {"image": "c", "objectid": {"treeid": "c"}, "children": []},
+                    ],
+                },
+                [],
+                {
+                    "children": [
+                        {"children": [], "image": "b", "objectid": {"treeid": "b"}},
+                        {"children": [], "image": "c", "objectid": {"treeid": "c"}},
+                    ],
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []},
+                        {"image": "c", "objectid": {"treeid": "c"}, "children": []},
+                    ],
+                },
+                ["b"],
+                {
+                    "children": [
+                        {"children": [], "image": "c", "objectid": {"treeid": "c"}}
+                    ],
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []},
+                        {"image": "c", "objectid": {"treeid": "c"}, "children": []},
+                    ],
+                },
+                ["c"],
+                {
+                    "children": [
+                        {"children": [], "image": "b", "objectid": {"treeid": "b"}}
+                    ],
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {
+                            "image": "b",
+                            "objectid": {"treeid": "b"},
+                            "children": [
+                                {
+                                    "image": "d",
+                                    "objectid": {"treeid": "d"},
+                                    "children": [],
+                                }
+                            ],
+                        },
+                        {"image": "c", "objectid": {"treeid": "c"}, "children": []},
+                    ],
+                },
+                ["c"],
+                {
+                    "children": [
+                        {
+                            "children": [
+                                {
+                                    "image": "d",
+                                    "objectid": {"treeid": "d"},
+                                    "children": [],
+                                }
+                            ],
+                            "image": "b",
+                            "objectid": {"treeid": "b"},
+                        }
+                    ],
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {
+                            "image": "b",
+                            "objectid": {"treeid": "b"},
+                            "children": [
+                                {
+                                    "image": "d",
+                                    "objectid": {"treeid": "d"},
+                                    "children": [],
+                                }
+                            ],
+                        },
+                        {"image": "c", "objectid": {"treeid": "c"}, "children": []},
+                    ],
+                },
+                ["d"],
+                {
+                    "children": [
+                        {"children": [], "image": "c", "objectid": {"treeid": "c"}}
+                    ],
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []},
+                        {
+                            "image": "c",
+                            "objectid": {"treeid": "c"},
+                            "children": [
+                                {
+                                    "image": "d",
+                                    "objectid": {"treeid": "d"},
+                                    "children": [],
+                                }
+                            ],
+                        },
+                    ],
+                },
+                ["d"],
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []}
+                    ],
+                },
+            ),
+            (
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {"image": "b", "objectid": {"treeid": "b"}, "children": []},
+                        {
+                            "image": "c",
+                            "objectid": {"treeid": "c"},
+                            "children": [
+                                {
+                                    "image": "d",
+                                    "objectid": {"treeid": "d"},
+                                    "children": [],
+                                }
+                            ],
+                        },
+                    ],
+                },
+                ["b"],
+                {
+                    "image": "a",
+                    "objectid": {"treeid": "a"},
+                    "children": [
+                        {
+                            "image": "c",
+                            "objectid": {"treeid": "c"},
+                            "children": [
+                                {
+                                    "image": "d",
+                                    "objectid": {"treeid": "d"},
+                                    "children": [],
+                                }
+                            ],
+                        }
+                    ],
+                },
+            ),
+        ],
     )
     def test_remove_safe_leaves_helper(node, safe_treeids, expected_node):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         _ = SandboxOntology._remove_safe_leaves_helper(node, safe_treeids)
         assert node == expected_node
 
-    @ staticmethod
-    @ pytest.mark.parametrize('process_tree, safe_treeids, expected_process_tree',
-                              [([{"image": "a", "children": [],
-                                 "objectid": {"treeid": "blah"}}],
-                               [],
-                               [{"image": "a", "children": [],
-                                 "objectid": {"treeid": "blah"}}]),
-                               ([{"image": "a", "children": [],
-                                 "objectid": {"treeid": "blah"}}],
-                               ["blah"],
-                               []),
-                               ([{"image": "a", "children": [],
-                                 "objectid": {"treeid": "blah"}},
-                                {"image": "b", "children": [],
-                                 "objectid": {"treeid": "blahblah"}}],
-                               ["blah"],
-                               [{"image": "b", "children": [],
-                                 "objectid": {"treeid": "blahblah"}}]),
-                               ([{"image": "a", "children": [],
-                                 "objectid": {"treeid": "blah"}},
-                                {"image": "b", "children": [],
-                                 "objectid": {"treeid": "blahblah"}}],
-                               ["blahblah"],
-                               [{"image": "a", "children": [],
-                                 "objectid": {"treeid": "blah"}}]),
-                               ([{"image": "a", "children": [{"image": "b", "children": [],
-                                                             "objectid": {"treeid": "b"}}],
-                                 "objectid": {"treeid": "a"}},
-                                {"image": "c", "children": [{"image": "d", "children": [],
-                                                             "objectid": {"treeid": "d"}}],
-                                 "objectid": {"treeid": "c"}}],
-                               [],
-                               [{"image": "a", "children": [{"image": "b", "children": [],
-                                                             "objectid": {"treeid": "b"}}],
-                                 "objectid": {"treeid": "a"}},
-                                {"image": "c", "children": [{"image": "d", "children": [],
-                                                             "objectid": {"treeid": "d"}}],
-                                 "objectid": {"treeid": "c"}}]),
-                               ([{"image": "a", "children": [{"image": "b", "children": [],
-                                                             "objectid": {"treeid": "b"}}],
-                                 "objectid": {"treeid": "a"}},
-                                {"image": "c", "children": [{"image": "d", "children": [],
-                                                             "objectid": {"treeid": "d"}}],
-                                 "objectid": {"treeid": "c"}}],
-                               ["a"],
-                               [{"image": "a", "children": [{"image": "b", "children": [],
-                                                             "objectid": {"treeid": "b"}}],
-                                 "objectid": {"treeid": "a"}},
-                                {"image": "c", "children": [{"image": "d", "children": [],
-                                                             "objectid": {"treeid": "d"}}],
-                                 "objectid": {"treeid": "c"}}]),
-                               ([{"image": "a", "children": [{"image": "b", "children": [],
-                                                             "objectid": {"treeid": "b"}}],
-                                 "objectid": {"treeid": "a"}},
-                                {"image": "c", "children": [{"image": "d", "children": [],
-                                                             "objectid": {"treeid": "d"}}],
-                                 "objectid": {"treeid": "c"}}],
-                               ["b"],
-                               [{"image": "c", "children": [{"image": "d", "children": [],
-                                                             "objectid": {"treeid": "d"}}],
-                                 "objectid": {"treeid": "c"}}]), ])
+    @staticmethod
+    @pytest.mark.parametrize(
+        "process_tree, safe_treeids, expected_process_tree",
+        [
+            (
+                [{"image": "a", "children": [], "objectid": {"treeid": "blah"}}],
+                [],
+                [{"image": "a", "children": [], "objectid": {"treeid": "blah"}}],
+            ),
+            (
+                [{"image": "a", "children": [], "objectid": {"treeid": "blah"}}],
+                ["blah"],
+                [],
+            ),
+            (
+                [
+                    {"image": "a", "children": [], "objectid": {"treeid": "blah"}},
+                    {"image": "b", "children": [], "objectid": {"treeid": "blahblah"}},
+                ],
+                ["blah"],
+                [{"image": "b", "children": [], "objectid": {"treeid": "blahblah"}}],
+            ),
+            (
+                [
+                    {"image": "a", "children": [], "objectid": {"treeid": "blah"}},
+                    {"image": "b", "children": [], "objectid": {"treeid": "blahblah"}},
+                ],
+                ["blahblah"],
+                [{"image": "a", "children": [], "objectid": {"treeid": "blah"}}],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {"image": "b", "children": [], "objectid": {"treeid": "b"}}
+                        ],
+                        "objectid": {"treeid": "a"},
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {"image": "d", "children": [], "objectid": {"treeid": "d"}}
+                        ],
+                        "objectid": {"treeid": "c"},
+                    },
+                ],
+                [],
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {"image": "b", "children": [], "objectid": {"treeid": "b"}}
+                        ],
+                        "objectid": {"treeid": "a"},
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {"image": "d", "children": [], "objectid": {"treeid": "d"}}
+                        ],
+                        "objectid": {"treeid": "c"},
+                    },
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {"image": "b", "children": [], "objectid": {"treeid": "b"}}
+                        ],
+                        "objectid": {"treeid": "a"},
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {"image": "d", "children": [], "objectid": {"treeid": "d"}}
+                        ],
+                        "objectid": {"treeid": "c"},
+                    },
+                ],
+                ["a"],
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {"image": "b", "children": [], "objectid": {"treeid": "b"}}
+                        ],
+                        "objectid": {"treeid": "a"},
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {"image": "d", "children": [], "objectid": {"treeid": "d"}}
+                        ],
+                        "objectid": {"treeid": "c"},
+                    },
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {"image": "b", "children": [], "objectid": {"treeid": "b"}}
+                        ],
+                        "objectid": {"treeid": "a"},
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {"image": "d", "children": [], "objectid": {"treeid": "d"}}
+                        ],
+                        "objectid": {"treeid": "c"},
+                    },
+                ],
+                ["b"],
+                [
+                    {
+                        "image": "c",
+                        "children": [
+                            {"image": "d", "children": [], "objectid": {"treeid": "d"}}
+                        ],
+                        "objectid": {"treeid": "c"},
+                    }
+                ],
+            ),
+        ],
+    )
     def test_remove_safe_leaves(process_tree, safe_treeids, expected_process_tree):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         SandboxOntology._remove_safe_leaves(process_tree, safe_treeids)
         assert process_tree == expected_process_tree
 
-    @ staticmethod
-    @ pytest.mark.parametrize("event_tree, safe_treeids, expected_event_tree",
-                              [([],
-                               [],
-                               []),
-                               ([{"image": "a", "children": [],
-                                 "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}],
-                               [],
-                               [{"image": "a", "children": [],
-                                 "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}]),
-                               ([{"image": "a", "children": [],
-                                 "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}],
-                               ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],
-                               []),
-                               ([{"image": "a",
-                                 "children":
-                                  [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                  "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}],
-                               [],
-                               [{"image": "a",
-                                 "children":
-                                 [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                 "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}]),
-                               ([{"image": "a",
-                                 "children":
-                                  [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                  "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}],
-                               ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"],
-                               []),
-                               ([{"image": "a",
-                                 "children":
-                                  [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                  "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}],
-                               ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],
-                               [{"image": "a",
-                                 "children":
-                                 [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                 "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}}]),
-                               ([{"image": "a",
-                                 "children":
-                                  [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                  "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}},
-                                {"image": "c",
-                                 "children":
-                                 [{"image": "d", "children": [],
-                                   "objectid": {'treeid': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}}],
-                                 "objectid": {"treeid": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}}],
-                               ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"],
-                               [{
-                                   'children':
-                                   [{'children': [],
-                                     'image': 'd',
-                                     "objectid": {'treeid': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}}],
-                                   'image': 'c',
-                                   "objectid": {'treeid': '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}}]),
-                               ([{"image": "a",
-                                 "children":
-                                  [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                  "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}},
-                                {"image": "c",
-                                 "children":
-                                 [{"image": "d", "children": [],
-                                   "objectid": {'treeid': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}}],
-                                 "objectid": {"treeid": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}}],
-                               ["2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"],
-                               [{"image": "a",
-                                 "children":
-                                 [{"image": "b", "children": [],
-                                   "objectid": {"treeid": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}}],
-                                 "objectid": {"treeid": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}},
-                                {"image": "c",
-                                 "children":
-                                 [{"image": "d", "children": [],
-                                   "objectid": {"treeid": 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}}],
-                                 "objectid": {"treeid": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}}]),
-                               ([{"image": "a",
-                                 "children":
-                                  [{"image": "b", "children": [],
-                                   "objectid": {"treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"}}],
-                                  "objectid": {"treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"}},
-                                {"image": "c",
-                                 "children":
-                                 [{"image": "d", "children": [],
-                                   "objectid": {'treeid': 'c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04'}}],
-                                 "objectid": {"treeid": '2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6'}}],
-                               ["c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"],
-                               [{"image": "a",
-                                 "children":
-                                 [{"image": "b", "children": [],
-                                   "objectid": {"treeid": 'd107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef'}}],
-                                 "objectid": {"treeid": 'ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb'}}]), ])
-    def test_filter_event_tree_against_safe_treeids(event_tree, safe_treeids, expected_event_tree):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
-        filtered_event_tree = SandboxOntology._filter_event_tree_against_safe_treeids(event_tree, safe_treeids)
+    @staticmethod
+    @pytest.mark.parametrize(
+        "event_tree, safe_treeids, expected_event_tree",
+        [
+            ([], [], []),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+                [],
+                [
+                    {
+                        "image": "a",
+                        "children": [],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+                ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],
+                [],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+                [],
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+                ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"],
+                [],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+                ["ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"],
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {
+                                "image": "d",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+                        },
+                    },
+                ],
+                ["d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"],
+                [
+                    {
+                        "children": [
+                            {
+                                "children": [],
+                                "image": "d",
+                                "objectid": {
+                                    "treeid": "c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"
+                                },
+                            }
+                        ],
+                        "image": "c",
+                        "objectid": {
+                            "treeid": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+                        },
+                    }
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {
+                                "image": "d",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+                        },
+                    },
+                ],
+                ["2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"],
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {
+                                "image": "d",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+                        },
+                    },
+                ],
+            ),
+            (
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    },
+                    {
+                        "image": "c",
+                        "children": [
+                            {
+                                "image": "d",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "2e7d2c03a9507ae265ecf5b5356885a53393a2029d241394997265a1a25aefc6"
+                        },
+                    },
+                ],
+                ["c986d8a25b16022d5da642e622d15252820421dade338015cb8a7efe558d6d04"],
+                [
+                    {
+                        "image": "a",
+                        "children": [
+                            {
+                                "image": "b",
+                                "children": [],
+                                "objectid": {
+                                    "treeid": "d107b7d075043599f95950cf82591afa47c4dce9b4d343dc6fbecb1b051ee3ef"
+                                },
+                            }
+                        ],
+                        "objectid": {
+                            "treeid": "ca978112ca1bbdcafac231b39a23dc4da786eff8147c4e72b9807785afee48bb"
+                        },
+                    }
+                ],
+            ),
+        ],
+    )
+    def test_filter_event_tree_against_safe_treeids(
+        event_tree, safe_treeids, expected_event_tree
+    ):
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        filtered_event_tree = SandboxOntology._filter_event_tree_against_safe_treeids(
+            event_tree, safe_treeids
+        )
         assert filtered_event_tree == expected_event_tree
 
-    @ staticmethod
-    @ pytest.mark.parametrize("artifact_list",
-                              [
-                                  None,
-                                  [],
-                                  [{"name": "blah", "path": "blah", "description": "blah", "to_be_extracted": True}],
-                              ]
-                              )
+    @staticmethod
+    @pytest.mark.parametrize(
+        "artifact_list",
+        [
+            None,
+            [],
+            [
+                {
+                    "name": "blah",
+                    "path": "blah",
+                    "description": "blah",
+                    "to_be_extracted": True,
+                }
+            ],
+        ],
+    )
     def test_validate_artifacts(artifact_list):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact
-        actual_validated_artifact_list = SandboxOntology._validate_artifacts(artifact_list)
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Artifact,
+        )
+
+        actual_validated_artifact_list = SandboxOntology._validate_artifacts(
+            artifact_list
+        )
         if artifact_list is None:
             artifact_list = []
         for index, artifact in enumerate(artifact_list):
@@ -3811,26 +7298,61 @@ class TestSandboxOntology:
                 name=artifact["name"],
                 path=artifact["path"],
                 description=artifact["description"],
-                to_be_extracted=artifact["to_be_extracted"]
+                to_be_extracted=artifact["to_be_extracted"],
             )
-            assert expected_artifact.as_primitives(), actual_validated_artifact_list[index].as_primitives()
+            assert expected_artifact.as_primitives(), actual_validated_artifact_list[
+                index
+            ].as_primitives()
 
-    @ staticmethod
-    @ pytest.mark.parametrize("artifact, expected_result_section_title",
-                              [(None, None),
-                               ({"path": "blah", "name": "blah", "description": "blah", "to_be_extracted": True},
-                               None),
-                               ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.exe",
-                                "description": "blah", "to_be_extracted": True},
-                               "HollowsHunter Injected Portable Executable"),
-                               ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.shc",
-                                "description": "blah", "to_be_extracted": True},
-                               None),
-                               ({"path": "blah", "name": "123_hollowshunter/hh_process_123_blah.dll",
-                                "description": "blah", "to_be_extracted": True},
-                               "HollowsHunter Injected Portable Executable"), ])
+    @staticmethod
+    @pytest.mark.parametrize(
+        "artifact, expected_result_section_title",
+        [
+            (None, None),
+            (
+                {
+                    "path": "blah",
+                    "name": "blah",
+                    "description": "blah",
+                    "to_be_extracted": True,
+                },
+                None,
+            ),
+            (
+                {
+                    "path": "blah",
+                    "name": "123_hollowshunter/hh_process_123_blah.exe",
+                    "description": "blah",
+                    "to_be_extracted": True,
+                },
+                "HollowsHunter Injected Portable Executable",
+            ),
+            (
+                {
+                    "path": "blah",
+                    "name": "123_hollowshunter/hh_process_123_blah.shc",
+                    "description": "blah",
+                    "to_be_extracted": True,
+                },
+                None,
+            ),
+            (
+                {
+                    "path": "blah",
+                    "name": "123_hollowshunter/hh_process_123_blah.dll",
+                    "description": "blah",
+                    "to_be_extracted": True,
+                },
+                "HollowsHunter Injected Portable Executable",
+            ),
+        ],
+    )
     def test_handle_artifact(artifact, expected_result_section_title):
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology, Artifact, HOLLOWSHUNTER_TITLE
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+            Artifact,
+            HOLLOWSHUNTER_TITLE,
+        )
         from assemblyline_v4_service.common.result import ResultSection, Heuristic
 
         if artifact is None:
@@ -3843,7 +7365,9 @@ class TestSandboxOntology:
             expected_result_section = ResultSection(expected_result_section_title)
             expected_result_section.add_line("HollowsHunter dumped the following:")
             expected_result_section.add_line(f"\t- {artifact['name']}")
-            expected_result_section.add_tag("dynamic.process.file_name", artifact["name"])
+            expected_result_section.add_tag(
+                "dynamic.process.file_name", artifact["name"]
+            )
             if expected_result_section_title == HOLLOWSHUNTER_TITLE:
                 heur = Heuristic(17)
                 if ".exe" in artifact["name"]:
@@ -3857,7 +7381,7 @@ class TestSandboxOntology:
             name=artifact["name"],
             path=artifact["path"],
             description=artifact["description"],
-            to_be_extracted=artifact["to_be_extracted"]
+            to_be_extracted=artifact["to_be_extracted"],
         )
         SandboxOntology._handle_artifact(a, parent_result_section)
         if len(parent_result_section.subsections) > 0:
@@ -3868,20 +7392,32 @@ class TestSandboxOntology:
         if expected_result_section is None and actual_result_section is None:
             assert True
         else:
-            assert check_section_equality(actual_result_section, expected_result_section)
+            assert check_section_equality(
+                actual_result_section, expected_result_section
+            )
 
-            additional_artifact = Artifact(name="321_hollowshunter/hh_process_321_blah.dll",
-                                           path="blah", description="blah", to_be_extracted=False)
+            additional_artifact = Artifact(
+                name="321_hollowshunter/hh_process_321_blah.dll",
+                path="blah",
+                description="blah",
+                to_be_extracted=False,
+            )
             SandboxOntology._handle_artifact(additional_artifact, parent_result_section)
             expected_result_section.add_line(f"\t- {additional_artifact.name}")
-            expected_result_section.add_tag("dynamic.process.file_name", additional_artifact.name)
+            expected_result_section.add_tag(
+                "dynamic.process.file_name", additional_artifact.name
+            )
             expected_result_section.heuristic.add_signature_id("hollowshunter_dll")
 
-            assert check_section_equality(actual_result_section, expected_result_section)
+            assert check_section_equality(
+                actual_result_section, expected_result_section
+            )
 
-    @ staticmethod
+    @staticmethod
     def test_set_process_times():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
 
         so = SandboxOntology()
         so.update_analysis_metadata(start_time=1.0, end_time=2.0)
@@ -3890,9 +7426,12 @@ class TestSandboxOntology:
         assert p.start_time == 1.0
         assert p.end_time == 2.0
 
-    @ staticmethod
+    @staticmethod
     def test_preprocess_ontology():
-        from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
         so = SandboxOntology()
         so.update_analysis_metadata(start_time=1.0, end_time=2.0)
         p = so.create_process(pid=1)
