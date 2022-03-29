@@ -148,6 +148,16 @@ class ObjectID:
             return
         self.tag = tag
 
+    def set_time_observed(self, time_observed: Union[float, int]) -> None:
+        """
+        This method updates the time_observed for the ObjectID
+        :param time_observed: The time_observed of the ObjectID
+        :return: None
+        """
+        if not (isinstance(time_observed, float) or isinstance(time_observed, int)) or not time_observed:
+            return
+        self.time_observed = float(time_observed)
+
 
 class Process:
     def __init__(
@@ -1057,6 +1067,8 @@ class SandboxOntology:
             :param kwargs: Key word arguments to be used for updating the process object attribute
             :return: None
             """
+            if all(value is None for value in kwargs.values()):
+                return
             if not self.process:
                 self.process = Process()
             self.process.update(**kwargs)
@@ -1243,6 +1255,8 @@ class SandboxOntology:
             process.set_start_time(float("-inf"))
         if not process.end_time:
             process.set_end_time(float("inf"))
+        if not process.objectid.time_observed:
+            process.objectid.set_time_observed(process.start_time)
         return process
 
     def add_process(self, process: Process) -> None:
