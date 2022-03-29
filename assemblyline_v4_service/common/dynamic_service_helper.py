@@ -812,6 +812,27 @@ class NetworkHTTP:
         self.request_body_path: str = request_body_path
         self.response_body_path: str = response_body_path
 
+    def update(self, **kwargs) -> None:
+        """
+        This method updates networkhttp attributes with the given keyword arguments
+        :param kwargs: Key word arguments to be used for updating the networkhttp attributes
+        :return: None
+        """
+        if all(value is None for value in kwargs.values()):
+            return
+
+        if "process" in kwargs:
+            process = kwargs.pop("process")
+            if process:
+                self.update_process(**process)
+
+        if "connection_details" in kwargs:
+            connection_details = kwargs.pop("connection_details")
+            if connection_details:
+                self.update_connection_details(**connection_details)
+
+        update_object_items(self, kwargs)
+
     def update_process(self, **kwargs) -> None:
         """
         This method updates the process object attribute with the given keyword arguments
