@@ -1708,13 +1708,16 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         default_so = SandboxOntology()
         assert default_so.processes == []
 
         p = default_so.create_process(guid="{12345678-1234-5678-1234-567812345678}")
         default_so.add_process(p)
-        assert default_so.processes[0].as_primitives() == {
+        process_as_primitives = default_so.processes[0].as_primitives()
+        assert str(UUID(process_as_primitives["pobjectid"].pop("guid")))
+        assert process_as_primitives == {
             "objectid": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": None,
@@ -1723,7 +1726,7 @@ class TestSandboxOntology:
                 "time_observed": float("-inf"),
             },
             "pobjectid": {
-                "guid": None,
+                # "guid": None,
                 "treeid": None,
                 "richid": None,
                 "tag": None,
@@ -7460,7 +7463,7 @@ class TestSandboxOntology:
             )
 
     @staticmethod
-    def test_set_process_times():
+    def test_set_item_times():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
@@ -7468,9 +7471,10 @@ class TestSandboxOntology:
         so = SandboxOntology()
         so.update_analysis_metadata(start_time=1.0, end_time=2.0)
         p = so.create_process(pid=1)
-        so._set_process_times(p)
+        so._set_item_times(p)
         assert p.start_time == 1.0
         assert p.end_time == 2.0
+        assert p.objectid.time_observed == 1.0
 
     @staticmethod
     def test_preprocess_ontology():
@@ -7485,3 +7489,4 @@ class TestSandboxOntology:
         so.preprocess_ontology()
         assert p.start_time == 1.0
         assert p.end_time == 2.0
+        assert p.objectid.time_observed == 1.0
