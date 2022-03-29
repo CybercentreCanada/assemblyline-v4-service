@@ -1150,6 +1150,40 @@ class TestNetworkHTTP:
         assert set_nh.request_body_path == "blah"
 
     @staticmethod
+    def test_network_http_update():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            NetworkHTTP,
+        )
+
+        nh = NetworkHTTP(request_uri="blah")
+
+        nh.update(request_uri=None)
+        assert nh.request_uri == "blah"
+
+        nh.update(
+            process={
+                "guid": "{12345678-1234-5678-1234-567812345679}",
+            }
+        )
+        assert nh.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+
+        nh.update(
+            connection_details={
+                "destination_ip": "1.1.1.1"
+            }
+        )
+        assert nh.connection_details.destination_ip == "1.1.1.1"
+
+        nh.update(request_uri="blahblah")
+        assert nh.request_uri == "blahblah"
+
+        nh.update(process={})
+        assert nh.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+
+        nh.update(connection_details={})
+        assert nh.connection_details.destination_ip == "1.1.1.1"
+
+    @staticmethod
     def test_network_http_update_process():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
 
