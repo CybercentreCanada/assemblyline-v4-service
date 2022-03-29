@@ -246,6 +246,23 @@ class TestObjectID:
         oid.set_tag(1.0)
         assert oid.tag == "blah"
 
+    @staticmethod
+    def test_set_time_observed():
+        from assemblyline_v4_service.common.dynamic_service_helper import ObjectID
+
+        oid = ObjectID()
+        oid.set_time_observed(1)
+        assert oid.time_observed == 1.0
+
+        oid.set_time_observed(None)
+        assert oid.time_observed == 1.0
+
+        oid.set_time_observed("blah")
+        assert oid.time_observed == 1.0
+
+        oid.set_time_observed(1.0)
+        assert oid.time_observed == 1.0
+
 
 class TestProcess:
     @staticmethod
@@ -1673,7 +1690,7 @@ class TestSandboxOntology:
                 "tag": None,
                 "treeid": None,
                 "richid": None,
-                "time_observed": None,
+                "time_observed": float("-inf"),
             },
             "pobjectid": {
                 "guid": None,
@@ -1733,7 +1750,6 @@ class TestSandboxOntology:
     def test_sandboxontology_update_objectid():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
-            Process,
         )
 
         so = SandboxOntology()
@@ -1752,7 +1768,7 @@ class TestSandboxOntology:
         assert p.objectid.tag is None
         assert p.objectid.treeid is None
         assert p.objectid.richid is None
-        assert p.objectid.time_observed is None
+        assert p.objectid.time_observed == float("-inf")
 
         assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert nc.objectid.tag is None
@@ -1766,7 +1782,7 @@ class TestSandboxOntology:
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid is None
         assert p.objectid.richid is None
-        assert p.objectid.time_observed is None
+        assert p.objectid.time_observed == float("-inf")
 
         so.update_objectid(guid="{12345678-1234-5678-1234-567812345679}", tag="blah")
 
@@ -2739,7 +2755,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345673}",
                             "tag": "blah3",
                             "treeid": None,
-			                "richid": None,
+                                        "richid": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
