@@ -1272,6 +1272,8 @@ class SandboxOntology:
 
         if not process.objectid.guid:
             process.objectid.assign_guid()
+        if not process.pobjectid.guid:
+            process.pobjectid.assign_guid()
         if not process.start_time:
             process.set_start_time(float("-inf"))
         if not process.end_time:
@@ -2446,15 +2448,39 @@ class SandboxOntology:
         ):
             artifacts_result_section.add_subsection(artifact_result_section)
 
-    def _set_process_times(self, process: Process) -> None:
-        if process is None:
+    def _set_item_times(self, item: Union[Process, ObjectID]) -> None:
+        """
+        This method sets the item times to values that the ODM can handle
+        :param item: An item, either a Process or an ObjectID, whose times will be validated
+        :return: None
+        """
+        if item is None:
             return
-        if process.start_time == float("-inf"):
-            process.set_start_time(self.analysis_metadata.start_time)
-        if process.end_time == float("inf"):
-            process.set_end_time(self.analysis_metadata.end_time)
+        if isinstance(item, Process):
+            if item.start_time == float("-inf"):
+                item.set_start_time(self.analysis_metadata.start_time)
+            if item.end_time == float("inf"):
+                item.set_end_time(self.analysis_metadata.end_time)
+            if item.objectid.time_observed == float("-inf"):
+                item.objectid.set_time_observed(self.analysis_metadata.start_time)
+            if item.objectid.time_observed == float("inf"):
+                item.objectid.set_time_observed(self.analysis_metadata.end_time)
+        elif isinstance(item, ObjectID):
+            if item.time_observed == float("-inf"):
+                item.set_time_observed(self.analysis_metadata.start_time)
+            if item.time_observed == float("inf"):
+                item.set_time_observed(self.analysis_metadata.end_time)
+        else:
+            log.warning(f"Given object {item} is neither Process or ObjectID...")
 
-    def preprocess_ontology(self, from_main: bool = False, so_json: str = None):
+    def preprocess_ontology(self, from_main: bool = False, so_json: str = None) -> None:
+        """
+        This method preprocesses the ontology before it gets validated by Assemblyline's base ODM
+        :param from_main: A boolean flag that indicates if this method is being run from __main__
+        :param so_json: The path to the json file that represents the Sandbox Ontology
+        :return: None
+        """
+
         # DEBUGGING case
         if from_main:
             from assemblyline.odm.models.ontology.types.sandbox import Sandbox
@@ -2465,21 +2491,21 @@ class SandboxOntology:
 
             self.load_from_json(file_contents)
             for process in self.get_processes():
-                self._set_process_times(process)
+                self._set_item_times(process)
 
             for signature in self.get_signatures():
-                self._set_process_times(signature.process)
+                self._set_item_times(signature.process)
                 for subject in signature.get_subjects():
-                    self._set_process_times(subject.process)
+                    self._set_item_times(subject.process)
 
             for network_connection in self.get_network_connections():
-                self._set_process_times(network_connection.process)
+                self._set_item_times(network_connection.process)
 
             for dns in self.get_network_dns():
-                self._set_process_times(dns.connection_details.process)
+                self._set_item_times(dns.connection_details.process)
 
             for http in self.get_network_http():
-                self._set_process_times(http.connection_details.process)
+                self._set_item_times(http.connection_details.process)
 
             Sandbox(
                 data=self.as_primitives(), ignore_extra_values=False
@@ -2487,7 +2513,9 @@ class SandboxOntology:
         # Service runtime case
         else:
             for process in self.get_processes():
-                self._set_process_times(process)
+                self._set_item_times(process)
+            for network_connection in self.get_network_connections():
+                self._set_item_times(network_connection.objectid)
 
 
 # DEBUGGING METHOD
