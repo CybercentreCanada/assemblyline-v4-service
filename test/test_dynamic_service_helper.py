@@ -1444,19 +1444,22 @@ class TestSubject:
         assert default_subject.ip is None
         assert default_subject.domain is None
         assert default_subject.uri is None
-        assert default_subject.uri_path is None
         assert default_subject.process is None
+        assert default_subject.file is None
+        assert default_subject.registry is None
 
         set_subject = SandboxOntology.Signature.Subject(
             ip="blah",
             domain="blah",
             uri="blah",
-            uri_path="blah",
+            file="blah",
+            registry="blah",
         )
         assert set_subject.ip == "blah"
         assert set_subject.domain == "blah"
         assert set_subject.uri == "blah"
-        assert set_subject.uri_path == "blah"
+        assert set_subject.file == "blah"
+        assert set_subject.registry == "blah"
 
         p = Process(image="C:\\Windows\\System32\\cmd.exe")
         subject_w_p = SandboxOntology.Signature.Subject(process=p)
@@ -1503,8 +1506,9 @@ class TestSubject:
             "ip": None,
             "domain": None,
             "uri": None,
-            "uri_path": None,
             "process": None,
+            "file": None,
+            "registry": None,
         }
 
 
@@ -3570,14 +3574,14 @@ class TestSandboxOntology:
                                 "ip": "blah",
                                 "domain": None,
                                 "uri": None,
-                                "uri_path": None,
                                 "process": None,
+                                "file": None,
+                                "registry": None,
                             },
                             {
                                 "ip": "blah",
                                 "domain": None,
                                 "uri": None,
-                                "uri_path": None,
                                 "process": {
                                     "objectid": {
                                         "guid": "{12345678-1234-5678-1234-567812345678}",
@@ -3605,6 +3609,8 @@ class TestSandboxOntology:
                                     "image_hash": "blah",
                                     "original_file_name": "blah",
                                 },
+                                "file": None,
+                                "registry": None,
                             },
                         ],
                         "process": {
@@ -3835,13 +3841,15 @@ class TestSandboxOntology:
         assert default_so.signatures[0].subjects[0].ip == "blah"
         assert default_so.signatures[0].subjects[0].domain is None
         assert default_so.signatures[0].subjects[0].uri is None
-        assert default_so.signatures[0].subjects[0].uri_path is None
         assert default_so.signatures[0].subjects[0].process is None
+        assert default_so.signatures[0].subjects[0].file is None
+        assert default_so.signatures[0].subjects[0].registry is None
 
         assert default_so.signatures[0].subjects[1].ip is None
         assert default_so.signatures[0].subjects[1].domain is None
         assert default_so.signatures[0].subjects[1].uri is None
-        assert default_so.signatures[0].subjects[1].uri_path is None
+        assert default_so.signatures[0].subjects[1].file is None
+        assert default_so.signatures[0].subjects[1].registry is None
 
         assert (
             default_so.signatures[0].subjects[1].process.objectid.guid
@@ -4380,14 +4388,14 @@ class TestSandboxOntology:
                         "ip": "blah",
                         "domain": None,
                         "uri": None,
-                        "uri_path": None,
                         "process": None,
+                        "file": None,
+                        "registry": None,
                     },
                     {
                         "ip": "blah",
                         "domain": None,
                         "uri": None,
-                        "uri_path": None,
                         "process": {
                             "objectid": {
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
@@ -4412,6 +4420,8 @@ class TestSandboxOntology:
                             "start_time": "blah",
                             "end_time": "blah",
                         },
+                        "file": None,
+                        "registry": None,
                     },
                 ],
                 "process": {
@@ -4452,12 +4462,14 @@ class TestSandboxOntology:
         assert s.subjects[0].ip == "blah"
         assert s.subjects[0].domain is None
         assert s.subjects[0].uri is None
-        assert s.subjects[0].uri_path is None
         assert s.subjects[0].process is None
+        assert s.subjects[0].file is None
+        assert s.subjects[0].registry is None
         assert s.subjects[1].ip is None
         assert s.subjects[1].domain is None
         assert s.subjects[1].uri is None
-        assert s.subjects[1].uri_path is None
+        assert s.subjects[1].file is None
+        assert s.subjects[1].registry is None
         assert (
             s.subjects[1].process.objectid.guid
             == "{12345678-1234-5678-1234-567812345678}"
