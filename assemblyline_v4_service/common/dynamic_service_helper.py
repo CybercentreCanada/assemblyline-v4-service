@@ -121,8 +121,8 @@ class ObjectID:
         self.guid: str = f"{{{str(UUID(guid)).upper()}}}" if guid else None
         self.tag: str = tag
         self.treeid: str = treeid
-        self.time_observed: float = time_observed
         self.richid: str = richid
+        self.time_observed: float = time_observed
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -984,21 +984,24 @@ class SandboxOntology:
                 ip: str = None,
                 domain: str = None,
                 uri: str = None,
-                uri_path: str = None,
                 process: Process = None,
+                file: str = None,
+                registry: str = None,
             ) -> None:
                 """
                 An subject of interest, aka something interesting that the signature was raised on that is worth reporting
                 :param ip: An IP that is a subject of interest
                 :param domain: A domain that is a subject of interest
                 :param uri: An URI that is a subject of interest
-                :param uri_path: The path of an URI that is a subject of interest
                 :param process: A process that is a subject of interest
+                :param file: A file path that is a subject of interest
+                :param registry: A registry key that is a subject of interest
                 """
                 self.ip: str = ip
                 self.domain: str = domain
                 self.uri: str = uri
-                self.uri_path: str = uri_path
+                self.file: str = file
+                self.registry: str = registry
 
                 if isinstance(process, Process):
                     self.process: Process = process
