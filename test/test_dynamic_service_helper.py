@@ -1235,6 +1235,24 @@ class TestNetworkHTTP:
         assert default_nh.connection_details.destination_ip == "blah"
 
     @staticmethod
+    def test_get_process_image():
+        from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
+
+        default_nh = NetworkHTTP()
+        assert default_nh.get_process_image() is None
+        default_nh.update_process(image="blah")
+        assert default_nh.get_process_image() == "blah"
+
+    @staticmethod
+    def test_get_process_pid():
+        from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
+
+        default_nh = NetworkHTTP()
+        assert default_nh.get_process_pid() is None
+        default_nh.update_process(pid=123)
+        assert default_nh.get_process_pid() == 123
+
+    @staticmethod
     def test_network_http_as_primitives():
         from assemblyline_v4_service.common.dynamic_service_helper import NetworkHTTP
         from uuid import UUID
@@ -1592,6 +1610,15 @@ class TestSignature:
                 "pattern": "Forced Authentication",
             }
         ]
+        # Note that it does not add duplicates
+        default_sig.add_attack_id("T1187")
+        assert default_sig.attack == [
+            {
+                "attack_id": "T1187",
+                "categories": ["credential-access"],
+                "pattern": "Forced Authentication",
+            }
+        ]
 
     @staticmethod
     def test_add_subject():
@@ -1782,6 +1809,20 @@ class TestSandboxOntology:
         assert default_so.processes[0].objectid.tag == "?sys32\\cmd.exe"
         assert default_so.processes[0].pimage == "C:\\Windows\\System32\\cmd.exe"
         assert default_so.processes[0].pobjectid.tag == "?sys32\\cmd.exe"
+
+        parent = default_so.create_process(
+            guid="{12345678-1234-5678-1234-567812345679}", image="C:\\Windows\\System32\\cmd.exe")
+        default_so.add_process(parent)
+
+        default_so.update_process(guid="{12345678-1234-5678-1234-567812345678}",
+                                  pguid="{12345678-1234-5678-1234-567812345679}")
+        assert default_so.processes[0].pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
+        assert default_so.processes[0].pimage == "C:\\Windows\\System32\\cmd.exe"
+        assert default_so.processes[0].pobjectid.tag == "?sys32\\cmd.exe"
+
+        default_so.update_process(guid="{12345678-1234-5678-1234-567812345678}",
+                                  pobjectid={"guid": "{12345678-1234-5678-1234-567812345679}"})
+        assert default_so.processes[0].pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
 
     @staticmethod
     def test_sandboxontology_update_objectid():
@@ -2248,7 +2289,7 @@ class TestSandboxOntology:
             source_ip="2.2.2.2",
             source_port=2,
             direction="outbound",
-            time_observed=1.5,
+            transport_layer_protocol="tcp",
         )
         default_so.add_network_connection(nc)
         assert (
@@ -2258,7 +2299,7 @@ class TestSandboxOntology:
                 destination_ip="1.1.1.1",
                 destination_port=1,
                 direction="outbound",
-                time_observed=2,
+                transport_layer_protocol="tcp",
             )
             == nc
         )
@@ -2299,9 +2340,9 @@ class TestSandboxOntology:
                 "source_ip": None,
                 "source_port": None,
                 "destination_ip": None,
-                "destination_port": None,
-                "transport_layer_protocol": None,
-                "direction": None,
+                "destination_port": 53,
+                "transport_layer_protocol": "udp",
+                "direction": "outbound",
             },
             "domain": None,
             "resolved_ips": [],
@@ -2345,6 +2386,23 @@ class TestSandboxOntology:
         assert default_so.get_domain_by_destination_ip("1.1.1.1") == "blah.com"
 
     @staticmethod
+    def test_get_destination_ip_by_domain():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        assert default_so.get_destination_ip_by_domain("blah.com") is None
+
+        nd1 = default_so.create_network_dns(domain="blah.com", resolved_ips=["1.1.1.1"])
+        default_so.add_network_dns(nd1)
+        assert default_so.get_destination_ip_by_domain("blah.com") == "1.1.1.1"
+
+        nd2 = default_so.create_network_dns(domain="blah.com", resolved_ips=["2.2.2.2"])
+        default_so.add_network_dns(nd2)
+        assert default_so.get_destination_ip_by_domain("blah.com") == "1.1.1.1"
+
+    @staticmethod
     def test_create_network_http():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
@@ -2380,9 +2438,9 @@ class TestSandboxOntology:
                 "source_ip": None,
                 "source_port": None,
                 "destination_ip": None,
-                "destination_port": None,
-                "transport_layer_protocol": None,
-                "direction": None,
+                "destination_port": 80,
+                "transport_layer_protocol": "tcp",
+                "direction": "outbound",
             },
             "request_uri": None,
             "request_headers": {},
@@ -2419,6 +2477,21 @@ class TestSandboxOntology:
 
         assert default_so.get_network_http_by_path("/blah1") == nh
         assert default_so.get_network_http_by_path("/blah2") == nh
+
+    @staticmethod
+    def test_get_network_http_by_details():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        nh = default_so.create_network_http(
+            request_uri="http://blah.com", request_method="GET", request_headers={"a": "b"}
+        )
+        default_so.add_network_http(nh)
+
+        assert default_so.get_network_http_by_details("http://blah.com", "GET", {"a": "b"}) == nh
+        assert default_so.get_network_http_by_details("http://blah.ca", "GET", {"a": "b"}) is None
 
     @staticmethod
     def test_create_signature():
@@ -6257,6 +6330,7 @@ class TestSandboxOntology:
             "treeid": "blahblah",
             "richid": "blahblah",
             "children": [
+                {"process": {}},
                 {"pid": 2, "image": "blah", "command_line": "blah", "children": []}
             ],
         }
