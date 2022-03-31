@@ -175,7 +175,7 @@ class ServiceBase:
         pass
 
     def start_service(self) -> None:
-        self.log.info(f"Starting service: {self.service_attributes.name}")
+        self.log.info(f"Starting service: {self.service_attributes.name} ({self.service_attributes.version})")
 
         if self.dependencies.get('updates', None):
             # Start with a clean update dir

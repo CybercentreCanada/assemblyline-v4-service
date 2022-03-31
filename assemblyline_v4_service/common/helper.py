@@ -78,6 +78,8 @@ def get_service_manifest() -> Dict:
 
         yml_data = yaml.safe_load(bio)
         if yml_data:
+            # Ignore stable from service version
+            yml_data['version'] = yml_data.get('version', SERVICE_TAG).replace('stable', '')
             return yml_data
         else:
             raise Exception("Service manifest is empty.")
