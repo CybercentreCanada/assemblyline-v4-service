@@ -859,6 +859,26 @@ class NetworkHTTP:
         """
         self.connection_details.update(**kwargs)
 
+    def get_process_image(self) -> Optional[str]:
+        """
+        This method returns the image of the process associated with the connection details
+        :return: The image of the process associated with the connection details
+        """
+        if self.connection_details:
+            if self.connection_details.process:
+                return self.connection_details.process.image
+        return None
+
+    def get_process_pid(self) -> Optional[str]:
+        """
+        This method returns the pid of the process associated with the connection details
+        :return: The pid of the process associated with the connection details
+        """
+        if self.connection_details:
+            if self.connection_details.process:
+                return self.connection_details.process.pid
+        return None
+
     def as_primitives(self) -> Dict[str, Any]:
         """
         This method returns the dictionary representation of the object
@@ -1113,6 +1133,10 @@ class SandboxOntology:
             """
             attack_item = None
             attack_id = revoke_map.get(attack_id, attack_id)
+            current_attack_ids = [a["attack_id"] for a in self.attack]
+            if attack_id in current_attack_ids:
+                return
+
             if attack_id in attack_map:
                 attack_item = dict(
                     attack_id=attack_id,
@@ -1297,7 +1321,8 @@ class SandboxOntology:
             self.set_child_details(process)
             self.processes.append(process)
         else:
-            log.warning("invalid process")
+            log.warning("Invalid process, ignoring...")
+            return
 
     def update_process(self, **kwargs) -> None:
         """
@@ -1342,6 +1367,11 @@ class SandboxOntology:
             process_to_update = self.get_process_by_guid(guid)
             kwargs["guid"] = guid
             process_to_update.update(**kwargs)
+
+        if kwargs.get("pguid") or kwargs.get("pobjectid", {}).get("guid"):
+            pguid = kwargs["pguid"] if kwargs.get("pguid") else kwargs.get("pobjectid", {}).get("guid")
+            parent = self.get_process_by_guid(pguid)
+            process_to_update.set_parent(parent)
 
     def update_objectid(self, **kwargs) -> None:
         """
@@ -1502,7 +1532,7 @@ class SandboxOntology:
         """
         if pid is None or timestamp is None:
             return None
-        processes: List[str] = [
+        processes: List[Process] = [
             process
             for process in self.get_processes()
             if process.pid == pid
@@ -1592,7 +1622,7 @@ class SandboxOntology:
         destination_ip: str,
         destination_port: int,
         direction: str,
-        time_observed: float,
+        transport_layer_protocol: str,
     ) -> NetworkConnection:
         """
         This method finds an existing network connection based on specific details
@@ -1601,23 +1631,17 @@ class SandboxOntology:
         :param destination_ip: The destination IP of the network connection
         :param destination_port: The destination port of the network connection
         :param direction: The direction of the network connection
-        :param time_observed: The time at which the network connection was observed
+        :param transport_layer_protocol: The transport layer protocol of the connection
         :return: The matching network connection, if it exists
         """
         for network_connection in self.get_network_connections():
-            if (
-                network_connection.objectid.time_observed is None
-                or time_observed is None
-            ):
-                continue
             if (
                 network_connection.source_ip == source_ip
                 and network_connection.source_port == source_port
                 and network_connection.destination_ip == destination_ip
                 and network_connection.destination_port == destination_port
                 and network_connection.direction == direction
-                and round(network_connection.objectid.time_observed)
-                == round(time_observed)
+                and network_connection.transport_layer_protocol == transport_layer_protocol
             ):
                 return network_connection
         return None
@@ -1647,11 +1671,18 @@ class SandboxOntology:
                 dns.connection_details.destination_ip,
                 dns.connection_details.destination_port,
                 dns.connection_details.direction,
-                dns.connection_details.objectid.time_observed,
+                dns.connection_details.transport_layer_protocol,
             )
             if network_connection_to_point_to:
                 dns.set_network_connection(network_connection_to_point_to)
             else:
+                # Autofill default fields
+                if not dns.connection_details.destination_port:
+                    dns.update_connection_details(destination_port=53)
+                if not dns.connection_details.direction:
+                    dns.update_connection_details(direction="outbound")
+                if not dns.connection_details.transport_layer_protocol:
+                    dns.update_connection_details(transport_layer_protocol="udp")
                 self.add_network_connection(dns.connection_details)
 
         dns.connection_details.create_tag(dns.domain)
@@ -1666,13 +1697,25 @@ class SandboxOntology:
 
     def get_domain_by_destination_ip(self, ip: str) -> Optional[str]:
         """
-        This method returns a list of domains associated with a given destination IP
-        :param ip: the IP for which an associated domain is requested
+        This method returns domains associated with a given destination IP
+        :param ip: The IP for which an associated domain is requested
         :return: The domain associated with the given destination IP
         """
         domains = [dns.domain for dns in self.network_dns if ip in dns.resolved_ips]
         if domains:
             return domains[0]
+        else:
+            return None
+
+    def get_destination_ip_by_domain(self, domain: str) -> Optional[str]:
+        """
+        This method returns a destination ip associated with a given domain
+        :param domain: The domain for which an associated IP is requested
+        :return: The IP associated with the given domain
+        """
+        ips = [dns.resolved_ips[0] for dns in self.network_dns if domain == dns.domain]
+        if ips:
+            return ips[0]
         else:
             return None
 
@@ -1701,11 +1744,19 @@ class SandboxOntology:
                 http.connection_details.destination_ip,
                 http.connection_details.destination_port,
                 http.connection_details.direction,
-                http.connection_details.objectid.time_observed,
+                http.connection_details.transport_layer_protocol,
             )
             if network_connection_to_point_to:
                 http.set_network_connection(network_connection_to_point_to)
             else:
+                # Autofill default fields
+                if not http.connection_details.destination_port:
+                    http.update_connection_details(destination_port=80)
+                if not http.connection_details.direction:
+                    http.update_connection_details(direction="outbound")
+                if not http.connection_details.transport_layer_protocol:
+                    http.update_connection_details(transport_layer_protocol="tcp")
+
                 self.add_network_connection(http.connection_details)
 
         self.network_http.append(http)
@@ -1732,6 +1783,26 @@ class SandboxOntology:
             return None
         else:
             return network_http_with_path[0]
+
+    def get_network_http_by_details(
+            self, request_uri: str, request_method: str, request_headers: Dict[str, str]) -> Optional[NetworkHTTP]:
+        """
+        This request_method gets a network http call by request URI, request_method and request headers
+        :param request_uri: The URI of the request
+        :param request_method: The request_method used for the HTTP request
+        :param request_headers: The headers of the request
+        :return: The network http call (should one exist) that matches these details
+        """
+        network_http_with_details = [
+            http for http in self.get_network_http()
+            if http.request_uri == request_uri and
+            http.request_method == request_method and
+            http.request_headers == request_headers
+        ]
+        if not network_http_with_details:
+            return None
+        else:
+            return network_http_with_details[0]
 
     def create_signature(self, **kwargs) -> Signature:
         """
@@ -2257,7 +2328,12 @@ class SandboxOntology:
             e.add_signature(signature.name, signature.score)
 
         for child in event["children"][:]:
-            self._convert_event_tree_to_result_section(items, child, safelist, e)
+            # A telltale sign that the event is a NetworkConnection
+            if "process" in child:
+                # event is a NetworkConnection, we don't want this in the process tree result section, only the counts
+                pass
+            else:
+                self._convert_event_tree_to_result_section(items, child, safelist, e)
             event["children"].remove(child)
 
         if not event["children"] and not parent:
