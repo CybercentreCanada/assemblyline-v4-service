@@ -1634,6 +1634,12 @@ class SandboxOntology:
         :param transport_layer_protocol: The transport layer protocol of the connection
         :return: The matching network connection, if it exists
         """
+        # All or nothing!
+        if any(
+                item is None
+                for item in
+                [source_ip, source_port, destination_ip, destination_port, direction, transport_layer_protocol]):
+            return None
         for network_connection in self.get_network_connections():
             if (
                 network_connection.source_ip == source_ip
@@ -1683,6 +1689,7 @@ class SandboxOntology:
                     dns.update_connection_details(direction="outbound")
                 if not dns.connection_details.transport_layer_protocol:
                     dns.update_connection_details(transport_layer_protocol="udp")
+
                 self.add_network_connection(dns.connection_details)
 
         dns.connection_details.create_tag(dns.domain)

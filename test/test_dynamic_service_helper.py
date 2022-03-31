@@ -2303,6 +2303,17 @@ class TestSandboxOntology:
             )
             == nc
         )
+        assert (
+            default_so.get_network_connection_by_details(
+                source_ip=None,
+                source_port=2,
+                destination_ip="1.1.1.1",
+                destination_port=1,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+            )
+            is None
+        )
 
     @staticmethod
     def test_create_network_dns():
