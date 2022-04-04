@@ -2580,8 +2580,10 @@ class TestSandboxOntology:
         )
 
         default_so = SandboxOntology()
+        p = default_so.create_process(pid=1, start_time=5, end_time=6)
+        default_so.add_process(p)
         sig = default_so.create_signature(name="blah")
-        sig.update_process(pid=1)
+        sig.update_process(pid=1, start_time=5.5)
         default_so.add_signature(sig)
         assert default_so.get_signatures_by_pid(1)[0].name == "blah"
 
@@ -3476,7 +3478,7 @@ class TestSandboxOntology:
                         },
                     }
                 ],
-                [{"process.pid": 1, "name": "blah", "score": 1}],
+                [{"process.pid": 1, "name": "blah", "score": 1, "process.start_time": 1}],
                 [],
                 [
                     {
