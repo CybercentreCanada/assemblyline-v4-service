@@ -451,6 +451,7 @@ class TestProcess:
         assert p.objectid.richid == "blah"
         assert p.objectid.time_observed == 1
 
+        p = Process()
         p.update(
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah2",
@@ -483,6 +484,7 @@ class TestProcess:
         assert p.pobjectid.richid == "blah"
         assert p.pobjectid.time_observed == 1
 
+        p = Process()
         p.update(
             pguid="{12345678-1234-5678-1234-567812345678}",
             ptag="blah2",
@@ -809,13 +811,11 @@ class TestNetworkConnection:
         assert nc.objectid.time_observed is None
 
         nc.update_objectid(
-            guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
             richid="blah",
             time_observed=1.0,
         )
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
         assert nc.objectid.richid == "blah"
@@ -834,40 +834,38 @@ class TestNetworkConnection:
 
         nc.update(
             objectid={
-                "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "blah",
                 "treeid": "blah",
                 "richid": "blah",
                 "time_observed": 1,
             }
         )
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
         assert nc.objectid.richid == "blah"
         assert nc.objectid.time_observed == 1
 
+        nc = NetworkConnection(destination_ip="blah")
         nc.update(
-            guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah2",
             treeid="blah2",
             richid="blah2",
             time_observed=2,
         )
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.objectid.tag == "blah2"
         assert nc.objectid.treeid == "blah2"
         assert nc.objectid.richid == "blah2"
         assert nc.objectid.time_observed == 2
 
+        nc = NetworkConnection()
         nc.update(destination_ip="blahblah")
         assert nc.destination_ip == "blahblah"
 
         nc.update(process={})
         assert nc.process is None
 
-        nc.update(process={"guid": "{12345678-1234-5678-1234-567812345678}"})
-        assert nc.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        nc.update(process={"tag": "blah"})
+        assert nc.process.objectid.tag == "blah"
 
     @staticmethod
     def test_network_connection_update_process():
@@ -936,7 +934,6 @@ class TestNetworkConnection:
     def test_create_tag():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             NetworkConnection,
-            Process,
         )
 
         default_nc = NetworkConnection()
@@ -956,7 +953,8 @@ class TestNetworkConnection:
         default_nc.create_tag("blah.com")
         assert default_nc.objectid.tag == "1.1.1.1:123"
 
-        default_nc.update(direction="outbound")
+        default_nc = NetworkConnection()
+        default_nc.update(direction="outbound", destination_ip="1.1.1.1", destination_port=123)
         default_nc.create_tag("blah.com")
         assert default_nc.objectid.tag == "blah.com:123"
 
@@ -1155,7 +1153,10 @@ class TestNetworkHTTP:
             NetworkHTTP,
         )
 
-        nh = NetworkHTTP(request_uri="blah")
+        nh = NetworkHTTP()
+
+        nh.update(request_uri="blah")
+        assert nh.request_uri == "blah"
 
         nh.update(request_uri=None)
         assert nh.request_uri == "blah"
@@ -1167,18 +1168,15 @@ class TestNetworkHTTP:
         )
         assert nh.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
 
+        nh.update(process={})
+        assert nh.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+
         nh.update(
             connection_details={
                 "destination_ip": "1.1.1.1"
             }
         )
         assert nh.connection_details.destination_ip == "1.1.1.1"
-
-        nh.update(request_uri="blahblah")
-        assert nh.request_uri == "blahblah"
-
-        nh.update(process={})
-        assert nh.connection_details.process.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
 
         nh.update(connection_details={})
         assert nh.connection_details.destination_ip == "1.1.1.1"
@@ -1629,6 +1627,8 @@ class TestSignature:
         default_sig = SandboxOntology.Signature()
         default_sig.add_subject(domain="blah")
         assert default_sig.subjects[0].domain == "blah"
+        default_sig.add_subject(domain="blah")
+        assert len(default_sig.subjects) == 1
 
     @staticmethod
     def test_add_process_subject():
@@ -1637,6 +1637,8 @@ class TestSignature:
         )
 
         default_sig = SandboxOntology.Signature()
+        default_sig.add_process_subject()
+        assert default_sig.subjects == []
         default_sig.add_process_subject(guid="{12345678-1234-5678-1234-567812345678}")
         assert (
             default_sig.subjects[0].process.objectid.guid
@@ -1801,14 +1803,15 @@ class TestSandboxOntology:
 
         default_so.update_process(
             image="C:\\Windows\\System32\\cmd.exe",
+            pguid="{12345678-1234-5678-1234-567812345679}",
             pimage="C:\\Windows\\System32\\cmd.exe",
             pid=1,
             start_time=1.0,
         )
         assert default_so.processes[0].image == "C:\\Windows\\System32\\cmd.exe"
         assert default_so.processes[0].objectid.tag == "?sys32\\cmd.exe"
-        assert default_so.processes[0].pimage == "C:\\Windows\\System32\\cmd.exe"
-        assert default_so.processes[0].pobjectid.tag == "?sys32\\cmd.exe"
+        assert default_so.processes[0].pimage is None
+        assert default_so.processes[0].pobjectid.tag is None
 
         parent = default_so.create_process(
             guid="{12345678-1234-5678-1234-567812345679}", image="C:\\Windows\\System32\\cmd.exe")
@@ -1829,12 +1832,14 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         so = SandboxOntology()
 
         p = so.create_process(guid="{12345678-1234-5678-1234-567812345678}")
         so.add_process(p)
-        nc = so.create_network_connection(guid="{12345678-1234-5678-1234-567812345679}")
+        nc = so.create_network_connection()
+        nc_guid = nc.objectid.guid
         so.add_network_connection(nc)
 
         so.update_objectid()
@@ -1848,7 +1853,7 @@ class TestSandboxOntology:
         assert p.objectid.richid is None
         assert p.objectid.time_observed == float("-inf")
 
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+        assert nc.objectid.guid == nc_guid
         assert nc.objectid.tag is None
         assert nc.objectid.treeid is None
         assert nc.objectid.richid is None
@@ -1862,9 +1867,9 @@ class TestSandboxOntology:
         assert p.objectid.richid is None
         assert p.objectid.time_observed == float("-inf")
 
-        so.update_objectid(guid="{12345678-1234-5678-1234-567812345679}", tag="blah")
+        so.update_objectid(guid=nc_guid, tag="blah")
 
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
+        assert nc.objectid.guid == nc_guid
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid is None
         assert nc.objectid.richid is None
@@ -2159,6 +2164,26 @@ class TestSandboxOntology:
         assert so.get_process_by_guid(guid) == p
 
     @staticmethod
+    def test_get_process_by_command_line():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        so = SandboxOntology()
+        assert so.get_process_by_command_line() is None
+
+        p1 = so.create_process(command_line="blah1")
+        p2 = so.create_process(command_line="blah2")
+        p3 = so.create_process(command_line="blah1")
+        so.add_process(p1)
+        so.add_process(p2)
+        so.add_process(p3)
+
+        assert so.get_process_by_command_line() is None
+        assert so.get_process_by_command_line("blah2") == p2
+        assert so.get_process_by_command_line("blah1") == p1
+
+    @staticmethod
     def test_get_process_by_pid_and_time():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
@@ -2197,9 +2222,9 @@ class TestSandboxOntology:
 
         default_so = SandboxOntology()
         nc = default_so.create_network_connection(
-            guid="{12345678-1234-5678-1234-567812345678}"
+            destination_ip="1.1.1.1"
         )
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert nc.destination_ip == "1.1.1.1"
 
     @staticmethod
     def test_add_network_connection():
@@ -2622,6 +2647,7 @@ class TestSandboxOntology:
             time_observed=1.0,
             guid="{12345678-1234-5678-1234-567812345678}",
             pguid="{12345678-1234-5678-1234-567812345679}",
+            treeid="blahblah"
         )
         so.add_process(p)
         nc = so.create_network_connection(
@@ -2634,8 +2660,8 @@ class TestSandboxOntology:
             guid="{12345678-1234-5678-1234-567812345670}",
         )
         so.add_network_connection(nc)
-        actual_events = so.get_events()
-        assert len(actual_events) == 2
+        assert so.get_events() == [p, nc]
+        assert so.get_events(["blahblah"]) == [nc]
 
     @staticmethod
     def test_get_non_safelisted_processes():
@@ -2693,7 +2719,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah",
+                            "richid": "blah>blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
@@ -2771,7 +2797,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah",
+                            "richid": "blah>blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
@@ -2798,7 +2824,7 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345679}",
                                     "tag": "blah2",
                                     "treeid": "28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1",
-                                    "richid": "blah>blah2",
+                                    "richid": "blah>blah>blah2",
                                     "time_observed": 2,
                                 },
                                 "pobjectid": {
@@ -2920,7 +2946,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah",
+                            "richid": "blah>blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
@@ -2947,7 +2973,7 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345672}",
                                     "tag": "blah2",
                                     "treeid": "28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1",
-                                    "richid": "blah>blah2",
+                                    "richid": "blah>blah>blah2",
                                     "time_observed": 2,
                                 },
                                 "pobjectid": {
@@ -2998,14 +3024,14 @@ class TestSandboxOntology:
                 ["8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52"],
                 [],
             ),
-            # One network connection, tags for both objectid and pobjectid
+            # One network connection
             (
                 [
                     {
                         "objectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
-                            "tag": "blah",
-                            "treeid": "blah",
+                            "tag": None,
+                            "treeid": None,
                             "richid": None,
                             "time_observed": "blah",
                         },
@@ -3066,9 +3092,9 @@ class TestSandboxOntology:
                     {
                         "objectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
-                            "tag": "blah",
-                            "treeid": "blah",
-                            "richid": "blah>blah:blah",
+                            "tag": "blah:blah",
+                            "treeid": None,
+                            "richid": None,
                             "time_observed": 2,
                         },
                         "source_ip": "blah",
@@ -3095,7 +3121,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah",
+                            "richid": "blah>blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
@@ -3118,7 +3144,7 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345679}",
                                     "tag": "blah:blah",
                                     "treeid": "81a167be9a70e6d9c9b14f4dec79c052e463c3fda116583731c1065143e8f277",
-                                    "richid": "blah>blah:blah",
+                                    "richid": "blah>blah>blah:blah",
                                     "time_observed": 2,
                                 },
                                 "source_ip": "blah",
@@ -3162,15 +3188,16 @@ class TestSandboxOntology:
             ),
         ],
     )
-    def test_get_process_tree(event_list, safelist, expected_result):
+    def test_get_process_tree(event_list, safelist, expected_result, mocker):
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
-
         o = SandboxOntology()
         if event_list:
             for event in event_list:
                 if "process" in event:
+                    mocker.patch("assemblyline_v4_service.common.dynamic_service_helper.uuid4",
+                                 return_value=event["objectid"]["guid"][1: -1])
                     nc = o.create_network_connection(**event)
                     o.add_network_connection(nc)
                 else:
@@ -3626,6 +3653,7 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         default_so = SandboxOntology()
         default_so.load_from_json(
@@ -3725,7 +3753,6 @@ class TestSandboxOntology:
                 "network_connections": [
                     {
                         "objectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
                             "richid": "blah",
@@ -3773,7 +3800,6 @@ class TestSandboxOntology:
                         "lookup_type": "blah",
                         "connection_details": {
                             "objectid": {
-                                "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
                                 "richid": "blah",
@@ -3826,7 +3852,6 @@ class TestSandboxOntology:
                         "response_body": "blah",
                         "connection_details": {
                             "objectid": {
-                                "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
                                 "richid": "blah",
@@ -3991,10 +4016,9 @@ class TestSandboxOntology:
         assert default_so.signatures[0].process.image_hash == "blah"
         assert default_so.signatures[0].process.original_file_name == "blah"
 
-        assert (
+        assert str(UUID(
             default_so.network_connections[0].objectid.guid
-            == "{12345678-1234-5678-1234-567812345678}"
-        )
+        ))
         assert default_so.network_connections[0].objectid.tag == "blah"
         assert default_so.network_connections[0].objectid.treeid == "blah"
         assert default_so.network_connections[0].objectid.richid == "blah"
@@ -4042,10 +4066,9 @@ class TestSandboxOntology:
         assert default_so.network_dns[0].resolved_ips == ["blah"]
         assert default_so.network_dns[0].lookup_type == "blah"
 
-        assert (
+        assert str(UUID(
             default_so.network_dns[0].connection_details.objectid.guid
-            == "{12345678-1234-5678-1234-567812345678}"
-        )
+        ))
         assert default_so.network_dns[0].connection_details.objectid.tag == "blah"
         assert default_so.network_dns[0].connection_details.objectid.treeid == "blah"
         assert default_so.network_dns[0].connection_details.objectid.richid == "blah"
@@ -4131,10 +4154,9 @@ class TestSandboxOntology:
         assert default_so.network_http[0].response_status_code == 123
         assert default_so.network_http[0].response_body == "blah"
 
-        assert (
+        assert str(UUID(
             default_so.network_http[0].connection_details.objectid.guid
-            == "{12345678-1234-5678-1234-567812345678}"
-        )
+        ))
         assert default_so.network_http[0].connection_details.objectid.tag == "blah"
         assert default_so.network_http[0].connection_details.objectid.treeid == "blah"
         assert default_so.network_http[0].connection_details.objectid.richid == "blah"
@@ -4394,6 +4416,86 @@ class TestSandboxOntology:
         assert not so._handle_pid_match(p5)
 
     @staticmethod
+    def test_remove_process():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        p = default_so.create_process()
+        default_so.add_process(p)
+        assert default_so.get_processes() == [p]
+        p1 = default_so.create_process()
+        default_so._remove_process(p1)
+        assert default_so.get_processes() == [p]
+        default_so._remove_process(p)
+        assert default_so.get_processes() == []
+
+    @staticmethod
+    def test_remove_network_http():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        nh = default_so.create_network_http()
+        default_so.add_network_http(nh)
+        assert default_so.get_network_http() == [nh]
+        nh1 = default_so.create_network_http()
+        default_so._remove_network_http(nh1)
+        assert default_so.get_network_http() == [nh]
+        default_so._remove_network_http(nh)
+        assert default_so.get_network_http() == []
+
+    @staticmethod
+    def test_remove_network_dns():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        nd = default_so.create_network_dns()
+        default_so.add_network_dns(nd)
+        assert default_so.get_network_dns() == [nd]
+        nd1 = default_so.create_network_dns()
+        default_so._remove_network_dns(nd1)
+        assert default_so.get_network_dns() == [nd]
+        default_so._remove_network_dns(nd)
+        assert default_so.get_network_dns() == []
+
+    @staticmethod
+    def test_remove_network_connection():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        nc = default_so.create_network_connection()
+        default_so.add_network_connection(nc)
+        assert default_so.get_network_connections() == [nc]
+        nc1 = default_so.create_network_connection()
+        default_so._remove_network_connection(nc1)
+        assert default_so.get_network_connections() == [nc]
+        default_so._remove_network_connection(nc)
+        assert default_so.get_network_connections() == []
+
+    @staticmethod
+    def test_remove_signature():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        default_so = SandboxOntology()
+        signature = default_so.create_signature()
+        default_so.add_signature(signature)
+        assert default_so.get_signatures() == [signature]
+        signature1 = default_so.create_signature()
+        default_so._remove_signature(signature1)
+        assert default_so.get_signatures() == [signature]
+        default_so._remove_signature(signature)
+        assert default_so.get_signatures() == []
+
+    @staticmethod
     def test_load_process_from_json():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
@@ -4598,12 +4700,12 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         default_so = SandboxOntology()
         nc = default_so._load_network_connection_from_json(
             {
                 "objectid": {
-                    "guid": "{12345678-1234-5678-1234-567812345678}",
                     "tag": "blah",
                     "treeid": "blah",
                     "richid": "blah",
@@ -4644,7 +4746,7 @@ class TestSandboxOntology:
                 },
             }
         )
-        assert nc.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
+        assert str(UUID(nc.objectid.guid))
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
         assert nc.objectid.richid == "blah"
@@ -4682,6 +4784,7 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         default_so = SandboxOntology()
         nd = default_so._load_network_dns_from_json(
@@ -4691,7 +4794,6 @@ class TestSandboxOntology:
                 "lookup_type": "blah",
                 "connection_details": {
                     "objectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
                         "richid": "blah",
@@ -4736,10 +4838,9 @@ class TestSandboxOntology:
         assert nd.domain == "blah"
         assert nd.resolved_ips == ["blah"]
         assert nd.lookup_type == "blah"
-        assert (
+        assert str(UUID(
             nd.connection_details.objectid.guid
-            == "{12345678-1234-5678-1234-567812345678}"
-        )
+        ))
         assert nd.connection_details.objectid.tag == "blah"
         assert nd.connection_details.objectid.treeid == "blah"
         assert nd.connection_details.objectid.richid == "blah"
@@ -4783,6 +4884,7 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         default_so = SandboxOntology()
         nh = default_so._load_network_http_from_json(
@@ -4796,7 +4898,6 @@ class TestSandboxOntology:
                 "response_body": "blah",
                 "connection_details": {
                     "objectid": {
-                        "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
                         "richid": "blah",
@@ -4843,10 +4944,9 @@ class TestSandboxOntology:
         assert nh.request_method == "blah"
         assert nh.response_status_code == 123
         assert nh.response_body == "blah"
-        assert (
+        assert str(UUID(
             nh.connection_details.objectid.guid
-            == "{12345678-1234-5678-1234-567812345678}"
-        )
+        ))
         assert nh.connection_details.objectid.tag == "blah"
         assert nh.connection_details.objectid.treeid == "blah"
         assert nh.connection_details.objectid.richid == "blah"
@@ -7572,6 +7672,31 @@ class TestSandboxOntology:
         assert p.start_time == 1.0
         assert p.end_time == 2.0
         assert p.objectid.time_observed == 1.0
+
+    @staticmethod
+    def test_remove_safelisted_processes():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        so = SandboxOntology()
+        p = so.create_process(treeid="blah")
+        so.add_process(p)
+        nc = so.create_network_connection(process=p)
+        so.add_network_connection(nc)
+        nh = so.create_network_http(connection_details=nc)
+        so.add_network_http(nh)
+        nd = so.create_network_dns(connection_details=nc)
+        so.add_network_dns(nd)
+        sig = so.create_signature(process=p)
+        so.add_signature(sig)
+
+        so._remove_safelisted_processes(["blah"])
+        assert so.get_network_http() == []
+        assert so.get_network_dns() == []
+        assert so.get_network_connections() == []
+        assert so.get_signatures() == []
+        assert so.get_processes() == []
 
     @staticmethod
     def test_preprocess_ontology():
