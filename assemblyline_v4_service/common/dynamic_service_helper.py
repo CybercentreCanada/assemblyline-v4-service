@@ -57,7 +57,10 @@ def update_object_items(self, update_items: Dict[str, Any]) -> None:
     for key, value in update_items.items():
         if value is None or value == "":
             continue
-        if hasattr(self, key):
+        if hasattr(self, key) and getattr(self, key) not in ["", None, [], {}, (), float("inf"), float("-inf")]:
+            # DO NOT OVERWRITE DATA (UNLESS ITS EMPTY)
+            pass
+        elif hasattr(self, key):
             setattr(self, key, value)
         else:
             log.warning(
@@ -1168,6 +1171,10 @@ class SandboxOntology:
             :param kwargs: Key word arguments to be used for updating the subject's attributes
             :return: None
             """
+            if all(value is None for value in kwargs.values()):
+                return
+            if any(getattr(subject, k) == v for subject in self.subjects for k, v in kwargs.items()):
+                return
             subject = self.Subject()
             update_object_items(subject, kwargs)
             self.subjects.append(subject)
@@ -1179,6 +1186,8 @@ class SandboxOntology:
             :param kwargs: Key word arguments to be used for updating the process object attribute of an subject
             :return: None
             """
+            if all(value is None for value in kwargs.values()):
+                return
             subject = self.Subject()
             subject.update_process(**kwargs)
             self.subjects.append(subject)
@@ -1348,6 +1357,18 @@ class SandboxOntology:
             )
             return
 
+        # Don't update the parent yet
+        parent_keys = ["pguid", "ptag", "ptreeid", "prichid",
+                       "ptime_observed", "ppid", "pimage", "pcommand_line", "pobjectid"]
+        parent_kwargs = {
+            key[1:]: value for key, value in kwargs.items() if key in parent_keys
+        }
+        kwargs = {
+            key: value
+            for key, value in kwargs.items()
+            if key not in parent_keys
+        }
+
         if "guid" in kwargs:
             process_to_update = self.get_process_by_guid(kwargs["guid"])
             if not process_to_update:
@@ -1368,8 +1389,12 @@ class SandboxOntology:
             kwargs["guid"] = guid
             process_to_update.update(**kwargs)
 
-        if kwargs.get("pguid") or kwargs.get("pobjectid", {}).get("guid"):
-            pguid = kwargs["pguid"] if kwargs.get("pguid") else kwargs.get("pobjectid", {}).get("guid")
+        if parent_kwargs.get("guid") or parent_kwargs.get("pobjectid", {}).get("guid"):
+            # Only update if ObjectID is not associated with another process
+            if any(process_to_update.pobjectid == process.objectid for process in self.get_processes()):
+                return
+            pguid = parent_kwargs["guid"] if parent_kwargs.get(
+                "guid") else parent_kwargs.get("pobjectid", {}).get("guid")
             parent = self.get_process_by_guid(pguid)
             process_to_update.set_parent(parent)
 
@@ -1498,6 +1523,24 @@ class SandboxOntology:
         if guid is None:
             return None
         return self._guid_process_map.get(guid.upper())
+
+    def get_process_by_command_line(self, command_line: Optional[str] = None) -> Optional[Process]:
+        """
+        This method takes a given command line and returns the associated process
+        NOTE That this method has a high possibility of not being accurate. If multiple processes use the same
+        command line, this method will return the first process.
+        :param command_line: The given command line that we want an associated process for
+        :return: The associated process
+        """
+        if not command_line:
+            return None
+
+        processes_with_command_line = [process for process in self.get_processes() if process.command_line and (
+            command_line == process.command_line or command_line in process.command_line)]
+        if not processes_with_command_line:
+            return None
+        else:
+            return processes_with_command_line[0]
 
     def get_network_connection_by_guid(
         self, guid: Optional[str]
@@ -1660,6 +1703,8 @@ class SandboxOntology:
         :return: NetworkDNS object
         """
         network_dns = NetworkDNS()
+        if "connection_details" in kwargs:
+            network_dns.set_network_connection(kwargs.pop("connection_details"))
         update_object_items(network_dns, kwargs)
         return network_dns
 
@@ -1734,6 +1779,8 @@ class SandboxOntology:
         :return: NetworkHTTP object
         """
         network_http = NetworkHTTP()
+        if "connection_details" in kwargs:
+            network_http.set_network_connection(kwargs.pop("connection_details"))
         update_object_items(network_http, kwargs)
         return network_http
 
@@ -1843,8 +1890,8 @@ class SandboxOntology:
 
         for subject in signature.subjects:
             if subject.process:
-                if signature.process.objectid.guid:
-                    guid = signature.process.objectid.guid
+                if subject.process.objectid.guid:
+                    guid = subject.process.objectid.guid
                 else:
                     guid = self.get_guid_by_pid_and_time(
                         subject.process.pid, subject.process.start_time
@@ -1912,18 +1959,20 @@ class SandboxOntology:
             "sandbox_version": self.sandbox_version,
         }
 
-    def get_events(self) -> List[Union[Process, NetworkConnection]]:
+    def get_events(self, safelist: List[str] = None) -> List[Union[Process, NetworkConnection]]:
         """
         This method gets all process and network events, sorts them by time observed, and returns a list
+        :param safelist: A list of safe treeids
         :return: A sorted list of all process and network events
         """
-        events = [
-            process for process in self.processes if process.start_time is not None
-        ] + [
-            network_connection
-            for network_connection in self.network_connections
-            if network_connection.objectid.time_observed is not None
-        ]
+        if safelist is None:
+            safelist: List[str] = []
+
+        events = [process for process in self.processes
+                  if process.start_time is not None and process.objectid.treeid not in safelist] + [network_connection
+                                                                                                    for network_connection in self.network_connections
+                                                                                                    if network_connection.objectid.time_observed is not None and network_connection.objectid.treeid
+                                                                                                    not in safelist]
         return self._sort_things_by_time_observed(events)
 
     def get_non_safelisted_processes(self, safelist: List[str]) -> List[Process]:
@@ -2126,6 +2175,61 @@ class SandboxOntology:
                 # We cannot have multiple processes that share IDs that have overlapping time ranges
                 continue
         return valid_entry
+
+    def _remove_process(self, process: Process) -> None:
+        """
+        This method takes a process and removes it from the current processes, if it exists
+        :param process: The process to be removed
+        :return: None
+        """
+        try:
+            self.processes.remove(process)
+        except ValueError:
+            return
+
+    def _remove_network_http(self, network_http: NetworkHTTP) -> None:
+        """
+        This method takes a network_http and removes it from the current network_http calls, if it exists
+        :param network_http: The network_http to be removed
+        :return: None
+        """
+        try:
+            self.network_http.remove(network_http)
+        except ValueError:
+            return
+
+    def _remove_network_dns(self, network_dns: NetworkDNS) -> None:
+        """
+        This method takes a network_dns and removes it from the current network_dns calls, if it exists
+        :param network_dns: The network_dns to be removed
+        :return: None
+        """
+        try:
+            self.network_dns.remove(network_dns)
+        except ValueError:
+            return
+
+    def _remove_network_connection(self, network_connection: NetworkConnection) -> None:
+        """
+        This method takes a network_connection and removes it from the current network_connections, if it exists
+        :param network_connection: The network_connection to be removed
+        :return: None
+        """
+        try:
+            self.network_connections.remove(network_connection)
+        except ValueError:
+            return
+
+    def _remove_signature(self, signature: Signature) -> None:
+        """
+        This method takes a signature and removes it from the current signatures, if it exists
+        :param signature: The signature to be removed
+        :return: None
+        """
+        try:
+            self.signatures.remove(signature)
+        except ValueError:
+            return
 
     def _load_process_from_json(self, json: Dict[str, Any]) -> Process:
         """
@@ -2368,6 +2472,10 @@ class SandboxOntology:
 
         if parent_richid:
             richid = f"{parent_richid}>{tag}"
+        elif node.get("pobjectid", {}).get("richid"):
+            richid = f"{node['pobjectid']['richid']}>{tag}"
+        elif node.get("pobjectid", {}).get("tag"):
+            richid = f"{node['pobjectid']['tag']}>{tag}"
         else:
             richid = tag
         node["objectid"]["richid"] = richid
@@ -2559,13 +2667,41 @@ class SandboxOntology:
         else:
             log.warning(f"Given object {item} is neither Process or ObjectID...")
 
-    def preprocess_ontology(self, from_main: bool = False, so_json: str = None) -> None:
+    def _remove_safelisted_processes(self, safelist: List[str]) -> None:
+        """
+        This method removes all safelisted processes and all activities associated with those processes
+        :return: None
+        """
+        safelisted_processes = [process for process in self.get_processes() if process.objectid.treeid in safelist]
+        safelisted_network_http = [http for http in self.get_network_http()
+                                   if http.connection_details.process in safelisted_processes]
+        safelisted_network_dns = [dns for dns in self.get_network_dns()
+                                  if dns.connection_details.process in safelisted_processes]
+        safelisted_network_connections = [nc for nc in self.get_network_connections()
+                                          if nc.process in safelisted_processes]
+        safelisted_signatures = [sig for sig in self.get_signatures() if sig.process in safelisted_processes]
+        # TODO Somehow get safelisted subjects
+        # safelisted_signatures = [sig for sig in self.get_signatures() if sig.process in safelisted_processes]
+        for safelisted_http in safelisted_network_http:
+            self._remove_network_http(safelisted_http)
+        for safelisted_dns in safelisted_network_dns:
+            self._remove_network_dns(safelisted_dns)
+        for safelisted_conn in safelisted_network_connections:
+            self._remove_network_connection(safelisted_conn)
+        for safelisted_signature in safelisted_signatures:
+            self._remove_signature(safelisted_signature)
+        for safelisted_process in safelisted_processes:
+            self._remove_process(safelisted_process)
+
+    def preprocess_ontology(self, safelist: List[str] = None, from_main: bool = False, so_json: str = None) -> None:
         """
         This method preprocesses the ontology before it gets validated by Assemblyline's base ODM
         :param from_main: A boolean flag that indicates if this method is being run from __main__
         :param so_json: The path to the json file that represents the Sandbox Ontology
         :return: None
         """
+        if safelist is None:
+            safelist: List[str] = []
 
         # DEBUGGING case
         if from_main:
@@ -2593,11 +2729,14 @@ class SandboxOntology:
             for http in self.get_network_http():
                 self._set_item_times(http.connection_details.process)
 
+            self._remove_safelisted_processes(safelist)
+
             Sandbox(
                 data=self.as_primitives(), ignore_extra_values=False
             ).as_primitives()
         # Service runtime case
         else:
+            self._remove_safelisted_processes(safelist)
             for process in self.get_processes():
                 self._set_item_times(process)
             for network_connection in self.get_network_connections():
@@ -2611,4 +2750,4 @@ if __name__ == "__main__":
 
     so_json_path = argv[1]
     default_so = SandboxOntology()
-    default_so.preprocess_ontology(from_main=True, so_json=so_json_path)
+    default_so.preprocess_ontology(safelist=[], from_main=True, so_json=so_json_path)
