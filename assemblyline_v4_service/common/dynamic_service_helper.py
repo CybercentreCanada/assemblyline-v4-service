@@ -310,6 +310,9 @@ class Process:
             if "tag" not in pobjectid_kwargs and "pimage" in kwargs:
                 self.set_pobjectid_tag(kwargs["pimage"])
 
+        if "start_time" in kwargs and self.objectid.time_observed is None:
+            self.objectid.set_time_observed(kwargs["start_time"])
+
         if "integrity_level" in kwargs and isinstance(kwargs["integrity_level"], str):
             kwargs["integrity_level"] = kwargs["integrity_level"].lower()
 
@@ -1885,8 +1888,7 @@ class SandboxOntology:
                     signature.process.pid, signature.process.start_time
                 )
             process_to_point_to = self.get_process_by_guid(guid)
-            if process_to_point_to:
-                signature.set_process(process_to_point_to)
+            signature.set_process(process_to_point_to)
 
         for subject in signature.subjects:
             if subject.process:
