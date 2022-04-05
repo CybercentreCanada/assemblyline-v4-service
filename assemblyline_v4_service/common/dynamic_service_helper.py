@@ -1123,7 +1123,7 @@ class SandboxOntology:
                 self.process = Process()
             self.process.update(**kwargs)
 
-        def set_process(self, process: Process) -> None:
+        def set_process(self, process: Optional[Process]) -> None:
             """
             This method sets the process object attribute to the given process
             :param process: The given process object
