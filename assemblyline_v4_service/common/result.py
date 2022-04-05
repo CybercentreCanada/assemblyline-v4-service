@@ -9,6 +9,7 @@ from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
+from assemblyline.odm.base import FIELD_SANITIZER
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
 
 al_log.init_logging('service.result')
@@ -182,6 +183,8 @@ class Heuristic:
                 log.warning(f"Invalid attack_id '{attack_id}' for heuristic '{self._heur_id}'. Ignoring it.")
 
     def add_signature_id(self, signature: str, score: int = None, frequency: int = 1):
+        if not FIELD_SANITIZER.match(signature):
+            raise ValueError(f"Illegal signature name: {signature}")
         # Add the signature to the map and adds it new frequency to the old value
         self._signatures.setdefault(signature, 0)
         self._signatures[signature] += frequency
