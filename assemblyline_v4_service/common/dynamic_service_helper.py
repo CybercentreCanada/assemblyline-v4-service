@@ -109,7 +109,7 @@ class ObjectID:
         guid: str = None,
         tag: str = None,
         treeid: str = None,
-        richid: str = None,
+        processtree: str = None,
         time_observed: float = None,
     ) -> None:
         """
@@ -117,14 +117,14 @@ class ObjectID:
         :param guid: The GUID associated with the process
         :param tag: The tag of the object
         :param treeid: The hash of the tree ID
-        :param richid: Human readable tree ID (concatenation of process names)
+        :param processtree: Human readable tree ID (concatenation of tags)
         :param time_observed: An EPOCH time representing when the object was first observed
         :return: None
         """
         self.guid: str = f"{{{str(UUID(guid)).upper()}}}" if guid else None
         self.tag: str = tag
         self.treeid: str = treeid
-        self.richid: str = richid
+        self.processtree: str = processtree
         self.time_observed: float = time_observed
 
     def as_primitives(self) -> Dict[str, Any]:
@@ -168,11 +168,11 @@ class Process:
         guid: str = None,
         tag: str = None,
         treeid: str = None,
-        richid: str = None,
+        processtree: str = None,
         pguid: str = None,
         ptag: str = None,
         ptreeid: str = None,
-        prichid: str = None,
+        pprocesstree: str = None,
         pimage: str = None,
         pcommand_line: str = None,
         ppid: int = None,
@@ -192,11 +192,11 @@ class Process:
         :param guid: The GUID associated with the process
         :param tag: The normalized tag of the object
         :param treeid: The hash of the tree ID
-        :param richid: Human readable tree ID (concatenation of process names)
+        :param processtree: Human readable tree ID (concatenation of tags)
         :param pguid: The GUID associated with the parent process
         :param ptag: The tag associated with the parent process
         :param ptreeid: The hash of the parent's tree ID
-        :param prichid: Human readable tree ID of parent (concatenation of process names)
+        :param pprocesstree: Human readable tree ID of parent (concatenation of tags)
         :param pimage: The image of the parent process that spawned this process
         :param pcommand_line: The command line that the parent process ran
         :param ppid: The process ID of the parent process
@@ -224,7 +224,7 @@ class Process:
             self.objectid: ObjectID = objectid
         else:
             self.objectid: ObjectID = ObjectID(
-                guid=guid, tag=tag, treeid=treeid, richid=richid, time_observed=self.start_time
+                guid=guid, tag=tag, treeid=treeid, processtree=processtree, time_observed=self.start_time
             )
 
         # Parent process details
@@ -232,7 +232,7 @@ class Process:
         if isinstance(pobjectid, ObjectID):
             self.pobjectid: ObjectID = pobjectid
         else:
-            self.pobjectid: ObjectID = ObjectID(guid=pguid, tag=ptag, treeid=ptreeid, richid=prichid)
+            self.pobjectid: ObjectID = ObjectID(guid=pguid, tag=ptag, treeid=ptreeid, processtree=pprocesstree)
         self.pimage: str = pimage
         self.pcommand_line: str = pcommand_line
         self.ppid: int = ppid
@@ -277,8 +277,8 @@ class Process:
         :param kwargs: Key word arguments to be used for updating attributes
         :return: None
         """
-        objectid_keys = ["guid", "tag", "treeid", "richid", "time_observed"]
-        pobjectid_keys = ["pguid", "ptag", "ptreeid", "prichid", "ptime_observed"]
+        objectid_keys = ["guid", "tag", "treeid", "processtree", "time_observed"]
+        pobjectid_keys = ["pguid", "ptag", "ptreeid", "pprocesstree", "ptime_observed"]
 
         if all(value is None for value in kwargs.values()):
             return
@@ -526,7 +526,7 @@ class NetworkConnection:
         guid: str = None,
         tag: str = None,
         treeid: str = None,
-        richid: str = None,
+        processtree: str = None,
         process: Process = None,
         source_ip: str = None,
         source_port: int = None,
@@ -542,7 +542,7 @@ class NetworkConnection:
         :param guid: The GUID associated with the network connection
         :param tag: The normalized tag of the object
         :param tree_id: The hash of the tree ID
-        :param richid: Human readable tree ID (concatenation of process names)
+        :param processtree: Human readable tree ID (concatenation of tags)
         :param process: The process that spawned the network connection
         :param source_ip: The source IP of the connection
         :param source_port: The source port of the connection
@@ -559,7 +559,7 @@ class NetworkConnection:
             self.objectid: ObjectID = objectid
         else:
             self.objectid: ObjectID = ObjectID(
-                guid=guid, tag=tag, treeid=treeid, richid=richid, time_observed=time_observed
+                guid=guid, tag=tag, treeid=treeid, processtree=processtree, time_observed=time_observed
             )
 
         if not self.objectid.guid:
@@ -606,7 +606,7 @@ class NetworkConnection:
         :param kwargs: Key word arguments to be used for updating attributes
         :return: None
         """
-        objectid_keys = ["guid", "tag", "treeid", "richid", "time_observed"]
+        objectid_keys = ["guid", "tag", "treeid", "processtree", "time_observed"]
         if all(value is None for value in kwargs.values()):
             return
 
@@ -1358,7 +1358,7 @@ class SandboxOntology:
             return
 
         # Don't update the parent yet
-        parent_keys = ["pguid", "ptag", "ptreeid", "prichid",
+        parent_keys = ["pguid", "ptag", "ptreeid", "pprocesstree",
                        "ptime_observed", "ppid", "pimage", "pcommand_line", "pobjectid"]
         parent_kwargs = {
             key[1:]: value for key, value in kwargs.items() if key in parent_keys
@@ -2453,13 +2453,13 @@ class SandboxOntology:
             parent.add_child_process(e)
 
     def _create_hashed_node(
-        self, parent_treeid: str, parent_richid: str, node: Dict[str, Any]
+        self, parent_treeid: str, parent_processtree: str, node: Dict[str, Any]
     ) -> None:
         """
         This method takes a single node and hashes node attributes.
         Recurses through children to do the same.
         :param parent_treeid: A string representing the tree id
-        :param parent_richid: A string representing the rich id
+        :param parent_processtree: A string representing the rich id
         :param node: A dictionary representing the node to hash
         :return: None
         """
@@ -2470,23 +2470,23 @@ class SandboxOntology:
         sha256sum = sha256(value_to_create_hash_from).hexdigest()
         node["objectid"]["treeid"] = sha256sum
 
-        if parent_richid:
-            richid = f"{parent_richid}>{tag}"
-        elif node.get("pobjectid", {}).get("richid"):
-            richid = f"{node['pobjectid']['richid']}>{tag}"
+        if parent_processtree:
+            processtree = f"{parent_processtree}|{tag}"
+        elif node.get("pobjectid", {}).get("processtree"):
+            processtree = f"{node['pobjectid']['processtree']}|{tag}"
         elif node.get("pobjectid", {}).get("tag"):
-            richid = f"{node['pobjectid']['tag']}>{tag}"
+            processtree = f"{node['pobjectid']['tag']}|{tag}"
         else:
-            richid = tag
-        node["objectid"]["richid"] = richid
+            processtree = tag
+        node["objectid"]["processtree"] = processtree
 
         if node["objectid"].get("guid"):
             self.update_objectid(
-                guid=node["objectid"]["guid"], treeid=sha256sum, richid=richid
+                guid=node["objectid"]["guid"], treeid=sha256sum, processtree=processtree
             )
 
         for child in children:
-            self._create_hashed_node(sha256sum, richid, child)
+            self._create_hashed_node(sha256sum, processtree, child)
 
     def _create_treeids(self, process_tree: List[Dict[str, Any]]) -> None:
         """
