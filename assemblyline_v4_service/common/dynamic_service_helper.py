@@ -1687,12 +1687,19 @@ class SandboxOntology:
                 for item in
                 [source_ip, source_port, destination_ip, destination_port, direction, transport_layer_protocol]):
             return None
+
+        # Due to the way INetSim traffic can be handled, let's check for network connections that are both HTTP and HTTPS
+        if destination_port == 80:
+            destination_ports = [80, 443]
+        else:
+            destination_ports = [destination_port]
+
         for network_connection in self.get_network_connections():
             if (
                 network_connection.source_ip == source_ip
                 and network_connection.source_port == source_port
                 and network_connection.destination_ip == destination_ip
-                and network_connection.destination_port == destination_port
+                and network_connection.destination_port in destination_ports
                 and network_connection.direction == direction
                 and network_connection.transport_layer_protocol == transport_layer_protocol
             ):
