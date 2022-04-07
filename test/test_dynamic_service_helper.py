@@ -187,21 +187,21 @@ class TestObjectID:
         assert default_oid.guid is None
         assert default_oid.tag is None
         assert default_oid.treeid is None
-        assert default_oid.richid is None
+        assert default_oid.processtree is None
         assert default_oid.time_observed is None
 
         set_oid = ObjectID(
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
 
         assert set_oid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_oid.tag == "blah"
         assert set_oid.treeid == "blah"
-        assert set_oid.richid == "blah"
+        assert set_oid.processtree == "blah"
         assert set_oid.time_observed == 1.0
 
         with pytest.raises(ValueError):
@@ -216,7 +216,7 @@ class TestObjectID:
             "guid": None,
             "tag": None,
             "treeid": None,
-            "richid": None,
+            "processtree": None,
             "time_observed": None,
         }
 
@@ -276,12 +276,12 @@ class TestProcess:
         assert default_p.objectid.guid is None
         assert default_p.objectid.tag is None
         assert default_p.objectid.treeid is None
-        assert default_p.objectid.richid is None
+        assert default_p.objectid.processtree is None
         assert default_p.objectid.time_observed is None
         assert default_p.pobjectid.guid is None
         assert default_p.pobjectid.tag is None
         assert default_p.pobjectid.treeid is None
-        assert default_p.pobjectid.richid is None
+        assert default_p.pobjectid.processtree is None
         assert default_p.pobjectid.time_observed is None
         assert default_p.pimage is None
         assert default_p.pcommand_line is None
@@ -297,11 +297,11 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             pguid="{12345678-1234-5678-1234-567812345679}",
             ptag="blah",
             ptreeid="blah",
-            prichid="blah",
+            pprocesstree="blah",
             pimage="C:\\Windows\\System32\\cmd.exe",
             pcommand_line="C:\\Windows\\System32\\cmd.exe -m bad.exe",
             ppid=123,
@@ -315,12 +315,12 @@ class TestProcess:
         assert set_p1.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_p1.objectid.tag == "?sys32\\cmd.exe"
         assert set_p1.objectid.treeid == "blah"
-        assert set_p1.objectid.richid == "blah"
+        assert set_p1.objectid.processtree == "blah"
         assert set_p1.objectid.time_observed == 1.0
         assert set_p1.pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert set_p1.pobjectid.tag == "?sys32\\cmd.exe"
         assert set_p1.pobjectid.treeid == "blah"
-        assert set_p1.pobjectid.richid == "blah"
+        assert set_p1.pobjectid.processtree == "blah"
         assert set_p1.pobjectid.time_observed is None
         assert set_p1.pimage == "C:\\Windows\\System32\\cmd.exe"
         assert set_p1.pcommand_line == "C:\\Windows\\System32\\cmd.exe -m bad.exe"
@@ -335,7 +335,7 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
 
@@ -343,7 +343,7 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345679}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
 
@@ -352,11 +352,11 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345671}",
             tag="blah1",
             treeid="blah1",
-            richid="blah1",
+            processtree="blah1",
             pguid="{12345678-1234-5678-1234-567812345672}",
             ptag="blah1",
             ptreeid="blah1",
-            prichid="blah1",
+            pprocesstree="blah1",
             pimage="C:\\Windows\\System32\\cmd.exe",
             pcommand_line="C:\\Windows\\System32\\cmd.exe -m bad.exe",
             ppid=123,
@@ -372,12 +372,12 @@ class TestProcess:
         assert set_p2.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_p2.objectid.tag == "blah"
         assert set_p2.objectid.treeid == "blah"
-        assert set_p2.objectid.richid == "blah"
+        assert set_p2.objectid.processtree == "blah"
         assert set_p2.objectid.time_observed == 1.0
         assert set_p2.pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert set_p2.pobjectid.tag == "blah"
         assert set_p2.pobjectid.treeid == "blah"
-        assert set_p2.pobjectid.richid == "blah"
+        assert set_p2.pobjectid.processtree == "blah"
         assert set_p2.pobjectid.time_observed == 1.0
         assert set_p2.pimage == "C:\\Windows\\System32\\cmd.exe"
         assert set_p2.pcommand_line == "C:\\Windows\\System32\\cmd.exe -m bad.exe"
@@ -404,14 +404,14 @@ class TestProcess:
                 "guid": None,
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": None,
             },
             "pobjectid": {
                 "guid": None,
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": None,
             },
             "pimage": None,
@@ -441,14 +441,14 @@ class TestProcess:
                 "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "blah",
                 "treeid": "blah",
-                "richid": "blah",
+                "processtree": "blah",
                 "time_observed": 1,
             }
         )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid == "blah"
-        assert p.objectid.richid == "blah"
+        assert p.objectid.processtree == "blah"
         assert p.objectid.time_observed == 1
 
         p = Process()
@@ -456,13 +456,13 @@ class TestProcess:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah2",
             treeid="blah2",
-            richid="blah2",
+            processtree="blah2",
             time_observed=2,
         )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah2"
         assert p.objectid.treeid == "blah2"
-        assert p.objectid.richid == "blah2"
+        assert p.objectid.processtree == "blah2"
         assert p.objectid.time_observed == 2
 
         p.update(image="C:\\program files\\blah")
@@ -474,14 +474,14 @@ class TestProcess:
                 "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "blah",
                 "treeid": "blah",
-                "richid": "blah",
+                "processtree": "blah",
                 "time_observed": 1,
             }
         )
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345679}"
         assert p.pobjectid.tag == "blah"
         assert p.pobjectid.treeid == "blah"
-        assert p.pobjectid.richid == "blah"
+        assert p.pobjectid.processtree == "blah"
         assert p.pobjectid.time_observed == 1
 
         p = Process()
@@ -489,13 +489,13 @@ class TestProcess:
             pguid="{12345678-1234-5678-1234-567812345678}",
             ptag="blah2",
             ptreeid="blah2",
-            prichid="blah2",
+            pprocesstree="blah2",
             ptime_observed=2,
         )
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.pobjectid.tag == "blah2"
         assert p.pobjectid.treeid == "blah2"
-        assert p.pobjectid.richid == "blah2"
+        assert p.pobjectid.processtree == "blah2"
         assert p.pobjectid.time_observed == 2
 
         p.update(pimage="C:\\program files\\blah")
@@ -517,7 +517,7 @@ class TestProcess:
             pid=123,
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             start_time=1.0,
         )
         child_p.set_parent(parent_p)
@@ -525,7 +525,7 @@ class TestProcess:
         assert child_p.pobjectid.guid == parent_p.objectid.guid
         assert child_p.pobjectid.tag == parent_p.objectid.tag
         assert child_p.pobjectid.treeid == parent_p.objectid.treeid
-        assert child_p.pobjectid.richid == parent_p.objectid.richid
+        assert child_p.pobjectid.processtree == parent_p.objectid.processtree
         assert child_p.pobjectid.time_observed == parent_p.objectid.time_observed
         assert child_p.pimage == parent_p.image
         assert child_p.pcommand_line == parent_p.command_line
@@ -580,20 +580,20 @@ class TestProcess:
         assert p.objectid.guid is None
         assert p.objectid.tag is None
         assert p.objectid.treeid is None
-        assert p.objectid.richid is None
+        assert p.objectid.processtree is None
         assert p.objectid.time_observed is None
 
         p.update_objectid(
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid == "blah"
-        assert p.objectid.richid == "blah"
+        assert p.objectid.processtree == "blah"
         assert p.objectid.time_observed == 1.0
 
     @staticmethod
@@ -605,20 +605,20 @@ class TestProcess:
         assert p.pobjectid.guid is None
         assert p.pobjectid.tag is None
         assert p.pobjectid.treeid is None
-        assert p.pobjectid.richid is None
+        assert p.pobjectid.processtree is None
         assert p.pobjectid.time_observed is None
 
         p.update_pobjectid(
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.pobjectid.tag == "blah"
         assert p.pobjectid.treeid == "blah"
-        assert p.pobjectid.richid == "blah"
+        assert p.pobjectid.processtree == "blah"
         assert p.pobjectid.time_observed == 1.0
 
     @staticmethod
@@ -716,7 +716,7 @@ class TestNetworkConnection:
         assert default_nc.direction is None
         assert str(UUID(default_nc.objectid.guid))
         assert default_nc.objectid.treeid is None
-        assert default_nc.objectid.richid is None
+        assert default_nc.objectid.processtree is None
         assert default_nc.objectid.tag is None
         assert default_nc.objectid.time_observed is None
 
@@ -735,7 +735,7 @@ class TestNetworkConnection:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
             source_ip="blah",
             source_port=123,
@@ -748,7 +748,7 @@ class TestNetworkConnection:
         assert set_nc1.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_nc1.objectid.tag == "blah"
         assert set_nc1.objectid.treeid == "blah"
-        assert set_nc1.objectid.richid == "blah"
+        assert set_nc1.objectid.processtree == "blah"
         assert set_nc1.objectid.time_observed == 1.0
         assert set_nc1.source_ip == "blah"
         assert set_nc1.source_port == 123
@@ -761,7 +761,7 @@ class TestNetworkConnection:
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
 
@@ -770,7 +770,7 @@ class TestNetworkConnection:
             guid="{12345678-1234-5678-1234-567812345671}",
             tag="blah1",
             treeid="blah1",
-            richid="blah1",
+            processtree="blah1",
             time_observed=1.01,
             source_ip="blah",
             source_port=123,
@@ -784,7 +784,7 @@ class TestNetworkConnection:
         assert set_nc2.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert set_nc2.objectid.tag == "blah"
         assert set_nc2.objectid.treeid == "blah"
-        assert set_nc2.objectid.richid == "blah"
+        assert set_nc2.objectid.processtree == "blah"
         assert set_nc2.objectid.time_observed == 1.0
         assert set_nc2.source_ip == "blah"
         assert set_nc2.source_port == 123
@@ -811,18 +811,18 @@ class TestNetworkConnection:
         assert str(UUID(nc.objectid.guid))
         assert nc.objectid.tag is None
         assert nc.objectid.treeid is None
-        assert nc.objectid.richid is None
+        assert nc.objectid.processtree is None
         assert nc.objectid.time_observed is None
 
         nc.update_objectid(
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
-        assert nc.objectid.richid == "blah"
+        assert nc.objectid.processtree == "blah"
         assert nc.objectid.time_observed == 1.0
 
     @staticmethod
@@ -840,25 +840,25 @@ class TestNetworkConnection:
             objectid={
                 "tag": "blah",
                 "treeid": "blah",
-                "richid": "blah",
+                "processtree": "blah",
                 "time_observed": 1,
             }
         )
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
-        assert nc.objectid.richid == "blah"
+        assert nc.objectid.processtree == "blah"
         assert nc.objectid.time_observed == 1
 
         nc = NetworkConnection(destination_ip="blah")
         nc.update(
             tag="blah2",
             treeid="blah2",
-            richid="blah2",
+            processtree="blah2",
             time_observed=2,
         )
         assert nc.objectid.tag == "blah2"
         assert nc.objectid.treeid == "blah2"
-        assert nc.objectid.richid == "blah2"
+        assert nc.objectid.processtree == "blah2"
         assert nc.objectid.time_observed == 2
 
         nc = NetworkConnection()
@@ -906,20 +906,20 @@ class TestNetworkConnection:
         assert str(UUID(nc.objectid.guid))
         assert nc.objectid.tag is None
         assert nc.objectid.treeid is None
-        assert nc.objectid.richid is None
+        assert nc.objectid.processtree is None
         assert nc.objectid.time_observed is None
 
         nc.update_process_objectid(
             guid="{12345678-1234-5678-1234-567812345678}",
             tag="blah",
             treeid="blah",
-            richid="blah",
+            processtree="blah",
             time_observed=1.0,
         )
         assert nc.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.process.objectid.tag == "blah"
         assert nc.process.objectid.treeid == "blah"
-        assert nc.process.objectid.richid == "blah"
+        assert nc.process.objectid.processtree == "blah"
         assert nc.process.objectid.time_observed == 1.0
 
     @staticmethod
@@ -976,7 +976,7 @@ class TestNetworkConnection:
             "objectid": {
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": None,
             },
             "process": None,
@@ -1007,7 +1007,7 @@ class TestNetworkDNS:
         assert str(UUID(default_nd.connection_details.objectid.guid))
         assert default_nd.connection_details.objectid.tag is None
         assert default_nd.connection_details.objectid.treeid is None
-        assert default_nd.connection_details.objectid.richid is None
+        assert default_nd.connection_details.objectid.processtree is None
         assert default_nd.connection_details.objectid.time_observed is None
         assert default_nd.domain is None
         assert default_nd.resolved_ips == []
@@ -1085,7 +1085,7 @@ class TestNetworkDNS:
                 "objectid": {
                     "tag": None,
                     "treeid": None,
-                    "richid": None,
+                    "processtree": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -1119,7 +1119,7 @@ class TestNetworkHTTP:
         assert str(UUID(default_nh.connection_details.objectid.guid))
         assert default_nh.connection_details.objectid.tag is None
         assert default_nh.connection_details.objectid.treeid is None
-        assert default_nh.connection_details.objectid.richid is None
+        assert default_nh.connection_details.objectid.processtree is None
         assert default_nh.connection_details.objectid.time_observed is None
         assert default_nh.request_uri is None
         assert default_nh.request_headers == {}
@@ -1269,7 +1269,7 @@ class TestNetworkHTTP:
                 "objectid": {
                     "tag": None,
                     "treeid": None,
-                    "richid": None,
+                    "processtree": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -1759,13 +1759,13 @@ class TestSandboxOntology:
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": float("-inf"),
             },
             "pobjectid": {
                 # "guid": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "tag": None,
                 "time_observed": None,
             },
@@ -1854,13 +1854,13 @@ class TestSandboxOntology:
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag is None
         assert p.objectid.treeid is None
-        assert p.objectid.richid is None
+        assert p.objectid.processtree is None
         assert p.objectid.time_observed == float("-inf")
 
         assert nc.objectid.guid == nc_guid
         assert nc.objectid.tag is None
         assert nc.objectid.treeid is None
-        assert nc.objectid.richid is None
+        assert nc.objectid.processtree is None
         assert nc.objectid.time_observed is None
 
         so.update_objectid(guid="{12345678-1234-5678-1234-567812345678}", tag="blah")
@@ -1868,7 +1868,7 @@ class TestSandboxOntology:
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid is None
-        assert p.objectid.richid is None
+        assert p.objectid.processtree is None
         assert p.objectid.time_observed == float("-inf")
 
         so.update_objectid(guid=nc_guid, tag="blah")
@@ -1876,7 +1876,7 @@ class TestSandboxOntology:
         assert nc.objectid.guid == nc_guid
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid is None
-        assert nc.objectid.richid is None
+        assert nc.objectid.processtree is None
         assert nc.objectid.time_observed is None
 
     @staticmethod
@@ -1903,14 +1903,14 @@ class TestSandboxOntology:
                 "guid": None,
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": None,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": "blah.exe",
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 2.0,
             },
             "pimage": "blah.exe",
@@ -1933,14 +1933,14 @@ class TestSandboxOntology:
                 "guid": None,
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 3.0,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": "blah.exe",
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 2.0,
             },
             "pimage": "blah.exe",
@@ -1995,14 +1995,14 @@ class TestSandboxOntology:
                 "guid": "{12345678-1234-5678-1234-567812345678}",
                 "tag": "blah.exe",
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 2.0,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "parent.exe",
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 2.0,
             },
             "pimage": "parent.exe",
@@ -2022,14 +2022,14 @@ class TestSandboxOntology:
                 "guid": "{12345678-1234-5678-1234-567812345670}",
                 "tag": "blah.exe",
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 2.0,
             },
             "pobjectid": {
                 "guid": "{12345678-1234-5678-1234-567812345679}",
                 "tag": "parent.exe",
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": 2.0,
             },
             "pimage": "parent.exe",
@@ -2248,7 +2248,7 @@ class TestSandboxOntology:
             "objectid": {
                 "tag": None,
                 "treeid": None,
-                "richid": None,
+                "processtree": None,
                 "time_observed": None,
             },
             "process": None,
@@ -2373,7 +2373,7 @@ class TestSandboxOntology:
                 "objectid": {
                     "tag": None,
                     "treeid": None,
-                    "richid": None,
+                    "processtree": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -2471,7 +2471,7 @@ class TestSandboxOntology:
                 "objectid": {
                     "tag": None,
                     "treeid": None,
-                    "richid": None,
+                    "processtree": None,
                     "time_observed": None,
                 },
                 "process": None,
@@ -2702,14 +2702,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -2725,14 +2725,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah>blah",
+                            "processtree": "blah|blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "ppid": 1,
@@ -2759,14 +2759,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -2780,14 +2780,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah2",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -2803,14 +2803,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah>blah",
+                            "processtree": "blah|blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "ppid": 1,
@@ -2830,14 +2830,14 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345679}",
                                     "tag": "blah2",
                                     "treeid": "28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1",
-                                    "richid": "blah>blah>blah2",
+                                    "processtree": "blah|blah|blah2",
                                     "time_observed": 2,
                                 },
                                 "pobjectid": {
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 1,
                                 },
                                 "ppid": 1,
@@ -2866,14 +2866,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -2887,14 +2887,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345672}",
                             "tag": "blah2",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                     },
@@ -2908,14 +2908,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345673}",
                             "tag": "blah3",
                             "treeid": None,
-                                        "richid": None,
+                                        "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345673}",
                             "tag": "blah3",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                     },
@@ -2929,14 +2929,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345674}",
                             "tag": "blah4",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345673}",
                             "tag": "blah3",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                     },
@@ -2952,14 +2952,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah>blah",
+                            "processtree": "blah|blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "ppid": 1,
@@ -2979,14 +2979,14 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345672}",
                                     "tag": "blah2",
                                     "treeid": "28fb5ed121e549f67b678d225bb2fc9971ed02c18a087f8fa9b05bf18a23d9e1",
-                                    "richid": "blah>blah>blah2",
+                                    "processtree": "blah|blah|blah2",
                                     "time_observed": 2,
                                 },
                                 "pobjectid": {
                                     "guid": "{12345678-1234-5678-1234-567812345671}",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 1,
                                 },
                                 "ppid": 1,
@@ -3015,14 +3015,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -3038,7 +3038,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": "blah",
                         },
                         "source_ip": "blah",
@@ -3057,7 +3057,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah:blah",
                             "treeid": "5f687d6145fb95eb502e4b6c1c83914aca058b35ce0aa6fe3d80f7e972e4f363",
-                            "richid": "blah:blah",
+                            "processtree": "blah:blah",
                             "time_observed": "blah",
                         },
                         "source_ip": "blah",
@@ -3084,14 +3084,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -3100,7 +3100,7 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah:blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "source_ip": "blah",
@@ -3127,14 +3127,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "8b7df143d91c716ecfa5fc1730022f6b421b05cedee8fd52b1fc65a96030ad52",
-                            "richid": "blah>blah",
+                            "processtree": "blah|blah",
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "ppid": 1,
@@ -3150,7 +3150,7 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345679}",
                                     "tag": "blah:blah",
                                     "treeid": "81a167be9a70e6d9c9b14f4dec79c052e463c3fda116583731c1065143e8f277",
-                                    "richid": "blah>blah>blah:blah",
+                                    "processtree": "blah|blah|blah:blah",
                                     "time_observed": 2,
                                 },
                                 "source_ip": "blah",
@@ -3175,14 +3175,14 @@ class TestSandboxOntology:
                                         "guid": "{12345678-1234-5678-1234-567812345678}",
                                         "tag": "blah",
                                         "treeid": None,
-                                        "richid": None,
+                                        "processtree": None,
                                         "time_observed": 1,
                                     },
                                     "pobjectid": {
                                         "guid": "{12345678-1234-5678-1234-567812345678}",
                                         "tag": "blah",
                                         "treeid": None,
-                                        "richid": None,
+                                        "processtree": None,
                                         "time_observed": None,
                                     },
                                 },
@@ -3231,14 +3231,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -3272,14 +3272,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -3294,14 +3294,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -3347,14 +3347,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -3369,14 +3369,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah2",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                     },
@@ -3391,14 +3391,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah3",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -3413,14 +3413,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345674}",
                             "tag": "blah4",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345671}",
                             "tag": "blah3",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                     },
@@ -3466,14 +3466,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -3507,14 +3507,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -3548,14 +3548,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -3590,14 +3590,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -3701,14 +3701,14 @@ class TestSandboxOntology:
                                         "guid": "{12345678-1234-5678-1234-567812345678}",
                                         "tag": "blah",
                                         "treeid": "blah",
-                                        "richid": "blah",
+                                        "processtree": "blah",
                                         "time_observed": "blah",
                                     },
                                     "pobjectid": {
                                         "guid": "{12345678-1234-5678-1234-567812345678}",
                                         "tag": "blah",
                                         "treeid": "blah",
-                                        "richid": "blah",
+                                        "processtree": "blah",
                                         "time_observed": "blah",
                                     },
                                     "pimage": "blah",
@@ -3732,14 +3732,14 @@ class TestSandboxOntology:
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "pobjectid": {
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "pimage": "blah",
@@ -3761,7 +3761,7 @@ class TestSandboxOntology:
                         "objectid": {
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "source_ip": "blah",
@@ -3775,14 +3775,14 @@ class TestSandboxOntology:
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "pobjectid": {
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "pimage": "blah",
@@ -3808,7 +3808,7 @@ class TestSandboxOntology:
                             "objectid": {
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "source_ip": "blah",
@@ -3822,14 +3822,14 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": "blah",
-                                    "richid": "blah",
+                                    "processtree": "blah",
                                     "time_observed": "blah",
                                 },
                                 "pobjectid": {
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": "blah",
-                                    "richid": "blah",
+                                    "processtree": "blah",
                                     "time_observed": "blah",
                                 },
                                 "pimage": "blah",
@@ -3860,7 +3860,7 @@ class TestSandboxOntology:
                             "objectid": {
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "source_ip": "blah",
@@ -3874,14 +3874,14 @@ class TestSandboxOntology:
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": "blah",
-                                    "richid": "blah",
+                                    "processtree": "blah",
                                     "time_observed": "blah",
                                 },
                                 "pobjectid": {
                                     "guid": "{12345678-1234-5678-1234-567812345678}",
                                     "tag": "blah",
                                     "treeid": "blah",
-                                    "richid": "blah",
+                                    "processtree": "blah",
                                     "time_observed": "blah",
                                 },
                                 "pimage": "blah",
@@ -3905,14 +3905,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "pimage": "blah",
@@ -3978,7 +3978,7 @@ class TestSandboxOntology:
         )
         assert default_so.signatures[0].subjects[1].process.pobjectid.tag == "blah"
         assert default_so.signatures[0].subjects[1].process.pobjectid.treeid == "blah"
-        assert default_so.signatures[0].subjects[1].process.pobjectid.richid == "blah"
+        assert default_so.signatures[0].subjects[1].process.pobjectid.processtree == "blah"
         assert (
             default_so.signatures[0].subjects[1].process.pobjectid.time_observed
             == "blah"
@@ -4008,7 +4008,7 @@ class TestSandboxOntology:
         )
         assert default_so.signatures[0].process.pobjectid.tag == "blah"
         assert default_so.signatures[0].process.pobjectid.treeid == "blah"
-        assert default_so.signatures[0].process.pobjectid.richid == "blah"
+        assert default_so.signatures[0].process.pobjectid.processtree == "blah"
         assert default_so.signatures[0].process.pobjectid.time_observed == "blah"
         assert default_so.signatures[0].process.pimage == "blah"
         assert default_so.signatures[0].process.pcommand_line == "blah"
@@ -4027,7 +4027,7 @@ class TestSandboxOntology:
         ))
         assert default_so.network_connections[0].objectid.tag == "blah"
         assert default_so.network_connections[0].objectid.treeid == "blah"
-        assert default_so.network_connections[0].objectid.richid == "blah"
+        assert default_so.network_connections[0].objectid.processtree == "blah"
         assert default_so.network_connections[0].objectid.time_observed == "blah"
         assert default_so.network_connections[0].source_ip == "blah"
         assert default_so.network_connections[0].source_port == "blah"
@@ -4042,7 +4042,7 @@ class TestSandboxOntology:
         )
         assert default_so.network_connections[0].process.objectid.tag == "blah"
         assert default_so.network_connections[0].process.objectid.treeid == "blah"
-        assert default_so.network_connections[0].process.objectid.richid == "blah"
+        assert default_so.network_connections[0].process.objectid.processtree == "blah"
         assert (
             default_so.network_connections[0].process.objectid.time_observed == "blah"
         )
@@ -4052,7 +4052,7 @@ class TestSandboxOntology:
         )
         assert default_so.network_connections[0].process.pobjectid.tag == "blah"
         assert default_so.network_connections[0].process.pobjectid.treeid == "blah"
-        assert default_so.network_connections[0].process.pobjectid.richid == "blah"
+        assert default_so.network_connections[0].process.pobjectid.processtree == "blah"
         assert (
             default_so.network_connections[0].process.pobjectid.time_observed == "blah"
         )
@@ -4077,7 +4077,7 @@ class TestSandboxOntology:
         ))
         assert default_so.network_dns[0].connection_details.objectid.tag == "blah"
         assert default_so.network_dns[0].connection_details.objectid.treeid == "blah"
-        assert default_so.network_dns[0].connection_details.objectid.richid == "blah"
+        assert default_so.network_dns[0].connection_details.objectid.processtree == "blah"
         assert (
             default_so.network_dns[0].connection_details.objectid.time_observed
             == "blah"
@@ -4104,7 +4104,7 @@ class TestSandboxOntology:
             == "blah"
         )
         assert (
-            default_so.network_dns[0].connection_details.process.objectid.richid
+            default_so.network_dns[0].connection_details.process.objectid.processtree
             == "blah"
         )
         assert (
@@ -4123,7 +4123,7 @@ class TestSandboxOntology:
             == "blah"
         )
         assert (
-            default_so.network_dns[0].connection_details.process.pobjectid.richid
+            default_so.network_dns[0].connection_details.process.pobjectid.processtree
             == "blah"
         )
         assert (
@@ -4165,7 +4165,7 @@ class TestSandboxOntology:
         ))
         assert default_so.network_http[0].connection_details.objectid.tag == "blah"
         assert default_so.network_http[0].connection_details.objectid.treeid == "blah"
-        assert default_so.network_http[0].connection_details.objectid.richid == "blah"
+        assert default_so.network_http[0].connection_details.objectid.processtree == "blah"
         assert (
             default_so.network_http[0].connection_details.objectid.time_observed
             == "blah"
@@ -4192,7 +4192,7 @@ class TestSandboxOntology:
             == "blah"
         )
         assert (
-            default_so.network_http[0].connection_details.process.objectid.richid
+            default_so.network_http[0].connection_details.process.objectid.processtree
             == "blah"
         )
         assert (
@@ -4212,7 +4212,7 @@ class TestSandboxOntology:
             == "blah"
         )
         assert (
-            default_so.network_http[0].connection_details.process.pobjectid.richid
+            default_so.network_http[0].connection_details.process.pobjectid.processtree
             == "blah"
         )
         assert (
@@ -4254,7 +4254,7 @@ class TestSandboxOntology:
         )
         assert default_so.processes[0].objectid.tag == "blah"
         assert default_so.processes[0].objectid.treeid == "blah"
-        assert default_so.processes[0].objectid.richid == "blah"
+        assert default_so.processes[0].objectid.processtree == "blah"
         assert default_so.processes[0].objectid.time_observed == "blah"
         assert (
             default_so.processes[0].pobjectid.guid
@@ -4262,7 +4262,7 @@ class TestSandboxOntology:
         )
         assert default_so.processes[0].pobjectid.tag == "blah"
         assert default_so.processes[0].pobjectid.treeid == "blah"
-        assert default_so.processes[0].pobjectid.richid == "blah"
+        assert default_so.processes[0].pobjectid.processtree == "blah"
         assert default_so.processes[0].pobjectid.time_observed == "blah"
         assert default_so.processes[0].pimage == "blah"
         assert default_so.processes[0].pcommand_line == "blah"
@@ -4514,14 +4514,14 @@ class TestSandboxOntology:
                     "guid": "{12345678-1234-5678-1234-567812345678}",
                     "tag": "blah",
                     "treeid": "blah",
-                    "richid": "blah",
+                    "processtree": "blah",
                     "time_observed": "blah",
                 },
                 "pobjectid": {
                     "guid": "{12345678-1234-5678-1234-567812345678}",
                     "tag": "blah",
                     "treeid": "blah",
-                    "richid": "blah",
+                    "processtree": "blah",
                     "time_observed": "blah",
                 },
                 "pimage": "blah",
@@ -4537,12 +4537,12 @@ class TestSandboxOntology:
         assert p.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.objectid.tag == "blah"
         assert p.objectid.treeid == "blah"
-        assert p.objectid.richid == "blah"
+        assert p.objectid.processtree == "blah"
         assert p.objectid.time_observed == "blah"
         assert p.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert p.pobjectid.tag == "blah"
         assert p.pobjectid.treeid == "blah"
-        assert p.pobjectid.richid == "blah"
+        assert p.pobjectid.processtree == "blah"
         assert p.pobjectid.time_observed == "blah"
         assert p.pimage == "blah"
         assert p.pcommand_line == "blah"
@@ -4589,14 +4589,14 @@ class TestSandboxOntology:
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "pobjectid": {
                                 "guid": "{12345678-1234-5678-1234-567812345678}",
                                 "tag": "blah",
                                 "treeid": "blah",
-                                "richid": "blah",
+                                "processtree": "blah",
                                 "time_observed": "blah",
                             },
                             "pimage": "blah",
@@ -4617,14 +4617,14 @@ class TestSandboxOntology:
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
-                        "richid": "blah",
+                        "processtree": "blah",
                         "time_observed": "blah",
                     },
                     "pobjectid": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
-                        "richid": "blah",
+                        "processtree": "blah",
                         "time_observed": "blah",
                     },
                     "pimage": "blah",
@@ -4664,7 +4664,7 @@ class TestSandboxOntology:
         )
         assert s.subjects[1].process.objectid.tag == "blah"
         assert s.subjects[1].process.objectid.treeid == "blah"
-        assert s.subjects[1].process.objectid.richid == "blah"
+        assert s.subjects[1].process.objectid.processtree == "blah"
         assert s.subjects[1].process.objectid.time_observed == "blah"
         assert (
             s.subjects[1].process.pobjectid.guid
@@ -4672,7 +4672,7 @@ class TestSandboxOntology:
         )
         assert s.subjects[1].process.pobjectid.tag == "blah"
         assert s.subjects[1].process.pobjectid.treeid == "blah"
-        assert s.subjects[1].process.pobjectid.richid == "blah"
+        assert s.subjects[1].process.pobjectid.processtree == "blah"
         assert s.subjects[1].process.pobjectid.time_observed == "blah"
         assert s.subjects[1].process.pimage == "blah"
         assert s.subjects[1].process.pcommand_line == "blah"
@@ -4685,12 +4685,12 @@ class TestSandboxOntology:
         assert s.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert s.process.objectid.tag == "blah"
         assert s.process.objectid.treeid == "blah"
-        assert s.process.objectid.richid == "blah"
+        assert s.process.objectid.processtree == "blah"
         assert s.process.objectid.time_observed == "blah"
         assert s.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert s.process.pobjectid.tag == "blah"
         assert s.process.pobjectid.treeid == "blah"
-        assert s.process.pobjectid.richid == "blah"
+        assert s.process.pobjectid.processtree == "blah"
         assert s.process.pobjectid.time_observed == "blah"
         assert s.process.pimage == "blah"
         assert s.process.pcommand_line == "blah"
@@ -4714,7 +4714,7 @@ class TestSandboxOntology:
                 "objectid": {
                     "tag": "blah",
                     "treeid": "blah",
-                    "richid": "blah",
+                    "processtree": "blah",
                     "time_observed": "blah",
                 },
                 "source_ip": "blah",
@@ -4728,14 +4728,14 @@ class TestSandboxOntology:
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
-                        "richid": "blah",
+                        "processtree": "blah",
                         "time_observed": "blah",
                     },
                     "pobjectid": {
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "tag": "blah",
                         "treeid": "blah",
-                        "richid": "blah",
+                        "processtree": "blah",
                         "time_observed": "blah",
                     },
                     "pimage": "blah",
@@ -4755,7 +4755,7 @@ class TestSandboxOntology:
         assert str(UUID(nc.objectid.guid))
         assert nc.objectid.tag == "blah"
         assert nc.objectid.treeid == "blah"
-        assert nc.objectid.richid == "blah"
+        assert nc.objectid.processtree == "blah"
         assert nc.objectid.time_observed == "blah"
         assert nc.source_ip == "blah"
         assert nc.source_port == "blah"
@@ -4766,12 +4766,12 @@ class TestSandboxOntology:
         assert nc.process.objectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.process.objectid.tag == "blah"
         assert nc.process.objectid.treeid == "blah"
-        assert nc.process.objectid.richid == "blah"
+        assert nc.process.objectid.processtree == "blah"
         assert nc.process.objectid.time_observed == "blah"
         assert nc.process.pobjectid.guid == "{12345678-1234-5678-1234-567812345678}"
         assert nc.process.pobjectid.tag == "blah"
         assert nc.process.pobjectid.treeid == "blah"
-        assert nc.process.pobjectid.richid == "blah"
+        assert nc.process.pobjectid.processtree == "blah"
         assert nc.process.pobjectid.time_observed == "blah"
         assert nc.process.pimage == "blah"
         assert nc.process.pcommand_line == "blah"
@@ -4802,7 +4802,7 @@ class TestSandboxOntology:
                     "objectid": {
                         "tag": "blah",
                         "treeid": "blah",
-                        "richid": "blah",
+                        "processtree": "blah",
                         "time_observed": "blah",
                     },
                     "source_ip": "blah",
@@ -4816,14 +4816,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "pimage": "blah",
@@ -4849,7 +4849,7 @@ class TestSandboxOntology:
         ))
         assert nd.connection_details.objectid.tag == "blah"
         assert nd.connection_details.objectid.treeid == "blah"
-        assert nd.connection_details.objectid.richid == "blah"
+        assert nd.connection_details.objectid.processtree == "blah"
         assert nd.connection_details.objectid.time_observed == "blah"
         assert nd.connection_details.source_ip == "blah"
         assert nd.connection_details.source_port == "blah"
@@ -4863,7 +4863,7 @@ class TestSandboxOntology:
         )
         assert nd.connection_details.process.objectid.tag == "blah"
         assert nd.connection_details.process.objectid.treeid == "blah"
-        assert nd.connection_details.process.objectid.richid == "blah"
+        assert nd.connection_details.process.objectid.processtree == "blah"
         assert nd.connection_details.process.objectid.time_observed == "blah"
         assert (
             nd.connection_details.process.pobjectid.guid
@@ -4871,7 +4871,7 @@ class TestSandboxOntology:
         )
         assert nd.connection_details.process.pobjectid.tag == "blah"
         assert nd.connection_details.process.pobjectid.treeid == "blah"
-        assert nd.connection_details.process.pobjectid.richid == "blah"
+        assert nd.connection_details.process.pobjectid.processtree == "blah"
         assert nd.connection_details.process.pobjectid.time_observed == "blah"
         assert nd.connection_details.process.pimage == "blah"
         assert nd.connection_details.process.pcommand_line == "blah"
@@ -4906,7 +4906,7 @@ class TestSandboxOntology:
                     "objectid": {
                         "tag": "blah",
                         "treeid": "blah",
-                        "richid": "blah",
+                        "processtree": "blah",
                         "time_observed": "blah",
                     },
                     "source_ip": "blah",
@@ -4920,14 +4920,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "pobjectid": {
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": "blah",
-                            "richid": "blah",
+                            "processtree": "blah",
                             "time_observed": "blah",
                         },
                         "pimage": "blah",
@@ -4955,7 +4955,7 @@ class TestSandboxOntology:
         ))
         assert nh.connection_details.objectid.tag == "blah"
         assert nh.connection_details.objectid.treeid == "blah"
-        assert nh.connection_details.objectid.richid == "blah"
+        assert nh.connection_details.objectid.processtree == "blah"
         assert nh.connection_details.objectid.time_observed == "blah"
         assert nh.connection_details.source_ip == "blah"
         assert nh.connection_details.source_port == "blah"
@@ -4969,7 +4969,7 @@ class TestSandboxOntology:
         )
         assert nh.connection_details.process.objectid.tag == "blah"
         assert nh.connection_details.process.objectid.treeid == "blah"
-        assert nh.connection_details.process.objectid.richid == "blah"
+        assert nh.connection_details.process.objectid.processtree == "blah"
         assert nh.connection_details.process.objectid.time_observed == "blah"
         assert (
             nh.connection_details.process.pobjectid.guid
@@ -4977,7 +4977,7 @@ class TestSandboxOntology:
         )
         assert nh.connection_details.process.pobjectid.tag == "blah"
         assert nh.connection_details.process.pobjectid.treeid == "blah"
-        assert nh.connection_details.process.pobjectid.richid == "blah"
+        assert nh.connection_details.process.pobjectid.processtree == "blah"
         assert nh.connection_details.process.pobjectid.time_observed == "blah"
         assert nh.connection_details.process.pimage == "blah"
         assert nh.connection_details.process.pcommand_line == "blah"
@@ -5096,14 +5096,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "pimage": None,
@@ -5142,14 +5142,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345678}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "pimage": None,
@@ -5169,14 +5169,14 @@ class TestSandboxOntology:
                             "guid": "{12345678-1234-5678-1234-567812345679}",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "pimage": None,
@@ -5234,14 +5234,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -5258,14 +5258,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     }
@@ -5284,14 +5284,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5305,14 +5305,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "a",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5328,14 +5328,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -5349,14 +5349,14 @@ class TestSandboxOntology:
                                     "guid": "b",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 1,
                                 },
                                 "pobjectid": {
                                     "guid": "a",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [],
@@ -5378,14 +5378,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5399,14 +5399,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5422,14 +5422,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [],
@@ -5444,14 +5444,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [],
@@ -5471,14 +5471,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5492,14 +5492,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5513,14 +5513,14 @@ class TestSandboxOntology:
                             "guid": "c",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5536,14 +5536,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [],
@@ -5558,14 +5558,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -5579,14 +5579,14 @@ class TestSandboxOntology:
                                     "guid": "c",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 1,
                                 },
                                 "pobjectid": {
                                     "guid": "b",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [],
@@ -5608,14 +5608,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5629,14 +5629,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "a",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5650,14 +5650,14 @@ class TestSandboxOntology:
                             "guid": "c",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5671,14 +5671,14 @@ class TestSandboxOntology:
                             "guid": "d",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5694,14 +5694,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -5715,14 +5715,14 @@ class TestSandboxOntology:
                                     "guid": "b",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 1,
                                 },
                                 "pobjectid": {
                                     "guid": "a",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [
@@ -5736,14 +5736,14 @@ class TestSandboxOntology:
                                             "guid": "c",
                                             "tag": "blah",
                                             "treeid": None,
-                                            "richid": None,
+                                            "processtree": None,
                                             "time_observed": 1,
                                         },
                                         "pobjectid": {
                                             "guid": "b",
                                             "tag": None,
                                             "treeid": None,
-                                            "richid": None,
+                                            "processtree": None,
                                             "time_observed": None,
                                         },
                                         "children": [],
@@ -5762,14 +5762,14 @@ class TestSandboxOntology:
                             "guid": "d",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [],
@@ -5789,14 +5789,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5810,14 +5810,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "a",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5831,14 +5831,14 @@ class TestSandboxOntology:
                             "guid": "c",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 3,
                         },
                         "pobjectid": {
                             "guid": "a",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5852,14 +5852,14 @@ class TestSandboxOntology:
                             "guid": "d",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 4,
                         },
                         "pobjectid": {
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5875,14 +5875,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -5896,14 +5896,14 @@ class TestSandboxOntology:
                                     "guid": "b",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 2,
                                 },
                                 "pobjectid": {
                                     "guid": "a",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [
@@ -5917,14 +5917,14 @@ class TestSandboxOntology:
                                             "guid": "d",
                                             "tag": "blah",
                                             "treeid": None,
-                                            "richid": None,
+                                            "processtree": None,
                                             "time_observed": 4,
                                         },
                                         "pobjectid": {
                                             "guid": "b",
                                             "tag": None,
                                             "treeid": None,
-                                            "richid": None,
+                                            "processtree": None,
                                             "time_observed": None,
                                         },
                                         "children": [],
@@ -5941,14 +5941,14 @@ class TestSandboxOntology:
                                     "guid": "c",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 3,
                                 },
                                 "pobjectid": {
                                     "guid": "a",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [],
@@ -5970,14 +5970,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -5991,14 +5991,14 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 3,
                         },
                         "pobjectid": {
                             "guid": "a",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -6012,14 +6012,14 @@ class TestSandboxOntology:
                             "guid": "c",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "pobjectid": {
                             "guid": "a",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -6033,14 +6033,14 @@ class TestSandboxOntology:
                             "guid": "d",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 4,
                         },
                         "pobjectid": {
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -6056,14 +6056,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -6077,14 +6077,14 @@ class TestSandboxOntology:
                                     "guid": "c",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 2,
                                 },
                                 "pobjectid": {
                                     "guid": "a",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [],
@@ -6099,14 +6099,14 @@ class TestSandboxOntology:
                                     "guid": "b",
                                     "tag": "blah",
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 3,
                                 },
                                 "pobjectid": {
                                     "guid": "a",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": None,
                                 },
                                 "children": [
@@ -6120,14 +6120,14 @@ class TestSandboxOntology:
                                             "guid": "d",
                                             "tag": "blah",
                                             "treeid": None,
-                                            "richid": None,
+                                            "processtree": None,
                                             "time_observed": 4,
                                         },
                                         "pobjectid": {
                                             "guid": "b",
                                             "tag": None,
                                             "treeid": None,
-                                            "richid": None,
+                                            "processtree": None,
                                             "time_observed": None,
                                         },
                                         "children": [],
@@ -6151,14 +6151,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -6174,7 +6174,7 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                     },
@@ -6190,14 +6190,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [],
@@ -6214,7 +6214,7 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                         "children": [],
@@ -6234,14 +6234,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -6257,7 +6257,7 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                     },
@@ -6273,14 +6273,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -6296,7 +6296,7 @@ class TestSandboxOntology:
                                     "guid": "b",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 2,
                                 },
                                 "children": [],
@@ -6318,14 +6318,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                     },
@@ -6341,7 +6341,7 @@ class TestSandboxOntology:
                             "guid": "b",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 3,
                         },
                     },
@@ -6357,7 +6357,7 @@ class TestSandboxOntology:
                             "guid": "c",
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 2,
                         },
                     },
@@ -6373,14 +6373,14 @@ class TestSandboxOntology:
                             "guid": "a",
                             "tag": "blah",
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": 1,
                         },
                         "pobjectid": {
                             "guid": None,
                             "tag": None,
                             "treeid": None,
-                            "richid": None,
+                            "processtree": None,
                             "time_observed": None,
                         },
                         "children": [
@@ -6396,7 +6396,7 @@ class TestSandboxOntology:
                                     "guid": "c",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 2,
                                 },
                                 "children": [],
@@ -6413,7 +6413,7 @@ class TestSandboxOntology:
                                     "guid": "b",
                                     "tag": None,
                                     "treeid": None,
-                                    "richid": None,
+                                    "processtree": None,
                                     "time_observed": 3,
                                 },
                                 "children": [],
@@ -6445,7 +6445,7 @@ class TestSandboxOntology:
             "image": "blah",
             "command_line": "blah",
             "treeid": "blahblah",
-            "richid": "blahblah",
+            "processtree": "blahblah",
             "children": [
                 {"process": {}},
                 {"pid": 2, "image": "blah", "command_line": "blah", "children": []}
@@ -6485,7 +6485,7 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize(
-        "parent_treeid, parent_richid, node, expected_node, expected_treeids, expected_richids",
+        "parent_treeid, parent_processtree, node, expected_node, expected_treeids, expected_processtrees",
         [
             (
                 "",
@@ -6517,14 +6517,14 @@ class TestSandboxOntology:
                         "tag": "got the image",
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                         "treeid": "b71bf6eacf36ecdf07b3f1efa5d6f50725271ca85369b966e19da5b76c175b5b",
-                        "richid": "got the image",
+                        "processtree": "got the image",
                     },
                     "children": [
                         {
                             "objectid": {
                                 "tag": "image number 2",
                                 "treeid": "294156e02fb77c860933c93da8629dbceab367629a1ff9af68ff4b03c8596b17",
-                                "richid": "got the image>image number 2",
+                                "processtree": "got the image|image number 2",
                                 "guid": "{12345678-1234-5678-1234-567812345679}",
                             },
                             "children": [],
@@ -6533,7 +6533,7 @@ class TestSandboxOntology:
                             "objectid": {
                                 "tag": "image number 3",
                                 "treeid": "0483e740e929697527964c71227dd76403cdc91ca16e7a4a9a430f734481f129",
-                                "richid": "got the image>image number 3",
+                                "processtree": "got the image|image number 3",
                                 "guid": "{12345678-1234-5678-1234-567812345670}",
                             },
                             "children": [],
@@ -6547,8 +6547,8 @@ class TestSandboxOntology:
                 ],
                 [
                     'got the image',
-                    'got the image>image number 2',
-                    'got the image>image number 3',
+                    'got the image|image number 2',
+                    'got the image|image number 3',
                 ],
             ),
             (
@@ -6580,7 +6580,7 @@ class TestSandboxOntology:
                     "objectid": {
                         "tag": "got the image",
                         "treeid": "66ca3e01980a462ae88cf5e329ca479519f75d87192e93a8573e661bedb0cb9c",
-                        "richid": "blahblah>got the image",
+                        "processtree": "blahblah|got the image",
                         "guid": "{12345678-1234-5678-1234-567812345678}",
                     },
                     "children": [
@@ -6588,7 +6588,7 @@ class TestSandboxOntology:
                             "objectid": {
                                 "tag": "image number 2",
                                 "treeid": "9dc17d47ccef093c965c150401b717ba27728dd2c6360322526bd4c19493b154",
-                                "richid": "blahblah>got the image>image number 2",
+                                "processtree": "blahblah|got the image|image number 2",
                                 "guid": "{12345678-1234-5678-1234-567812345679}",
                             },
                             "children": [],
@@ -6597,7 +6597,7 @@ class TestSandboxOntology:
                             "objectid": {
                                 "tag": "image number 3",
                                 "treeid": "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d",
-                                "richid": "blahblah>got the image>image number 3",
+                                "processtree": "blahblah|got the image|image number 3",
                                 "guid": "{12345678-1234-5678-1234-567812345670}",
                             },
                             "children": [],
@@ -6610,20 +6610,20 @@ class TestSandboxOntology:
                     "020951694e1d88b34a8a3409d1f6f027173302728800e000af9d874ff9a3004d",
                 ],
                 [
-                    'blahblah>got the image',
-                    'blahblah>got the image>image number 2',
-                    'blahblah>got the image>image number 3',
+                    'blahblah|got the image',
+                    'blahblah|got the image|image number 2',
+                    'blahblah|got the image|image number 3',
                 ],
             ),
         ],
     )
     def test_create_hashed_node(
         parent_treeid,
-        parent_richid,
+        parent_processtree,
         node,
         expected_node,
         expected_treeids,
-        expected_richids,
+        expected_processtrees,
     ):
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
@@ -6643,14 +6643,14 @@ class TestSandboxOntology:
         default_so.add_process(p1)
         default_so.add_process(p2)
 
-        default_so._create_hashed_node(parent_treeid, parent_richid, node)
+        default_so._create_hashed_node(parent_treeid, parent_processtree, node)
         assert node == expected_node
         assert [
             proc.objectid.treeid for proc in default_so.get_processes()
         ] == expected_treeids
         assert [
-            proc.objectid.richid for proc in default_so.get_processes()
-        ] == expected_richids
+            proc.objectid.processtree for proc in default_so.get_processes()
+        ] == expected_processtrees
 
     @staticmethod
     @pytest.mark.parametrize(
@@ -6712,28 +6712,28 @@ class TestSandboxOntology:
                         "objectid": {
                             "tag": "?pf86\\microsoft office\\office14\\excel.exe",
                             "treeid": "e0e3b025c75e49d9306866f83a77c0356d825e25b1f4fc6ddbaf6339d3a22c62",
-                            "richid": "?pf86\\microsoft office\\office14\\excel.exe",
+                            "processtree": "?pf86\\microsoft office\\office14\\excel.exe",
                         },
                         "children": [
                             {
                                 "objectid": {
                                     "tag": "?sys32\\wbem\\wmic1.exe",
                                     "treeid": "444ba8aca3c500c14d6b9948e6564864ffe3533b17c8a7970b20ff4145884448",
-                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe",
+                                    "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic1.exe",
                                 },
                                 "children": [
                                     {
                                         "objectid": {
                                             "tag": "?sys32\\wbem\\wmic11.exe",
                                             "treeid": "29ee5e07066a9f5c9f66856c8cadaf706439b1eaef79ddad74f3cac929b54464",
-                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe>?sys32\\wbem\\wmic11.exe",
+                                            "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic1.exe|?sys32\\wbem\\wmic11.exe",
                                         },
                                         "children": [
                                             {
                                                 "objectid": {
                                                     "tag": "?sys32\\wbem\\wmic111.exe",
                                                     "treeid": "63f4a4e5d1d649916ae2088bb28c3356b2348184c4dd332907e5498232da71ac",
-                                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe>?sys32\\wbem\\wmic11.exe>?sys32\\wbem\\wmic111.exe",
+                                                    "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic1.exe|?sys32\\wbem\\wmic11.exe|?sys32\\wbem\\wmic111.exe",
                                                 },
                                                 "children": [],
                                             }
@@ -6743,7 +6743,7 @@ class TestSandboxOntology:
                                         "objectid": {
                                             "tag": "?sys32\\wbem\\wmic12.exe",
                                             "treeid": "6943c25c391d6dd1f87670f5135c621d3b30b05e211074225a92da65591ef38d",
-                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic1.exe>?sys32\\wbem\\wmic12.exe",
+                                            "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic1.exe|?sys32\\wbem\\wmic12.exe",
                                         },
                                         "children": [],
                                     },
@@ -6753,7 +6753,7 @@ class TestSandboxOntology:
                                 "objectid": {
                                     "tag": "?sys32\\wbem\\wmic2.exe",
                                     "treeid": "a919e092d0d0149ce706c801290feabe3dc392d41283c9b575e6d1f0026bad1b",
-                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic2.exe",
+                                    "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic2.exe",
                                 },
                                 "children": [],
                             },
@@ -6761,14 +6761,14 @@ class TestSandboxOntology:
                                 "objectid": {
                                     "tag": "?sys32\\wbem\\wmic3.exe",
                                     "treeid": "878e93a9cb19e3d8d659dbb3bd4945e53055f3b22c79ac49fac3070b3cc1acd7",
-                                    "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe",
+                                    "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic3.exe",
                                 },
                                 "children": [
                                     {
                                         "objectid": {
                                             "tag": "?sys32\\wbem\\wmic31.exe",
                                             "treeid": "6efb85adcc57520a6b6b72afaba81d82c5deae025761f98aa33125cb37274b40",
-                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe>?sys32\\wbem\\wmic31.exe",
+                                            "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic3.exe|?sys32\\wbem\\wmic31.exe",
                                         },
                                         "children": [],
                                     },
@@ -6776,7 +6776,7 @@ class TestSandboxOntology:
                                         "objectid": {
                                             "tag": "?sys32\\wbem\\wmic32.exe",
                                             "treeid": "099dc238ab64fb47b78557f727aa3a38a7c8b74c395c7010dd3bd2a63ec7ebdd",
-                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe>?sys32\\wbem\\wmic32.exe",
+                                            "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic3.exe|?sys32\\wbem\\wmic32.exe",
                                         },
                                         "children": [],
                                     },
@@ -6784,7 +6784,7 @@ class TestSandboxOntology:
                                         "objectid": {
                                             "tag": "?sys32\\wbem\\wmic33.exe",
                                             "treeid": "4e99297d75424090c9b9c02fd62d19835e9ae15d3aa137ae3eab1b3c83088fa5",
-                                            "richid": "?pf86\\microsoft office\\office14\\excel.exe>?sys32\\wbem\\wmic3.exe>?sys32\\wbem\\wmic33.exe",
+                                            "processtree": "?pf86\\microsoft office\\office14\\excel.exe|?sys32\\wbem\\wmic3.exe|?sys32\\wbem\\wmic33.exe",
                                         },
                                         "children": [],
                                     },
