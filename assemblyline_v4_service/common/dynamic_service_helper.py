@@ -1,7 +1,7 @@
 from hashlib import sha256
 from logging import getLogger
 from re import compile, escape, sub
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional, Set, Union
 from uuid import UUID, uuid4
 
 from assemblyline.common import log as al_log
@@ -334,7 +334,8 @@ class Process:
             return
         self.pobjectid = parent.objectid
         self.pimage: str = parent.image
-        self.pcommand_line: str = parent.command_line
+        if self.pcommand_line is None:
+            self.pcommand_line: str = parent.command_line
         self.ppid: int = parent.pid
 
     def set_start_time(self, start_time: float) -> None:
@@ -1890,6 +1891,7 @@ class SandboxOntology:
             process_to_point_to = self.get_process_by_guid(guid)
             signature.set_process(process_to_point_to)
 
+        process_subjects: Set[Process] = set()
         for subject in signature.subjects:
             if subject.process:
                 if subject.process.objectid.guid:
@@ -1900,7 +1902,21 @@ class SandboxOntology:
                     )
                 process_to_point_to = self.get_process_by_guid(guid)
                 if process_to_point_to:
-                    subject.set_process(process_to_point_to)
+                    # No duplicates
+                    if process_to_point_to in process_subjects:
+                        subject.process = None
+                    else:
+                        subject.set_process(process_to_point_to)
+                        process_subjects.add(process_to_point_to)
+
+        for subject in signature.subjects[:]:
+            if all(value is None for value in subject.as_primitives().values()):
+                signature.subjects.remove(subject)
+
+        # Confirm that the signature is still worth reporting
+        if all(not value for value in signature.as_primitives().values()):
+            return
+
         self.signatures.append(signature)
 
     def get_signatures(self) -> List[Signature]:
