@@ -509,8 +509,8 @@ class TestProcess:
     def test_set_parent():
         from assemblyline_v4_service.common.dynamic_service_helper import Process
 
-        child_p = Process()
-        parent_p = Process(
+        child_p1 = Process()
+        parent_p1 = Process(
             guid="{12345678-1234-5678-1234-567812345678}",
             image="blah",
             command_line="blah",
@@ -520,16 +520,37 @@ class TestProcess:
             processtree="blah",
             start_time=1.0,
         )
-        child_p.set_parent(parent_p)
+        child_p1.set_parent(parent_p1)
 
-        assert child_p.pobjectid.guid == parent_p.objectid.guid
-        assert child_p.pobjectid.tag == parent_p.objectid.tag
-        assert child_p.pobjectid.treeid == parent_p.objectid.treeid
-        assert child_p.pobjectid.processtree == parent_p.objectid.processtree
-        assert child_p.pobjectid.time_observed == parent_p.objectid.time_observed
-        assert child_p.pimage == parent_p.image
-        assert child_p.pcommand_line == parent_p.command_line
-        assert child_p.ppid == parent_p.pid
+        assert child_p1.pobjectid.guid == parent_p1.objectid.guid
+        assert child_p1.pobjectid.tag == parent_p1.objectid.tag
+        assert child_p1.pobjectid.treeid == parent_p1.objectid.treeid
+        assert child_p1.pobjectid.processtree == parent_p1.objectid.processtree
+        assert child_p1.pobjectid.time_observed == parent_p1.objectid.time_observed
+        assert child_p1.pimage == parent_p1.image
+        assert child_p1.pcommand_line == parent_p1.command_line
+        assert child_p1.ppid == parent_p1.pid
+
+        child_p2 = Process(pcommand_line="blah")
+        parent_p2 = Process(
+            guid="{12345678-1234-5678-1234-567812345678}",
+            image="blah",
+            pid=123,
+            tag="blah",
+            treeid="blah",
+            processtree="blah",
+            start_time=1.0,
+        )
+        child_p2.set_parent(parent_p2)
+
+        assert child_p2.pobjectid.guid == parent_p2.objectid.guid
+        assert child_p2.pobjectid.tag == parent_p2.objectid.tag
+        assert child_p2.pobjectid.treeid == parent_p2.objectid.treeid
+        assert child_p2.pobjectid.processtree == parent_p2.objectid.processtree
+        assert child_p2.pobjectid.time_observed == parent_p2.objectid.time_observed
+        assert child_p2.pimage == parent_p2.image
+        assert child_p2.pcommand_line == "blah"
+        assert child_p2.ppid == parent_p2.pid
 
     @staticmethod
     def test_set_start_time():
@@ -2548,19 +2569,59 @@ class TestSandboxOntology:
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+        from uuid import UUID
 
         default_so = SandboxOntology()
         assert default_so.network_http == []
 
         s = default_so.create_signature()
         default_so.add_signature(s)
-        assert default_so.signatures[0].as_primitives() == {
-            "process": None,
-            "name": None,
-            "description": None,
-            "attack": [],
-            "subjects": [],
-        }
+        assert default_so.get_signatures() == []
+
+        s.update_process(guid="{12345678-1234-5678-1234-567812345678}")
+        default_so.add_signature(s)
+        assert default_so.get_signatures() == []
+
+        p = default_so.create_process(guid="{12345678-1234-5678-1234-567812345678}")
+        default_so.add_process(p)
+        s.update_process(guid="{12345678-1234-5678-1234-567812345678}")
+        default_so.add_signature(s)
+        sig_as_prims = default_so.signatures[0].as_primitives()
+        assert str(UUID(sig_as_prims["process"]["pobjectid"].pop("guid")))
+        assert sig_as_prims == {
+            'process':
+            {'start_time': float("-inf"), 'end_time': float("inf"),
+             'objectid':
+             {'guid': '{12345678-1234-5678-1234-567812345678}', 'tag': None, 'treeid': None, 'processtree': None,
+              'time_observed': float("-inf")},
+             'pobjectid': {'tag': None, 'treeid': None, 'processtree': None, 'time_observed': None},
+             'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': None, 'image': None, 'command_line': None,
+             'integrity_level': None, 'image_hash': None, 'original_file_name': None},
+            'name': None, 'description': None, 'attack': [],
+            'subjects': []}
+
+        s2 = default_so.create_signature()
+        s2.add_process_subject(**p.as_primitives())
+        s2.add_process_subject(**p.as_primitives())
+        s2.add_process_subject(**p.as_primitives())
+        s2.add_process_subject(**p.as_primitives())
+        default_so.add_signature(s2)
+        sig2_as_prims = default_so.signatures[1].as_primitives()
+        assert len(sig2_as_prims["subjects"]) == 1
+        assert str(UUID(sig2_as_prims["subjects"][0]["process"]["pobjectid"].pop("guid")))
+        assert sig2_as_prims == {
+            'process': None, 'name': None, 'description': None, 'attack': [],
+            'subjects':
+            [{'ip': None, 'domain': None, 'uri': None, 'file': None, 'registry': None,
+              'process':
+              {'start_time': float("-inf"),
+               'end_time': float("inf"),
+               'objectid':
+               {'guid': '{12345678-1234-5678-1234-567812345678}', 'tag': None, 'treeid': None, 'processtree': None,
+                'time_observed': float("-inf")},
+               'pobjectid': {'tag': None, 'treeid': None, 'processtree': None, 'time_observed': None},
+               'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': None, 'image': None, 'command_line': None,
+               'integrity_level': None, 'image_hash': None, 'original_file_name': None}}]}
 
     @staticmethod
     def test_get_signatures():
@@ -4492,7 +4553,7 @@ class TestSandboxOntology:
         )
 
         default_so = SandboxOntology()
-        signature = default_so.create_signature()
+        signature = default_so.create_signature(name="blah")
         default_so.add_signature(signature)
         assert default_so.get_signatures() == [signature]
         signature1 = default_so.create_signature()
