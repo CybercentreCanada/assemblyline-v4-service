@@ -1908,6 +1908,8 @@ class SandboxOntology:
                     else:
                         subject.set_process(process_to_point_to)
                         process_subjects.add(process_to_point_to)
+                else:
+                    subject.process = None
 
         for subject in signature.subjects[:]:
             if all(value is None for value in subject.as_primitives().values()):
