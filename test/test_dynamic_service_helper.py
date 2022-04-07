@@ -2623,6 +2623,11 @@ class TestSandboxOntology:
                'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': None, 'image': None, 'command_line': None,
                'integrity_level': None, 'image_hash': None, 'original_file_name': None}}]}
 
+        s3 = default_so.create_signature(name="blah")
+        s3.add_process_subject(start_time=1.0)
+        default_so.add_signature(s3)
+        assert s3.subjects == []
+
     @staticmethod
     def test_get_signatures():
         from assemblyline_v4_service.common.dynamic_service_helper import (
