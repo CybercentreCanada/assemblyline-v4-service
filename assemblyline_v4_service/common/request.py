@@ -12,6 +12,7 @@ from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyVa
 from assemblyline_v4_service.common.task import Task, MaxExtractedExceeded
 
 CLASSIFICATION = forge.get_classification()
+WEBP_MAX_SIZE = 16383
 
 
 class ServiceRequest:
@@ -73,6 +74,10 @@ class ServiceRequest:
                 img_format = 'WEBP'
                 if img.format == img_format:
                     img_format = 'PNG'
+
+                if img_format == "WEBP" and img.size > (WEBP_MAX_SIZE, WEBP_MAX_SIZE):
+                    # Maintain aspect ratio
+                    img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
 
                 # Save and upload new image
                 img.save(outtmp.name, format=img_format)
