@@ -2764,10 +2764,23 @@ class SandboxOntology:
         # Service runtime case
         else:
             self._remove_safelisted_processes(safelist)
+
             for process in self.get_processes():
                 self._set_item_times(process)
+
+            for signature in self.get_signatures():
+                self._set_item_times(signature.process)
+                for subject in signature.get_subjects():
+                    self._set_item_times(subject.process)
+
             for network_connection in self.get_network_connections():
-                self._set_item_times(network_connection.objectid)
+                self._set_item_times(network_connection.process)
+
+            for dns in self.get_network_dns():
+                self._set_item_times(dns.connection_details.process)
+
+            for http in self.get_network_http():
+                self._set_item_times(http.connection_details.process)
 
 
 # DEBUGGING METHOD
