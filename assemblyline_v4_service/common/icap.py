@@ -27,6 +27,7 @@ class IcapClient(object):
         self.timeout = timeout
         self.kill = False
         self.number_of_retries = number_of_retries
+        self.successful_connection = False
 
     def scan_data(self, data, name=None):
         return self._do_respmod(name or 'filetoscan', data)
@@ -47,6 +48,7 @@ class IcapClient(object):
             try:
                 if not self.socket:
                     self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
+                    self.successful_connection = True
                 self.socket.sendall(request.encode())
                 response = temp_resp = self.socket.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
@@ -56,6 +58,7 @@ class IcapClient(object):
                     raise Exception(f"Unexpected OPTIONS response: {response}")
                 return response.decode()
             except Exception:
+                self.successful_connection = False
                 try:
                     self.socket.close()
                 except Exception:
@@ -118,6 +121,7 @@ class IcapClient(object):
             try:
                 if not self.socket:
                     self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
+                    self.successful_connection = True
                 self.socket.sendall(serialized_request)
                 response = temp_resp = self.socket.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
@@ -126,6 +130,7 @@ class IcapClient(object):
 
                 return response.decode()
             except Exception:
+                self.successful_connection = False
                 try:
                     self.socket.close()
                 except Exception:
