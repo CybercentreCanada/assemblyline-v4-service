@@ -18,7 +18,7 @@ class IcapClient(object):
     RESP_CHUNK_SIZE = 65565
     MAX_RETRY = 3
 
-    def __init__(self, host, port, respmod_service="av/respmod", action="", timeout=30):
+    def __init__(self, host, port, respmod_service="av/respmod", action="", timeout=30, number_of_retries=MAX_RETRY):
         self.host = host
         self.port = port
         self.service = respmod_service
@@ -26,6 +26,8 @@ class IcapClient(object):
         self.socket = None
         self.timeout = timeout
         self.kill = False
+        self.number_of_retries = number_of_retries
+        self.successful_connection = False
 
     def scan_data(self, data, name=None):
         return self._do_respmod(name or 'filetoscan', data)
@@ -39,13 +41,14 @@ class IcapClient(object):
     def options_respmod(self):
         request = f"OPTIONS icap://{self.host}:{self.port}/{self.service} ICAP/1.0\r\n\r\n"
 
-        for i in range(self.MAX_RETRY):
+        for i in range(self.number_of_retries):
+            if self.kill:
+                self.kill = False
+                return
             try:
-                if self.kill:
-                    self.kill = False
-                    return
                 if not self.socket:
                     self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
+                    self.successful_connection = True
                 self.socket.sendall(request.encode())
                 response = temp_resp = self.socket.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
@@ -55,12 +58,13 @@ class IcapClient(object):
                     raise Exception(f"Unexpected OPTIONS response: {response}")
                 return response.decode()
             except Exception:
+                self.successful_connection = False
                 try:
                     self.socket.close()
                 except Exception:
                     pass
                 self.socket = None
-                if i == (self.MAX_RETRY-1):
+                if i == (self.number_of_retries-1):
                     raise
 
         raise Exception("Icap server refused to respond.")
@@ -110,13 +114,14 @@ class IcapClient(object):
         serialized_request = b"%s%s%s%s" % (respmod_icap_hdr.encode(), respmod_req_hdr.encode(),
                                             respmod_res_hdr.encode(), encoded)
 
-        for i in range(self.MAX_RETRY):
+        for i in range(self.number_of_retries):
+            if self.kill:
+                self.kill = False
+                return
             try:
-                if self.kill:
-                    self.kill = False
-                    return
                 if not self.socket:
                     self.socket = socket.create_connection((self.host, self.port), timeout=self.timeout)
+                    self.successful_connection = True
                 self.socket.sendall(serialized_request)
                 response = temp_resp = self.socket.recv(self.RESP_CHUNK_SIZE)
                 while len(temp_resp) == self.RESP_CHUNK_SIZE:
@@ -125,12 +130,13 @@ class IcapClient(object):
 
                 return response.decode()
             except Exception:
+                self.successful_connection = False
                 try:
                     self.socket.close()
                 except Exception:
                     pass
                 self.socket = None
-                if i == (self.MAX_RETRY-1):
+                if i == (self.number_of_retries-1):
                     raise
 
         raise Exception("Icap server refused to respond.")
