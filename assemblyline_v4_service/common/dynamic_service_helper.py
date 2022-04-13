@@ -2049,13 +2049,13 @@ class SandboxOntology:
             safelist: List[str] = []
         tree = self.get_process_tree(safelist)
         items: List[ProcessItem] = []
+        process_tree_result_section = ResultProcessTreeSection("Spawned Process Tree")
         for event in tree:
             # A telltale sign that the event is a NetworkConnection
             if "process" in event:
                 # event is a NetworkConnection, we don't want this in the process tree result section, only the counts
                 continue
-            self._convert_event_tree_to_result_section(items, event, safelist)
-        process_tree_result_section = ResultProcessTreeSection("Spawned Process Tree")
+            self._convert_event_tree_to_result_section(items, event, safelist, process_tree_result_section)
         for item in items:
             process_tree_result_section.add_process(item)
         return process_tree_result_section
@@ -2439,6 +2439,7 @@ class SandboxOntology:
         items: List[ProcessItem],
         event: Dict[str, Any],
         safelist: List[str],
+        result_section: ResultProcessTreeSection,
         parent: Optional[ProcessItem] = None,
     ) -> None:
         """
@@ -2446,6 +2447,7 @@ class SandboxOntology:
         :param items: A list of ProcessItem objects
         :param event: A dictionary representing the Process to be converted
         :param safelist: A safelist of tree IDs that is to be applied to the events
+        :param result_section: The Typed ResultSection for the Process (Event) Tree
         :param parent: The ProcessItem of the event to be converted
         :return: None
         """
@@ -2459,8 +2461,10 @@ class SandboxOntology:
         # e.add_file_events(len(self.get_file_events_by_pid(e.pid)))
         # e.add_registry_events(len(self.get_registry_events_by_pid(e.pid)))
 
-        if event.get("treeid") in safelist:
+        if event["objectid"]["treeid"] in safelist:
             e.safelist()
+        else:
+            result_section.add_tag("dynamic.processtree_id", event["objectid"]["processtree"])
 
         for signature in self.get_signatures_by_pid(event["pid"]):
             e.add_signature(signature.name, signature.score)
@@ -2471,7 +2475,7 @@ class SandboxOntology:
                 # event is a NetworkConnection, we don't want this in the process tree result section, only the counts
                 pass
             else:
-                self._convert_event_tree_to_result_section(items, child, safelist, e)
+                self._convert_event_tree_to_result_section(items, child, safelist, result_section, parent=e)
             event["children"].remove(child)
 
         if not event["children"] and not parent:

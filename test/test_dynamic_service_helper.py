@@ -6496,9 +6496,12 @@ class TestSandboxOntology:
 
     @staticmethod
     def test_convert_event_tree_to_result_section():
+        from assemblyline_v4_service.common.result import ResultProcessTreeSection
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
         )
+
+        result_section = ResultProcessTreeSection("Spawned Process Tree")
 
         so = SandboxOntology()
         actual_items = []
@@ -6506,11 +6509,13 @@ class TestSandboxOntology:
             "pid": 1,
             "image": "blah",
             "command_line": "blah",
-            "treeid": "blahblah",
-            "processtree": "blahblah",
+            "objectid": {
+                "treeid": "blahblah",
+                "processtree": "blahblah",
+            },
             "children": [
-                {"process": {}},
-                {"pid": 2, "image": "blah", "command_line": "blah", "children": []}
+                {"process": {}, "objectid": {"processtree": "blahblahblah", "treeid": None}},
+                {"pid": 2, "image": "blah", "command_line": "blah", "children": [], "objectid": {"processtree": "blahblahblahblah", "treeid": None}}
             ],
         }
         safelist = ["blahblah"]
@@ -6520,7 +6525,7 @@ class TestSandboxOntology:
         so.add_signature(sig)
         nc = so.create_network_connection(process=p, destination_ip="1.1.1.1")
         so.add_network_connection(nc)
-        so._convert_event_tree_to_result_section(actual_items, event, safelist)
+        so._convert_event_tree_to_result_section(actual_items, event, safelist, result_section)
         assert actual_items[0].as_primitives() == {
             "process_name": "blah",
             "command_line": "blah",
@@ -6544,6 +6549,7 @@ class TestSandboxOntology:
             "registry_count": 0,
             "safelisted": True,
         }
+        assert result_section.tags == {"dynamic.processtree_id": ["blahblahblahblah"]}
 
     @staticmethod
     @pytest.mark.parametrize(
