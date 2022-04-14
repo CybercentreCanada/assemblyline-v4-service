@@ -1,9 +1,8 @@
-import re
+import regex
 
 from typing import Dict, List
 
-# TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library),
-#       but will copy-paste for now
+# TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
 OCR_INDICATORS_MAPPING = {
     'ransomware': [
         # https://github.com/cuckoosandbox/community/blob/master/modules/signatures/windows/ransomware_message.py
@@ -22,8 +21,7 @@ OCR_INDICATORS_MAPPING = {
         "personal code", "enter code", "your key", "unique key"
     ],
     'macros': [
-        # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/
-        # modules/signatures/windows/office_enablecontent_ocr.py
+        # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/modules/signatures/windows/office_enablecontent_ocr.py
         "enable macro",
         "enable content",
         "enable editing",
@@ -50,9 +48,19 @@ def ocr_detections(image_path: str) -> Dict[str, List[str]]:
 
     # Iterate over the different indicators and include lines of detection in response
     for indicator, list_of_terms in OCR_INDICATORS_MAPPING.items():
-        regex_exp = re.compile('|'.join(list_of_terms).lower())
-        list_of_strings = [line for line in ocr_output.split('\n') if regex_exp.search(line.lower())]
-        if list_of_strings:
+        indicator_hits = set()
+        regex_exp = regex.compile(f"({')|('.join(list_of_terms).lower()})")
+        list_of_strings = []
+        for line in ocr_output.split('\n'):
+            search = regex_exp.search(line.lower())
+            if search:
+                indicator_hits = indicator_hits.union(set(search.groups()))
+                list_of_strings.append(line)
+        if None in indicator_hits:
+            indicator_hits.remove(None)
+
+        # We consider the detection to be credible if there's more than a single indicator hit
+        if list_of_strings and len(indicator_hits) >= 2:
             detection_output[indicator] = list_of_strings
 
     return detection_output
