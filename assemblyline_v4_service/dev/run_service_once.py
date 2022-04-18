@@ -6,6 +6,7 @@ import pprint
 import shutil
 import tempfile
 import yaml
+import cProfile
 
 from cart import unpack_stream
 from typing import Union, Dict
@@ -215,6 +216,7 @@ class RunService:
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true", help="turn on debugging mode")
+    parser.add_argument("-p", "--profile", action="store_true", help="profile and save results to <SERVICE_NAME>.prof")
     parser.add_argument("service_path", help="python path of the service")
     parser.add_argument("file_path", help="file path of the file to be processed")
 
@@ -231,5 +233,11 @@ if __name__ == '__main__':
     else:
         LOG.setLevel(logging.INFO)
 
-    rs = RunService()
-    rs.try_run()
+    if not args.profile:
+        rs = RunService()
+        rs.try_run()
+    else:
+        with cProfile.Profile() as pr:
+            rs = RunService()
+            rs.try_run()
+        pr.dump_stats(f"{SERVICE_NAME}.prof")
