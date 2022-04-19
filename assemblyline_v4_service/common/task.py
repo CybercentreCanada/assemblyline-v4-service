@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -10,6 +10,7 @@ from assemblyline.common.classification import Classification
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
 from assemblyline_v4_service.common.result import Result
 
 
@@ -42,6 +43,7 @@ class Task:
         self.file_name = task.filename
         self.file_type = task.fileinfo.type
         self.file_size = task.fileinfo.size
+        self.ignore_filtering = task.ignore_filtering
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.metadata = task.metadata
@@ -90,7 +92,18 @@ class Task:
         return file
 
     def add_extracted(self, path: str, name: str, description: str,
-                      classification: Optional[Classification] = None) -> bool:
+                      classification: Optional[Classification] = None,
+                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None) -> bool:
+
+        if safelist_interface and not (self.deep_scan or self.ignore_filtering):
+            # Ignore adding files that are known to the system to be safe
+            sha256 = get_sha256_for_file(path)
+            resp = safelist_interface.lookup_safelist(sha256)
+            self.log.debug(f'Checking system safelist for hash: {sha256}')
+            if resp and resp['enabled'] and resp['type'] == 'file':
+                self.log.debug('Dropping safelisted, extracted file.. ')
+                return False
+
         if self.max_extracted and len(self.extracted) >= int(self.max_extracted):
             raise MaxExtractedExceeded
 
