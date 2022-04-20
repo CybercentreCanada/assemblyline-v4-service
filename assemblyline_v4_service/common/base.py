@@ -65,9 +65,13 @@ class ServiceBase:
         self._task = None
 
         self._working_directory = None
-        self.dependencies = self._get_dependencies_info()
 
+        # Initialize interface for interacting with system safelist
+        self.api_interface = self.get_api_interface()
+
+        self.dependencies = self._get_dependencies_info()
         self.ontologies: Dict = None
+
 
         # Updater-related
         self.rules_directory: str = None
