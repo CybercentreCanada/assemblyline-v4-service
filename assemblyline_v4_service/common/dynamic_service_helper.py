@@ -20,8 +20,8 @@ from assemblyline_v4_service.common.result import (
 )
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
-al_log.init_logging("service.cuckoo.cuckoo_result")
-log = getLogger("assemblyline.service.cuckoo.cuckoo_result")
+al_log.init_logging("service.service_base.dynamic_service_helper")
+log = getLogger("assemblyline.service.service_base.dynamic_service_helper")
 
 X86_64 = "x86_64"
 X86 = "x86"
