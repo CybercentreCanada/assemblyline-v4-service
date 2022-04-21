@@ -1431,10 +1431,12 @@ class SandboxOntology:
         :param process: The process that will have it's parent's details set
         :return: None
         """
+        parent = None
         if process.pobjectid.guid:
             parent = self.get_process_by_guid(process.pobjectid.guid)
             process.set_parent(parent)
-        elif process.ppid and process.start_time:
+
+        if not parent and process.ppid and process.start_time:
             parent_guid = self.get_guid_by_pid_and_time(
                 process.ppid, process.start_time
             )
