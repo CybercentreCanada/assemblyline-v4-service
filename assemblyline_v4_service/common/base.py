@@ -311,23 +311,13 @@ class ServiceBase:
             'sha256': request.sha256,
             'type': request.file_type,
             'size': request.file_size,
-            'filename': request.file_name or request.sha256,
-            'date': request.task._service_started,
             'classification': max_result_classification,
             'service_name': request.task.service_name,
             'service_version': request.task.service_version,
             'service_tool_version': request.task.service_tool_version,
+            'tags': tag_map,
+            'heuristics': heur_tag_map
         }
-
-        # Optional meta
-        service_result.update(
-            {
-                'sid': request.sid,
-                'submitted_classification': request.task.min_classification,
-                'tags': tag_map,
-                'heuristics': heur_tag_map
-            }
-        )
 
         header = ResultOntology(service_result).as_primitives(strip_null=True)
         if not self.ontologies:
