@@ -65,8 +65,11 @@ class ServiceBase:
         self._task = None
 
         self._working_directory = None
-        self.dependencies = self._get_dependencies_info()
 
+        # Initialize interface for interacting with system safelist
+        self._api_interface = None
+
+        self.dependencies = self._get_dependencies_info()
         self.ontologies: Dict = None
 
         # Updater-related
@@ -74,6 +77,10 @@ class ServiceBase:
         self.rules_list: list = []
         self.update_time: int = None
         self.rules_hash: str = None
+
+    @property
+    def api_interface(self):
+        return self.get_api_interface()
 
     def _get_dependencies_info(self) -> Dict[str, Dict[str, str]]:
         dependencies = {}
@@ -125,10 +132,13 @@ class ServiceBase:
         self._log_error(msg, *args, **kwargs)
 
     def get_api_interface(self):
-        if PRIVILEGED:
-            return PrivilegedServiceAPI(self.log)
-        else:
-            return ServiceAPI(self.service_attributes, self.log)
+        if not self._api_interface:
+            if PRIVILEGED:
+                self._api_interface = PrivilegedServiceAPI(self.log)
+            else:
+                self._api_interface = ServiceAPI(self.service_attributes, self.log)
+
+        return self._api_interface
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")
@@ -301,23 +311,13 @@ class ServiceBase:
             'sha256': request.sha256,
             'type': request.file_type,
             'size': request.file_size,
-            'filename': request.file_name or request.sha256,
-            'date': request.task._service_started,
             'classification': max_result_classification,
             'service_name': request.task.service_name,
             'service_version': request.task.service_version,
             'service_tool_version': request.task.service_tool_version,
+            'tags': tag_map,
+            'heuristics': heur_tag_map
         }
-
-        # Optional meta
-        service_result.update(
-            {
-                'sid': request.sid,
-                'submitted_classification': request.task.min_classification,
-                'tags': tag_map,
-                'heuristics': heur_tag_map
-            }
-        )
 
         header = ResultOntology(service_result).as_primitives(strip_null=True)
         if not self.ontologies:

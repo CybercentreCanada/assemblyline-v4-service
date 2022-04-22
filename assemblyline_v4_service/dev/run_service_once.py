@@ -89,6 +89,11 @@ class RunService:
             min_classification=forge.get_classification().UNRESTRICTED,
             max_files=501,  # TODO: get the actual value
             ttl=3600,
+            safelist_config={
+                "enabled": False,
+                "hash_types": ['sha1', 'sha256'],
+                "enforce_safelist_service": False
+            }
         ))
 
         LOG.info(f"Starting task with SID: {service_task.sid}")
