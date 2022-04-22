@@ -67,17 +67,20 @@ class ServiceBase:
         self._working_directory = None
 
         # Initialize interface for interacting with system safelist
-        self.api_interface = self.get_api_interface()
+        self._api_interface = None
 
         self.dependencies = self._get_dependencies_info()
         self.ontologies: Dict = None
-
 
         # Updater-related
         self.rules_directory: str = None
         self.rules_list: list = []
         self.update_time: int = None
         self.rules_hash: str = None
+
+    @property
+    def api_interface(self):
+        return self.get_api_interface()
 
     def _get_dependencies_info(self) -> Dict[str, Dict[str, str]]:
         dependencies = {}
@@ -129,10 +132,13 @@ class ServiceBase:
         self._log_error(msg, *args, **kwargs)
 
     def get_api_interface(self):
-        if PRIVILEGED:
-            return PrivilegedServiceAPI(self.log)
-        else:
-            return ServiceAPI(self.service_attributes, self.log)
+        if not self._api_interface:
+            if PRIVILEGED:
+                self._api_interface = PrivilegedServiceAPI(self.log)
+            else:
+                self._api_interface = ServiceAPI(self.service_attributes, self.log)
+
+        return self._api_interface
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")
