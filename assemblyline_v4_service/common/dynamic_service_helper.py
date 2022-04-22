@@ -2544,7 +2544,8 @@ class SandboxOntology:
         """
         children: List[Dict[str, Any]] = node["children"]
         num_removed = 0
-        for index, _ in enumerate(children):
+        len_of_children = len(children)
+        for index in range(len_of_children):
             child_to_operate_on = children[index - num_removed]
             hash_to_remove = SandboxOntology._remove_safe_leaves_helper(
                 child_to_operate_on, safe_treeids
