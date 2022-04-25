@@ -654,7 +654,6 @@ class TestProcess:
     )
     def test_determine_arch(path, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
-
         p = Process(image=path)
         actual_result = p._determine_arch(path)
         assert actual_result == expected_result
@@ -670,7 +669,6 @@ class TestProcess:
     )
     def test_pattern_substitution(path, rule, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
-
         actual_result = Process._pattern_substitution(path, rule)
         assert actual_result == expected_result
 
@@ -686,7 +684,6 @@ class TestProcess:
     )
     def test_regex_substitution(path, rule, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
-
         actual_result = Process._regex_substitution(path, rule)
         assert actual_result == expected_result
 
@@ -712,7 +709,6 @@ class TestProcess:
     )
     def test_normalize_path(path, arch, expected_result):
         from assemblyline_v4_service.common.dynamic_service_helper import Process
-
         actual_result = Process._normalize_path(path, arch)
         assert actual_result == expected_result
 
