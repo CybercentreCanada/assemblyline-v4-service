@@ -150,6 +150,10 @@ class RunPrivilegedService(ServerBase):
 
             # Load Task
             try:
+                # Inspect task to ensure submission parameters are given, add defaults where necessary
+                params = {x.name: task['service_config'].get(x.name, x.default)
+                          for x in self.service_config['submission_params']}
+                task['service_config'] = params
                 service_task = ServiceTask(task)
                 self.log.info(f"[{service_task.sid}] New task received")
             except ValueError as e:
