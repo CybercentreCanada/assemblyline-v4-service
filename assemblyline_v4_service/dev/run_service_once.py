@@ -245,4 +245,9 @@ if __name__ == '__main__':
         with cProfile.Profile() as pr:
             rs = RunService()
             rs.try_run()
-        pr.dump_stats(f"{SERVICE_NAME}.prof")
+        pr.dump_stats(
+            os.path.join(
+                os.path.dirname(FILE_PATH),
+                f'{os.path.basename(FILE_PATH)}_{SERVICE_NAME.lower()}',
+                f"{SERVICE_NAME}.prof")
+        )
