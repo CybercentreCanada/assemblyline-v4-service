@@ -17,7 +17,7 @@ from assemblyline.common import exceptions, log, version, forge
 from assemblyline.common.dict_utils import flatten, unflatten
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.ontology.meta import ResultOntology
+from assemblyline.odm.models.ontology import ResultOntology
 from assemblyline.odm.models.tagging import Tagging
 from assemblyline.odm.base import Model, construct_safe
 from assemblyline_v4_service.common import helper
@@ -304,47 +304,31 @@ class ServiceBase:
             # No tagging or ontologies found, therefore informational results
             return
 
-        # Required meta
-        service_result = {
-            'md5': request.md5,
-            'sha1': request.sha1,
-            'sha256': request.sha256,
-            'type': request.file_type,
-            'size': request.file_size,
-            'classification': max_result_classification,
-            'service_name': request.task.service_name,
-            'service_version': request.task.service_version,
-            'service_tool_version': request.task.service_tool_version,
-            'tags': tag_map,
-            'heuristics': heur_tag_map
-        }
-
-        header = ResultOntology(service_result).as_primitives(strip_null=True)
-        if not self.ontologies:
-            ontology = {
-                'header': header
+        ontology = {
+            'header': {
+                'md5': request.md5,
+                'sha1': request.sha1,
+                'sha256': request.sha256,
+                'type': request.file_type,
+                'size': request.file_size,
+                'classification': max_result_classification,
+                'service_name': request.task.service_name,
+                'service_version': request.task.service_version,
+                'service_tool_version': request.task.service_tool_version,
+                'tags': tag_map,
+                'heuristics': heur_tag_map
             }
-            # Dump header information to disk
-            ontology_suffix = 'general.ontology'
-            ontology_path = os.path.join(self.working_directory, ontology_suffix)
-            open(ontology_path, 'w').write(json.dumps(ontology))
-            attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-            request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
-                                      classification=max_result_classification)
-            return
+        }
+        # Include Ontological data
+        ontology.update({type.lower(): data for type, data in self.ontologies.items()})
 
-        for type, data in self.ontologies.items():
-            for i, dv in enumerate(data):
-                ontology = {
-                    'header': header,
-                    f'{type}': dv
-                }
-                ontology_suffix = f'{type}_{i}.ontology'
-                ontology_path = os.path.join(self.working_directory, ontology_suffix)
-                open(ontology_path, 'w').write(json.dumps(ontology))
-                attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-                request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
-                                          classification=max_result_classification)
+        ontology_suffix = f"{request.sha256}.ontology"
+        ontology_path = os.path.join(self.working_directory, ontology_suffix)
+        open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
+        attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
+        request.add_supplementary(path=ontology_path, name=attachment_name,
+                                  description=f"Result Ontology from {request.task.service_name}",
+                                  classification=max_result_classification)
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
 
