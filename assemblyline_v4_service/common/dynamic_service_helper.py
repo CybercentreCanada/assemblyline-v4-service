@@ -2377,6 +2377,79 @@ class SandboxOntology:
         return sorted_things
 
     @staticmethod
+    def _sort_things_by_relationship(things_to_sort_by_relationship: List[Union[Process, NetworkConnection, Dict]]) -> List[Union[Process, NetworkConnection, Dict]]:
+        """
+        This method sorts a list of things by their relationships
+        :param things_to_sort_by_relationship: A list of things to sort by their relationships to one another
+        :return: A list of things that have been sorted by their relationships
+        """
+        if not things_to_sort_by_relationship:
+            return []
+
+        recurse_again = False
+        # If every item is a dictionary, then use key lookups
+        if all(
+            isinstance(thing_to_sort, Dict)
+            for thing_to_sort in things_to_sort_by_relationship
+        ):
+            for index, thing in enumerate(things_to_sort_by_relationship[:]):
+                # Confirm if we are working with an process or a network
+                if "pobjectid" in thing:
+                    # This is a Process
+                    pobjectid = thing["pobjectid"]
+                elif "process" in thing and thing["process"]:
+                    # This is a NetworkConnection
+                    pobjectid = thing["process"]["objectid"]
+                else:
+                    pobjectid = None
+
+                if not pobjectid:
+                    continue
+                # We only want to sort if the thing has the same time observed as its parent
+                if thing["objectid"]["time_observed"] != pobjectid["time_observed"]:
+                    continue
+
+                # If the parent object exists in the rest of the list
+                for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
+                    if pobjectid["guid"] == parent["objectid"]["guid"] and pobjectid["time_observed"] == parent["objectid"]["time_observed"]:
+                        popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
+                        things_to_sort_by_relationship.insert(index, popped_item)
+                        recurse_again = True
+                        break
+                if recurse_again:
+                    break
+        else:
+            for index, thing in enumerate(things_to_sort_by_relationship[:]):
+                # Confirm if we are working with an process or a network
+                if hasattr(thing, "pobjectid"):
+                    # This is a Process
+                    pobjectid = thing.pobjectid
+                elif hasattr(thing, "process") and thing.process:
+                    # This is a NetworkConnection
+                    pobjectid = thing.process.objectid
+                else:
+                    pobjectid = None
+
+                if not pobjectid:
+                    continue
+                # We only want to sort if the thing has the same time observed as its parent
+                if thing.objectid.time_observed != thing.pobjectid.time_observed:
+                    continue
+                # If the parent object exists in the rest of the list
+                for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
+                    if thing.pobjectid.guid == parent.objectid.guid:
+                        popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
+                        things_to_sort_by_relationship.insert(index, popped_item)
+                        recurse_again = True
+                        break
+                if recurse_again:
+                    break
+
+        if recurse_again:
+            SandboxOntology ._sort_things_by_relationship(things_to_sort_by_relationship)
+        return things_to_sort_by_relationship
+
+    @staticmethod
     def _convert_events_to_dict(
         events: List[Union[Process, NetworkConnection]]
     ) -> Dict[str, Any]:
@@ -2412,9 +2485,14 @@ class SandboxOntology:
         sorted_events = SandboxOntology._sort_things_by_time_observed(
             list(events_dict.values())
         )
+        # If events all have the same time observed, but there are child-parent relationships between events,
+        # we should order based on relationship
+        sorted_events_by_relationship_and_time = SandboxOntology._sort_things_by_relationship(
+            sorted_events
+        )
         events_seen = []
 
-        for e in sorted_events:
+        for e in sorted_events_by_relationship_and_time:
             if "children" not in e:
                 e["children"] = []
 
