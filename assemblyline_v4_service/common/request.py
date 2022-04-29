@@ -78,7 +78,7 @@ class ServiceRequest:
                 if img.format == img_format:
                     img_format = 'PNG'
 
-                if img_format == "WEBP" and img.size > (WEBP_MAX_SIZE, WEBP_MAX_SIZE):
+                if img_format == "WEBP" and (img.height > WEBP_MAX_SIZE or img.width > WEBP_MAX_SIZE):
                     # Maintain aspect ratio
                     img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
 
