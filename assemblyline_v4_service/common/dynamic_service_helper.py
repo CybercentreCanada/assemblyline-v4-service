@@ -2383,7 +2383,9 @@ class SandboxOntology:
         return sorted_things
 
     @staticmethod
-    def _sort_things_by_relationship(things_to_sort_by_relationship: List[Union[Process, NetworkConnection, Dict]]) -> List[Union[Process, NetworkConnection, Dict]]:
+    def _sort_things_by_relationship(
+            things_to_sort_by_relationship: List[Union[Process, NetworkConnection, Dict]]) -> List[
+            Union[Process, NetworkConnection, Dict]]:
         """
         This method sorts a list of things by their relationships
         :param things_to_sort_by_relationship: A list of things to sort by their relationships to one another
@@ -2874,7 +2876,7 @@ class SandboxOntology:
                 self._set_item_times(http.connection_details.process)
 
 
-def _extract_iocs_from_text_blob(
+def extract_iocs_from_text_blob(
         blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None) -> None:
     """
     This method searches for domains, IPs and URIs used in blobs of text and tags them
