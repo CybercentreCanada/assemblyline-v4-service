@@ -1,6 +1,6 @@
 import pytest
 
-@staticmethod
+
 @pytest.mark.parametrize(
     "value, tags, safelist, substring, expected_output",
     [
