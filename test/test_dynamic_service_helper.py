@@ -8058,13 +8058,12 @@ class TestSandboxOntology:
           "network.dynamic.uri": ["evil.ca/some/thing/bad.exe"],
           "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"}, {"uri": "evil.ca/some/thing/bad.exe"}]), ])
 def test_extract_iocs_from_text_blob(blob, correct_tags, expected_iocs):
-    from assemblyline_v4_service.common.dynamic_service_helper import _extract_iocs_from_text_blob
-    from assemblyline_v4_service.common.dynamic_service_helper import SandboxOntology
+    from assemblyline_v4_service.common.dynamic_service_helper import extract_iocs_from_text_blob, SandboxOntology
     from assemblyline_v4_service.common.result import ResultTableSection
     test_result_section = ResultTableSection("blah")
     so_sig = SandboxOntology.Signature()
     default_iocs = []
-    _extract_iocs_from_text_blob(blob, test_result_section, so_sig=so_sig)
+    extract_iocs_from_text_blob(blob, test_result_section, so_sig=so_sig)
     assert test_result_section.tags == correct_tags
     if correct_tags:
         for expected_ioc in expected_iocs:
