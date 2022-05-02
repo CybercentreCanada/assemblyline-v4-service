@@ -7,7 +7,7 @@ from assemblyline.odm.base import DOMAIN_ONLY_REGEX, DOMAIN_REGEX, FULL_URI, IP_
 from assemblyline_v4_service.common.result import ResultSection
 from assemblyline_v4_service.common.safelist_helper import is_tag_safelisted
 
-FALSE_POSITIVE_DOMAINS_FOUND_IN_PATHS = ["microsoft.net"]
+FALSE_POSITIVE_DOMAINS_FOUND_IN_PATHS = ["microsoft.net", "wscript.shell"]
 COMMON_FILE_EXTENSIONS = [
     'bat', 'bin', 'cpl', 'dll', 'doc', 'docm', 'docx', 'dotm', 'elf', 'eml', 'exe', 'hta', 'htm', 'html',
     'hwp', 'jar', 'js', 'lnk', 'mht', 'msg', 'msi', 'pdf', 'potm', 'potx', 'pps', 'ppsm', 'ppsx', 'ppt',

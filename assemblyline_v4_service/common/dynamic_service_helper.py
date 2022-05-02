@@ -14,6 +14,7 @@ from assemblyline.common.attack_map import (
 )
 from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, URI_PATH
 
+# from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
     ResultSection,
@@ -2892,6 +2893,8 @@ def extract_iocs_from_text_blob(
     # There is overlap here between regular expressions, so we want to isolate domains that are not ips
     domains = set(findall(DOMAIN_REGEX, blob)) - ips
     # There is overlap here between regular expressions, so we want to isolate uris that are not domains
+    # TODO: Are we missing IOCs to the point where we need a different regex?
+    # uris = {uri.decode() for uri in set(findall(PatternMatch.PAT_URI_NO_PROTOCOL, blob.encode()))} - domains - ips
     uris = set(findall(URL_REGEX, blob)) - domains - ips
     for ip in ips:
         if add_tag(result_section, "network.dynamic.ip", ip):
