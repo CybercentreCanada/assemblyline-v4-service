@@ -1,6 +1,7 @@
 from hashlib import sha256
+from json import dumps
 from logging import getLogger
-from re import compile, escape, sub
+from re import compile, escape, sub, findall
 from typing import Any, Dict, List, Optional, Set, Union
 from uuid import UUID, uuid4
 
@@ -11,13 +12,18 @@ from assemblyline.common.attack_map import (
     group_map,
     revoke_map,
 )
+from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, URI_PATH
 
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
     ResultSection,
     ProcessItem,
     ResultProcessTreeSection,
+    ResultTableSection,
+    TableRow
 )
+from assemblyline_v4_service.common.safelist_helper import URL_REGEX
+from assemblyline_v4_service.common.tag_helper import add_tag
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 al_log.init_logging("service.service_base.dynamic_service_helper")
@@ -2866,6 +2872,60 @@ class SandboxOntology:
 
             for http in self.get_network_http():
                 self._set_item_times(http.connection_details.process)
+
+
+def _extract_iocs_from_text_blob(
+        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None) -> None:
+    """
+    This method searches for domains, IPs and URIs used in blobs of text and tags them
+    :param blob: The blob of text that we will be searching through
+    :param result_section: The result section that that tags will be added to
+    :param so_sig: The signature for the Sandbox Ontology
+    :return: None
+    """
+    if not blob:
+        return
+    blob = blob.lower()
+    ips = set(findall(IP_REGEX, blob))
+    # There is overlap here between regular expressions, so we want to isolate domains that are not ips
+    domains = set(findall(DOMAIN_REGEX, blob)) - ips
+    # There is overlap here between regular expressions, so we want to isolate uris that are not domains
+    uris = set(findall(URL_REGEX, blob)) - domains - ips
+    for ip in ips:
+        if add_tag(result_section, "network.dynamic.ip", ip):
+            if not result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
+            elif dumps({"ioc_type": "ip", "ioc": ip}) not in result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
+            if so_sig:
+                so_sig.add_subject(ip=ip)
+    for domain in domains:
+        # File names match the domain and URI regexes, so we need to avoid tagging them
+        # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
+        if add_tag(result_section, "network.dynamic.domain", domain):
+            if not result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
+            elif dumps({"ioc_type": "domain", "ioc": domain}) not in result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
+            if so_sig:
+                so_sig.add_subject(domain=domain)
+
+    for uri in uris:
+        if add_tag(result_section, "network.dynamic.uri", uri):
+            if not result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
+            elif dumps({"ioc_type": "uri", "ioc": uri}) not in result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
+            if so_sig:
+                so_sig.add_subject(uri=uri)
+        if "//" in uri:
+            uri = uri.split("//")[1]
+        for uri_path in findall(URI_PATH, uri):
+            if add_tag(result_section, "network.dynamic.uri_path", uri_path):
+                if not result_section.section_body.body:
+                    result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
+                elif dumps({"ioc_type": "uri_path", "ioc": uri_path}) not in result_section.section_body.body:
+                    result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
 
 
 # DEBUGGING METHOD
