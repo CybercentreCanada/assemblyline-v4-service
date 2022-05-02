@@ -18,18 +18,23 @@ COMMON_FILE_EXTENSIONS = [
 def add_tag(
         result_section: ResultSection,
         tag: str, value: Union[Any, List[Any]],
-        safelist: Dict[str, Dict[str, List[str]]]
+        safelist: Dict[str, Dict[str, List[str]]] = None
     ) -> bool:
     """
     This method adds the value(s) as a tag to the ResultSection. Can take a list of values or a single value.
     :param result_section: The ResultSection that the tag will be added to
     :param tag: The tag type that the value will be tagged under
     :param value: The value, a single item or a list, that will be tagged under the tag type
+    :param safelist: The safelist containing matches and regexs. The product of a service using self.get_api_interface().get_safelist().
     :return: Tag was successfully added
     """
+    if safelist is None:
+        safelist = {}
+
     tags_were_added = False
     if not value:
         return tags_were_added
+
     if type(value) == list:
         for item in value:
             # If one tag is added, then return True
@@ -61,15 +66,19 @@ def _validate_tag(
         result_section: ResultSection,
         tag: str,
         value: Any,
-        safelist: Dict[str, Dict[str, List[str]]]
+        safelist: Dict[str, Dict[str, List[str]]] = None
     ) -> bool:
     """
     This method validates the value relative to the tag type before adding the value as a tag to the ResultSection.
     :param result_section: The ResultSection that the tag will be added to
     :param tag: The tag type that the value will be tagged under
     :param value: The item that will be tagged under the tag type
+    :param safelist: The safelist containing matches and regexs. The product of a service using self.get_api_interface().get_safelist().
     :return: Tag was successfully added
     """
+    if safelist is None:
+        safelist = {}
+
     regex = _get_regex_for_tag(tag)
     if regex and not match(regex, value):
         return False
