@@ -1,5 +1,11 @@
-from re import IGNORECASE, match
+from re import compile, IGNORECASE, match, search
 from typing import Dict, List
+from urllib.parse import urlparse
+
+from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX
+
+URL_REGEX = compile(
+    "(?:(?:(?:[A-Za-z]*:)?//)?(?:\S+(?::\S*)?@)?(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[A-Za-z0-9\u00a1-\uffff][A-Za-z0-9\u00a1-\uffff_-]{0,62})?[A-Za-z0-9\u00a1-\uffff]\.)+(?:xn--)?(?:[A-Za-z0-9\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?)(?:[/?#][^\s,\\\\]*)?")
 
 
 def is_tag_safelisted(
@@ -36,4 +42,29 @@ def is_tag_safelisted(
                 if match(safelist_regex, value, IGNORECASE):
                     return True
 
+    return False
+
+
+def contains_safelisted_value(val: str, safelist: Dict[str, Dict[str, List[str]]]) -> bool:
+    """
+    This method checks if a given value is part of a safelist
+    :param val: The given value
+    :param safelist: A dictionary containing matches and regexes for use in safelisting values
+    :return: A boolean representing if the given value is part of a safelist
+    """
+    if not val or not isinstance(val, str):
+        return False
+    ip = search(IP_REGEX, val)
+    url = search(URL_REGEX, val)
+    domain = search(DOMAIN_REGEX, val)
+    if ip is not None:
+        ip = ip.group()
+        return is_tag_safelisted(ip, ["network.dynamic.ip"], safelist)
+    elif domain is not None:
+        domain = domain.group()
+        return is_tag_safelisted(domain, ["network.dynamic.domain"], safelist)
+    elif url is not None:
+        url_pieces = urlparse(url.group())
+        domain = url_pieces.netloc
+        return is_tag_safelisted(domain, ["network.dynamic.domain"], safelist)
     return False
