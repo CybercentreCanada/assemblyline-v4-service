@@ -5325,20 +5325,32 @@ class TestSandboxOntology:
             # A grandparent-parent-child+parent-child+random relationship, sharing different times time, in the incorrect order, in mismatched order
             (
                 [
-                    {'objectid': {'guid': 'd', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'c', 'time_observed': float("-inf")}},
-                    {'objectid': {'guid': 'g', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'f', 'time_observed': float("-inf")}},
-                    {'objectid': {'guid': 'c', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'b', 'time_observed': float("-inf")}},
-                    {'objectid': {'guid': 'f', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'e', 'time_observed': None}},
-                    {'objectid': {'guid': 'b', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'a', 'time_observed': None}},
-                    {'objectid': {'guid': 'h', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'i', 'time_observed': None}}
+                    {'objectid': {'guid': 'd', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'c', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'g', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'f', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'c', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'b', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'f', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'e', 'time_observed': None}},
+                    {'objectid': {'guid': 'b', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'a', 'time_observed': None}},
+                    {'objectid': {'guid': 'h', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'i', 'time_observed': None}}
                 ],
                 [
-                    {'objectid': {'guid': 'b', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'a', 'time_observed': None}},
-                    {'objectid': {'guid': 'c', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'b', 'time_observed': float("-inf")}},
-                    {'objectid': {'guid': 'd', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'c', 'time_observed': float("-inf")}},
-                    {'objectid': {'guid': 'f', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'e', 'time_observed': None}},
-                    {'objectid': {'guid': 'g', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'f', 'time_observed': float("-inf")}},
-                    {'objectid': {'guid': 'h', 'time_observed': float("-inf")}, 'pobjectid': {'guid': 'i', 'time_observed': None}}
+                    {'objectid': {'guid': 'b', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'a', 'time_observed': None}},
+                    {'objectid': {'guid': 'c', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'b', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'd', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'c', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'f', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'e', 'time_observed': None}},
+                    {'objectid': {'guid': 'g', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'f', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'h', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'i', 'time_observed': None}}
                 ],
             )
         ],
@@ -8022,3 +8034,45 @@ class TestSandboxOntology:
         assert p.start_time == 1.0
         assert p.end_time == 2.0
         assert p.objectid.time_observed == 1.0
+
+
+@pytest.mark.parametrize(
+    "blob, correct_tags, expected_iocs",
+    [("", {}, [{}]),
+     ("192.168.100.1", {'network.dynamic.ip': ['192.168.100.1']}, [{"ip": "192.168.100.1"}]),
+     ("blah.ca", {'network.dynamic.domain': ['blah.ca']}, [{"domain": "blah.ca"}]),
+     ("https://blah.ca",
+        {'network.dynamic.domain': ['blah.ca'],
+         'network.dynamic.uri': ['https://blah.ca']}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca"}]),
+     ("https://blah.ca/blah",
+        {'network.dynamic.domain': ['blah.ca'],
+         'network.dynamic.uri': ['https://blah.ca/blah'],
+         "network.dynamic.uri_path": ["/blah"]}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca/blah"}]),
+     ("drive:\\\\path to\\\\microsoft office\\\\officeverion\\\\winword.exe", {}, [{}]),
+     (
+        "DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
+        {}, [{}]),
+        ("DRIVE:\\\\PATH TO\\\\PYTHON27.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.py",
+     {}, [{}]),
+        (
+        "POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\nContent-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
+        {"network.dynamic.domain": ["evil.ca"]}, [{"domain": "evil.ca"}]),
+        ("evil.ca/some/thing/bad.exe",
+         {"network.dynamic.domain": ["evil.ca"],
+          "network.dynamic.uri": ["evil.ca/some/thing/bad.exe"],
+          "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"}, {"uri": "evil.ca/some/thing/bad.exe"}]), ])
+def test_extract_iocs_from_text_blob(blob, correct_tags, expected_iocs):
+    from assemblyline_v4_service.common.dynamic_service_helper import extract_iocs_from_text_blob, SandboxOntology
+    from assemblyline_v4_service.common.result import ResultTableSection
+    test_result_section = ResultTableSection("blah")
+    so_sig = SandboxOntology.Signature()
+    default_iocs = []
+    extract_iocs_from_text_blob(blob, test_result_section, so_sig=so_sig)
+    assert test_result_section.tags == correct_tags
+    if correct_tags:
+        for expected_ioc in expected_iocs:
+            default_ioc = SandboxOntology.Signature.Subject().as_primitives()
+            for key, value in expected_ioc.items():
+                default_ioc[key] = value
+            default_iocs.append(default_ioc)
+        assert so_sig.as_primitives()["subjects"] == default_iocs
