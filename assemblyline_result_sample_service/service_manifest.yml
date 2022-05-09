@@ -109,7 +109,7 @@ heuristics:
 #  - the name of the docker container that will be created
 #  - cpu and ram allocation by the container
 docker_config:
-  image: cccs/assemblyline-service-resultsample:$SERVICE_TAG
+  image: ${REGISTRY}cccs/assemblyline-service-resultsample:$SERVICE_TAG
   cpu_cores: 1.0
   ram_mb_min: 128
   ram_mb: 256
