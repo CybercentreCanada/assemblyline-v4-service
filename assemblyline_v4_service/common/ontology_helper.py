@@ -60,7 +60,7 @@ class OntologyHelper:
 
         ontology['results'].update(self.results)
 
-    def _attach_ontology(self, request) -> str:
+    def _attach_ontology(self, request, working_dir) -> str:
         # Get heuristics of service
         heuristics = helper.get_heuristics()
 
@@ -150,7 +150,7 @@ class OntologyHelper:
 
         # Include Ontological data
         ontology_suffix = f"{request.sha256}.ontology"
-        ontology_path = os.path.join(self.working_directory, ontology_suffix)
+        ontology_path = os.path.join(working_dir, ontology_suffix)
         open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
         attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
         request.add_supplementary(path=ontology_path, name=attachment_name,

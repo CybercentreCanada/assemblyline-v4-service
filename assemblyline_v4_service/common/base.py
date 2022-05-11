@@ -162,7 +162,7 @@ class ServiceBase:
             self.ontology.reset()
             request = ServiceRequest(self._task)
             self.execute(request)
-            self.ontology._attach_ontology(request)
+            self.ontology._attach_ontology(request, self.working_directory)
             self._success()
         except RuntimeError as re:
             if is_recoverable_runtime_error(re):
