@@ -2826,7 +2826,7 @@ class SandboxOntology:
 
         # DEBUGGING case
         if from_main:
-            from assemblyline.odm.models.ontology.types.sandbox import Sandbox
+            from assemblyline.odm.models.ontology.results.sandbox import Sandbox
             from json import loads
 
             with open(so_json, "r") as f:
