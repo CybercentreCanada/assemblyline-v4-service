@@ -97,15 +97,12 @@ class OntologyHelper:
                 if section.heuristic:
                     heur = heuristics[section.heuristic.heur_id]
                     key = f'{request.task.service_name.upper()}_{heur.heur_id}'
-                    update_value = {"name": heur.name, "tags": {}}
-                    if section_tags:
-                        update_value = \
-                            {
-                                "heur_id": key,
-                                "name": heur.name,
-                                "tags": merge_tags(heur_tag_map[key]["tags"], section_tags)
-                            }
-                    heur_tag_map[key].update(update_value)
+
+                    heur_tag_map[key].update({
+                        "heur_id": key,
+                        "name": heur.name,
+                        "tags": merge_tags(heur_tag_map[key]["tags"], section_tags) if section_tags else {}
+                    })
 
                 # Recurse through subsections
                 if section.subsections:
