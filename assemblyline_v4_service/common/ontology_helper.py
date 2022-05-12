@@ -34,7 +34,9 @@ class OntologyHelper:
             return None
 
         # Generate ID based on data and add reference to collection, prefix with model type
-        oid = f"{model.__name__.lower()}_{get_dict_fingerprint_hash(data)}"
+        # Some models have a deterministic way of generating IDs using the data given
+        oid = model.get_oid(data) if hasattr(model, 'get_oid') else \
+            f"{model.__name__.lower()}_{get_dict_fingerprint_hash(data)}"
         modeled_data = model(data)
         modeled_data.oid = oid
         modeled_data.oid_parent = None
@@ -99,6 +101,7 @@ class OntologyHelper:
                     if section_tags:
                         update_value = \
                             {
+                                "heur_id": key,
                                 "name": heur.name,
                                 "tags": merge_tags(heur_tag_map[key]["tags"], section_tags)
                             }
@@ -142,7 +145,7 @@ class OntologyHelper:
             },
             "results": {
                 "tags": tag_map,
-                "heuristics": heur_tag_map
+                "heuristics": list(heur_tag_map.values())
             }
         }
 
