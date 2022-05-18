@@ -25,9 +25,16 @@ class Task:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         tags = {}
+        uses_tag_score = False
+        if task.tags and hasattr(task.tags[0], 'score'):
+            uses_tag_score = True
+
         for t in task.tags:
             tags.setdefault(t.type, [])
-            tags[t.type].append(t.value)
+            data = t.value
+            if uses_tag_score:
+                data = (t.value, t.score)
+            tags[t.type].append(data)
 
         self._classification: Classification = forge.get_classification()
         self._service_completed: Optional[str] = None
