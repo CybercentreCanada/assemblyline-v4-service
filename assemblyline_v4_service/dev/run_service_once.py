@@ -11,7 +11,7 @@ import cProfile
 from cart import unpack_stream
 from typing import Union, Dict
 
-from assemblyline.common import identify, forge
+from assemblyline.common import forge
 from assemblyline.common.heuristics import HeuristicHandler, InvalidHeuristicException
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.common.isotime import now_as_iso
@@ -20,6 +20,8 @@ from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
 from assemblyline_v4_service.common.helper import get_heuristics
+
+identify = forge.get_identify(use_cache=False)
 
 
 class RunService:
