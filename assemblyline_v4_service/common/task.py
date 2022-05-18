@@ -2,14 +2,15 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Optional, Any, Dict
+from typing import List, Optional, Any, Dict, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
-from assemblyline.common.digests import get_sha256_for_file
+from assemblyline.common.digests import get_digests_for_file, get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
 from assemblyline_v4_service.common.result import Result
 
 
@@ -42,12 +43,14 @@ class Task:
         self.file_name = task.filename
         self.file_type = task.fileinfo.type
         self.file_size = task.fileinfo.size
+        self.ignore_filtering = task.ignore_filtering
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.metadata = task.metadata
         self.md5: str = task.fileinfo.md5
         self.mime: str = task.fileinfo.mime or None
         self.result: Optional[Result] = None
+        self.safelist_config: Dict[str, Any] = task.safelist_config
         self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
         self.service_debug_info: Optional[str] = None
@@ -90,7 +93,22 @@ class Task:
         return file
 
     def add_extracted(self, path: str, name: str, description: str,
-                      classification: Optional[Classification] = None) -> bool:
+                      classification: Optional[Classification] = None,
+                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None) -> bool:
+
+        # Service-based safelisting of files has to be configured at the global configuration
+        # Allows the administrator to be selective about the types of hashes to lookup in the safelist
+        if safelist_interface and self.safelist_config.enabled and not (self.deep_scan or self.ignore_filtering):
+            # Ignore adding files that are known to the system to be safe
+            digests = get_digests_for_file(path)
+            for hash_type in self.safelist_config.hash_types:
+                qhash = digests[hash_type]
+                resp = safelist_interface.lookup_safelist(qhash)
+                self.log.debug(f'Checking system safelist for {hash_type}: {qhash}')
+                if resp and resp['enabled'] and resp['type'] == 'file':
+                    self.log.info(f'Dropping safelisted, extracted file.. ({hash_type}: {qhash})')
+                    return False
+
         if self.max_extracted and len(self.extracted) >= int(self.max_extracted):
             raise MaxExtractedExceeded
 

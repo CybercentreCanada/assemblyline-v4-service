@@ -17,7 +17,7 @@ from assemblyline.common import exceptions, log, version, forge
 from assemblyline.common.dict_utils import flatten, unflatten
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.ontology.meta import ResultOntology
+from assemblyline.odm.models.ontology import ResultOntology
 from assemblyline.odm.models.tagging import Tagging
 from assemblyline.odm.base import Model, construct_safe
 from assemblyline_v4_service.common import helper
@@ -65,8 +65,11 @@ class ServiceBase:
         self._task = None
 
         self._working_directory = None
-        self.dependencies = self._get_dependencies_info()
 
+        # Initialize interface for interacting with system safelist
+        self._api_interface = None
+
+        self.dependencies = self._get_dependencies_info()
         self.ontologies: Dict = None
 
         # Updater-related
@@ -74,6 +77,10 @@ class ServiceBase:
         self.rules_list: list = []
         self.update_time: int = None
         self.rules_hash: str = None
+
+    @property
+    def api_interface(self):
+        return self.get_api_interface()
 
     def _get_dependencies_info(self) -> Dict[str, Dict[str, str]]:
         dependencies = {}
@@ -125,10 +132,13 @@ class ServiceBase:
         self._log_error(msg, *args, **kwargs)
 
     def get_api_interface(self):
-        if PRIVILEGED:
-            return PrivilegedServiceAPI(self.log)
-        else:
-            return ServiceAPI(self.service_attributes, self.log)
+        if not self._api_interface:
+            if PRIVILEGED:
+                self._api_interface = PrivilegedServiceAPI(self.log)
+            else:
+                self._api_interface = ServiceAPI(self.service_attributes, self.log)
+
+        return self._api_interface
 
     def execute(self, request: ServiceRequest) -> None:
         raise NotImplementedError("execute() function not implemented")
@@ -294,57 +304,31 @@ class ServiceBase:
             # No tagging or ontologies found, therefore informational results
             return
 
-        # Required meta
-        service_result = {
-            'md5': request.md5,
-            'sha1': request.sha1,
-            'sha256': request.sha256,
-            'type': request.file_type,
-            'size': request.file_size,
-            'filename': request.file_name or request.sha256,
-            'date': request.task._service_started,
-            'classification': max_result_classification,
-            'service_name': request.task.service_name,
-            'service_version': request.task.service_version,
-            'service_tool_version': request.task.service_tool_version,
-        }
-
-        # Optional meta
-        service_result.update(
-            {
-                'sid': request.sid,
-                'submitted_classification': request.task.min_classification,
+        ontology = {
+            'header': {
+                'md5': request.md5,
+                'sha1': request.sha1,
+                'sha256': request.sha256,
+                'type': request.file_type,
+                'size': request.file_size,
+                'classification': max_result_classification,
+                'service_name': request.task.service_name,
+                'service_version': request.task.service_version,
+                'service_tool_version': request.task.service_tool_version,
                 'tags': tag_map,
                 'heuristics': heur_tag_map
             }
-        )
+        }
+        # Include Ontological data
+        ontology.update({type.lower(): data for type, data in self.ontologies.items()})
 
-        header = ResultOntology(service_result).as_primitives(strip_null=True)
-        if not self.ontologies:
-            ontology = {
-                'header': header
-            }
-            # Dump header information to disk
-            ontology_suffix = 'general.ontology'
-            ontology_path = os.path.join(self.working_directory, ontology_suffix)
-            open(ontology_path, 'w').write(json.dumps(ontology))
-            attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-            request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
-                                      classification=max_result_classification)
-            return
-
-        for type, data in self.ontologies.items():
-            for i, dv in enumerate(data):
-                ontology = {
-                    'header': header,
-                    f'{type}': dv
-                }
-                ontology_suffix = f'{type}_{i}.ontology'
-                ontology_path = os.path.join(self.working_directory, ontology_suffix)
-                open(ontology_path, 'w').write(json.dumps(ontology))
-                attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-                request.add_supplementary(path=ontology_path, name=attachment_name, description=attachment_name,
-                                          classification=max_result_classification)
+        ontology_suffix = f"{request.sha256}.ontology"
+        ontology_path = os.path.join(self.working_directory, ontology_suffix)
+        open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
+        attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
+        request.add_supplementary(path=ontology_path, name=attachment_name,
+                                  description=f"Result Ontology from {request.task.service_name}",
+                                  classification=max_result_classification)
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
 

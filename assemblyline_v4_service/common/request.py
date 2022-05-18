@@ -2,11 +2,12 @@ import logging
 import tempfile
 
 from PIL import Image
-from typing import Dict, Optional, Any
+from typing import Dict, Optional, Any, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
+from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
 from assemblyline_v4_service.common.extractor.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
 from assemblyline_v4_service.common.task import Task, MaxExtractedExceeded
@@ -35,7 +36,8 @@ class ServiceRequest:
         self.task = task
 
     def add_extracted(self, path: str, name: str, description: str,
-                      classification: Optional[Classification] = None) -> bool:
+                      classification: Optional[Classification] = None,
+                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None) -> bool:
         """
         Add an extracted file for additional processing.
 
@@ -43,11 +45,12 @@ class ServiceRequest:
         :param name: Display name of the extracted file
         :param description: Descriptive text about the extracted file
         :param classification: Classification of the extracted file (default: service classification)
+        :param safelist_interface: Safelisting interface provided by service. Used to filter extracted files.
         :return: None
         """
 
         try:
-            r = self.task.add_extracted(path, name, description, classification)
+            r = self.task.add_extracted(path, name, description, classification, safelist_interface)
             return r
         except MaxExtractedExceeded:
             raise
@@ -75,7 +78,7 @@ class ServiceRequest:
                 if img.format == img_format:
                     img_format = 'PNG'
 
-                if img_format == "WEBP" and img.size > (WEBP_MAX_SIZE, WEBP_MAX_SIZE):
+                if img_format == "WEBP" and (img.height > WEBP_MAX_SIZE or img.width > WEBP_MAX_SIZE):
                     # Maintain aspect ratio
                     img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
 
