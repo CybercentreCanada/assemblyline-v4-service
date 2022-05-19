@@ -287,7 +287,7 @@ class ServiceUpdater(ThreadedCoreBase):
 
                         self.log.debug(f"Downloading update to {temp_zip_file}")
                         if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
-                            self.log.debug(f"File type ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file)}")
+                            self.log.debug(f"File type ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file, 'unknown')}")
                             try:
                                 with ZipFile(temp_zip_file, 'r') as zip_f:
                                     zip_f.extractall(output_directory)
