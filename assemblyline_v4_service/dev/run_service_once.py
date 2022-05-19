@@ -180,6 +180,7 @@ class RunService:
 
     def stop(self):
         self.service.stop_service()
+        self.identify.stop()
 
     def load_service_manifest(self, return_heuristics=False) -> Union[None, Dict]:
         service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
