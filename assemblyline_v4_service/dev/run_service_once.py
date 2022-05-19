@@ -21,8 +21,6 @@ from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
 from assemblyline_v4_service.common.helper import get_heuristics
 
-identify = forge.get_identify(use_cache=False)
-
 
 class RunService:
     def __init__(self):
@@ -30,6 +28,7 @@ class RunService:
         self.service_class = None
         self.submission_params = None
         self.file_dir = None
+        self.identify = forge.get_identify(use_cache=False)
 
     def try_run(self):
         try:
@@ -56,14 +55,14 @@ class RunService:
         self.service.start_service()
 
         # Identify the file
-        file_info = identify.fileinfo(FILE_PATH)
+        file_info = self.identify.fileinfo(FILE_PATH)
         if file_info['type'] == "archive/cart" or file_info['magic'] == "custom: archive/cart":
             # This is a CART file, uncart it and recreate the file info object
             original_temp = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             with open(FILE_PATH, 'rb') as ifile, open(original_temp, 'wb') as ofile:
                 unpack_stream(ifile, ofile)
 
-            file_info = identify.fileinfo(original_temp)
+            file_info = self.identify.fileinfo(original_temp)
             target_file = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             shutil.move(original_temp, target_file)
             LOG.info(f"File was a CaRT archive, it was un-CaRTed to {target_file} for processing")
