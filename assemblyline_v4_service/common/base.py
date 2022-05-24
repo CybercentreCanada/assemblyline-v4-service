@@ -236,9 +236,12 @@ class ServiceBase:
             validate_model = True
 
         # Append ontologies to collection to get appended after execution
-        self.ontologies[modelType.__name__].append(
-            modelType(data=data, ignore_extra_values=validate_model).as_primitives(strip_null=True)
-        )
+        try:
+            self.ontologies[modelType.__name__].append(
+                modelType(data=data, ignore_extra_values=validate_model).as_primitives(strip_null=True)
+            )
+        except Exception as e:
+            self.log.error(f'Problem applying data to given model: {e}')
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
