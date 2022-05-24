@@ -16,7 +16,8 @@ ONTOLOGY_FILETYPE_MODELS = [PE]
 
 
 class OntologyHelper:
-    def __init__(self) -> None:
+    def __init__(self, logger) -> None:
+        self.log = logger
         self._file_info = dict()
         self._result_parts: Dict[str, Model] = dict()
         self.results = defaultdict(list)
@@ -31,27 +32,30 @@ class OntologyHelper:
 
     def add_result_part(self, model: Model, data: Dict, parent=None) -> str:
         if not data:
+            self.log.warning(f'No data given to apply to model {model.__name__}')
             return None
 
         # Generate ID based on data and add reference to collection, prefix with model type
         # Some models have a deterministic way of generating IDs using the data given
         oid = model.get_oid(data) if hasattr(model, 'get_oid') else \
             f"{model.__name__.lower()}_{get_dict_fingerprint_hash(data)}"
-        modeled_data = model(data)
-        modeled_data.oid = oid
-        modeled_data.oid_parent = None
-        modeled_data.oid_children = []
+        data.update({'oid': oid})
+        try:
+            modeled_data = model(data)
 
-        # If we have a parent, add references for a parent-child relationship
-        parent_model = self._result_parts.get(parent)
-        if parent_model:
-            # Ensure parent was set on data
-            modeled_data.oid_parent = parent
-            parent_model.oid_children.append(oid)
-            self._result_parts[parent] = parent_model
-        self._result_parts[oid] = modeled_data
-
-        return oid
+            # If we have a parent, add references for a parent-child relationship
+            parent_model = self._result_parts.get(parent)
+            if parent_model:
+                # Ensure parent was set on data
+                modeled_data.oid_parent = parent
+                parent_model.oid_children.append(oid)
+                self._result_parts[parent] = parent_model
+            self._result_parts[oid] = modeled_data
+        except Exception as e:
+            self.log.error(f'Problem applying data to given model: {e}')
+            oid = None
+        finally:
+            return oid
 
     def attach_parts(self, ontology: Dict) -> None:
         ontology['file'].update({k: v.as_primitives() for k, v in self._file_info.items()})
@@ -97,11 +101,12 @@ class OntologyHelper:
                 if section.heuristic:
                     heur = heuristics[section.heuristic.heur_id]
                     key = f'{request.task.service_name.upper()}_{heur.heur_id}'
-
                     heur_tag_map[key].update({
                         "heur_id": key,
                         "name": heur.name,
-                        "tags": merge_tags(heur_tag_map[key]["tags"], section_tags) if section_tags else {}
+                        "tags": merge_tags(heur_tag_map[key]["tags"], section_tags) if section_tags else {},
+                        "score": heur.score,
+                        "times_raised": heur_tag_map[key]["times_raised"] + 1
                     })
 
                 # Recurse through subsections
@@ -117,7 +122,7 @@ class OntologyHelper:
 
         max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
             request.result.sections, request.task.service_default_result_classification,
-            defaultdict(lambda: {"tags": dict()}),
+            defaultdict(lambda: {"tags": dict(), "times_raised": int()}),
             defaultdict(list))
 
         if not tag_map and not self._result_parts:

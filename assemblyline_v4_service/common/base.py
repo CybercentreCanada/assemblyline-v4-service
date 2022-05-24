@@ -13,11 +13,9 @@ import time
 from typing import Dict, Optional
 from pathlib import Path
 
-from assemblyline.common import exceptions, log, version, forge
+from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.ontology import ResultOntology
-from assemblyline.odm.base import construct_safe
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -69,7 +67,7 @@ class ServiceBase:
         self._api_interface = None
 
         self.dependencies = self._get_dependencies_info()
-        self.ontology = OntologyHelper()
+        self.ontology = OntologyHelper(self.log)
 
         # Updater-related
         self.rules_directory: str = None
