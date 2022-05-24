@@ -95,7 +95,7 @@ class OntologyHelper:
                 # Append tags raised by the service, if any
                 section_tags = validate_tags(section.tags)
                 if section_tags:
-                    tag_map.update(section_tags)
+                    tag_map = merge_tags(tag_map, section_tags)
 
                 # Append tags associated to heuristics raised by the service, if any
                 if section.heuristic:
