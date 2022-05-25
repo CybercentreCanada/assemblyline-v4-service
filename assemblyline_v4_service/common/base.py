@@ -334,7 +334,7 @@ class ServiceBase:
                                     description=f"Result Ontology from {request.task.service_name}",
                                     classification=max_result_classification)
         except ValueError as e:
-            self.log.error(f"Problem with generation ontology: {e}")
+            self.log.error(f"Problem with generating ontology: {e}")
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
 
