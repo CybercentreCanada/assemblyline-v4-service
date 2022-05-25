@@ -327,11 +327,14 @@ class ServiceBase:
 
         ontology_suffix = f"{request.sha256}.ontology"
         ontology_path = os.path.join(self.working_directory, ontology_suffix)
-        open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
-        attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-        request.add_supplementary(path=ontology_path, name=attachment_name,
-                                  description=f"Result Ontology from {request.task.service_name}",
-                                  classification=max_result_classification)
+        try:
+            open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
+            attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
+            request.add_supplementary(path=ontology_path, name=attachment_name,
+                                    description=f"Result Ontology from {request.task.service_name}",
+                                    classification=max_result_classification)
+        except ValueError as e:
+            self.log.error(f"Problem with generation ontology: {e}")
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
 
