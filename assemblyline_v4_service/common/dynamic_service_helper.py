@@ -681,12 +681,12 @@ class NetworkConnection:
         :return: None
         """
         if not domain and self.destination_ip is None:
-            log.warning(
+            log.debug(
                 "Cannot set tag for network connection. Requires either domain or destination IP..."
             )
             return
         if self.destination_port is None:
-            log.warning(
+            log.debug(
                 "Cannot set tag for network connection. Requires destination port..."
             )
             return
@@ -1341,7 +1341,7 @@ class SandboxOntology:
             self.set_child_details(process)
             self.processes.append(process)
         else:
-            log.warning("Invalid process, ignoring...")
+            log.debug("Invalid process, ignoring...")
             return
 
     def update_process(self, **kwargs) -> None:
