@@ -225,6 +225,8 @@ class Task:
             ),
             result=result_obj,
             sha256=self.sha256,
+            type=self.file_type,
+            size=self.file_size,
             drop_file=self.drop_file,
             temp_submission_data=self.temp_submission_data,
         )
