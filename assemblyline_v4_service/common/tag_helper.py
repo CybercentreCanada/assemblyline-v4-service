@@ -16,10 +16,10 @@ COMMON_FILE_EXTENSIONS = [
 
 
 def add_tag(
-        result_section: ResultSection,
-        tag: str, value: Union[Any, List[Any]],
-        safelist: Dict[str, Dict[str, List[str]]] = None
-    ) -> bool:
+    result_section: ResultSection,
+    tag: str, value: Union[Any, List[Any]],
+    safelist: Dict[str, Dict[str, List[str]]] = None
+) -> bool:
     """
     This method adds the value(s) as a tag to the ResultSection. Can take a list of values or a single value.
     :param result_section: The ResultSection that the tag will be added to
@@ -63,11 +63,11 @@ def _get_regex_for_tag(tag: str) -> str:
 
 
 def _validate_tag(
-        result_section: ResultSection,
-        tag: str,
-        value: Any,
-        safelist: Dict[str, Dict[str, List[str]]] = None
-    ) -> bool:
+    result_section: ResultSection,
+    tag: str,
+    value: Any,
+    safelist: Dict[str, Dict[str, List[str]]] = None
+) -> bool:
     """
     This method validates the value relative to the tag type before adding the value as a tag to the ResultSection.
     :param result_section: The ResultSection that the tag will be added to
@@ -98,19 +98,21 @@ def _validate_tag(
         return False
 
     # if "uri" is in the tag, let's try to extract its domain/ip and tag it.
-    if "uri" in tag:
+    if "uri_path" not in tag and "uri" in tag:
         # First try to get the domain
+        valid_domain = False
         domain = search(DOMAIN_REGEX, value)
         if domain:
             domain = domain.group()
-            _ = _validate_tag(result_section, "network.dynamic.domain", domain, safelist)
+            valid_domain = _validate_tag(result_section, "network.dynamic.domain", domain, safelist)
         # Then try to get the IP
+        valid_ip = False
         ip = search(IP_REGEX, value)
         if ip:
             ip = ip.group()
-            _ = _validate_tag(result_section, "network.dynamic.ip", ip, safelist)
+            valid_ip = _validate_tag(result_section, "network.dynamic.ip", ip, safelist)
 
-        if value not in [domain, ip]:
+        if value not in [domain, ip] and (valid_domain or valid_ip):
             result_section.add_tag(tag, safe_str(value))
     else:
         result_section.add_tag(tag, safe_str(value))
