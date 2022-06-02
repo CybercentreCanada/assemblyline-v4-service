@@ -1,6 +1,7 @@
 from assemblyline.common import forge
 from assemblyline.common.dict_utils import flatten, unflatten, get_dict_fingerprint_hash
 from assemblyline.odm.base import Model, construct_safe
+from assemblyline.odm.models.ontology.results import NetworkConnection
 from assemblyline.odm.models.ontology.filetypes import PE
 from assemblyline.odm.models.ontology import ResultOntology
 from assemblyline.odm.models.tagging import Tagging
@@ -13,6 +14,9 @@ import json
 import os
 
 ONTOLOGY_FILETYPE_MODELS = [PE]
+ONTOLOGY_CLASS_TO_FIELD = {
+    NetworkConnection: "netflow"
+}
 
 
 class OntologyHelper:
@@ -62,7 +66,10 @@ class OntologyHelper:
 
         # If result section wasn't explicitly defined by service writer, use what we know
         if not self.results:
-            [self.results[v.__class__.__name__.lower()].append(v.as_primitives()) for v in self._result_parts.values()]
+            for v in self._result_parts.values():
+                # Some Ontology classes map to certain fields in the ontology that don't share the same name
+                field = ONTOLOGY_CLASS_TO_FIELD.get(v.__class__, v.__class__.__name__.lower())
+                self.results[field].append(v.as_primitives())
 
         ontology['results'].update(self.results)
 
