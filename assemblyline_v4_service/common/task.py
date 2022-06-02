@@ -26,7 +26,7 @@ class Task:
 
         tags = {}
         uses_tag_score = False
-        if task.tags and hasattr(task.tags[0], 'score'):
+        if task.tags and isinstance(task.tags[0].score, int):
             uses_tag_score = True
 
         for t in task.tags:
