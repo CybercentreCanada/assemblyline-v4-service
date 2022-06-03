@@ -1,5 +1,8 @@
 from __future__ import annotations
 
+import hashlib
+import os
+
 from collections import defaultdict
 from typing import Any, Optional
 
@@ -67,6 +70,31 @@ def get_tree_tags(tree: list[dict[str, Any]], dynamic=False) -> dict[str, set[by
         if tag_type:
             tags[tag_type].add(node.value)
     return tags
+
+
+def extract_files(tree: list[dict[str, Any]], min_size, working_directory) -> list[str]:
+    seen_files = set()
+    files: list[str] = []
+    nodes = invert_tree(tree)
+    for node in nodes:
+        if len(node.value) < min_size or node.value in seen_files:
+            continue
+        seen_files.add(node.value)
+        if node.type == 'pe_file':
+            ext = '.exe'
+        elif node.obfuscation.startswith('decoded.base64'):
+            ext = '_b64'  # technically .b64 is for still encoded files
+        elif node.obfuscation.startswith('decoded.hexadecimal'):
+            ext = '_hex'
+        else:
+            continue
+        file_hash = hashlib.sha256(node.value).hexdigest()
+        file_name = file_hash[:8] + ext
+        file_path = os.path.join(working_directory, file_name)
+        with open(file_path, 'wb') as f:
+            f.write(node.value)
+        files.append(file_path)
+    return files
 
 
 class DecoderWrapper():
