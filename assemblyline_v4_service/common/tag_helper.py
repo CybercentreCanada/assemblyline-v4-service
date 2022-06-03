@@ -114,6 +114,8 @@ def _validate_tag(
 
         if value not in [domain, ip] and (valid_domain or valid_ip):
             result_section.add_tag(tag, safe_str(value))
+        else:
+            return False
     else:
         result_section.add_tag(tag, safe_str(value))
 
