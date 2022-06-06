@@ -76,17 +76,17 @@ class DecoderWrapper():
     def __init__(self, working_directory: str) -> None:
         self.multidecoder = Multidecoder()
         self.working_directory = working_directory
-        self.seen_files = set()
+        self.extracted_files = set()
 
     def ioc_tags(self, data: bytes, dynamic=False) -> dict[str, set[bytes]]:
         tree = self.multidecoder.scan(data)
         return get_tree_tags(tree, dynamic)
 
-    def extract_files(self, tree: list[dict[str, Any]], min_size) -> list[str]:
-        files: list[str] = []
+    def extract_files(self, tree: list[dict[str, Any]], min_size) -> set[str]:
+        files: set[str] = set()
         nodes = invert_tree(tree)
         for node in nodes:
-            if len(node.value) < min_size or node.value in self.seen_files:
+            if len(node.value) < min_size:
                 continue
             if node.type == 'pe_file':
                 ext = '.exe'
@@ -99,8 +99,9 @@ class DecoderWrapper():
             file_hash = hashlib.sha256(node.value).hexdigest()
             file_name = file_hash[:8] + ext
             file_path = os.path.join(self.working_directory, file_name)
-            with open(file_path, 'wb') as f:
-                f.write(node.value)
-            self.seen_files.add(file_hash)
-            files.append(file_path)
+            if file_path not in self.extracted_files:
+                with open(file_path, 'wb') as f:
+                    f.write(node.value)
+                self.extracted_files.add(file_path)
+            files.add(file_path)
         return files
