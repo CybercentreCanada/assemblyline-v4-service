@@ -97,10 +97,10 @@ class DecoderWrapper():
             else:
                 continue
             file_hash = hashlib.sha256(node.value).hexdigest()
-            self.seen_files.add(file_hash)
             file_name = file_hash[:8] + ext
             file_path = os.path.join(self.working_directory, file_name)
             with open(file_path, 'wb') as f:
                 f.write(node.value)
+            self.seen_files.add(file_hash)
             files.append(file_path)
         return files
