@@ -72,35 +72,35 @@ def get_tree_tags(tree: list[dict[str, Any]], dynamic=False) -> dict[str, set[by
     return tags
 
 
-def extract_files(tree: list[dict[str, Any]], min_size, working_directory) -> list[str]:
-    seen_files = set()
-    files: list[str] = []
-    nodes = invert_tree(tree)
-    for node in nodes:
-        if len(node.value) < min_size or node.value in seen_files:
-            continue
-        seen_files.add(node.value)
-        if node.type == 'pe_file':
-            ext = '.exe'
-        elif node.obfuscation.startswith('decoded.base64'):
-            ext = '_b64'  # technically .b64 is for still encoded files
-        elif node.obfuscation.startswith('decoded.hexadecimal'):
-            ext = '_hex'
-        else:
-            continue
-        file_hash = hashlib.sha256(node.value).hexdigest()
-        file_name = file_hash[:8] + ext
-        file_path = os.path.join(working_directory, file_name)
-        with open(file_path, 'wb') as f:
-            f.write(node.value)
-        files.append(file_path)
-    return files
-
-
 class DecoderWrapper():
-    def __init__(self) -> None:
+    def __init__(self, working_directory: str) -> None:
         self.multidecoder = Multidecoder()
+        self.working_directory = working_directory
+        self.seen_files = set()
 
     def ioc_tags(self, data: bytes, dynamic=False) -> dict[str, set[bytes]]:
         tree = self.multidecoder.scan(data)
         return get_tree_tags(tree, dynamic)
+
+    def extract_files(self, tree: list[dict[str, Any]], min_size) -> list[str]:
+        files: list[str] = []
+        nodes = invert_tree(tree)
+        for node in nodes:
+            if len(node.value) < min_size or node.value in self.seen_files:
+                continue
+            if node.type == 'pe_file':
+                ext = '.exe'
+            elif node.obfuscation.startswith('decoded.base64'):
+                ext = '_b64'  # technically .b64 is for still encoded files
+            elif node.obfuscation.startswith('decoded.hexadecimal'):
+                ext = '_hex'
+            else:
+                continue
+            file_hash = hashlib.sha256(node.value).hexdigest()
+            self.seen_files.add(file_hash)
+            file_name = file_hash[:8] + ext
+            file_path = os.path.join(self.working_directory, file_name)
+            with open(file_path, 'wb') as f:
+                f.write(node.value)
+            files.append(file_path)
+        return files
