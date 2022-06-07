@@ -6,9 +6,12 @@ import os
 from collections import defaultdict
 from typing import Any, Optional
 
+import magic
+
 from multidecoder.multidecoder import Multidecoder
 from multidecoder.query import invert_tree
 
+EXTRACT_FILETYPES = ['application', 'document', 'exec', 'image', 'Microsoft', 'text']
 
 STATIC_TAG_MAP = {
     'network.domain': 'network.static.domain',
@@ -100,8 +103,12 @@ class DecoderWrapper():
             file_name = file_hash[:8] + ext
             file_path = os.path.join(self.working_directory, file_name)
             if file_path not in self.extracted_files:
-                with open(file_path, 'wb') as f:
-                    f.write(node.value)
-                self.extracted_files.add(file_path)
+                magic_type = magic.Magic().from_buffer(node.value)
+                mime_type = magic.Magic(mime=True).from_buffer(node.value)
+                if any((file_type in mime_type and 'octet-stream' not in mime_type) or file_type in magic_type
+                        for file_type in EXTRACT_FILETYPES):
+                    with open(file_path, 'wb') as f:
+                        f.write(node.value)
+                    self.extracted_files.add(file_path)
             files.add(file_path)
         return files
