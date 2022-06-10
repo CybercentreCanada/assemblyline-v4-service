@@ -10,6 +10,8 @@ import shutil
 import tarfile
 import tempfile
 import time
+import warnings
+
 from typing import Dict, Optional
 from pathlib import Path
 
@@ -24,6 +26,9 @@ from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
+
+# Ignore all other warnings that a service's libraries can generate
+warnings.filterwarnings("ignore")
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
