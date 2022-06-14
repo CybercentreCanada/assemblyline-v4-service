@@ -3,7 +3,6 @@ from assemblyline.common.dict_utils import flatten, unflatten, get_dict_fingerpr
 from assemblyline.odm.base import Model, construct_safe
 from assemblyline.odm.models.ontology.results import NetworkConnection
 from assemblyline.odm.models.ontology.filetypes import PE
-from assemblyline.odm.models.ontology import ResultOntology
 from assemblyline.odm.models.tagging import Tagging
 from assemblyline_v4_service.common import helper
 
@@ -20,11 +19,12 @@ ONTOLOGY_CLASS_TO_FIELD = {
 
 
 class OntologyHelper:
-    def __init__(self, logger) -> None:
+    def __init__(self, logger, service_name) -> None:
         self.log = logger
         self._file_info = dict()
         self._result_parts: Dict[str, Model] = dict()
         self.results = defaultdict(list)
+        self.service = service_name
 
     def add_file_part(self, model: Model, data: Dict) -> None:
         if not data:
@@ -39,11 +39,24 @@ class OntologyHelper:
             self.log.warning(f'No data given to apply to model {model.__name__}')
             return None
 
+        if not data.get('objectid'):
+            data['objectid'] = {}
+
+        oid = data['objectid'].get('ontology_id')
+        tag = data['objectid'].get('tag')
+
         # Generate ID based on data and add reference to collection, prefix with model type
         # Some models have a deterministic way of generating IDs using the data given
-        oid = model.get_oid(data) if hasattr(model, 'get_oid') else \
-            f"{model.__name__.lower()}_{get_dict_fingerprint_hash(data)}"
-        data.update({'oid': oid})
+        if not oid:
+            oid = model.get_oid(data) if hasattr(model, 'get_oid') else \
+                f"{model.__name__.lower()}_{get_dict_fingerprint_hash(data)}"
+        if not tag:
+            tag = model.get_tag(data) if hasattr(model, 'get_tag') else None
+
+        data['objectid']['tag'] = tag
+        data['objectid']['ontology_id'] = oid
+        data['objectid']['service_name'] = self.service
+
         try:
             modeled_data = model(data)
 
@@ -57,19 +70,20 @@ class OntologyHelper:
             self._result_parts[oid] = modeled_data
         except Exception as e:
             self.log.error(f'Problem applying data to given model: {e}')
+            self.log.debug(data)
             oid = None
         finally:
             return oid
 
     def attach_parts(self, ontology: Dict) -> None:
-        ontology['file'].update({k: v.as_primitives() for k, v in self._file_info.items()})
+        ontology['file'].update({k: v.as_primitives(strip_null=True) for k, v in self._file_info.items()})
 
         # If result section wasn't explicitly defined by service writer, use what we know
         if not self.results:
             for v in self._result_parts.values():
                 # Some Ontology classes map to certain fields in the ontology that don't share the same name
                 field = ONTOLOGY_CLASS_TO_FIELD.get(v.__class__, v.__class__.__name__.lower())
-                self.results[field].append(v.as_primitives())
+                self.results[field].append(v.as_primitives(strip_null=True))
 
         ontology['results'].update(self.results)
 
@@ -150,7 +164,6 @@ class OntologyHelper:
                 'name': request.task.service_name,
                 'version': request.task.service_version,
                 'tool_version': request.task.service_tool_version,
-
             },
             "results": {
                 "tags": tag_map,
@@ -163,7 +176,7 @@ class OntologyHelper:
         # Include Ontological data
         ontology_suffix = f"{request.sha256}.ontology"
         ontology_path = os.path.join(working_dir, ontology_suffix)
-        open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
+        open(ontology_path, 'w').write(json.dumps(ontology))
         attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
         request.add_supplementary(path=ontology_path, name=attachment_name,
                                   description=f"Result Ontology from {request.task.service_name}",

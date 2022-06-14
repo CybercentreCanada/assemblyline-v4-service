@@ -67,7 +67,7 @@ class ServiceBase:
         self._api_interface = None
 
         self.dependencies = self._get_dependencies_info()
-        self.ontology = OntologyHelper(self.log)
+        self.ontology = OntologyHelper(self.log, self.service_attributes.name)
 
         # Updater-related
         self.rules_directory: str = None
