@@ -72,9 +72,10 @@ def test_get_regex_for_tag():
         # Safelisted value
         ("domain", "blah.ca", {}, False),
         # URI with invalid domain
-        ("uri", "http://blah.blah/blah", {"uri": ["http://blah.blah/blah"]}, True),
+        ("uri", "http://blah.blah/blah", {}, False),
         # URI with valid domain
-        ("uri", "http://blah.com/blah", {"uri": ["http://blah.com/blah"], "network.dynamic.domain": ["blah.com"]}, True),
+        ("uri", "http://blah.com/blah", {"uri": ["http://blah.com/blah"],
+         "network.dynamic.domain": ["blah.com"]}, True),
         # URI with valid IP
         ("uri", "http://1.1.1.1/blah", {"uri": ["http://1.1.1.1/blah"], "network.dynamic.ip": ["1.1.1.1"]}, True),
     ]

@@ -681,12 +681,12 @@ class NetworkConnection:
         :return: None
         """
         if not domain and self.destination_ip is None:
-            log.warning(
+            log.debug(
                 "Cannot set tag for network connection. Requires either domain or destination IP..."
             )
             return
         if self.destination_port is None:
-            log.warning(
+            log.debug(
                 "Cannot set tag for network connection. Requires destination port..."
             )
             return
@@ -1341,7 +1341,7 @@ class SandboxOntology:
             self.set_child_details(process)
             self.processes.append(process)
         else:
-            log.warning("Invalid process, ignoring...")
+            log.debug("Invalid process, ignoring...")
             return
 
     def update_process(self, **kwargs) -> None:
@@ -2494,11 +2494,16 @@ class SandboxOntology:
         sorted_events = SandboxOntology._sort_things_by_time_observed(
             list(events_dict.values())
         )
-        # If events all have the same time observed, but there are child-parent relationships between events,
-        # we should order based on relationship
-        sorted_events_by_relationship_and_time = SandboxOntology._sort_things_by_relationship(
-            sorted_events
-        )
+        try:
+            # If events all have the same time observed, but there are child-parent relationships between events,
+            # we should order based on relationship
+            sorted_events_by_relationship_and_time = SandboxOntology._sort_things_by_relationship(
+                sorted_events
+            )
+        except RecursionError:
+            log.error("Unable to sort events by relationship due to recursion error.")
+            sorted_events_by_relationship_and_time = sorted_events
+
         events_seen = []
 
         for e in sorted_events_by_relationship_and_time:

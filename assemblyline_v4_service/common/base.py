@@ -10,6 +10,8 @@ import shutil
 import tarfile
 import tempfile
 import time
+import warnings
+
 from typing import Dict, Optional
 from pathlib import Path
 
@@ -24,6 +26,9 @@ from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
+
+# Ignore all other warnings that a service's libraries can generate
+warnings.filterwarnings("ignore")
 
 LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
@@ -236,9 +241,12 @@ class ServiceBase:
             validate_model = True
 
         # Append ontologies to collection to get appended after execution
-        self.ontologies[modelType.__name__].append(
-            modelType(data=data, ignore_extra_values=validate_model).as_primitives(strip_null=True)
-        )
+        try:
+            self.ontologies[modelType.__name__].append(
+                modelType(data=data, ignore_extra_values=validate_model).as_primitives(strip_null=True)
+            )
+        except Exception as e:
+            self.log.error(f'Problem applying data to given model: {e}')
 
     def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
 
@@ -324,11 +332,14 @@ class ServiceBase:
 
         ontology_suffix = f"{request.sha256}.ontology"
         ontology_path = os.path.join(self.working_directory, ontology_suffix)
-        open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
-        attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-        request.add_supplementary(path=ontology_path, name=attachment_name,
-                                  description=f"Result Ontology from {request.task.service_name}",
-                                  classification=max_result_classification)
+        try:
+            open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
+            attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
+            request.add_supplementary(path=ontology_path, name=attachment_name,
+                                    description=f"Result Ontology from {request.task.service_name}",
+                                    classification=max_result_classification)
+        except ValueError as e:
+            self.log.error(f"Problem with generating ontology: {e}")
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
 

@@ -310,6 +310,8 @@ class RunPrivilegedService(ServerBase):
         if self.service:
             self.service.stop_service()
 
+        self.tasking_client.stop()
+
         super().stop()
 
 
