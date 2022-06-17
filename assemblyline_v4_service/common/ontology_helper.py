@@ -34,7 +34,7 @@ class OntologyHelper:
         if model in ONTOLOGY_FILETYPE_MODELS:
             self._file_info[model.__name__.lower()] = model(data)
 
-    def add_result_part(self, model: Model, data: Dict, parent=None) -> str:
+    def add_result_part(self, model: Model, data: Dict) -> str:
         if not data:
             self.log.warning(f'No data given to apply to model {model.__name__}')
             return None
@@ -58,16 +58,7 @@ class OntologyHelper:
         data['objectid']['service_name'] = self.service
 
         try:
-            modeled_data = model(data)
-
-            # If we have a parent, add references for a parent-child relationship
-            parent_model = self._result_parts.get(parent)
-            if parent_model:
-                # Ensure parent was set on data
-                modeled_data.oid_parent = parent
-                parent_model.oid_children.append(oid)
-                self._result_parts[parent] = parent_model
-            self._result_parts[oid] = modeled_data
+            self._result_parts[oid] = model(data)
         except Exception as e:
             self.log.error(f'Problem applying data to given model: {e}')
             self.log.debug(data)
