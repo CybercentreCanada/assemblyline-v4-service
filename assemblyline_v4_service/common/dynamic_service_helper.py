@@ -1,6 +1,7 @@
 from hashlib import sha256
+from json import dumps
 from logging import getLogger
-from re import compile, escape, sub
+from re import compile, escape, sub, findall
 from typing import Any, Dict, List, Optional, Set, Union
 from uuid import UUID, uuid4
 
@@ -11,13 +12,19 @@ from assemblyline.common.attack_map import (
     group_map,
     revoke_map,
 )
+from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, URI_PATH
 
+# from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
     ResultSection,
     ProcessItem,
     ResultProcessTreeSection,
+    ResultTableSection,
+    TableRow
 )
+from assemblyline_v4_service.common.safelist_helper import URL_REGEX
+from assemblyline_v4_service.common.tag_helper import add_tag
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
 al_log.init_logging("service.service_base.dynamic_service_helper")
@@ -674,12 +681,12 @@ class NetworkConnection:
         :return: None
         """
         if not domain and self.destination_ip is None:
-            log.warning(
+            log.debug(
                 "Cannot set tag for network connection. Requires either domain or destination IP..."
             )
             return
         if self.destination_port is None:
-            log.warning(
+            log.debug(
                 "Cannot set tag for network connection. Requires destination port..."
             )
             return
@@ -1334,7 +1341,7 @@ class SandboxOntology:
             self.set_child_details(process)
             self.processes.append(process)
         else:
-            log.warning("Invalid process, ignoring...")
+            log.debug("Invalid process, ignoring...")
             return
 
     def update_process(self, **kwargs) -> None:
@@ -2377,6 +2384,81 @@ class SandboxOntology:
         return sorted_things
 
     @staticmethod
+    def _sort_things_by_relationship(
+            things_to_sort_by_relationship: List[Union[Process, NetworkConnection, Dict]]) -> List[
+            Union[Process, NetworkConnection, Dict]]:
+        """
+        This method sorts a list of things by their relationships
+        :param things_to_sort_by_relationship: A list of things to sort by their relationships to one another
+        :return: A list of things that have been sorted by their relationships
+        """
+        if not things_to_sort_by_relationship:
+            return []
+
+        recurse_again = False
+        # If every item is a dictionary, then use key lookups
+        if all(
+            isinstance(thing_to_sort, Dict)
+            for thing_to_sort in things_to_sort_by_relationship
+        ):
+            for index, thing in enumerate(things_to_sort_by_relationship[:]):
+                # Confirm if we are working with an process or a network
+                if "pobjectid" in thing:
+                    # This is a Process
+                    pobjectid = thing["pobjectid"]
+                elif "process" in thing and thing["process"]:
+                    # This is a NetworkConnection
+                    pobjectid = thing["process"]["objectid"]
+                else:
+                    pobjectid = None
+
+                if not pobjectid:
+                    continue
+                # We only want to sort if the thing has the same time observed as its parent
+                if thing["objectid"]["time_observed"] != pobjectid["time_observed"]:
+                    continue
+
+                # If the parent object exists in the rest of the list
+                for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
+                    if pobjectid["guid"] == parent["objectid"]["guid"] and pobjectid["time_observed"] == parent["objectid"]["time_observed"]:
+                        popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
+                        things_to_sort_by_relationship.insert(index, popped_item)
+                        recurse_again = True
+                        break
+                if recurse_again:
+                    break
+        else:
+            for index, thing in enumerate(things_to_sort_by_relationship[:]):
+                # Confirm if we are working with an process or a network
+                if hasattr(thing, "pobjectid"):
+                    # This is a Process
+                    pobjectid = thing.pobjectid
+                elif hasattr(thing, "process") and thing.process:
+                    # This is a NetworkConnection
+                    pobjectid = thing.process.objectid
+                else:
+                    pobjectid = None
+
+                if not pobjectid:
+                    continue
+                # We only want to sort if the thing has the same time observed as its parent
+                if thing.objectid.time_observed != thing.pobjectid.time_observed:
+                    continue
+                # If the parent object exists in the rest of the list
+                for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
+                    if thing.pobjectid.guid == parent.objectid.guid:
+                        popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
+                        things_to_sort_by_relationship.insert(index, popped_item)
+                        recurse_again = True
+                        break
+                if recurse_again:
+                    break
+
+        if recurse_again:
+            SandboxOntology ._sort_things_by_relationship(things_to_sort_by_relationship)
+        return things_to_sort_by_relationship
+
+    @staticmethod
     def _convert_events_to_dict(
         events: List[Union[Process, NetworkConnection]]
     ) -> Dict[str, Any]:
@@ -2412,9 +2494,19 @@ class SandboxOntology:
         sorted_events = SandboxOntology._sort_things_by_time_observed(
             list(events_dict.values())
         )
+        try:
+            # If events all have the same time observed, but there are child-parent relationships between events,
+            # we should order based on relationship
+            sorted_events_by_relationship_and_time = SandboxOntology._sort_things_by_relationship(
+                sorted_events
+            )
+        except RecursionError:
+            log.error("Unable to sort events by relationship due to recursion error.")
+            sorted_events_by_relationship_and_time = sorted_events
+
         events_seen = []
 
-        for e in sorted_events:
+        for e in sorted_events_by_relationship_and_time:
             if "children" not in e:
                 e["children"] = []
 
@@ -2788,6 +2880,62 @@ class SandboxOntology:
 
             for http in self.get_network_http():
                 self._set_item_times(http.connection_details.process)
+
+
+def extract_iocs_from_text_blob(
+        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None) -> None:
+    """
+    This method searches for domains, IPs and URIs used in blobs of text and tags them
+    :param blob: The blob of text that we will be searching through
+    :param result_section: The result section that that tags will be added to
+    :param so_sig: The signature for the Sandbox Ontology
+    :return: None
+    """
+    if not blob:
+        return
+    blob = blob.lower()
+    ips = set(findall(IP_REGEX, blob))
+    # There is overlap here between regular expressions, so we want to isolate domains that are not ips
+    domains = set(findall(DOMAIN_REGEX, blob)) - ips
+    # There is overlap here between regular expressions, so we want to isolate uris that are not domains
+    # TODO: Are we missing IOCs to the point where we need a different regex?
+    # uris = {uri.decode() for uri in set(findall(PatternMatch.PAT_URI_NO_PROTOCOL, blob.encode()))} - domains - ips
+    uris = set(findall(URL_REGEX, blob)) - domains - ips
+    for ip in ips:
+        if add_tag(result_section, "network.dynamic.ip", ip):
+            if not result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
+            elif dumps({"ioc_type": "ip", "ioc": ip}) not in result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
+            if so_sig:
+                so_sig.add_subject(ip=ip)
+    for domain in domains:
+        # File names match the domain and URI regexes, so we need to avoid tagging them
+        # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
+        if add_tag(result_section, "network.dynamic.domain", domain):
+            if not result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
+            elif dumps({"ioc_type": "domain", "ioc": domain}) not in result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
+            if so_sig:
+                so_sig.add_subject(domain=domain)
+
+    for uri in uris:
+        if add_tag(result_section, "network.dynamic.uri", uri):
+            if not result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
+            elif dumps({"ioc_type": "uri", "ioc": uri}) not in result_section.section_body.body:
+                result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
+            if so_sig:
+                so_sig.add_subject(uri=uri)
+        if "//" in uri:
+            uri = uri.split("//")[1]
+        for uri_path in findall(URI_PATH, uri):
+            if add_tag(result_section, "network.dynamic.uri_path", uri_path):
+                if not result_section.section_body.body:
+                    result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
+                elif dumps({"ioc_type": "uri_path", "ioc": uri_path}) not in result_section.section_body.body:
+                    result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
 
 
 # DEBUGGING METHOD

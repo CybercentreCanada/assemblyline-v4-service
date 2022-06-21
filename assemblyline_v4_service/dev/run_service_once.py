@@ -11,7 +11,7 @@ import cProfile
 from cart import unpack_stream
 from typing import Union, Dict
 
-from assemblyline.common import identify, forge
+from assemblyline.common import forge
 from assemblyline.common.heuristics import HeuristicHandler, InvalidHeuristicException
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.common.isotime import now_as_iso
@@ -28,6 +28,7 @@ class RunService:
         self.service_class = None
         self.submission_params = None
         self.file_dir = None
+        self.identify = forge.get_identify(use_cache=False)
 
     def try_run(self):
         try:
@@ -54,14 +55,14 @@ class RunService:
         self.service.start_service()
 
         # Identify the file
-        file_info = identify.fileinfo(FILE_PATH)
+        file_info = self.identify.fileinfo(FILE_PATH)
         if file_info['type'] == "archive/cart" or file_info['magic'] == "custom: archive/cart":
             # This is a CART file, uncart it and recreate the file info object
             original_temp = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             with open(FILE_PATH, 'rb') as ifile, open(original_temp, 'wb') as ofile:
                 unpack_stream(ifile, ofile)
 
-            file_info = identify.fileinfo(original_temp)
+            file_info = self.identify.fileinfo(original_temp)
             target_file = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             shutil.move(original_temp, target_file)
             LOG.info(f"File was a CaRT archive, it was un-CaRTed to {target_file} for processing")
@@ -179,6 +180,7 @@ class RunService:
 
     def stop(self):
         self.service.stop_service()
+        self.identify.stop()
 
     def load_service_manifest(self, return_heuristics=False) -> Union[None, Dict]:
         service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')

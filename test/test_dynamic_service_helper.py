@@ -76,10 +76,12 @@ def dummy_timestamp_class():
     class DummyEvent:
         class DummyObjectID:
             def __init__(self, item):
-                self.time_observed = item["time_observed"]
+                self.time_observed = item.get("time_observed")
+                self.guid = item.get("guid")
 
         def __init__(self, item):
-            self.objectid = self.DummyObjectID(item["objectid"])
+            self.objectid = self.DummyObjectID(item.get("objectid", {}))
+            self.pobjectid = self.DummyObjectID(item.get("pobjectid", {}))
 
     yield DummyEvent
 
@@ -3329,7 +3331,7 @@ class TestSandboxOntology:
                 [
                     {
                         "pid": 1,
-                        "ppid": 1,
+                        "ppid": 2,
                         "image": "blah",
                         "command_line": "blah",
                         "start_time": 1,
@@ -3346,15 +3348,15 @@ class TestSandboxOntology:
                             "tag": None,
                             "treeid": None,
                             "processtree": None,
-                            "time_observed": None,
+                            "time_observed": 1,
                         },
                     },
                     {
                         "pid": 2,
-                        "ppid": 1,
+                        "ppid": 3,
                         "image": "blah2",
                         "command_line": "blah2",
-                        "start_time": 2,
+                        "start_time": 1,
                         "end_time": float("inf"),
                         "objectid": {
                             "guid": "{12345678-1234-5678-1234-567812345679}",
@@ -3364,7 +3366,7 @@ class TestSandboxOntology:
                             "time_observed": 1,
                         },
                         "pobjectid": {
-                            "guid": "{12345678-1234-5678-1234-567812345678}",
+                            "guid": "{12345678-1234-5678-1234-567812345677}",
                             "tag": None,
                             "treeid": None,
                             "processtree": None,
@@ -3376,25 +3378,25 @@ class TestSandboxOntology:
                 [],
                 [
                     {
-                        "process_pid": 1,
-                        "process_name": "blah",
-                        "command_line": "blah",
+                        "process_pid": 2,
+                        "process_name": "blah2",
+                        "command_line": "blah2",
                         "signatures": {},
                         "children": [
                             {
-                                "process_pid": 2,
-                                "process_name": "blah2",
-                                "command_line": "blah2",
+                                "process_pid": 1,
+                                "process_name": "blah",
+                                "command_line": "blah",
                                 "signatures": {},
                                 "children": [],
                                 "file_count": 0,
-                                "network_count": 1,
+                                "network_count": 0,
                                 "registry_count": 0,
                                 "safelisted": False,
                             }
                         ],
                         "file_count": 0,
-                        "network_count": 0,
+                        "network_count": 1,
                         "registry_count": 0,
                         "safelisted": False,
                     }
@@ -5145,6 +5147,248 @@ class TestSandboxOntology:
 
     @staticmethod
     @pytest.mark.parametrize(
+        "things_to_sort, expected_result",
+        [
+            (None, []),
+            ([], []),
+            # One item
+            (
+                [{"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "b"}}],
+                [{"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "b"}}],
+            ),
+            # Two unrelated items, sorted by time
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 2, "guid": "b"}, "pobjectid": {"time_observed": 2, "guid": "d"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 2, "guid": "b"}, "pobjectid": {"time_observed": 2, "guid": "d"}},
+                ],
+            ),
+            # Two unrelated items, not sorted by time
+            (
+                [
+                    {"objectid": {"time_observed": 2, "guid": "b"}, "pobjectid": {"time_observed": 2, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 2, "guid": "b"}, "pobjectid": {"time_observed": 2, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                ],
+            ),
+            #  Two unrelated items, sharing the same times
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "a"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                ],
+            ),
+            # A parent-child relationship, sharing the same time, in the correct order
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+            ),
+            # A parent-child relationship, sharing the same time, in the incorrect order
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+            ),
+            # A parent-child relationship, sharing the same time, in the correct order, with a random item in-between
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "e"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "e"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+            ),
+            # A parent-child-child relationship, sharing the same time, in the incorrect order, with a random item in-between, parent at the bottom
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 2, "guid": "f"}, "pobjectid": {"time_observed": 2, "guid": "e"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 2, "guid": "f"}, "pobjectid": {"time_observed": 2, "guid": "e"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+            ),
+            # A parent-child-child relationship, sharing the same time, in the incorrect order, parent in the middle
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+            ),
+            # A grandparent-parent-child relationship, sharing the same time, in the incorrect order, in ascending order
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                ],
+            ),
+            # A grandparent-parent-child relationship, sharing the same time, in the incorrect order, in mismatched order
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                ],
+            ),
+            # A grandparent-parent-parent-child-child-child relationship, sharing the same time, in the incorrect order, in ascending order
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "g"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "f"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "e"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "g"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "f"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "e"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                ],
+            ),
+            # A grandparent-parent-parent-parent-child-child-child-random-random relationship, sharing the same time, in the incorrect order, in ascending order
+            (
+                [
+                    {"objectid": {"time_observed": 1, "guid": "z"}, "pobjectid": {"time_observed": 1, "guid": "y"}},
+                    {"objectid": {"time_observed": 1, "guid": "x"}, "pobjectid": {"time_observed": 1, "guid": "v"}},
+                    {"objectid": {"time_observed": 1, "guid": "g"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "f"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "e"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "h"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                ],
+                [
+                    {"objectid": {"time_observed": 1, "guid": "z"}, "pobjectid": {"time_observed": 1, "guid": "y"}},
+                    {"objectid": {"time_observed": 1, "guid": "x"}, "pobjectid": {"time_observed": 1, "guid": "v"}},
+                    {"objectid": {"time_observed": 1, "guid": "b"}, "pobjectid": {"time_observed": 1, "guid": "a"}},
+                    {"objectid": {"time_observed": 1, "guid": "d"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "g"}, "pobjectid": {"time_observed": 1, "guid": "d"}},
+                    {"objectid": {"time_observed": 1, "guid": "c"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                    {"objectid": {"time_observed": 1, "guid": "f"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "e"}, "pobjectid": {"time_observed": 1, "guid": "c"}},
+                    {"objectid": {"time_observed": 1, "guid": "h"}, "pobjectid": {"time_observed": 1, "guid": "b"}},
+                ],
+            ),
+            # A grandparent-parent-child+parent-child+random relationship, sharing different times time, in the incorrect order, in mismatched order
+            (
+                [
+                    {'objectid': {'guid': 'd', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'c', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'g', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'f', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'c', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'b', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'f', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'e', 'time_observed': None}},
+                    {'objectid': {'guid': 'b', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'a', 'time_observed': None}},
+                    {'objectid': {'guid': 'h', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'i', 'time_observed': None}}
+                ],
+                [
+                    {'objectid': {'guid': 'b', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'a', 'time_observed': None}},
+                    {'objectid': {'guid': 'c', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'b', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'd', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'c', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'f', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'e', 'time_observed': None}},
+                    {'objectid': {'guid': 'g', 'time_observed': float("-inf")},
+                     'pobjectid': {'guid': 'f', 'time_observed': float("-inf")}},
+                    {'objectid': {'guid': 'h', 'time_observed': float(
+                        "-inf")}, 'pobjectid': {'guid': 'i', 'time_observed': None}}
+                ],
+            )
+        ],
+    )
+    def test_sort_things_by_relationship(
+        things_to_sort, expected_result, dummy_timestamp_class
+    ):
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        dummy_things = []
+        dummy_results = []
+        if things_to_sort is None:
+            assert SandboxOntology._sort_things_by_relationship(dummy_things) == []
+            return
+
+        actual_result = SandboxOntology._sort_things_by_relationship(
+            things_to_sort
+        )
+        for index, item in enumerate(actual_result):
+            assert item == expected_result[index]
+
+        dummy_things = []
+        dummy_results = []
+        for thing in things_to_sort:
+            dummy_things.append(dummy_timestamp_class(thing))
+        for result in expected_result:
+            dummy_results.append(dummy_timestamp_class(result))
+        actual_result = SandboxOntology._sort_things_by_relationship(dummy_things)
+        for index, item in enumerate(actual_result):
+            assert (
+                item.__dict__["objectid"].__dict__
+                == dummy_results[index].__dict__["objectid"].__dict__
+            )
+
+    @staticmethod
+    @pytest.mark.parametrize(
         "events, expected_events_dict",
         [
             (
@@ -6312,7 +6556,7 @@ class TestSandboxOntology:
                         },
                     },
                     "b": {
-                        "process": {"objectid": {"guid": "a"}},
+                        "process": {"objectid": {"guid": "a", "time_observed": 1}, "pobject": {"guid": "c", "time_observed": 0}},
                         "source_ip": None,
                         "source_port": None,
                         "destination_ip": None,
@@ -6351,7 +6595,7 @@ class TestSandboxOntology:
                         },
                         "children": [
                             {
-                                "process": {"objectid": {"guid": "a"}},
+                                "process": {"objectid": {"guid": "a", "time_observed": 1}, "pobject": {"guid": "c", "time_observed": 0}},
                                 "source_ip": None,
                                 "source_port": None,
                                 "destination_ip": None,
@@ -6396,7 +6640,7 @@ class TestSandboxOntology:
                         },
                     },
                     "b": {
-                        "process": {"objectid": {"guid": "a"}},
+                        "process": {"objectid": {"guid": "a", "time_observed": 1}, "pobject": {"guid": "c", "time_observed": 0}},
                         "source_ip": None,
                         "source_port": None,
                         "destination_ip": None,
@@ -6412,7 +6656,7 @@ class TestSandboxOntology:
                         },
                     },
                     "c": {
-                        "process": {"objectid": {"guid": "a"}},
+                        "process": {"objectid": {"guid": "a", "time_observed": 1}, "pobject": {"guid": "c", "time_observed": 0}},
                         "source_ip": None,
                         "source_port": None,
                         "destination_ip": None,
@@ -6451,7 +6695,7 @@ class TestSandboxOntology:
                         },
                         "children": [
                             {
-                                "process": {"objectid": {"guid": "a"}},
+                                "process": {"objectid": {"guid": "a", "time_observed": 1}, "pobject": {"guid": "c", "time_observed": 0}},
                                 "source_ip": None,
                                 "source_port": None,
                                 "destination_ip": None,
@@ -6468,7 +6712,7 @@ class TestSandboxOntology:
                                 "children": [],
                             },
                             {
-                                "process": {"objectid": {"guid": "a"}},
+                                "process": {"objectid": {"guid": "a", "time_observed": 1}, "pobject": {"guid": "c", "time_observed": 0}},
                                 "source_ip": None,
                                 "source_port": None,
                                 "destination_ip": None,
@@ -7790,3 +8034,45 @@ class TestSandboxOntology:
         assert p.start_time == 1.0
         assert p.end_time == 2.0
         assert p.objectid.time_observed == 1.0
+
+
+@pytest.mark.parametrize(
+    "blob, correct_tags, expected_iocs",
+    [("", {}, [{}]),
+     ("192.168.100.1", {'network.dynamic.ip': ['192.168.100.1']}, [{"ip": "192.168.100.1"}]),
+     ("blah.ca", {'network.dynamic.domain': ['blah.ca']}, [{"domain": "blah.ca"}]),
+     ("https://blah.ca",
+        {'network.dynamic.domain': ['blah.ca'],
+         'network.dynamic.uri': ['https://blah.ca']}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca"}]),
+     ("https://blah.ca/blah",
+        {'network.dynamic.domain': ['blah.ca'],
+         'network.dynamic.uri': ['https://blah.ca/blah'],
+         "network.dynamic.uri_path": ["/blah"]}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca/blah"}]),
+     ("drive:\\\\path to\\\\microsoft office\\\\officeverion\\\\winword.exe", {}, [{}]),
+     (
+        "DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
+        {}, [{}]),
+        ("DRIVE:\\\\PATH TO\\\\PYTHON27.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.py",
+     {}, [{}]),
+        (
+        "POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\nContent-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
+        {"network.dynamic.domain": ["evil.ca"]}, [{"domain": "evil.ca"}]),
+        ("evil.ca/some/thing/bad.exe",
+         {"network.dynamic.domain": ["evil.ca"],
+          "network.dynamic.uri": ["evil.ca/some/thing/bad.exe"],
+          "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"}, {"uri": "evil.ca/some/thing/bad.exe"}]), ])
+def test_extract_iocs_from_text_blob(blob, correct_tags, expected_iocs):
+    from assemblyline_v4_service.common.dynamic_service_helper import extract_iocs_from_text_blob, SandboxOntology
+    from assemblyline_v4_service.common.result import ResultTableSection
+    test_result_section = ResultTableSection("blah")
+    so_sig = SandboxOntology.Signature()
+    default_iocs = []
+    extract_iocs_from_text_blob(blob, test_result_section, so_sig=so_sig)
+    assert test_result_section.tags == correct_tags
+    if correct_tags:
+        for expected_ioc in expected_iocs:
+            default_ioc = SandboxOntology.Signature.Subject().as_primitives()
+            for key, value in expected_ioc.items():
+                default_ioc[key] = value
+            default_iocs.append(default_ioc)
+        assert so_sig.as_primitives()["subjects"] == default_iocs
