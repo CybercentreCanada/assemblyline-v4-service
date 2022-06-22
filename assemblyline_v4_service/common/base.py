@@ -15,17 +15,14 @@ import warnings
 from typing import Dict, Optional
 from pathlib import Path
 
-from assemblyline.common import exceptions, log, version, forge
-from assemblyline.common.dict_utils import flatten, unflatten
+from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline.odm.models.ontology import ResultOntology
-from assemblyline.odm.models.tagging import Tagging
-from assemblyline.odm.base import Model, construct_safe
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
+from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 
 # Ignore all other warnings that a service's libraries can generate
 warnings.filterwarnings("ignore")
@@ -75,7 +72,7 @@ class ServiceBase:
         self._api_interface = None
 
         self.dependencies = self._get_dependencies_info()
-        self.ontologies: Dict = None
+        self.ontology = OntologyHelper(self.log, self.service_attributes.name)
 
         # Updater-related
         self.rules_directory: str = None
@@ -165,10 +162,10 @@ class ServiceBase:
             self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
-            self.ontologies = defaultdict(list)
+            self.ontology.reset()
             request = ServiceRequest(self._task)
             self.execute(request)
-            self._attach_service_meta_ontology(request)
+            self.ontology._attach_ontology(request, self.working_directory)
             self._success()
         except RuntimeError as re:
             if is_recoverable_runtime_error(re):
@@ -231,118 +228,7 @@ class ServiceBase:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
 
-    def attach_ontological_result(self, modelType: Model, data: Dict, validate_model=True) -> None:
-        if not data:
-            self.log.warning('No ontological data provided. Ignoring...')
-            return
-
-        # Service version will enforce validation when running in production
-        if 'dev' not in self.service_attributes.version:
-            validate_model = True
-
-        # Append ontologies to collection to get appended after execution
-        try:
-            self.ontologies[modelType.__name__].append(
-                modelType(data=data, ignore_extra_values=validate_model).as_primitives(strip_null=True)
-            )
-        except Exception as e:
-            self.log.error(f'Problem applying data to given model: {e}')
-
-    def _attach_service_meta_ontology(self, request: ServiceRequest) -> None:
-
-        heuristics = helper.get_heuristics()
-
-        def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
-            for section in sections:
-                # Determine max classification of the overall result
-                current_max = forge.get_classification().max_classification(section.classification, current_max)
-
-                # Cleanup invalid tagging from service results
-                def validate_tags(tag_map):
-                    tag_map, _ = construct_safe(Tagging, unflatten(tag_map))
-                    tag_map = flatten(tag_map.as_primitives(strip_null=True))
-                    return tag_map
-
-                # Merge tags
-                def merge_tags(tag_a, tag_b):
-                    if not tag_a:
-                        return tag_b
-
-                    elif not tag_b:
-                        return tag_a
-
-                    all_keys = list(tag_a.keys()) + list(tag_b.keys())
-                    return {key: list(set(tag_a.get(key, []) + tag_b.get(key, []))) for key in all_keys}
-
-                # Append tags raised by the service, if any
-                section_tags = validate_tags(section.tags)
-                if section_tags:
-                    tag_map.update(section_tags)
-
-                # Append tags associated to heuristics raised by the service, if any
-                if section.heuristic:
-                    heur = heuristics[section.heuristic.heur_id]
-                    key = f'{self.name.upper()}_{heur.heur_id}'
-                    update_value = {"name": heur.name, "tags": {}}
-                    if section_tags:
-                        update_value = \
-                            {
-                                "name": heur.name,
-                                "tags": merge_tags(heur_tag_map[key]["tags"], section_tags)
-                            }
-                    heur_tag_map[key].update(update_value)
-
-                # Recurse through subsections
-                if section.subsections:
-                    current_max, heur_tag_map, tag_map = preprocess_result_for_dump(
-                        section.subsections, current_max, heur_tag_map, tag_map)
-
-            return current_max, heur_tag_map, tag_map
-
-        if not request.result or not request.result.sections:
-            # No service results, therefore no ontological output
-            return
-
-        max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
-            request.result.sections, request.task.service_default_result_classification,
-            defaultdict(lambda: {"tags": dict()}),
-            defaultdict(list))
-
-        if not tag_map and not self.ontologies:
-            # No tagging or ontologies found, therefore informational results
-            return
-
-        ontology = {
-            'header': {
-                'md5': request.md5,
-                'sha1': request.sha1,
-                'sha256': request.sha256,
-                'type': request.file_type,
-                'size': request.file_size,
-                'classification': max_result_classification,
-                'service_name': request.task.service_name,
-                'service_version': request.task.service_version,
-                'service_tool_version': request.task.service_tool_version,
-                'tags': tag_map,
-                'heuristics': heur_tag_map
-            }
-        }
-        # Include Ontological data
-        ontology.update({type.lower(): data for type, data in self.ontologies.items()})
-
-        ontology_suffix = f"{request.sha256}.ontology"
-        ontology_path = os.path.join(self.working_directory, ontology_suffix)
-        try:
-            open(ontology_path, 'w').write(json.dumps(ResultOntology(ontology).as_primitives(strip_null=True)))
-            attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
-            request.add_supplementary(path=ontology_path, name=attachment_name,
-                                    description=f"Result Ontology from {request.task.service_name}",
-                                    classification=max_result_classification)
-        except ValueError as e:
-            self.log.error(f"Problem with generating ontology: {e}")
-
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
-
     def _download_rules(self):
         url_base = f"http://{self.dependencies['updates']['host']}:{self.dependencies['updates']['port']}/"
         headers = {
