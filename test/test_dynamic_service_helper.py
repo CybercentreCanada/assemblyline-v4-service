@@ -1833,8 +1833,8 @@ class TestSandboxOntology:
         )
         assert default_so.processes[0].image == "C:\\Windows\\System32\\cmd.exe"
         assert default_so.processes[0].objectid.tag == "?sys32\\cmd.exe"
-        assert default_so.processes[0].pimage is None
-        assert default_so.processes[0].pobjectid.tag is None
+        assert default_so.processes[0].pimage == "C:\\Windows\\System32\\cmd.exe"
+        assert default_so.processes[0].pobjectid.tag == '?sys32\\cmd.exe'
 
         parent = default_so.create_process(
             guid="{12345678-1234-5678-1234-567812345679}", image="C:\\Windows\\System32\\cmd.exe")

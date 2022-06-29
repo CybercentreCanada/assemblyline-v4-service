@@ -1374,11 +1374,6 @@ class SandboxOntology:
         parent_kwargs = {
             key[1:]: value for key, value in kwargs.items() if key in parent_keys
         }
-        kwargs = {
-            key: value
-            for key, value in kwargs.items()
-            if key not in parent_keys
-        }
 
         if "guid" in kwargs:
             process_to_update = self.get_process_by_guid(kwargs["guid"])
