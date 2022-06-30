@@ -2091,11 +2091,13 @@ class SandboxOntology:
         artifact_list: List[Dict[str, Any]],
         request: ServiceRequest,
         collapsed: bool = False,
+        injection_heur_id: int = 17,
     ) -> ResultSection:
         """
         Goes through each artifact in artifact_list, uploading them and adding result sections accordingly
         :param artifact_list: List of dictionaries that each represent an artifact
         :param collapsed: A flag used for indicating if the Sandbox Artifacts ResultSection should be collapsed or not
+        :param injection_heur_id: The heuristic ID for the Injection heuristic of a service
         :return: A ResultSection containing any Artifact ResultSections
         """
 
@@ -2106,7 +2108,7 @@ class SandboxOntology:
         )
 
         for artifact in validated_artifacts:
-            SandboxOntology._handle_artifact(artifact, artifacts_result_section)
+            SandboxOntology._handle_artifact(artifact, artifacts_result_section, injection_heur_id)
 
             if artifact.to_be_extracted:
                 try:
@@ -2709,13 +2711,14 @@ class SandboxOntology:
 
     @staticmethod
     def _handle_artifact(
-        artifact: Artifact = None, artifacts_result_section: ResultSection = None
+        artifact: Artifact = None, artifacts_result_section: ResultSection = None, injection_heur_id: int = 17
     ) -> None:
         """
         This method handles a single artifact and creates a ResultSection for the artifact, if appropriate
         :param artifact: An artifact object
         :param artifacts_result_section: A master ResultSection that will contain the ResultSection created for the
         given artifact
+        :param injection_heur_id: The heuristic ID for the Injection heuristic of a service
         :return: None
         """
         if artifact is None:
@@ -2738,7 +2741,7 @@ class SandboxOntology:
 
                 if artifact_result_section is None:
                     artifact_result_section = ResultSection(HOLLOWSHUNTER_TITLE)
-                    artifact_result_section.set_heuristic(17)
+                    artifact_result_section.set_heuristic(injection_heur_id)
                     artifact_result_section.add_line(
                         "HollowsHunter dumped the following:"
                     )
