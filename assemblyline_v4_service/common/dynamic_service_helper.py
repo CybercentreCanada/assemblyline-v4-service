@@ -52,6 +52,10 @@ HOLLOWSHUNTER_DLL_REGEX = r"[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[0-9a-
 
 HOLLOWSHUNTER_TITLE = "HollowsHunter Injected Portable Executable"
 
+MIN_DOMAIN_CHARS = 8
+MIN_URI_CHARS = 11
+MIN_URI_PATH_CHARS = 4
+
 
 def update_object_items(self, update_items: Dict[str, Any]) -> None:
     """
@@ -2881,12 +2885,13 @@ class SandboxOntology:
 
 
 def extract_iocs_from_text_blob(
-        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None) -> None:
+        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None, enforce_char_min: bool = False) -> None:
     """
     This method searches for domains, IPs and URIs used in blobs of text and tags them
     :param blob: The blob of text that we will be searching through
     :param result_section: The result section that that tags will be added to
     :param so_sig: The signature for the Sandbox Ontology
+    :param enforce_char_min: Enforce the minimum amount of characters that an ioc can have
     :return: None
     """
     if not blob:
@@ -2908,6 +2913,8 @@ def extract_iocs_from_text_blob(
             if so_sig:
                 so_sig.add_subject(ip=ip)
     for domain in domains:
+        if enforce_char_min and len(domain) < MIN_DOMAIN_CHARS:
+            continue
         # File names match the domain and URI regexes, so we need to avoid tagging them
         # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
         if add_tag(result_section, "network.dynamic.domain", domain):
@@ -2919,6 +2926,8 @@ def extract_iocs_from_text_blob(
                 so_sig.add_subject(domain=domain)
 
     for uri in uris:
+        if enforce_char_min and len(uri) < MIN_URI_CHARS:
+            continue
         if add_tag(result_section, "network.dynamic.uri", uri):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
@@ -2929,6 +2938,8 @@ def extract_iocs_from_text_blob(
         if "//" in uri:
             uri = uri.split("//")[1]
         for uri_path in findall(URI_PATH, uri):
+            if enforce_char_min and len(uri_path) < MIN_URI_PATH_CHARS:
+                continue
             if add_tag(result_section, "network.dynamic.uri_path", uri_path):
                 if not result_section.section_body.body:
                     result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
