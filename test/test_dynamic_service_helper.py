@@ -8037,37 +8037,36 @@ class TestSandboxOntology:
 
 
 @pytest.mark.parametrize(
-    "blob, correct_tags, expected_iocs",
-    [("", {}, [{}]),
-     ("192.168.100.1", {'network.dynamic.ip': ['192.168.100.1']}, [{"ip": "192.168.100.1"}]),
-     ("blah.ca", {'network.dynamic.domain': ['blah.ca']}, [{"domain": "blah.ca"}]),
-     ("https://blah.ca",
+    "blob, enforce_min, correct_tags, expected_iocs",
+    [("", False, {}, [{}]),
+     ("192.168.100.1", False, {'network.dynamic.ip': ['192.168.100.1']}, [{"ip": "192.168.100.1"}]),
+     ("blah.ca", False, {'network.dynamic.domain': ['blah.ca']}, [{"domain": "blah.ca"}]),
+     ("https://blah.ca", False,
         {'network.dynamic.domain': ['blah.ca'],
          'network.dynamic.uri': ['https://blah.ca']}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca"}]),
-     ("https://blah.ca/blah",
+     ("https://blah.ca/blah", False,
         {'network.dynamic.domain': ['blah.ca'],
          'network.dynamic.uri': ['https://blah.ca/blah'],
          "network.dynamic.uri_path": ["/blah"]}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca/blah"}]),
-     ("drive:\\\\path to\\\\microsoft office\\\\officeverion\\\\winword.exe", {}, [{}]),
-     (
-        "DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
-        {}, [{}]),
-        ("DRIVE:\\\\PATH TO\\\\PYTHON27.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.py",
-     {}, [{}]),
-        (
-        "POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\nContent-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
-        {"network.dynamic.domain": ["evil.ca"]}, [{"domain": "evil.ca"}]),
-        ("evil.ca/some/thing/bad.exe",
-         {"network.dynamic.domain": ["evil.ca"],
+     ("drive:\\\\path to\\\\microsoft office\\\\officeverion\\\\winword.exe", False, {}, [{}]),
+     ("DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
+        False, {}, [{}]),
+     ("DRIVE:\\\\PATH TO\\\\PYTHON27.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.py",
+        False, {}, [{}]),
+     ("POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\nContent-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
+        False, {"network.dynamic.domain": ["evil.ca"]}, [{"domain": "evil.ca"}]),
+     ("evil.ca/some/thing/bad.exe",
+        False, {"network.dynamic.domain": ["evil.ca"],
           "network.dynamic.uri": ["evil.ca/some/thing/bad.exe"],
-          "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"}, {"uri": "evil.ca/some/thing/bad.exe"}]), ])
-def test_extract_iocs_from_text_blob(blob, correct_tags, expected_iocs):
+          "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"}, {"uri": "evil.ca/some/thing/bad.exe"}]),
+     ("POST abc.de#fgh", True, {}, [{}]), ])
+def test_extract_iocs_from_text_blob(blob, enforce_min, correct_tags, expected_iocs):
     from assemblyline_v4_service.common.dynamic_service_helper import extract_iocs_from_text_blob, SandboxOntology
     from assemblyline_v4_service.common.result import ResultTableSection
     test_result_section = ResultTableSection("blah")
     so_sig = SandboxOntology.Signature()
     default_iocs = []
-    extract_iocs_from_text_blob(blob, test_result_section, so_sig=so_sig)
+    extract_iocs_from_text_blob(blob, test_result_section, so_sig=so_sig, enforce_char_min=enforce_min)
     assert test_result_section.tags == correct_tags
     if correct_tags:
         for expected_ioc in expected_iocs:
