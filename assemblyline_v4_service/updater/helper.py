@@ -84,29 +84,34 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
         os.environ['https_proxy'] = proxy
 
     try:
-        if isinstance(previous_update, str):
-            previous_update = iso_to_epoch(previous_update)
+        response = None
+        with tempfile.NamedTemporaryFile('w') as private_key_file:
+            if source.get('private_key'):
+                logger.info('A private key has been provided with this source')
+                private_key_file.write(source['private_key'])
+                private_key_file.seek(0)
+                session.cert = private_key_file.name
 
-        # Check the response header for the last modified date
-        response = session.head(uri, auth=auth, headers=headers)
-        last_modified = response.headers.get('Last-Modified', None)
-        if last_modified:
-            # Convert the last modified time to epoch
-            last_modified = time.mktime(time.strptime(last_modified, "%a, %d %b %Y %H:%M:%S %Z"))
+            # Check the response header for the last modified date
+            response = session.head(uri, auth=auth, headers=headers)
+            last_modified = response.headers.get('Last-Modified', None)
+            if last_modified:
+                # Convert the last modified time to epoch
+                last_modified = time.mktime(time.strptime(last_modified, "%a, %d %b %Y %H:%M:%S %Z"))
 
-            # Compare the last modified time with the last updated time
-            if previous_update and last_modified <= previous_update and not FORCE_UPDATE:
-                # File has not been modified since last update, do nothing
-                raise SkipSource()
+                # Compare the last modified time with the last updated time
+                if previous_update and last_modified <= previous_update and not FORCE_UPDATE:
+                    # File has not been modified since last update, do nothing
+                    raise SkipSource()
 
-        if previous_update:
-            previous_update = time.strftime("%a, %d %b %Y %H:%M:%S %Z", time.gmtime(previous_update))
-            if headers:
-                headers['If-Modified-Since'] = previous_update
-            else:
-                headers = {'If-Modified-Since': previous_update}
+            if previous_update:
+                previous_update = time.strftime("%a, %d %b %Y %H:%M:%S %Z", time.gmtime(previous_update))
+                if headers:
+                    headers['If-Modified-Since'] = previous_update
+                else:
+                    headers = {'If-Modified-Since': previous_update}
 
-        response = session.get(uri, auth=auth, headers=headers)
+            response = session.get(uri, auth=auth, headers=headers)
 
         # Check the response code
         if response.status_code == requests.codes['not_modified'] and not FORCE_UPDATE:
