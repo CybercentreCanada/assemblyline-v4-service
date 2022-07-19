@@ -131,7 +131,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             if proxy:
                 del os.environ['https_proxy']
 
-            if file_name.endswith('tar.gz') or file_name.endswith('zip'):
+            if response.headers.get('Content-Type', None) in ['application/zip', 'application/x-gzip']:
                 extract_dir = os.path.join(output_dir, name)
                 shutil.unpack_archive(file_path, extract_dir=extract_dir)
 
