@@ -1,6 +1,7 @@
 from assemblyline.common import forge
 from assemblyline.common.dict_utils import flatten, unflatten, get_dict_fingerprint_hash
 from assemblyline.odm.base import Model, construct_safe
+from assemblyline.odm.models.ontology import ODM_VERSION
 from assemblyline.odm.models.ontology.results import NetworkConnection
 from assemblyline.odm.models.ontology.filetypes import PE
 from assemblyline.odm.models.tagging import Tagging
@@ -142,6 +143,8 @@ class OntologyHelper:
             return
 
         ontology = {
+            'odm_type': 'Assemblyline Result Ontology',
+            'odm_version': ODM_VERSION,
             "classification": max_result_classification,
             "file": {
                 'md5': request.md5,
