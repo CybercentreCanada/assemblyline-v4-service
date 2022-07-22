@@ -42,8 +42,9 @@ def v3(doc: dict):
                   parent=main_section, classification=Classification.UNRESTRICTED)
 
     # TODO:Have analysis for IP/Domains
-    main_section.set_heuristic(2)
-    [main_section.heuristic.add_signature_id(sig) for sig in sig_list]
+    if sig_list:
+        main_section.set_heuristic(2)
+        [main_section.heuristic.add_signature_id(sig) for sig in sig_list]
 
     # Tags
     main_section.add_tag(f"network.static.{doc['type'].split('_')[0].lower()}", term)

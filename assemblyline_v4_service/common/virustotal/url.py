@@ -59,8 +59,9 @@ def v3(doc: dict):
                       classification=Classification.RESTRICTED, parent=main_section)
 
     # TODO: Evaluate if URL is malicious before adding heuristic
-    main_section.set_heuristic(2)
-    [main_section.heuristic.add_signature_id(sig) for sig in sig_list]
+    if sig_list:
+        main_section.set_heuristic(2)
+        [main_section.heuristic.add_signature_id(sig) for sig in sig_list]
 
     # Tags
     main_section.add_tag('network.static.uri', attributes['url'])
