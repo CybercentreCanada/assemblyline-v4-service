@@ -1,6 +1,4 @@
-
 import json
-import time
 
 from assemblyline.common import forge
 from assemblyline.odm.models.ontology.results import Antivirus
