@@ -17,11 +17,13 @@ def format_time_from_epoch(t):
 class AVResultsProcessor():
 
     def __init__(self, term_blocklist: List[str], revised_sig_score_map: Dict[str, int],
-                 revised_kw_score_map: Dict[str, int], sig_safelist: List[str] = []):
+                 revised_kw_score_map: Dict[str, int], sig_safelist: List[str] = [],
+                 specified_AVs: List[str] = []):
         self.term_blocklist = term_blocklist
         self.revised_sig_score_map = revised_sig_score_map
         self.revised_kw_score_map = revised_kw_score_map
         [self.revised_kw_score_map.update({sig: 0}) for sig in sig_safelist]
+        self.specified_AVs = specified_AVs
 
     # Create a results section based on AV reports
     def get_av_results(self, av_report: Dict[str, Any]):
@@ -31,11 +33,20 @@ class AVResultsProcessor():
         for av, details in sorted(av_report.items()):
             result = details['result']
             sig = f"{av}.{result}"
-            if result and not any(term in sig for term in self.term_blocklist):
+            if result:
+                if any(term in sig for term in self.term_blocklist):
+                    # Term found in signature combination that we wish to block
+                    continue
+
+                if self.specified_AVs and av not in self.specified_AVs:
+                    # We only want results from specific AVs
+                    continue
+
                 av_sub = ResultSection(f"{av} identified file as {result}",
                                        body=json.dumps(details),
                                        body_format=BODY_FORMAT.KEY_VALUE,
                                        parent=av_section, classification=Classification.UNRESTRICTED)
+
                 heur = Heuristic(1)
                 if sig in self.revised_sig_score_map:
                     heur.add_signature_id(sig, self.revised_sig_score_map[sig])
