@@ -13,11 +13,13 @@ from shutil import make_archive
 
 from assemblyline.common.isotime import iso_to_epoch
 from assemblyline.common.digests import get_sha256_for_file
-from assemblyline.common.identify import zip_ident
+from assemblyline.common.identify import Identify
 
 
 BLOCK_SIZE = 64 * 1024
 FORCE_UPDATE = os.environ.get('FORCE_SIGNATURE_UPDATE', 'false').lower() == 'true'
+
+identify = Identify()
 
 
 class SkipSource(RuntimeError):
@@ -132,7 +134,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             if proxy:
                 del os.environ['https_proxy']
 
-            if zip_ident(file_path, 'unknown') == 'archive/zip':
+            if identify.fileinfo(file_path)['type'].startswith('archive'):
                 extract_dir = os.path.join(output_dir, name)
                 shutil.unpack_archive(file_path, extract_dir=extract_dir)
 
