@@ -138,9 +138,14 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             if proxy:
                 del os.environ['https_proxy']
 
-            if identify.fileinfo(file_path)['type'].startswith('archive'):
+            ident_type = identify.fileinfo(file_path)['type']
+            if ident_type.startswith('archive'):
                 extract_dir = os.path.join(output_dir, name)
-                shutil.unpack_archive(file_path, extract_dir=extract_dir)
+                format = ident_type.split('archive/')[-1]
+
+                # Make sure identified format is supported by the library
+                format = format if format in ["zip", "tar"] else None
+                shutil.unpack_archive(file_path, extract_dir=extract_dir, format=format)
 
                 return filter_downloads(extract_dir, pattern)
             else:
