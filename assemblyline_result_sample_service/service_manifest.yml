@@ -104,6 +104,11 @@ heuristics:
     heur_id: 6
     name: Suspicious OCR Strings
     score: 100
+  - description: Safe file detected
+    filetype: "*"
+    heur_id: 7
+    name: Safe file detected
+    score: -1000
 
 # Docker configuration block which defines:
 #  - the name of the docker container that will be created
