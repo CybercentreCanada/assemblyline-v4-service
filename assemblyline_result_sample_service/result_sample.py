@@ -431,6 +431,15 @@ class ResultSample(ServiceBase):
             request.result = Result()
 
         # ==================================================================
+        # Empty results file
+        elif request.sha256 == '5ce5ae8ef56a54af2c44415800a81ecffd49a33ae8895dfe38fc1075d3f619ec':
+            # Creating safe results
+            result = Result()
+            safe_section = ResultTextSection('This file is definitely safe', heuristic=Heuristic(7))
+            result.add_section(safe_section)
+            request.result = result
+
+        # ==================================================================
         # Randomized results file
         else:
             # For the randomized  results file, we will completely randomize the results
