@@ -457,6 +457,11 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.log.info(f"Remove old time keeper file: {new_time}")
                 os.unlink(new_time)
 
+            # Cleanup old timekeepers/tars from unexpected termination(s) on persistent storage
+            [os.unlink(os.path.join(UPDATER_DIR, file)) for file in os.listdir(UPDATER_DIR) if not self._update_tar.endswith(file) and file.startswith('signatures_')]
+            [os.unlink(os.path.join(UPDATER_DIR, file)) for file in os.listdir(UPDATER_DIR) if not self._time_keeper.endswith(file) and file.startswith('time_keeper_')]
+
+
     def _run_local_updates(self):
         # Wait until basic data is loaded
         while self._service is None and self.sleep(1):
