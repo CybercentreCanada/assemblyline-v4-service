@@ -287,7 +287,8 @@ class ServiceUpdater(ThreadedCoreBase):
 
                         self.log.debug(f"Downloading update to {temp_zip_file}")
                         if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
-                            self.log.debug(f"File type ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file, 'unknown')}")
+                            self.log.debug(
+                                f"File type ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file, 'unknown')}")
                             try:
                                 with ZipFile(temp_zip_file, 'r') as zip_f:
                                     zip_f.extractall(output_directory)
@@ -456,6 +457,11 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.log.info(f"Remove old time keeper file: {new_time}")
                 os.unlink(new_time)
 
+            # Cleanup old timekeepers/tars from unexpected termination(s) on persistent storage
+            [os.unlink(os.path.join(UPDATER_DIR, file)) for file in os.listdir(UPDATER_DIR) if not self._update_tar.endswith(file) and file.startswith('signatures_')]
+            [os.unlink(os.path.join(UPDATER_DIR, file)) for file in os.listdir(UPDATER_DIR) if not self._time_keeper.endswith(file) and file.startswith('time_keeper_')]
+
+
     def _run_local_updates(self):
         # Wait until basic data is loaded
         while self._service is None and self.sleep(1):
@@ -503,7 +509,7 @@ class ServiceUpdater(ThreadedCoreBase):
             "name": "Update Account",
             "password": get_password_hash(''.join(random.choices(string.ascii_letters, k=20))),
             "uname": uname,
-            "type": ["signature_importer"]
+            "type": ["signature_importer", "user"]
         })
         self.datastore.user.save(uname, user_data)
         self.datastore.user_settings.save(uname, UserSettings())

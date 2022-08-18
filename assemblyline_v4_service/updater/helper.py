@@ -40,13 +40,17 @@ def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tu
         pattern = default_pattern
     for path_in_dir, subdirs, files in os.walk(update_directory):
         for filename in files:
-            filepath = os.path.join(update_directory, path_in_dir, filename)
+            filepath = os.path.join(path_in_dir, filename)
             if re.match(pattern, filepath) or re.match(pattern, filename):
                 f_files.append((filepath, get_sha256_for_file(filepath)))
         for subdir in subdirs:
-            dirpath = f'{os.path.join(update_directory, path_in_dir, subdir)}/'
+            dirpath = f'{os.path.join(path_in_dir, subdir)}/'
             if re.match(pattern, dirpath):
                 f_files.append((dirpath, get_sha256_for_file(make_archive(subdir, 'tar', root_dir=dirpath))))
+
+    if re.match(pattern, f"{update_directory}/"):
+        f_files.append((f"{update_directory}/", get_sha256_for_file(make_archive(
+            os.path.basename(update_directory), 'tar', root_dir=update_directory))))
 
     return f_files
 
