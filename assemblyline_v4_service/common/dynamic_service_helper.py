@@ -1,8 +1,9 @@
+from datetime import datetime
 from hashlib import sha256
 from json import dumps
 from logging import getLogger
 from re import compile, escape, sub, findall
-from typing import Any, Dict, List, Optional, Set, Union
+from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
 from assemblyline.common import log as al_log
@@ -12,16 +13,31 @@ from assemblyline.common.attack_map import (
     group_map,
     revoke_map,
 )
+from assemblyline.common.isotime import (
+    epoch_to_local,
+    LOCAL_FMT,
+    local_to_epoch,
+    MAX_TIME,
+    MIN_TIME,
+    format_time,
+)
+from assemblyline.common.uid import get_random_id
 from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, URI_PATH
+from assemblyline.odm.models.ontology.results import (
+    Process as ProcessModel, Sandbox as SandboxModel,
+    Signature as SignatureModel,
+    NetworkConnection as NetworkConnectionModel
+)
 
 # from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
+from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
     ResultSection,
     ProcessItem,
     ResultProcessTreeSection,
     ResultTableSection,
-    TableRow
+    TableRow,
 )
 from assemblyline_v4_service.common.safelist_helper import URL_REGEX
 from assemblyline_v4_service.common.tag_helper import add_tag
@@ -60,9 +76,70 @@ MIN_URI_PATH_CHARS = 4
 # and have the potential to exceed depths of 1000. Also, the assumption with 10 is that no process
 # tree would be that complex and useful at the same time.
 PROCESS_TREE_DEPTH_LIMIT = 10
+OBJECTID_KEYS = [
+    "tag",
+    "ontology_id",
+    "service_name",
+    "guid",
+    "treeid",
+    "processtree",
+    "time_observed",
+    "session",
+]
+POBJECTID_KEYS = [
+    "ptag",
+    "pontology_id",
+    "pservice_name",
+    "pguid",
+    "ptreeid",
+    "pprocesstree",
+    "ptime_observed",
+    "psession",
+    "ontology_id",
+    "service_name",
+]
+
+MAX_TIME = format_time(MAX_TIME, LOCAL_FMT)
+MIN_TIME = format_time(MIN_TIME, LOCAL_FMT)
+
+SERVICE_NAME = None
 
 
-def update_object_items(self, update_items: Dict[str, Any]) -> None:
+def set_required_argument(self: object, name: str, value: Any, value_type: Any) -> None:
+    """
+    This method performs validation of a value that is to be set to an object attribute
+    :param self: The object whose attribute will be set
+    :param name: The name of the attribute
+    :param value: The value to be set
+    :param value_type: The type that the value should be
+    :return: None
+    """
+    if not value:
+        raise ValueError(f"{name} must have a legitimate value")
+    elif not isinstance(value, value_type):
+        raise TypeError(f"{name} must be a {value_type}")
+    else:
+        setattr(self, name, value)
+
+
+def set_optional_argument(self, name: str, value: Any, value_type: Any) -> None:
+    """
+    This method performs validation of an optional value that is to be set to an object attribute
+    :param self: The object whose attribute will be set
+    :param name: The name of the attribute
+    :param value: The value to be set
+    :param value_type: The type that the value should be
+    :return: None
+    """
+    if value is not None and not value:
+        raise ValueError(f"{name} must have a legitimate value")
+    elif value and not isinstance(value, value_type):
+        raise TypeError(f"{name} must be a {value_type}")
+    else:
+        setattr(self, name, value)
+
+
+def update_object_items(self: object, update_items: Dict[str, Any]) -> None:
     """
     This method updates the attributes of an object
     :param update_items: A dictionary where the keys are the object attributes to be updated
@@ -73,7 +150,15 @@ def update_object_items(self, update_items: Dict[str, Any]) -> None:
     for key, value in update_items.items():
         if value is None or value == "":
             continue
-        if hasattr(self, key) and getattr(self, key) not in ["", None, [], {}, (), float("inf"), float("-inf")]:
+        if hasattr(self, key) and getattr(self, key) not in [
+            "",
+            None,
+            [],
+            {},
+            (),
+            MAX_TIME,
+            MIN_TIME,
+        ]:
             # DO NOT OVERWRITE DATA (UNLESS ITS EMPTY)
             pass
         elif hasattr(self, key):
@@ -122,26 +207,45 @@ class Artifact:
 class ObjectID:
     def __init__(
         self,
-        guid: str = None,
-        tag: str = None,
-        treeid: str = None,
-        processtree: str = None,
-        time_observed: float = None,
+        tag: str,
+        ontology_id: str,
+        service_name: Optional[str] = None,
+        guid: Optional[str] = None,
+        treeid: Optional[str] = None,
+        processtree: Optional[str] = None,
+        time_observed: Optional[str] = None,
+        session: Optional[str] = None,
     ) -> None:
         """
         This method initializes the characteristics used to identify an object
-        :param guid: The GUID associated with the process
-        :param tag: The tag of the object
+        :param tag: The normalized tag of the object
+        :param ontology_id: Unique identifier of ontology
+        :param service_name: Component that generated this section
+        :param guid: The GUID associated with the object
         :param treeid: The hash of the tree ID
-        :param processtree: Human readable tree ID (concatenation of tags)
-        :param time_observed: An EPOCH time representing when the object was first observed
+        :param processtree: Human-readable tree ID (concatenation of tags)
+        :param time_observed: The time at which the object was observed
+        :param session: Unifying session name/ID
         :return: None
         """
-        self.guid: str = f"{{{str(UUID(guid)).upper()}}}" if guid else None
-        self.tag: str = tag
-        self.treeid: str = treeid
-        self.processtree: str = processtree
-        self.time_observed: float = time_observed
+        set_required_argument(self, "tag", tag, str)
+        set_required_argument(self, "ontology_id", ontology_id, str)
+
+        set_optional_argument(self, "service_name", service_name, str)
+        if not self.service_name and SERVICE_NAME is None:
+            raise ValueError("The service_name must be set")
+        elif not self.service_name and SERVICE_NAME:
+            self.service_name = SERVICE_NAME
+
+        set_optional_argument(self, "guid", guid, str)
+        if self.guid:
+            # Enforce this format for all given guids
+            self.guid = f"{{{str(UUID(guid)).upper()}}}"
+
+        set_optional_argument(self, "treeid", treeid, str)
+        set_optional_argument(self, "processtree", processtree, str)
+        set_optional_argument(self, "time_observed", time_observed, str)
+        set_optional_argument(self, "session", session, str)
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -167,115 +271,90 @@ class ObjectID:
             return
         self.tag = tag
 
-    def set_time_observed(self, time_observed: Union[float, int]) -> None:
+    def set_time_observed(self, time_observed: str) -> None:
         """
         This method updates the time_observed for the ObjectID
         :param time_observed: The time_observed of the ObjectID
         :return: None
         """
-        if not (isinstance(time_observed, float) or isinstance(time_observed, int)) or not time_observed:
-            return
-        self.time_observed = float(time_observed)
+        if not time_observed:
+            raise ValueError("time_observed must have a legitimate value")
+        elif time_observed and not isinstance(time_observed, str):
+            raise TypeError("time_observed must be a str")
+        else:
+            if "." in time_observed:
+                time_observed = time_observed[:time_observed.index(".")]
+            self.time_observed = str(datetime.strptime(time_observed, LOCAL_FMT))
 
 
 class Process:
     def __init__(
         self,
-        guid: str = None,
-        tag: str = None,
-        treeid: str = None,
-        processtree: str = None,
-        pguid: str = None,
-        ptag: str = None,
-        ptreeid: str = None,
-        pprocesstree: str = None,
-        pimage: str = None,
-        pcommand_line: str = None,
-        ppid: int = None,
-        pid: int = None,
-        image: str = None,
-        command_line: str = None,
-        start_time: float = None,
-        end_time: float = None,
-        integrity_level: str = None,
-        image_hash: str = None,
-        original_file_name: str = None,
-        objectid: ObjectID = None,
-        pobjectid: ObjectID = None,
+        objectid: ObjectID,
+        image: str,
+        start_time: Optional[str] = None,
+        pobjectid: Optional[ObjectID] = None,
+        pimage: Optional[str] = None,
+        pcommand_line: Optional[str] = None,
+        ppid: Optional[int] = None,
+        pid: Optional[int] = None,
+        command_line: Optional[str] = None,
+        end_time: Optional[str] = None,
+        integrity_level: Optional[str] = None,
+        image_hash: Optional[str] = None,
+        original_file_name: Optional[str] = None,
     ) -> None:
         """
         This method initializes a process object
-        :param guid: The GUID associated with the process
-        :param tag: The normalized tag of the object
-        :param treeid: The hash of the tree ID
-        :param processtree: Human readable tree ID (concatenation of tags)
-        :param pguid: The GUID associated with the parent process
-        :param ptag: The tag associated with the parent process
-        :param ptreeid: The hash of the parent's tree ID
-        :param pprocesstree: Human readable tree ID of parent (concatenation of tags)
+        :param objectid: The object ID of the process object
+        :param image: The image of the process
+        :param start_time: The time of creation for the process
+        :param pobjectid: The object ID of the parent process object
         :param pimage: The image of the parent process that spawned this process
         :param pcommand_line: The command line that the parent process ran
         :param ppid: The process ID of the parent process
         :param pid: The process ID
-        :param image: The image of the process
         :param command_line: The command line that the process ran
-        :param start_time: An EPOCH time representing when the process was created
-        :param end_time: An EPOCH time representing when the process was terminated
+        :param end_time: The time of termination for the process
         :param integrity_level: The integrity level of the process
         :param image_hash: The hash of the file run
         :param original_file_name: The original name of the file
-        :param objectid: The characteristics used to identify an object
-        :param pobjectid: The characteristics used to identify the parent object
         :return: None
         """
-        if start_time and end_time and start_time > end_time:
+        if (
+            start_time
+            and end_time
+            and local_to_epoch(start_time) > local_to_epoch(end_time)
+        ):
             raise ValueError(
                 f"Start time {start_time} cannot be greater than end time {end_time}."
             )
-        self.start_time: float = start_time if start_time else None
-        self.end_time: float = end_time if end_time else None
 
-        # NOTE if an ObjectID is passed in, the guid, tag and treeid will not be used
-        if isinstance(objectid, ObjectID):
-            self.objectid: ObjectID = objectid
-        else:
-            self.objectid: ObjectID = ObjectID(
-                guid=guid, tag=tag, treeid=treeid, processtree=processtree, time_observed=self.start_time
-            )
+        if pid and ppid and pid == ppid:
+            raise ValueError(f"PID {pid} cannot be equal to its PPID")
+
+        set_required_argument(self, "objectid", objectid, ObjectID)
+        set_required_argument(self, "image", image, str)
+        set_optional_argument(self, "start_time", start_time, str)
+        if self.objectid and self.start_time and self.objectid.time_observed is None:
+            self.objectid.time_observed = self.start_time
 
         # Parent process details
-        # NOTE if an ObjectID is passed in, the pguid, ptag and ptreeid will not be used
-        if isinstance(pobjectid, ObjectID):
-            self.pobjectid: ObjectID = pobjectid
-        else:
-            self.pobjectid: ObjectID = ObjectID(guid=pguid, tag=ptag, treeid=ptreeid, processtree=pprocesstree)
-        self.pimage: str = pimage
-        self.pcommand_line: str = pcommand_line
-        self.ppid: int = ppid
+        set_optional_argument(self, "pobjectid", pobjectid, ObjectID)
+        set_optional_argument(self, "pimage", pimage, str)
+        set_optional_argument(self, "pcommand_line", pcommand_line, str)
+        set_optional_argument(self, "ppid", ppid, int)
 
-        if pid and not isinstance(pid, int):
-            raise ValueError(f"{pid} is an invalid pid.")
-        self.pid: int = pid
+        set_optional_argument(self, "pid", pid, int)
+        set_optional_argument(self, "command_line", command_line, str)
+        set_optional_argument(self, "end_time", end_time, str)
 
-        self.image: str = image
-        self.command_line: str = command_line
+        set_optional_argument(self, "integrity_level", integrity_level, str)
+        if self.integrity_level:
+            self.integrity_level = self.integrity_level.lower()
 
-        # Do not overwrite the given ObjectID tag even if an image is provided
-        if isinstance(objectid, ObjectID) and not objectid.tag and self.image:
-            self.set_objectid_tag(self.image)
-        elif not isinstance(objectid, ObjectID) and self.image:
-            self.set_objectid_tag(self.image)
-
-        if isinstance(pobjectid, ObjectID) and not pobjectid.tag and self.pimage:
-            self.set_pobjectid_tag(self.pimage)
-        elif not isinstance(pobjectid, ObjectID) and self.pimage:
-            self.set_pobjectid_tag(self.pimage)
-
-        self.integrity_level: str = (
-            integrity_level.lower() if isinstance(integrity_level, str) else None
-        )
-        self.image_hash: str = image_hash
-        self.original_file_name: str = original_file_name
+        set_optional_argument(self, "image_hash", image_hash, str)
+        set_optional_argument(self, "original_file_name", original_file_name, str)
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -293,38 +372,22 @@ class Process:
         :param kwargs: Key word arguments to be used for updating attributes
         :return: None
         """
-        objectid_keys = ["guid", "tag", "treeid", "processtree", "time_observed"]
-        pobjectid_keys = ["pguid", "ptag", "ptreeid", "pprocesstree", "ptime_observed"]
-
         if all(value is None for value in kwargs.values()):
             return
 
         if "objectid" in kwargs:
             objectid = kwargs.pop("objectid")
-            if objectid:
+            if objectid and isinstance(objectid, ObjectID):
+                self.update_objectid(**objectid.as_primitives())
+            elif isinstance(objectid, Dict):
                 self.update_objectid(**objectid)
-        else:
-            objectid_kwargs = {
-                key: value for key, value in kwargs.items() if key in objectid_keys
-            }
-            self.update_objectid(**objectid_kwargs)
-
-            if "tag" not in objectid_kwargs and "image" in kwargs:
-                self.set_objectid_tag(kwargs["image"])
 
         if "pobjectid" in kwargs:
             pobjectid = kwargs.pop("pobjectid")
-            if pobjectid:
+            if pobjectid and isinstance(pobjectid, ObjectID):
+                self.update_pobjectid(**pobjectid.as_primitives())
+            elif isinstance(pobjectid, Dict):
                 self.update_pobjectid(**pobjectid)
-        else:
-            # Remove the initial p
-            pobjectid_kwargs = {
-                key[1:]: value for key, value in kwargs.items() if key in pobjectid_keys
-            }
-            self.update_pobjectid(**pobjectid_kwargs)
-
-            if "tag" not in pobjectid_kwargs and "pimage" in kwargs:
-                self.set_pobjectid_tag(kwargs["pimage"])
 
         if "start_time" in kwargs and self.objectid.time_observed is None:
             self.objectid.set_time_observed(kwargs["start_time"])
@@ -336,7 +399,7 @@ class Process:
         kwargs = {
             key: value
             for key, value in kwargs.items()
-            if key not in objectid_keys and key not in pobjectid_keys
+            if key not in OBJECTID_KEYS and key not in POBJECTID_KEYS
         }
         update_object_items(self, kwargs)
 
@@ -354,7 +417,7 @@ class Process:
             self.pcommand_line: str = parent.command_line
         self.ppid: int = parent.pid
 
-    def set_start_time(self, start_time: float) -> None:
+    def set_start_time(self, start_time: str) -> None:
         """
         This method updates the start time for the Process
         :param start_time: The start time of the Process
@@ -362,7 +425,7 @@ class Process:
         """
         self.start_time = start_time
 
-    def set_end_time(self, end_time: float) -> None:
+    def set_end_time(self, end_time: str) -> None:
         """
         This method updates the end time for the Process
         :param end_time: The end time of the Process
@@ -388,7 +451,18 @@ class Process:
         """
         if not image:
             return
-        self.objectid.set_tag(Process._normalize_path(image))
+        self.objectid.set_tag(Process.create_objectid_tag(image))
+
+    @staticmethod
+    def create_objectid_tag(image: Optional[str]) -> Optional[str]:
+        """
+        This method normalizes the image path and creates the objectid tag
+        :return: None
+        """
+        if not image:
+            return
+
+        return Process._normalize_path(image)
 
     def set_pobjectid_tag(self, image: Optional[str]) -> None:
         """
@@ -396,6 +470,9 @@ class Process:
         :return: None
         """
         if not image:
+            return
+        if not self.pobjectid:
+            log.debug("You need to set pobjectid before setting its tag")
             return
         self.pobjectid.set_tag(Process._normalize_path(image))
 
@@ -407,8 +484,6 @@ class Process:
         """
         if all(value is None for value in kwargs.values()):
             return
-        if not self.objectid:
-            self.objectid: ObjectID = ObjectID()
 
         if kwargs.get("guid"):
             try:
@@ -426,8 +501,19 @@ class Process:
         """
         if all(value is None for value in kwargs.values()):
             return
-        if not self.pobjectid:
-            self.pobjectid: ObjectID = ObjectID()
+
+        if (
+            not self.pobjectid
+            and kwargs.get("tag")
+            and kwargs.get("ontology_id")
+            and kwargs.get("service_name")
+        ):
+            self.pobjectid: ObjectID = ObjectID(
+                kwargs["tag"], kwargs["ontology_id"], kwargs["service_name"]
+            )
+        elif not self.pobjectid:
+            log.debug("You need to set pobjectid or pass its required arguments")
+            return
 
         if kwargs.get("guid"):
             try:
@@ -532,6 +618,97 @@ class Process:
         return path
 
 
+class NetworkDNS:
+    def __init__(
+        self,
+        domain: str,
+        resolved_ips: List[str],
+        lookup_type: str,
+    ) -> None:
+        """
+        Details for a DNS request
+        :param domain: The domain requested
+        :param resolved_ips: A list of IPs that were resolved
+        :param lookup_type: The type of DNS request
+        :return: None
+        """
+        set_required_argument(self, "domain", domain, str)
+        set_required_argument(self, "resolved_ips", resolved_ips, List)
+        set_required_argument(self, "lookup_type", lookup_type, str)
+
+    def as_primitives(self) -> Dict[str, Any]:
+        """
+        This method returns the dictionary representation of the object
+        :return: The dictionary representation of the object
+        """
+        return {key: value for key, value in self.__dict__.items()}
+
+
+class NetworkHTTP:
+    def __init__(
+        self,
+        request_uri: str,
+        request_method: str,
+        request_headers: Optional[Dict[str, str]] = None,
+        response_headers: Optional[Dict[str, str]] = None,
+        request_body: Optional[str] = None,
+        response_status_code: Optional[int] = None,
+        response_body: Optional[str] = None,
+        request_body_path: Optional[str] = None,
+        response_body_path: Optional[str] = None,
+    ) -> None:
+        """
+        Details for an HTTP request
+        :param request_uri: The URI requested
+        :param request_method: The method of the request
+        :param request_headers: Headers included in the request
+        :param response_headers: The headers of the response
+        :param request_body: The body of the request
+        :param response_status_code: The status code of the response
+        :param response_body: The body of the response
+        :param request_body_path: The path to the file containing the request body
+        :param response_body_path: The path to the file containing the response body
+        :return: None
+        """
+        set_required_argument(self, "request_uri", request_uri, str)
+        set_required_argument(self, "request_method", request_method, str)
+
+        set_optional_argument(self, "request_headers", request_headers, Dict)
+        if not self.request_headers:
+            self.request_headers: Dict[str, str] = {}
+
+        set_optional_argument(self, "response_headers", response_headers, Dict)
+        if not self.response_headers:
+            self.response_headers: Dict[str, str] = {}
+
+        set_optional_argument(self, "request_body", request_body, str)
+        set_optional_argument(self, "response_status_code", response_status_code, int)
+        set_optional_argument(self, "response_body", response_body, str)
+        set_optional_argument(self, "request_body_path", request_body_path, str)
+        set_optional_argument(self, "response_body_path", response_body_path, str)
+
+    def update(self, **kwargs) -> None:
+        """
+        This method updates networkhttp attributes with the given keyword arguments
+        :param kwargs: Key word arguments to be used for updating the networkhttp attributes
+        :return: None
+        """
+        if all(value is None for value in kwargs.values()):
+            return
+        update_object_items(self, kwargs)
+
+    def as_primitives(self) -> Dict[str, Any]:
+        """
+        This method returns the dictionary representation of the object
+        :return: The dictionary representation of the object
+        """
+        return {
+            key: value
+            for key, value in self.__dict__.items()
+            if key not in ["request_body_path", "response_body_path"]
+        }
+
+
 class NetworkConnection:
     OUTBOUND = "outbound"
     INBOUND = "inbound"
@@ -540,73 +717,81 @@ class NetworkConnection:
     TCP = "tcp"
     UDP = "udp"
     TRANSPORT_LAYER_PROTOCOL = [TCP, UDP]
+    HTTP = "http"
+    DNS = "dns"
+    CONNECTION_TYPES = [HTTP, DNS]
 
     def __init__(
         self,
-        guid: str = None,
-        tag: str = None,
-        treeid: str = None,
-        processtree: str = None,
-        process: Process = None,
-        source_ip: str = None,
-        source_port: int = None,
-        destination_ip: str = None,
-        destination_port: int = None,
-        transport_layer_protocol: str = None,
-        direction: str = None,
-        time_observed: float = None,
-        objectid: ObjectID = None,
+        objectid: ObjectID,
+        destination_ip: str,
+        destination_port: int,
+        transport_layer_protocol: str,
+        direction: str,
+        process: Optional[Process] = None,
+        source_ip: Optional[str] = None,
+        source_port: Optional[int] = None,
+        http_details: Optional[NetworkHTTP] = None,
+        dns_details: Optional[NetworkDNS] = None,
+        connection_type: Optional[str] = None,
     ) -> None:
         """
         Details for a low-level network connection by IP
-        :param guid: The GUID associated with the network connection
-        :param tag: The normalized tag of the object
-        :param tree_id: The hash of the tree ID
-        :param processtree: Human readable tree ID (concatenation of tags)
+        :param objectid: The object ID of the network object
+        :param destination_ip: The destination IP of the connection
+        :param destination_port: The destination port of the connection
+        :param transport_layer_protocol: The transport layer protocol of the connection
+        :param direction: The direction of the network connection
         :param process: The process that spawned the network connection
         :param source_ip: The source IP of the connection
         :param source_port: The source port of the connection
-        :param destination_ip: The destination IP of the connection
-        :param destination_port: The destination IP of the connection
-        :param transport_layer_protocol: The transport layer protocol of the connection
-        :param direction: The direction of the network connection
-        :param time_observed: The time at which the connection was spotted
-        :param objectid: The characteristics used to identify an object
+        :param http_details: HTTP-specific details of request
+        :param dns_details: DNS-specific details of request
+        :param connection_type: Type of connection being made
         :return: None
         """
-        # NOTE if an ObjectID is passed in, the guid, tag and treeid will not be used
-        if isinstance(objectid, ObjectID):
-            self.objectid: ObjectID = objectid
-        else:
-            self.objectid: ObjectID = ObjectID(
-                guid=guid, tag=tag, treeid=treeid, processtree=processtree, time_observed=time_observed
-            )
-
-        if not self.objectid.guid:
-            self.objectid.assign_guid()
-
-        if isinstance(process, Process):
-            self.process: Process = process
-        else:
-            self.process = None
-
-        self.source_ip: str = source_ip
-        self.source_port: int = source_port
-        self.destination_ip: str = destination_ip
-        self.destination_port: int = destination_port
-
-        if (
-            transport_layer_protocol
-            and transport_layer_protocol not in self.TRANSPORT_LAYER_PROTOCOL
-        ):
+        if transport_layer_protocol not in self.TRANSPORT_LAYER_PROTOCOL:
             raise ValueError(
                 f"Invalid transport layer protocol: {transport_layer_protocol}"
             )
-        self.transport_layer_protocol: str = transport_layer_protocol
 
-        if direction and direction not in self.DIRECTIONS:
+        if direction not in self.DIRECTIONS:
             raise ValueError(f"Invalid direction: {direction}")
-        self.direction: str = direction
+
+        set_required_argument(self, "objectid", objectid, ObjectID)
+        set_required_argument(self, "destination_ip", destination_ip, str)
+        set_required_argument(self, "destination_port", destination_port, int)
+        set_required_argument(
+            self, "transport_layer_protocol", transport_layer_protocol, str
+        )
+        set_required_argument(self, "direction", direction, str)
+
+        set_optional_argument(self, "process", process, Process)
+        set_optional_argument(self, "source_ip", source_ip, str)
+        set_optional_argument(self, "source_port", source_port, int)
+        set_optional_argument(self, "http_details", http_details, NetworkHTTP)
+        set_optional_argument(self, "dns_details", dns_details, NetworkDNS)
+        if self.http_details and self.dns_details:
+            raise ValueError(
+                "A network connection cannot be associated to both a DNS and an HTTP call."
+            )
+        set_optional_argument(self, "connection_type", connection_type, str)
+        if self.connection_type:
+            if self.connection_type not in self.CONNECTION_TYPES:
+                raise ValueError(
+                    f"Connection type {self.connection_type} must be one of {self.CONNECTION_TYPES}"
+                )
+            elif self.connection_type == self.HTTP and self.http_details is None:
+                raise ValueError(
+                    f"Connection type is {self.HTTP} but {self.HTTP}_details is None"
+                )
+            elif self.connection_type == self.DNS and self.dns_details is None:
+                raise ValueError(
+                    f"Connection type is {self.DNS} but {self.DNS}_details is None"
+                )
+        else:
+            if self.http_details or self.dns_details:
+                raise ValueError("Specify the connection type")
 
     def update_objectid(self, **kwargs) -> None:
         """
@@ -616,8 +801,6 @@ class NetworkConnection:
         """
         if all(value is None for value in kwargs.values()):
             return
-        if not self.objectid:
-            self.objectid: ObjectID = ObjectID()
         update_object_items(self.objectid, kwargs)
 
     def update(self, **kwargs) -> None:
@@ -626,18 +809,19 @@ class NetworkConnection:
         :param kwargs: Key word arguments to be used for updating attributes
         :return: None
         """
-        objectid_keys = ["guid", "tag", "treeid", "processtree", "time_observed"]
         if all(value is None for value in kwargs.values()):
             return
 
         if "objectid" in kwargs:
             objectid = kwargs.pop("objectid")
-            if objectid:
+            if objectid and isinstance(objectid, ObjectID):
+                self.update_objectid(**objectid.as_primitives())
+            elif objectid and isinstance(objectid, Dict):
                 self.update_objectid(**objectid)
         else:
             # Get the objectid attributes out
             objectid_kwargs = {
-                key: value for key, value in kwargs.items() if key in objectid_keys
+                key: value for key, value in kwargs.items() if key in OBJECTID_KEYS
             }
             self.update_objectid(**objectid_kwargs)
 
@@ -651,7 +835,7 @@ class NetworkConnection:
 
         # Remove objectid attributes
         kwargs = {
-            key: value for key, value in kwargs.items() if key not in objectid_keys
+            key: value for key, value in kwargs.items() if key not in OBJECTID_KEYS
         }
         update_object_items(self, kwargs)
 
@@ -661,8 +845,18 @@ class NetworkConnection:
         :param kwargs: Key word arguments to be used for updating the process object attribute
         :return: None
         """
-        if not self.process:
-            self.process: Process = Process()
+        if (
+            not self.process
+            and kwargs.get("objectid")
+            and kwargs.get("image")
+            and kwargs.get("start_time")
+        ):
+            self.process: Process = Process(
+                kwargs["objectid"], kwargs["image"], kwargs["start_time"]
+            )
+        elif not self.process:
+            log.debug("You need to set process or pass its required arguments")
+            return
         self.process.update(**kwargs)
 
     def update_process_objectid(self, **kwargs) -> None:
@@ -672,7 +866,9 @@ class NetworkConnection:
         :return: None
         """
         if not self.process:
-            self.process: Process = Process()
+            raise ValueError(
+                "Process must be set before you can update the process ObjectID"
+            )
         self.process.update_objectid(**kwargs)
 
     def set_process(self, process: Process) -> None:
@@ -683,94 +879,37 @@ class NetworkConnection:
         """
         self.process = process
 
-    def create_tag(self, domain: Optional[str] = None) -> None:
+    @staticmethod
+    def create_tag(
+        destination_ip: Optional[str] = None,
+        destination_port: Optional[int] = None,
+        domain: Optional[str] = None,
+        direction: Optional[str] = None,
+    ) -> Optional[str]:
         """
         This method creates the tag object for a network connection
+        :param destination_ip: The destination IP of the connection
+        :param destination_port: The destination port of the connection
         :param domain: The domain associated with the destination IP used in this network connection
-        :return: None
+        :param direction: The direction of the network connection
+        :return: The created tag, if any
         """
-        if not domain and self.destination_ip is None:
+        if not domain and destination_ip is None:
             log.debug(
                 "Cannot set tag for network connection. Requires either domain or destination IP..."
             )
             return
-        if self.destination_port is None:
+        if destination_port is None:
             log.debug(
                 "Cannot set tag for network connection. Requires destination port..."
             )
             return
 
-        if domain and self.direction == self.OUTBOUND:
-            self.update_objectid(tag=f"{domain}:{self.destination_port}")
+        if domain and direction == NetworkConnection.OUTBOUND:
+            return f"{domain}:{destination_port}"
         # If no domain or if direction is inbound/unknown
         else:
-            self.update_objectid(tag=f"{self.destination_ip}:{self.destination_port}")
-
-    def as_primitives(self) -> Dict[str, Any]:
-        """
-        This method returns the dictionary representation of the object
-        :return: The dictionary representation of the object
-        """
-        return {
-            key: value
-            if (not isinstance(value, Process) and not isinstance(value, ObjectID))
-            else value.as_primitives()
-            for key, value in self.__dict__.items()
-        }
-
-
-class NetworkDNS:
-    def __init__(
-        self,
-        connection_details: NetworkConnection = None,
-        domain: str = None,
-        resolved_ips: List[str] = None,
-        lookup_type: str = None,
-    ) -> None:
-        """
-        Details for a DNS request
-        :param connection_details: The low-level details of the DNS request
-        :param domain: The domain requested
-        :param resolved_ips: A list of IPs that were resolved
-        :param lookup_type: The type of DNS request
-        :return: None
-        """
-        if isinstance(connection_details, NetworkConnection):
-            self.connection_details: NetworkConnection = connection_details
-        else:
-            self.connection_details: NetworkConnection = NetworkConnection()
-
-        self.domain: str = domain
-        self.resolved_ips: List[str] = (
-            resolved_ips if isinstance(resolved_ips, List) else []
-        )
-        self.lookup_type: str = lookup_type
-
-    def update_process(self, **kwargs) -> None:
-        """
-        This method updates the process object attribute with the given keyword arguments
-        :param kwargs: Key word arguments to be used for updating the process object attribute
-        :return: None
-        """
-        if not self.connection_details.process:
-            self.connection_details.process = Process()
-        self.connection_details.process.update(**kwargs)
-
-    def set_network_connection(self, network_connection: NetworkConnection) -> None:
-        """
-        This method sets the connection_details object attribute to the given network connection
-        :param network_connection: The given network connection object
-        :return: None
-        """
-        self.connection_details = network_connection
-
-    def update_connection_details(self, **kwargs) -> None:
-        """
-        This method updates the connection_details object attribute with the given keyword arguments
-        :param kwargs: Key word arguments to be used for updating the connection_details object attribute
-        :return: None
-        """
-        self.connection_details.update(**kwargs)
+            return f"{destination_ip}:{destination_port}"
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -781,155 +920,289 @@ class NetworkDNS:
             key: value
             if (
                 not isinstance(value, Process)
-                and not isinstance(value, NetworkConnection)
+                and not isinstance(value, ObjectID)
+                and not isinstance(value, NetworkDNS)
+                and not isinstance(value, NetworkHTTP)
             )
             else value.as_primitives()
             for key, value in self.__dict__.items()
         }
 
 
-class NetworkHTTP:
+class Attribute:
+
+    actions = [
+        "clipboard_capture",
+        "create_remote_thread",
+        "create_stream_hash",
+        "dns_query",
+        "driver_loaded",
+        "file_change",
+        "file_creation",
+        "file_delete",
+        "image_loaded",
+        "network_connection",
+        "network_connection_linux",
+        "pipe_created",
+        "process_access",
+        "process_creation",
+        "process_creation_linux",
+        "process_tampering",
+        "process_terminated",
+        "raw_access_thread",
+        "registry_add",
+        "registry_delete",
+        "registry_event",
+        "registry_rename",
+        "registry_set",
+        "sysmon_error",
+        "sysmon_status",
+        "wmi_event",
+    ]
+
     def __init__(
         self,
-        connection_details: NetworkConnection = None,
-        request_uri: str = None,
-        request_headers: Dict[str, str] = None,
-        request_body: str = None,
-        request_method: str = None,
-        response_headers: str = None,
-        response_status_code: int = None,
-        response_body: str = None,
-        request_body_path: str = None,
-        response_body_path: str = None,
+        source: ObjectID,
+        target: Optional[ObjectID] = None,
+        action: Optional[str] = None,
+        meta: Optional[str] = None,
+        event_record_id: Optional[str] = None,
+        domain: Optional[str] = None,
+        uri: Optional[str] = None,
+        file_hash: Optional[str] = None,
     ) -> None:
         """
-        Details for an HTTP request
-        :param connection_details: The low-level details of the DNS request
-        :param request_uri: The URI requested
-        :param request_headers: Headers included in the request
-        :param request_body: The body of the request
-        :param request_method: The method of the request
-        :param response_headers: The headers of the response
-        :param response_status_code: The status code of the response
-        :param response_body: The body of the response
-        :param request_body_path: The path to the file containing the request body
-        :param response_body_path: The path to the file containing the response body
+        Attribute relating to the signature that was raised during the analysis of the task
+        :param source: Object that the rule triggered on
+        :param target: Object targetted by source object
+        :param action: The relation between the source and target
+        :param meta: Metadata about the detection
+        :param event_record_id: Event Record ID (Event Logs)
+        :param domain: Domain
+        :param uri: URI
+        :param file_hash: SHA256 of file
         :return: None
         """
-        if isinstance(connection_details, NetworkConnection):
-            self.connection_details: NetworkConnection = connection_details
-        else:
-            self.connection_details: NetworkConnection = NetworkConnection()
+        set_required_argument(self, "source", source, ObjectID)
+        set_optional_argument(self, "target", target, ObjectID)
 
-        self.request_uri: str = request_uri
-        self.request_headers: Dict[str, str] = (
-            request_headers if isinstance(request_headers, Dict) else {}
-        )
-        self.request_body: str = request_body
-        self.request_method: str = request_method
-        self.response_headers: Dict[str, str] = (
-            response_headers if isinstance(response_headers, Dict) else {}
-        )
-        self.response_status_code: int = response_status_code
-        self.response_body: str = response_body
-        self.request_body_path: str = request_body_path
-        self.response_body_path: str = response_body_path
+        set_optional_argument(self, "action", action, str)
+        if self.action and self.action not in self.actions:
+            raise ValueError(
+                f"The action {self.action} is not in the list of valid actions"
+            )
+
+        set_optional_argument(self, "meta", meta, str)
+        set_optional_argument(self, "event_record_id", event_record_id, str)
+        set_optional_argument(self, "domain", domain, str)
+        set_optional_argument(self, "uri", uri, str)
+        set_optional_argument(self, "file_hash", file_hash, str)
 
     def update(self, **kwargs) -> None:
         """
-        This method updates networkhttp attributes with the given keyword arguments
-        :param kwargs: Key word arguments to be used for updating the networkhttp attributes
+        This method updates the attribute object with the given keyword arguments
+        :param kwargs: Key word arguments to be used for updating the attribute object
         :return: None
+        """
+        update_object_items(self, kwargs)
+
+    def as_primitives(self) -> Dict[str, Any]:
+        """
+        This method returns the dictionary representation of the object
+        :return: The dictionary representation of the object
+        """
+        return {
+            key: value if not isinstance(value, ObjectID) else value.as_primitives()
+            for key, value in self.__dict__.items()
+        }
+
+
+class Signature:
+    types = ["CUCKOO", "YARA", "SIGMA", "SURICATA"]
+
+    def __init__(
+        self,
+        objectid: ObjectID,
+        name: str,
+        type: str,
+        attributes: Optional[List[Attribute]] = None,
+        attacks: Optional[List[Dict[str, Any]]] = None,
+        actors: Optional[List[str]] = None,
+        malware_families: Optional[List[str]] = None,
+        score: Optional[int] = None,
+    ) -> None:
+        """
+        A signature that was raised during the analysis of the task
+        :param objectid: The object ID of the signature object
+        :param name: The name of the signature
+        :param type: Type of signature
+        :param attributes: Attributes about the signature
+        :param attacks: A list of ATT&CK patterns and categories of the signature
+        :param actors: List of actors of the signature
+        :param malware_families: List of malware families of the signature
+        :param score: Score of the signature
+        :return: None
+        """
+        set_required_argument(self, "objectid", objectid, ObjectID)
+        set_required_argument(self, "name", name, str)
+        set_required_argument(self, "type", type, str)
+        if self.type not in self.types:
+            raise ValueError(f"The type {self.type} is not a valid type")
+
+        set_optional_argument(self, "attributes", attributes, List)
+        if not self.attributes:
+            self.attributes: List[Attribute] = []
+
+        set_optional_argument(self, "attacks", attacks, List)
+        if not self.attacks:
+            self.attacks: List[Dict[str, Any]] = []
+
+        set_optional_argument(self, "actors", actors, List)
+        if not self.actors:
+            self.actors: List[str] = []
+
+        set_optional_argument(self, "malware_families", malware_families, List)
+        if not self.malware_families:
+            self.malware_families: List[str] = []
+
+        set_optional_argument(self, "score", score, int)
+
+    def update(self, **kwargs) -> None:
+        """
+        This method updates the signature object with the given keyword arguments
+        :param kwargs: Key word arguments to be used for updating the signature object
+        :return: None
+        """
+        update_object_items(self, kwargs)
+
+    def add_attack_id(self, attack_id: str) -> None:
+        """
+        This method adds an Att&ck ID to the signature's list of Att&ck IDs
+        :param attack_id: The Att&ck ID to add
+        :return: None
+        """
+        attack_item = None
+        attack_id = revoke_map.get(attack_id, attack_id)
+        current_attack_ids = [a["attack_id"] for a in self.attacks]
+        if attack_id in current_attack_ids:
+            return
+
+        if attack_id in attack_map:
+            attack_item = dict(
+                attack_id=attack_id,
+                pattern=attack_map[attack_id]["name"],
+                categories=attack_map[attack_id]["categories"],
+            )
+        elif attack_id in software_map:
+            attack_item = dict(
+                attack_id=attack_id,
+                pattern=software_map[attack_id].get("name", attack_id),
+                categories=["software"],
+            )
+        elif attack_id in group_map:
+            attack_item = dict(
+                attack_id=attack_id,
+                pattern=group_map[attack_id].get("name", attack_id),
+                categories=["group"],
+            )
+
+        if attack_item:
+            self.attacks.append(attack_item)
+        else:
+            log.warning(f"Could not generate Att&ck output for ID: {attack_id}")
+
+    @staticmethod
+    def create_attribute(**kwargs) -> Attribute:
+        """
+        This method creates an Attribute, assigns its attributes based on keyword arguments provided,
+        and returns the Attribute
+        :param kwargs: Key word arguments to be used for updating the Attribute's attributes
+        :return: Attribute object
         """
         if all(value is None for value in kwargs.values()):
             return
 
-        if "process" in kwargs:
-            process = kwargs.pop("process")
-            if process:
-                self.update_process(**process)
+        if not kwargs.get("source"):
+            raise ValueError("The attribute needs its required arguments")
+        elif not isinstance(kwargs["source"], ObjectID):
+            raise ValueError("source is not an ObjectID")
 
-        if "connection_details" in kwargs:
-            connection_details = kwargs.pop("connection_details")
-            if connection_details:
-                self.update_connection_details(**connection_details)
+        attribute = Attribute(source=kwargs["source"])
+        update_object_items(attribute, kwargs)
+        return attribute
 
-        update_object_items(self, kwargs)
-
-    def update_process(self, **kwargs) -> None:
+    def add_attribute(self, attribute: Attribute) -> None:
         """
-        This method updates the process object attribute with the given keyword arguments
-        :param kwargs: Key word arguments to be used for updating the process object attribute
+        This method adds an attribute to the list of attributes for the signature.
+        :param attribute: The attribute to be added
         :return: None
         """
-        if not self.connection_details.process:
-            self.connection_details.process = Process()
-        self.connection_details.process.update(**kwargs)
+        if any(
+            attribute.as_primitives() == added_attribute.as_primitives()
+            for added_attribute in self.attributes
+        ):
+            return
 
-    def set_network_connection(self, network_connection: NetworkConnection) -> None:
+        self.attributes.append(attribute)
+
+    def get_attributes(self) -> List[Attribute]:
         """
-        This method sets the connection_details object attribute to the given network connection
-        :param network_connection: The given network connection object
+        This method returns the attributes associated with the signature
+        :return: The list of attributes associated with the signature
+        """
+        return self.attributes
+
+    def set_score(self, score: int) -> None:
+        """
+        This method sets the signature score
+        :param score: The score to set
         :return: None
         """
-        self.connection_details = network_connection
+        self.score: int = score
 
-    def update_connection_details(self, **kwargs) -> None:
+    def set_malware_families(self, malware_families: List[str]) -> None:
         """
-        This method updates the connection_details object attribute with the given keyword arguments
-        :param kwargs: Key word arguments to be used for updating the connection_details object attribute
+        This method sets the signature malware families
+        :param malware_families: The malware families to set
         :return: None
         """
-        self.connection_details.update(**kwargs)
-
-    def get_process_image(self) -> Optional[str]:
-        """
-        This method returns the image of the process associated with the connection details
-        :return: The image of the process associated with the connection details
-        """
-        if self.connection_details:
-            if self.connection_details.process:
-                return self.connection_details.process.image
-        return None
-
-    def get_process_pid(self) -> Optional[str]:
-        """
-        This method returns the pid of the process associated with the connection details
-        :return: The pid of the process associated with the connection details
-        """
-        if self.connection_details:
-            if self.connection_details.process:
-                return self.connection_details.process.pid
-        return None
+        self.malware_families: List[str] = (
+            malware_families
+            if isinstance(malware_families, List)
+            and all(
+                isinstance(malware_family, str) for malware_family in malware_families
+            )
+            else []
+        )
 
     def as_primitives(self) -> Dict[str, Any]:
         """
         This method returns the dictionary representation of the object
         :return: The dictionary representation of the object
         """
+
         return {
-            key: value
-            if (
-                not isinstance(value, Process)
-                and not isinstance(value, NetworkConnection)
-            )
-            else value.as_primitives()
-            for key, value in self.__dict__.items()
-            if key not in ["request_body_path", "response_body_path"]
+            "objectid": self.objectid.as_primitives(),
+            "name": self.name,
+            "type": self.type,
+            "attributes": [attribute.as_primitives() for attribute in self.attributes],
+            "attacks": self.attacks,
+            "actors": self.actors,
+            "malware_families": self.malware_families,
         }
 
 
-class SandboxOntology:
+class Sandbox:
     class AnalysisMetadata:
         class MachineMetadata:
             def __init__(
                 self,
-                ip: str = None,
-                hypervisor: str = None,
-                hostname: str = None,
-                platform: str = None,
-                version: str = None,
-                architecture: str = None,
+                ip: Optional[str] = None,
+                hypervisor: Optional[str] = None,
+                hostname: Optional[str] = None,
+                platform: Optional[str] = None,
+                version: Optional[str] = None,
+                architecture: Optional[str] = None,
             ) -> None:
                 """
                 The metadata regarding the machine where the analysis took place
@@ -940,12 +1213,12 @@ class SandboxOntology:
                 :param version: The version of the operating system of the machine used for analysis
                 :param architecture: The architecture of the machine used for analysis
                 """
-                self.ip: str = ip
-                self.hypervisor: str = hypervisor
-                self.hostname: str = hostname
-                self.platform: str = platform
-                self.version: str = version
-                self.architecture: str = architecture
+                set_optional_argument(self, "ip", ip, str)
+                set_optional_argument(self, "hypervisor", hypervisor, str)
+                set_optional_argument(self, "hostname", hostname, str)
+                set_optional_argument(self, "platform", platform, str)
+                set_optional_argument(self, "version", version, str)
+                set_optional_argument(self, "architecture", architecture, str)
 
             def as_primitives(self) -> Dict[str, Any]:
                 """
@@ -969,31 +1242,33 @@ class SandboxOntology:
 
         def __init__(
             self,
-            task_id: int = None,
-            start_time: float = None,
-            end_time: float = None,
-            routing: str = None,
-            machine_metadata: MachineMetadata = None,
+            start_time: Optional[str] = None,
+            task_id: Optional[int] = None,
+            end_time: Optional[str] = None,
+            routing: Optional[str] = None,
+            machine_metadata: Optional[MachineMetadata] = None,
         ) -> None:
             """
             The metadata of the analysis, per analysis
-            :param task_id: The ID used for identifying the analysis task
             :param start_time: The start time of the analysis
+            :param task_id: The ID used for identifying the analysis task
             :param end_time: The end time of the analysis
             :param routing: The routing used in the sandbox setup (Spoofed, Internet, Tor, VPN)
             :param machine_metadata: The metadata of the analysis
             """
-            self.task_id: int = task_id
-            self.start_time: float = start_time
-            self.end_time: float = end_time
-            self.routing: str = routing
-            self.machine_metadata = (
-                machine_metadata
-                if isinstance(
-                    machine_metadata,
-                    self.MachineMetadata,
-                )
-                else self.MachineMetadata()
+            set_optional_argument(self, "start_time", start_time, str)
+            if not self.start_time:
+                self.start_time: str = MIN_TIME
+
+            set_optional_argument(self, "task_id", task_id, int)
+
+            set_optional_argument(self, "end_time", end_time, str)
+            if not self.end_time:
+                self.end_time: str = MAX_TIME
+
+            set_optional_argument(self, "routing", routing, str)
+            set_optional_argument(
+                self, "machine_metadata", machine_metadata, self.MachineMetadata
             )
 
         def as_primitives(self) -> Dict[str, Any]:
@@ -1018,288 +1293,30 @@ class SandboxOntology:
             self.start_time = json["start_time"]
             self.end_time = json["end_time"]
             self.routing = json["routing"]
+            self.machine_metadata = self.MachineMetadata()
             self.machine_metadata.load_from_json(json["machine_metadata"])
-
-    class Signature:
-        class Subject:
-            def __init__(
-                self,
-                ip: str = None,
-                domain: str = None,
-                uri: str = None,
-                process: Process = None,
-                file: str = None,
-                registry: str = None,
-            ) -> None:
-                """
-                An subject of interest, aka something interesting that the signature
-                as raised on that is worth reporting
-                :param ip: An IP that is a subject of interest
-                :param domain: A domain that is a subject of interest
-                :param uri: An URI that is a subject of interest
-                :param process: A process that is a subject of interest
-                :param file: A file path that is a subject of interest
-                :param registry: A registry key that is a subject of interest
-                """
-                self.ip: str = ip
-                self.domain: str = domain
-                self.uri: str = uri
-                self.file: str = file
-                self.registry: str = registry
-
-                if isinstance(process, Process):
-                    self.process: Process = process
-                else:
-                    self.process = None
-
-            def update_process(self, **kwargs) -> None:
-                """
-                This method updates the process object attribute with the given keyword arguments
-                :param kwargs: Key word arguments to be used for updating the process object attribute
-                :return: None
-                """
-                if not self.process:
-                    self.process = Process()
-                self.process.update(**kwargs)
-
-            def set_process(self, process: Process) -> None:
-                """
-                This method sets the process object attribute to the given process
-                :param process: The given process object
-                :return: None
-                """
-                self.process = process
-
-            def as_primitives(self) -> Dict[str, Any]:
-                """
-                This method returns the dictionary representation of the object
-                :return: The dictionary representation of the object
-                """
-                return {
-                    key: value
-                    if not isinstance(value, Process)
-                    else value.as_primitives()
-                    for key, value in self.__dict__.items()
-                }
-
-        def __init__(
-            self,
-            process: Process = None,
-            name: str = None,
-            description: str = None,
-            score: int = None,
-            attack: List[Dict[str, Any]] = None,
-            subjects: List[Subject] = None,
-        ) -> None:
-            """
-            A signature that was raised during the analysis of the task
-            :param process: The process associated with the signature
-            :param name: The name of the signature
-            :param description: The description of the signature
-            :param score: An integer indicating the score of the signature
-            :param attack: A list of Att&ck patterns and categories of the signature
-            :param subjects: A list of subjects. A signature can have more than one subject.
-            :return: None
-            """
-            if isinstance(process, Process):
-                self.process: Process = process
-            else:
-                self.process = None
-
-            self.name: str = name
-            self.description: str = description
-            self.score: int = score
-            self.attack: List[Dict[str, Any]] = (
-                attack
-                if isinstance(attack, List) and all(isinstance(a, Dict) for a in attack)
-                else []
-            )
-            self.subjects = (
-                subjects
-                if isinstance(subjects, List)
-                and all(isinstance(s, self.Subject) for s in subjects)
-                else []
-            )
-
-        def update(self, **kwargs) -> None:
-            """
-            This method updates the signature object with the given keyword arguments
-            :param kwargs: Key word arguments to be used for updating the signature object
-            :return: None
-            """
-            update_object_items(self, kwargs)
-
-        def update_process(self, **kwargs) -> None:
-            """
-            This method updates the process object attribute with the given keyword arguments
-            :param kwargs: Key word arguments to be used for updating the process object attribute
-            :return: None
-            """
-            if all(value is None for value in kwargs.values()):
-                return
-            if not self.process:
-                self.process = Process()
-            self.process.update(**kwargs)
-
-        def set_process(self, process: Optional[Process]) -> None:
-            """
-            This method sets the process object attribute to the given process
-            :param process: The given process object
-            :return: None
-            """
-            self.process = process
-
-        def add_attack_id(self, attack_id: str) -> None:
-            """
-            This method adds an Att&ck ID to the signature's list of Att&ck IDs
-            :param attack_id: The Att&ck ID to add
-            :return: None
-            """
-            attack_item = None
-            attack_id = revoke_map.get(attack_id, attack_id)
-            current_attack_ids = [a["attack_id"] for a in self.attack]
-            if attack_id in current_attack_ids:
-                return
-
-            if attack_id in attack_map:
-                attack_item = dict(
-                    attack_id=attack_id,
-                    pattern=attack_map[attack_id]["name"],
-                    categories=attack_map[attack_id]["categories"],
-                )
-            elif attack_id in software_map:
-                attack_item = dict(
-                    attack_id=attack_id,
-                    pattern=software_map[attack_id].get("name", attack_id),
-                    categories=["software"],
-                )
-            elif attack_id in group_map:
-                attack_item = dict(
-                    attack_id=attack_id,
-                    pattern=group_map[attack_id].get("name", attack_id),
-                    categories=["group"],
-                )
-
-            if attack_item:
-                self.attack.append(attack_item)
-            else:
-                log.warning(f"Could not generate Att&ck output for ID: {attack_id}")
-
-        def add_subject(self, **kwargs) -> None:
-            """
-            This method creates an subject and updates the subject's attributes with the given keyword arguments.
-            Then this method adds the subject to the list of subjects for the signature.
-            :param kwargs: Key word arguments to be used for updating the subject's attributes
-            :return: None
-            """
-            if all(value is None for value in kwargs.values()):
-                return
-            if any(getattr(subject, k) == v for subject in self.subjects for k, v in kwargs.items()):
-                return
-            subject = self.Subject()
-            update_object_items(subject, kwargs)
-            self.subjects.append(subject)
-
-        def add_process_subject(self, **kwargs) -> None:
-            """
-            This method creates an subject and updates the process object attribute with the given keyword arguments.
-            Then this method adds the subject to the list of subjects for the signature.
-            :param kwargs: Key word arguments to be used for updating the process object attribute of an subject
-            :return: None
-            """
-            if all(value is None for value in kwargs.values()):
-                return
-            subject = self.Subject()
-            subject.update_process(**kwargs)
-            self.subjects.append(subject)
-
-        def get_subjects(self) -> List[Subject]:
-            """
-            This method returns the subjects associated with the signature
-            :return: The list of subjects associated with the signature
-            """
-            return self.subjects
-
-        def as_primitives(self) -> Dict[str, Any]:
-            """
-            This method returns the dictionary representation of the object
-            :return: The dictionary representation of the object
-            """
-            return {
-                "process": self.process.as_primitives() if self.process else None,
-                "name": self.name,
-                "description": self.description,
-                "attack": self.attack,
-                "subjects": [subject.as_primitives() for subject in self.subjects],
-            }
 
     def __init__(
         self,
-        analysis_metadata: AnalysisMetadata = None,
-        signatures: List[Signature] = None,
-        network_connections: List[NetworkConnection] = None,
-        network_dns: List[NetworkDNS] = None,
-        network_http: List[NetworkHTTP] = None,
-        processes: List[Process] = None,
-        sandbox_name: str = None,
-        sandbox_version: str = None,
+        objectid: ObjectID,
+        analysis_metadata: AnalysisMetadata,
+        sandbox_name: str,
+        sandbox_version: Optional[str] = None,
     ) -> None:
         """
         The result ontology for sandbox output
+        :param objectid: The object ID of the sandbox object
         :param analysis_metadata: Metadata for the analysis
-        :param signatures: Signatures that the file may have
-        :param network_connections: The IP traffic observed during analysis
-        :param network_dns: The DNS traffic observed during analysis
-        :param network_http: The HTTP traffic observed during analysis
-        :param processes: A list of processes
         :param sandbox_name: The name of the sandbox
         :param sandbox_version: The version of the sandbox
         :return: None
         """
-        self.analysis_metadata = (
-            analysis_metadata
-            if isinstance(analysis_metadata, self.AnalysisMetadata)
-            else self.AnalysisMetadata()
+        set_required_argument(self, "objectid", objectid, ObjectID)
+        set_required_argument(
+            self, "analysis_metadata", analysis_metadata, self.AnalysisMetadata
         )
-        self.signatures = (
-            signatures
-            if isinstance(signatures, List)
-            and all(
-                isinstance(signature, SandboxOntology.Signature)
-                for signature in signatures
-            )
-            else []
-        )
-        self.network_connections: List[NetworkConnection] = (
-            network_connections
-            if isinstance(network_connections, List)
-            and all(
-                isinstance(network_connection, NetworkConnection)
-                for network_connection in network_connections
-            )
-            else []
-        )
-        self.network_dns: List[NetworkDNS] = (
-            network_dns
-            if isinstance(network_dns, List)
-            and all(isinstance(dns, NetworkDNS) for dns in network_dns)
-            else []
-        )
-        self.network_http: List[NetworkHTTP] = (
-            network_http
-            if isinstance(network_http, List)
-            and all(isinstance(http, NetworkHTTP) for http in network_http)
-            else []
-        )
-        self.processes: List[Process] = (
-            processes
-            if isinstance(processes, List)
-            and all(isinstance(process, Process) for process in processes)
-            else []
-        )
-        self.sandbox_name: str = sandbox_name
-        self.sandbox_version: str = sandbox_version
-        self._guid_process_map: Dict[str, Process] = {}
+        set_required_argument(self, "sandbox_name", sandbox_name, str)
+        set_optional_argument(self, "sandbox_version", sandbox_version, str)
 
     def update_analysis_metadata(self, **kwargs) -> None:
         """
@@ -1315,26 +1332,554 @@ class SandboxOntology:
         :param kwargs: Key word arguments to be used for updating the machine_metadata object attribute
         :return: None
         """
+        if not self.analysis_metadata.machine_metadata:
+            self.analysis_metadata.machine_metadata = (
+                self.AnalysisMetadata.MachineMetadata()
+            )
         update_object_items(self.analysis_metadata.machine_metadata, kwargs)
+
+    def as_primitives(self) -> Dict[str, Any]:
+        """
+        This method returns the dictionary representation of the object
+        :return: The dictionary representation of the object
+        """
+        return {
+            "objectid": self.objectid.as_primitives(),
+            "analysis_metadata": self.analysis_metadata.as_primitives(),
+            "sandbox_name": self.sandbox_name,
+            "sandbox_version": self.sandbox_version,
+        }
+
+
+class OntologyResults:
+    def __init__(self, service_name: Optional[str] = None) -> None:
+        """
+        The OntologyResults class object which will contain and manipulate all data
+        relating to the ontology results
+        :param service_name: The name of the service this ontology result is being generated for
+        :return: None
+        """
+        global SERVICE_NAME
+        SERVICE_NAME = service_name
+
+        self.netflows: List[NetworkConnection] = []
+        self.dns_netflows: List[NetworkDNS] = []
+        self.http_netflows: List[NetworkHTTP] = []
+        self.processes: List[Process] = []
+        self.sandboxes: List[Sandbox] = []
+        self.signatures: List[Signature] = []
+        self._guid_process_map: Dict[str, Process] = {}
+        self.service_name = SERVICE_NAME
+
+    # ObjectID manipulation methods
+    @staticmethod
+    def create_objectid(**kwargs) -> ObjectID:
+        """
+        This method creates an ObjectID, assigns its attributes based on keyword arguments provided,
+        and returns the ObjectID
+        :param kwargs: Key word arguments to be used for updating the ObjectID's attributes
+        :return: ObjectID object
+        """
+        if not (kwargs.get("tag") and kwargs.get("ontology_id")):
+            raise ValueError("The objectid needs its required arguments")
+        objectid = ObjectID(
+            kwargs["tag"], kwargs["ontology_id"], kwargs.get("service_name")
+        )
+        # Ensure that is time_observed is passed in and has a value, that that value is a str
+        if "time_observed" in kwargs and kwargs["time_observed"] is not None and not isinstance(kwargs["time_observed"], str):
+            raise ValueError("time_observed must be a str")
+        # Ensure that time_observed is of a certain format
+        elif "time_observed" in kwargs and kwargs["time_observed"] is not None and isinstance(kwargs["time_observed"], str):
+            kwargs["time_observed"] = str(datetime.strptime(kwargs["time_observed"], LOCAL_FMT))
+        update_object_items(objectid, kwargs)
+        return objectid
+
+    @staticmethod
+    def create_session() -> str:
+        """
+        This method creates a random session ID, and a session ID == totally unique value separate from Sandbox Ontology ID
+        :return: The session ID
+        """
+        return get_random_id()
+
+    # Sandbox manipulation methods
+    def set_sandboxes(self, sandboxes: List[Sandbox]) -> None:
+        """
+        This method sets the Sandbox objects
+        :param sandboxes: The sandboxes to set
+        :return: None
+        """
+        self.sandboxes = (
+            sandboxes
+            if isinstance(sandboxes, List)
+            and all(isinstance(sandbox, Sandbox) for sandbox in sandboxes)
+            else []
+        )
+
+    def add_sandbox(self, sandbox: Sandbox) -> None:
+        """
+        This method adds a Sandbox object to the list of sandboxes
+        :param sandbox: The sandbox to add
+        :return: None
+        """
+        self.sandboxes.append(sandbox)
+
+    @staticmethod
+    def create_sandbox(**kwargs) -> Sandbox:
+        """
+        This method creates a Sandbox object, assigns its attributes based on keyword arguments provided,
+        and returns the Sandbox object
+        :param kwargs: Key word arguments to be used for updating the Sandbox object's attributes
+        :return: Sandbox object
+        """
+        if not (kwargs.get("objectid") and kwargs.get("sandbox_name")):
+            raise ValueError("The sandbox needs its required arguments")
+        sandbox = Sandbox(
+            kwargs["objectid"], Sandbox.AnalysisMetadata(), kwargs["sandbox_name"]
+        )
+
+        update_object_items(sandbox, kwargs)
+        if kwargs.get("analysis_metadata"):
+            sandbox.update_analysis_metadata(
+                **kwargs["analysis_metadata"].as_primitives()
+            )
+        return sandbox
+
+    def get_sandbox_by_session(self, session: str) -> Optional[Sandbox]:
+        """
+        This method returns a Sandbox object that matches the given session
+        :param session: The session that we are looking for sandboxes that match
+        :return: A Sandbox object, if it exists
+        """
+        return next(
+            (
+                sandbox
+                for sandbox in self.sandboxes
+                if sandbox.objectid.session == session
+            ),
+            None,
+        )
+
+    def get_sandboxes(self) -> List[Sandbox]:
+        """
+        This method is a getter for the sandboxes attribute
+        :return: The value of the sandboxes attribute
+        """
+        return self.sandboxes
+
+    # Signature manipulation methods
+    def set_signatures(self, signatures: List[Signature]) -> None:
+        """
+        This method sets the Signature objects
+        :param signatures: The signatures to set
+        :return: None
+        """
+        self.signatures = (
+            signatures
+            if isinstance(signatures, List)
+            and all(isinstance(signature, Signature) for signature in signatures)
+            else []
+        )
+
+    def create_signature(self, **kwargs) -> Signature:
+        """
+        This method creates a Signature object, assigns its attributes based on keyword arguments provided,
+        and returns the Signature object
+        :param kwargs: Key word arguments to be used for updating the Signature object's attributes
+        :return: Signature object
+        """
+        if not (kwargs.get("objectid") and kwargs.get("name") and kwargs.get("type")):
+            raise ValueError("The signature needs its required arguments")
+        signature = Signature(kwargs["objectid"], kwargs["name"], kwargs["type"])
+        if "description" in kwargs:
+            kwargs["description"] = kwargs["description"].lower()
+        update_object_items(signature, kwargs)
+        return signature
+
+    def add_signature(self, signature: Signature) -> None:
+        """
+        This method adds a Signature object to the list of signatures
+        :param signature: The Signature object to be added
+        :return: None
+        """
+        self.signatures.append(signature)
+
+    def get_signatures(self) -> List[Signature]:
+        """
+        This method is a getter for the signatures attribute
+        :return: The value of the signatures attribute
+        """
+        return self.signatures
+
+    def get_signatures_by_pid(self, pid: int) -> List[Signature]:
+        """
+        This method allows the retrieval of signatures that match a certain process ID
+        :param pid: The process ID
+        :return: A list of signatures that match the process pid
+        """
+        signatures_with_pid: List[Signature] = []
+        processes_with_pid = [
+            process for process in self.processes if process.pid == pid
+        ]
+        for signature in self.signatures:
+            for attribute in signature.attributes:
+                if attribute.source.guid:
+                    if any(
+                        attribute.source.guid == process.objectid.guid
+                        for process in processes_with_pid
+                    ):
+                        signatures_with_pid.append(signature)
+                elif any(
+                    attribute.source.ontology_id == process.objectid.ontology_id
+                    for process in processes_with_pid
+                ):
+                    signatures_with_pid.append(signature)
+
+        return signatures_with_pid
+
+    # NetworkConnection manipulation methods
+    def set_netflows(self, network_connections: List[NetworkConnection]) -> None:
+        """
+        This method sets the NetworkConnection objects. Note that a netflow == NetworkConnection
+        :param network_connections: The NetworkConnections to set
+        :return: None
+        """
+        self.netflows: List[NetworkConnection] = (
+            network_connections
+            if isinstance(network_connections, List)
+            and all(
+                isinstance(network_connection, NetworkConnection)
+                for network_connection in network_connections
+            )
+            else []
+        )
+
+    def create_network_connection(self, **kwargs) -> NetworkConnection:
+        """
+        This method creates a NetworkConnection object, assigns its attributes based on keyword arguments provided,
+        and returns the NetworkConnection object
+        :param kwargs: Key word arguments to be used for updating the NetworkConnection object's attributes
+        :return: NetworkConnection object
+        """
+        if not (
+            kwargs.get("objectid")
+            and kwargs.get("destination_ip")
+            and kwargs.get("destination_port")
+            and kwargs.get("transport_layer_protocol")
+            and kwargs.get("direction")
+        ):
+            raise ValueError("The network connection needs its required arguments")
+
+        network_connection = NetworkConnection(
+            kwargs["objectid"],
+            kwargs["destination_ip"],
+            kwargs["destination_port"],
+            kwargs["transport_layer_protocol"],
+            kwargs["direction"],
+        )
+        network_connection.update(**kwargs)
+        return network_connection
+
+    def add_network_connection(self, network_connection: NetworkConnection) -> None:
+        """
+        This method adds a NetworkConnection object to the list of network connections
+        :param network_connection: The NetworkConnection object to be added
+        :return: None
+        """
+        # Check if network_connection.process needs linking
+        if network_connection.process:
+            if network_connection.process.objectid.guid:
+                guid = network_connection.process.objectid.guid
+            else:
+                guid = self.get_guid_by_pid_and_time(
+                    network_connection.process.pid,
+                    network_connection.process.start_time,
+                )
+            process_to_point_to = self.get_process_by_guid(guid)
+            # If we cannot link a process to this network connection, then don't include the process
+            network_connection.set_process(process_to_point_to)
+
+        self.netflows.append(network_connection)
+
+    def get_network_connections(self) -> List[NetworkConnection]:
+        """
+        This method returns the network connections
+        :return: The list of network connections
+        """
+        return self.netflows
+
+    def get_network_connection_by_pid(self, pid: int) -> List[NetworkConnection]:
+        """
+        This method allows the retrieval of network connections that match a certain process ID
+        :param pid: The process ID
+        :return: A list of signatures that match the process pid
+        """
+        return [
+            network_connection
+            for network_connection in self.get_network_connections()
+            if getattr(network_connection.process, "pid", None) == pid
+        ]
+
+    def get_network_connection_by_guid(
+        self, guid: Optional[str]
+    ) -> Optional[NetworkConnection]:
+        """
+        This method takes a given GUID and returns the associated network connection
+        :param guid: The given GUID that we want an associated network connection for
+        :return: The associated network connection
+        """
+        if guid is None:
+            return None
+
+        network_connections_with_guid = [
+            network_connection
+            for network_connection in self.get_network_connections()
+            if network_connection.objectid.guid == guid
+        ]
+
+        if not network_connections_with_guid:
+            return None
+        else:
+            return network_connections_with_guid[0]
+
+    def get_network_connection_by_details(
+        self,
+        destination_ip: str,
+        destination_port: int,
+        direction: str,
+        transport_layer_protocol: str,
+    ) -> NetworkConnection:
+        """
+        This method finds an existing network connection based on specific details
+        NOTE: This isn't going to be the most exact method ever since it does not account for source IPs and ports
+        :param destination_ip: The destination IP of the network connection
+        :param destination_port: The destination port of the network connection
+        :param direction: The direction of the network connection
+        :param transport_layer_protocol: The transport layer protocol of the connection
+        :return: The matching network connection, if it exists
+        """
+        # All or nothing!
+        if any(
+            item is None
+            for item in [
+                destination_ip,
+                destination_port,
+                direction,
+                transport_layer_protocol,
+            ]
+        ):
+            return None
+
+        # Due to the way INetSim traffic can be handled, let's check for
+        # network connections that are both HTTP and HTTPS
+        if destination_port == 80:
+            destination_ports = [80, 443]
+        else:
+            destination_ports = [destination_port]
+
+        for network_connection in self.get_network_connections():
+            if (
+                network_connection.destination_ip == destination_ip
+                and network_connection.destination_port in destination_ports
+                and network_connection.direction == direction
+                and network_connection.transport_layer_protocol
+                == transport_layer_protocol
+            ):
+                return network_connection
+        return None
+
+    # NetworkDNS manipulation methods
+    def set_dns_netflows(self, network_dns: List[NetworkDNS]) -> None:
+        """
+        This method sets the NetworkDNS objects. Note that a dns_netflow == NetworkDNS
+        :param network_dnss: The NetworkDNS to set
+        :return: None
+        """
+        self.dns_netflows: List[NetworkDNS] = (
+            network_dns
+            if isinstance(network_dns, List)
+            and all(isinstance(dns, NetworkDNS) for dns in network_dns)
+            else []
+        )
+
+    def create_network_dns(self, **kwargs) -> NetworkDNS:
+        """
+        This method creates a NetworkDNS object, assigns its attributes based on keyword arguments provided,
+        and returns the NetworkDNS object
+        :param kwargs: Key word arguments to be used for updating the NetworkDNS object's attributes
+        :return: NetworkDNS object
+        """
+        if not (
+            kwargs.get("domain")
+            and kwargs.get("resolved_ips") is not None
+            and kwargs.get("lookup_type")
+        ):
+            raise ValueError("The network dns connection needs its required arguments")
+        network_dns = NetworkDNS(
+            kwargs["domain"], kwargs["resolved_ips"], kwargs["lookup_type"]
+        )
+        update_object_items(network_dns, kwargs)
+        return network_dns
+
+    def add_network_dns(self, dns: NetworkDNS) -> None:
+        """
+        This method adds a NetworkDNS object to the list of network DNS calls
+        :param dns: The NetworkDNS object to be added
+        :return: None
+        """
+        self.dns_netflows.append(dns)
+
+    def get_network_dns(self) -> List[NetworkDNS]:
+        """
+        This method returns the network dns
+        :return: The list of network dns
+        """
+        return self.dns_netflows
+
+    def get_domain_by_destination_ip(self, ip: str) -> Optional[str]:
+        """
+        This method returns domains associated with a given destination IP
+        :param ip: The IP for which an associated domain is requested
+        :return: The domain associated with the given destination IP
+        """
+        domains = [dns.domain for dns in self.dns_netflows if ip in dns.resolved_ips]
+        if domains:
+            return domains[0]
+        else:
+            return None
+
+    def get_destination_ip_by_domain(self, domain: str) -> Optional[str]:
+        """
+        This method returns a destination ip associated with a given domain
+        :param domain: The domain for which an associated IP is requested
+        :return: The IP associated with the given domain
+        """
+        ips = [dns.resolved_ips[0] for dns in self.dns_netflows if domain == dns.domain]
+        if ips:
+            return ips[0]
+        else:
+            return None
+
+    # NetworkHTTP manipulation methods
+    def set_http_netflows(self, network_http: List[NetworkHTTP]) -> None:
+        """
+        This method sets the NetworkHTTP objects. Note that a http_netflow == NetworkHTTP
+        :param network_http: The NetworkHTTPs to set
+        :return: None
+        """
+        self.http_netflows: List[NetworkHTTP] = (
+            network_http
+            if isinstance(network_http, List)
+            and all(isinstance(http, NetworkHTTP) for http in network_http)
+            else []
+        )
+
+    def create_network_http(self, **kwargs) -> NetworkHTTP:
+        """
+        This method creates a NetworkHTTP object, assigns its attributes based on keyword arguments provided,
+        and returns the NetworkHTTP object
+        :param kwargs: Key word arguments to be used for updating the NetworkHTTP object's attributes
+        :return: NetworkHTTP object
+        """
+        if not (kwargs.get("request_uri") and kwargs.get("request_method")):
+            raise ValueError("The network http connection needs its required arguments")
+        network_http = NetworkHTTP(kwargs["request_uri"], kwargs["request_method"])
+        update_object_items(network_http, kwargs)
+        return network_http
+
+    def add_network_http(self, http: NetworkHTTP) -> None:
+        """
+        This method adds a NetworkHTTP object to the list of network HTTP calls
+        :param http: The NetworkHTTP object to be added
+        :return: None
+        """
+        self.http_netflows.append(http)
+
+    def get_network_http(self) -> List[NetworkHTTP]:
+        """
+        This method returns the network HTTP
+        :return: The list of network HTTP
+        """
+        return self.http_netflows
+
+    def get_network_http_by_path(self, path: str) -> Optional[NetworkHTTP]:
+        """
+        This method returns the network HTTP call associated with a path
+        :param path: The path to a response/request body file
+        :return: The associated network HTTP call for the given path
+        """
+        network_http_with_path = [
+            http
+            for http in self.get_network_http()
+            if http.response_body_path == path or http.request_body_path == path
+        ]
+        if not network_http_with_path:
+            return None
+        else:
+            return network_http_with_path[0]
+
+    def get_network_http_by_details(
+        self, request_uri: str, request_method: str, request_headers: Dict[str, str]
+    ) -> Optional[NetworkHTTP]:
+        """
+        This request_method gets a network http call by request URI, request_method and request headers
+        :param request_uri: The URI of the request
+        :param request_method: The request_method used for the HTTP request
+        :param request_headers: The headers of the request
+        :return: The network http call (should one exist) that matches these details
+        """
+        network_http_with_details = [
+            http
+            for http in self.get_network_http()
+            if http.request_uri == request_uri
+            and http.request_method == request_method
+            and http.request_headers == request_headers
+        ]
+        if not network_http_with_details:
+            return None
+        else:
+            return network_http_with_details[0]
+
+    def get_network_connection_by_network_http(self, network_http: NetworkHTTP) -> Optional[NetworkHTTP]:
+        """
+        This method returns the network connection corresponding to the given network http object
+        :param network_http: The given network http object
+        :return: The corresponding network connection
+        """
+        return next((netflow for netflow in self.netflows if netflow.http_details == network_http), None)
+
+    # Process manipulation methods
+    def set_processes(self, processes: List[Process]) -> None:
+        """
+        This method sets the Process objects.
+        :param processes: The Processes to set
+        :return: None
+        """
+        self.processes: List[Process] = (
+            processes
+            if isinstance(processes, List)
+            and all(isinstance(process, Process) for process in processes)
+            else []
+        )
 
     def create_process(self, **kwargs) -> Process:
         """
-        This method creates a Process object, assigns it's attributes based on keyword arguments provided,
+        This method creates a Process object, assigns its attributes based on keyword arguments provided,
         and returns the Process object
         :param kwargs: Key word arguments to be used for updating the Process object's attributes
         :return: Process object
         """
-        process = Process()
+        if not (
+            kwargs.get("objectid") and kwargs.get("image") and kwargs.get("start_time")
+        ):
+            raise ValueError("The process needs its required arguments")
+        process = Process(kwargs["objectid"], kwargs["image"], kwargs["start_time"])
         process.update(**kwargs)
 
         if not process.objectid.guid:
             process.objectid.assign_guid()
-        if not process.pobjectid.guid:
-            process.pobjectid.assign_guid()
-        if not process.start_time:
-            process.set_start_time(float("-inf"))
         if not process.end_time:
-            process.set_end_time(float("inf"))
+            process.set_end_time(MAX_TIME)
         if not process.objectid.time_observed:
             process.objectid.set_time_observed(process.start_time)
         return process
@@ -1374,19 +1919,27 @@ class SandboxOntology:
             and not ("start_time" in kwargs or "end_time" in kwargs)
         ):
             log.warning(
-                "You must pass GUID kwarg or a PID kwarg with a timestamp such as start_time "
-                "or end_time if you want to update a process."
+                "You must pass GUID kwarg or a PID kwarg with a timestamp such as start_time or end_time if you want to update a process."
             )
             return
 
         # Don't update the parent yet
-        parent_keys = ["pguid", "ptag", "ptreeid", "pprocesstree",
-                       "ptime_observed", "ppid", "pimage", "pcommand_line", "pobjectid"]
+        parent_keys = [
+            "pguid",
+            "ptag",
+            "ptreeid",
+            "pprocesstree",
+            "ptime_observed",
+            "ppid",
+            "pimage",
+            "pcommand_line",
+            "pobjectid",
+        ]
         parent_kwargs = {
             key[1:]: value for key, value in kwargs.items() if key in parent_keys
         }
 
-        if "guid" in kwargs:
+        if "guid" in kwargs and kwargs["guid"]:
             process_to_update = self.get_process_by_guid(kwargs["guid"])
             if not process_to_update:
                 p = self.create_process(**kwargs)
@@ -1397,6 +1950,9 @@ class SandboxOntology:
             timestamp = (
                 kwargs["end_time"] if kwargs.get("end_time") else kwargs["start_time"]
             )
+            if not isinstance(timestamp, str):
+                raise ValueError(f"The timestamp {timestamp} must be a str")
+
             guid = self.get_guid_by_pid_and_time(kwargs["pid"], timestamp)
             if not guid:
                 p = self.create_process(**kwargs)
@@ -1408,10 +1964,16 @@ class SandboxOntology:
 
         if parent_kwargs.get("guid") or parent_kwargs.get("pobjectid", {}).get("guid"):
             # Only update if ObjectID is not associated with another process
-            if any(process_to_update.pobjectid == process.objectid for process in self.get_processes()):
+            if any(
+                process_to_update.pobjectid == process.objectid
+                for process in self.get_processes()
+            ):
                 return
-            pguid = parent_kwargs["guid"] if parent_kwargs.get(
-                "guid") else parent_kwargs.get("pobjectid", {}).get("guid")
+            pguid = (
+                parent_kwargs["guid"]
+                if parent_kwargs.get("guid")
+                else parent_kwargs.get("pobjectid", {}).get("guid")
+            )
             parent = self.get_process_by_guid(pguid)
             process_to_update.set_parent(parent)
 
@@ -1445,7 +2007,7 @@ class SandboxOntology:
         :return: None
         """
         parent = None
-        if process.pobjectid.guid:
+        if process.pobjectid and process.pobjectid.guid:
             parent = self.get_process_by_guid(process.pobjectid.guid)
             process.set_parent(parent)
 
@@ -1481,7 +2043,7 @@ class SandboxOntology:
         """
         return self.processes
 
-    def get_guid_by_pid_and_time(self, pid: int, timestamp: float) -> Optional[str]:
+    def get_guid_by_pid_and_time(self, pid: int, timestamp: str) -> Optional[str]:
         """
         This method allows the retrieval of GUIDs based on a process ID and timestamp
         :param pid: The process ID
@@ -1495,7 +2057,7 @@ class SandboxOntology:
             return None
 
     def get_processes_by_ppid_and_time(
-        self, ppid: int, timestamp: float
+        self, ppid: int, timestamp: str
     ) -> List[Process]:
         """
         This method allows the retrieval of processes based on a parent process ID and timestamp
@@ -1513,7 +2075,7 @@ class SandboxOntology:
             and timestamp >= process.start_time
         ]
 
-    def get_pguid_by_pid_and_time(self, pid: int, timestamp: float) -> Optional[str]:
+    def get_pguid_by_pid_and_time(self, pid: int, timestamp: str) -> Optional[str]:
         """
         This method allows the retrieval of the parent process's GUID based on a process ID and timestamp
         :param pid: The process ID
@@ -1521,7 +2083,7 @@ class SandboxOntology:
         :return: The parent process's GUID for the given process ID
         """
         process = self.get_process_by_pid_and_time(pid, timestamp)
-        if process:
+        if process and process.pobjectid:
             return process.pobjectid.guid
         else:
             return None
@@ -1543,7 +2105,9 @@ class SandboxOntology:
             return None
         return self._guid_process_map.get(guid.upper())
 
-    def get_process_by_command_line(self, command_line: Optional[str] = None) -> Optional[Process]:
+    def get_process_by_command_line(
+        self, command_line: Optional[str] = None
+    ) -> Optional[Process]:
         """
         This method takes a given command line and returns the associated process
         NOTE That this method has a high possibility of not being accurate. If multiple processes use the same
@@ -1554,37 +2118,22 @@ class SandboxOntology:
         if not command_line:
             return None
 
-        processes_with_command_line = [process for process in self.get_processes() if process.command_line and (
-            command_line == process.command_line or command_line in process.command_line)]
+        processes_with_command_line = [
+            process
+            for process in self.get_processes()
+            if process.command_line
+            and (
+                command_line == process.command_line
+                or command_line in process.command_line
+            )
+        ]
         if not processes_with_command_line:
             return None
         else:
             return processes_with_command_line[0]
 
-    def get_network_connection_by_guid(
-        self, guid: Optional[str]
-    ) -> Optional[NetworkConnection]:
-        """
-        This method takes a given GUID and returns the associated network connection
-        :param guid: The given GUID that we want an associated network connection for
-        :return: The associated network connection
-        """
-        if guid is None:
-            return None
-
-        network_connections_with_guid = [
-            network_connection
-            for network_connection in self.get_network_connections()
-            if network_connection.objectid.guid == guid
-        ]
-
-        if not network_connections_with_guid:
-            return None
-        else:
-            return network_connections_with_guid[0]
-
     def get_process_by_pid_and_time(
-        self, pid: Optional[int], timestamp: Optional[float]
+        self, pid: Optional[int], timestamp: Optional[str]
     ) -> Optional[Process]:
         """
         This method allows the retrieval of a process based on a process ID and timestamp
@@ -1620,364 +2169,29 @@ class SandboxOntology:
         return [
             process
             for process in self.get_processes()
-            if process.pobjectid.guid == pguid
+            if process.pobjectid and process.pobjectid.guid == pguid
         ]
 
-    def create_network_connection(self, **kwargs) -> NetworkConnection:
+    def get_process_by_pid(self, pid: Optional[int] = None) -> Optional[Process]:
         """
-        This method creates a NetworkConnection object, assigns it's attributes based on keyword arguments provided,
-        and returns the NetworkConnection object
-        :param kwargs: Key word arguments to be used for updating the NetworkConnection object's attributes
-        :return: NetworkConnection object
+        This method takes a given process ID and returns the associated process
+        NOTE That this method has a high possibility of not being accurate. If multiple processes use the same
+        process ID, this method will return the first process.
+        :param pid: The given process ID that we want an associated process for
+        :return: The associated process
         """
-        network_connection = NetworkConnection()
-        network_connection.update(**kwargs)
-        return network_connection
+        if not pid:
+            return None
 
-    def add_network_connection(self, network_connection: NetworkConnection) -> None:
-        """
-        This method adds a NetworkConnection object to the list of network connections
-        :param network_connection: The NetworkConnection object to be added
-        :return: None
-        """
-        # Check if network_connection.process needs linking
-        if network_connection.process:
-            if network_connection.process.objectid.guid:
-                guid = network_connection.process.objectid.guid
-            else:
-                guid = self.get_guid_by_pid_and_time(
-                    network_connection.process.pid,
-                    network_connection.process.start_time,
-                )
-            process_to_point_to = self.get_process_by_guid(guid)
-            # If we cannot link a process to this network connection, then don't include the process
-            network_connection.set_process(process_to_point_to)
-
-        domain = self.get_domain_by_destination_ip(network_connection.destination_ip)
-        network_connection.create_tag(domain)
-
-        self.network_connections.append(network_connection)
-
-    def get_network_connections(self) -> List[NetworkConnection]:
-        """
-        This method returns the network connections
-        :return: The list of network connections
-        """
-        return self.network_connections
-
-    def get_network_connection_by_pid(self, pid: int) -> List[NetworkConnection]:
-        """
-        This method allows the retrieval of network connections that match a certain process ID
-        :param pid: The process ID
-        :return: A list of signatures that match the process pid
-        """
-        return [
-            network_connection
-            for network_connection in self.get_network_connections()
-            if getattr(network_connection.process, "pid", None) == pid
+        processes_with_pid = [
+            process
+            for process in self.get_processes()
+            if process.pid and pid == process.pid
         ]
-
-    def get_network_connection_by_details(
-        self,
-        source_ip: str,
-        source_port: int,
-        destination_ip: str,
-        destination_port: int,
-        direction: str,
-        transport_layer_protocol: str,
-    ) -> NetworkConnection:
-        """
-        This method finds an existing network connection based on specific details
-        :param source_ip: The source IP of the network connection
-        :param source_port: The source port of the network connection
-        :param destination_ip: The destination IP of the network connection
-        :param destination_port: The destination port of the network connection
-        :param direction: The direction of the network connection
-        :param transport_layer_protocol: The transport layer protocol of the connection
-        :return: The matching network connection, if it exists
-        """
-        # All or nothing!
-        if any(
-                item is None
-                for item in
-                [source_ip, source_port, destination_ip, destination_port, direction, transport_layer_protocol]):
-            return None
-
-        # Due to the way INetSim traffic can be handled, let's check for
-        # network connections that are both HTTP and HTTPS
-        if destination_port == 80:
-            destination_ports = [80, 443]
-        else:
-            destination_ports = [destination_port]
-
-        for network_connection in self.get_network_connections():
-            if (
-                network_connection.source_ip == source_ip
-                and network_connection.source_port == source_port
-                and network_connection.destination_ip == destination_ip
-                and network_connection.destination_port in destination_ports
-                and network_connection.direction == direction
-                and network_connection.transport_layer_protocol == transport_layer_protocol
-            ):
-                return network_connection
-        return None
-
-    def create_network_dns(self, **kwargs) -> NetworkDNS:
-        """
-        This method creates a NetworkDNS object, assigns it's attributes based on keyword arguments provided,
-        and returns the NetworkDNS object
-        :param kwargs: Key word arguments to be used for updating the NetworkDNS object's attributes
-        :return: NetworkDNS object
-        """
-        network_dns = NetworkDNS()
-        if "connection_details" in kwargs:
-            network_dns.set_network_connection(kwargs.pop("connection_details"))
-        update_object_items(network_dns, kwargs)
-        return network_dns
-
-    def add_network_dns(self, dns: NetworkDNS) -> None:
-        """
-        This method adds a NetworkDNS object to the list of network DNS calls
-        :param dns: The NetworkDNS object to be added
-        :return: None
-        """
-        # Check if connection_details needs linking
-        if dns.connection_details:
-            network_connection_to_point_to = self.get_network_connection_by_details(
-                dns.connection_details.source_ip,
-                dns.connection_details.source_port,
-                dns.connection_details.destination_ip,
-                dns.connection_details.destination_port,
-                dns.connection_details.direction,
-                dns.connection_details.transport_layer_protocol,
-            )
-            if network_connection_to_point_to:
-                dns.set_network_connection(network_connection_to_point_to)
-            else:
-                # Autofill default fields
-                if not dns.connection_details.destination_port:
-                    dns.update_connection_details(destination_port=53)
-                if not dns.connection_details.direction:
-                    dns.update_connection_details(direction="outbound")
-                if not dns.connection_details.transport_layer_protocol:
-                    dns.update_connection_details(transport_layer_protocol="udp")
-
-                self.add_network_connection(dns.connection_details)
-
-        dns.connection_details.create_tag(dns.domain)
-        self.network_dns.append(dns)
-
-    def get_network_dns(self) -> List[NetworkDNS]:
-        """
-        This method returns the network dns
-        :return: The list of network dns
-        """
-        return self.network_dns
-
-    def get_domain_by_destination_ip(self, ip: str) -> Optional[str]:
-        """
-        This method returns domains associated with a given destination IP
-        :param ip: The IP for which an associated domain is requested
-        :return: The domain associated with the given destination IP
-        """
-        domains = [dns.domain for dns in self.network_dns if ip in dns.resolved_ips]
-        if domains:
-            return domains[0]
-        else:
-            return None
-
-    def get_destination_ip_by_domain(self, domain: str) -> Optional[str]:
-        """
-        This method returns a destination ip associated with a given domain
-        :param domain: The domain for which an associated IP is requested
-        :return: The IP associated with the given domain
-        """
-        ips = [dns.resolved_ips[0] for dns in self.network_dns if domain == dns.domain]
-        if ips:
-            return ips[0]
-        else:
-            return None
-
-    def create_network_http(self, **kwargs) -> NetworkHTTP:
-        """
-        This method creates a NetworkHTTP object, assigns it's attributes based on keyword arguments provided,
-        and returns the NetworkHTTP object
-        :param kwargs: Key word arguments to be used for updating the NetworkHTTP object's attributes
-        :return: NetworkHTTP object
-        """
-        network_http = NetworkHTTP()
-        if "connection_details" in kwargs:
-            network_http.set_network_connection(kwargs.pop("connection_details"))
-        update_object_items(network_http, kwargs)
-        return network_http
-
-    def add_network_http(self, http: NetworkHTTP) -> None:
-        """
-        This method adds a NetworkHTTP object to the list of network HTTP calls
-        :param http: The NetworkHTTP object to be added
-        :return: None
-        """
-        # Check if connection_details needs linking
-        if http.connection_details:
-            network_connection_to_point_to = self.get_network_connection_by_details(
-                http.connection_details.source_ip,
-                http.connection_details.source_port,
-                http.connection_details.destination_ip,
-                http.connection_details.destination_port,
-                http.connection_details.direction,
-                http.connection_details.transport_layer_protocol,
-            )
-            if network_connection_to_point_to:
-                http.set_network_connection(network_connection_to_point_to)
-            else:
-                # Autofill default fields
-                if not http.connection_details.destination_port:
-                    http.update_connection_details(destination_port=80)
-                if not http.connection_details.direction:
-                    http.update_connection_details(direction="outbound")
-                if not http.connection_details.transport_layer_protocol:
-                    http.update_connection_details(transport_layer_protocol="tcp")
-
-                self.add_network_connection(http.connection_details)
-
-        self.network_http.append(http)
-
-    def get_network_http(self) -> List[NetworkHTTP]:
-        """
-        This method returns the network HTTP
-        :return: The list of network HTTP
-        """
-        return self.network_http
-
-    def get_network_http_by_path(self, path: str) -> Optional[NetworkHTTP]:
-        """
-        This method returns the network HTTP call associated with a path
-        :param path: The path to a response/request body file
-        :return: The associated network HTTP call for the given path
-        """
-        network_http_with_path = [
-            http
-            for http in self.get_network_http()
-            if http.response_body_path == path or http.request_body_path == path
-        ]
-        if not network_http_with_path:
+        if not processes_with_pid:
             return None
         else:
-            return network_http_with_path[0]
-
-    def get_network_http_by_details(
-            self, request_uri: str, request_method: str, request_headers: Dict[str, str]) -> Optional[NetworkHTTP]:
-        """
-        This request_method gets a network http call by request URI, request_method and request headers
-        :param request_uri: The URI of the request
-        :param request_method: The request_method used for the HTTP request
-        :param request_headers: The headers of the request
-        :return: The network http call (should one exist) that matches these details
-        """
-        network_http_with_details = [
-            http for http in self.get_network_http()
-            if http.request_uri == request_uri and
-            http.request_method == request_method and
-            http.request_headers == request_headers
-        ]
-        if not network_http_with_details:
-            return None
-        else:
-            return network_http_with_details[0]
-
-    def create_signature(self, **kwargs) -> Signature:
-        """
-        This method creates a Signature object, assigns it's attributes based on keyword arguments provided,
-        and returns the Signature object
-        :param kwargs: Key word arguments to be used for updating the Signature object's attributes
-        :return: Signature object
-        """
-        signature = SandboxOntology.Signature()
-        if "description" in kwargs:
-            kwargs["description"] = kwargs["description"].lower()
-        update_object_items(signature, kwargs)
-        return signature
-
-    def add_signature(self, signature: Signature) -> None:
-        """
-        This method adds a Signature object to the list of signatures
-        :param signature: The Signature object to be added
-        :return: None
-        """
-        if signature.process:
-            if signature.process.objectid.guid:
-                guid = signature.process.objectid.guid
-            else:
-                guid = self.get_guid_by_pid_and_time(
-                    signature.process.pid, signature.process.start_time
-                )
-            process_to_point_to = self.get_process_by_guid(guid)
-            signature.set_process(process_to_point_to)
-
-        process_subjects: Set[Process] = set()
-        for subject in signature.subjects:
-            if subject.process:
-                if subject.process.objectid.guid:
-                    guid = subject.process.objectid.guid
-                else:
-                    guid = self.get_guid_by_pid_and_time(
-                        subject.process.pid, subject.process.start_time
-                    )
-                process_to_point_to = self.get_process_by_guid(guid)
-                if process_to_point_to:
-                    # No duplicates
-                    if process_to_point_to in process_subjects:
-                        subject.process = None
-                    else:
-                        subject.set_process(process_to_point_to)
-                        process_subjects.add(process_to_point_to)
-                else:
-                    subject.process = None
-
-        for subject in signature.subjects[:]:
-            if all(value is None for value in subject.as_primitives().values()):
-                signature.subjects.remove(subject)
-
-        # Confirm that the signature is still worth reporting
-        if all(not value for value in signature.as_primitives().values()):
-            return
-
-        self.signatures.append(signature)
-
-    def get_signatures(self) -> List[Signature]:
-        """
-        This method is a getter for the signatures attribute
-        :return: The value of the signatures attribute
-        """
-        return self.signatures
-
-    def get_signatures_by_pid(self, pid: int) -> List[Signature]:
-        """
-        This method allows the retrieval of signatures that match a certain process ID
-        :param pid: The process ID
-        :return: A list of signatures that match the process pid
-        """
-        return [
-            signature
-            for signature in self.signatures
-            if getattr(signature.process, "pid", None) == pid
-        ]
-
-    def set_sandbox_name(self, sandbox_name) -> None:
-        """
-        This method sets the sandbox name attribute
-        :param sandbox_name: The new value of the sandbox name
-        :return: None
-        """
-        self.sandbox_name = sandbox_name
-
-    def set_sandbox_version(self, sandbox_version) -> None:
-        """
-        This method sets the sandbox version attribute
-        :param sandbox_version: The new value of the sandbox version
-        :return: None
-        """
-        self.sandbox_version = sandbox_version
+            return processes_with_pid[0]
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -1985,24 +2199,25 @@ class SandboxOntology:
         :return: The dictionary representation of the object
         """
         return {
-            "analysis_metadata": self.analysis_metadata.as_primitives(),
+            "sandboxes": [sandbox.as_primitives() for sandbox in self.sandboxes],
             "signatures": [signature.as_primitives() for signature in self.signatures],
             "network_connections": [
                 network_connection.as_primitives()
-                for network_connection in self.network_connections
+                for network_connection in self.netflows
             ],
             "network_dns": [
-                network_dns.as_primitives() for network_dns in self.network_dns
+                network_dns.as_primitives() for network_dns in self.dns_netflows
             ],
             "network_http": [
-                network_http.as_primitives() for network_http in self.network_http
+                network_http.as_primitives() for network_http in self.http_netflows
             ],
             "processes": [process.as_primitives() for process in self.processes],
-            "sandbox_name": self.sandbox_name,
-            "sandbox_version": self.sandbox_version,
         }
 
-    def get_events(self, safelist: List[str] = None) -> List[Union[Process, NetworkConnection]]:
+    # Process Tree and Event manipulation methods
+    def get_events(
+        self, safelist: List[str] = None
+    ) -> List[Union[Process, NetworkConnection]]:
         """
         This method gets all process and network events, sorts them by time observed, and returns a list
         :param safelist: A list of safe treeids
@@ -2011,13 +2226,19 @@ class SandboxOntology:
         if safelist is None:
             safelist: List[str] = []
 
-        events = [process for process in self.processes
-                  if process.start_time is not None and process.objectid.treeid not in safelist]
-        network_conns = [network_connection
-                         for network_connection in self.network_connections
-                         if network_connection.objectid.time_observed is not None and network_connection.objectid.treeid
-                         not in safelist]
-        events += network_conns
+        processes_to_add = [
+            process
+            for process in self.processes
+            if process.start_time is not None
+            and process.objectid.treeid not in safelist
+        ]
+        netflows_to_add = [
+            network_connection
+            for network_connection in self.netflows
+            if network_connection.objectid.time_observed is not None
+            and network_connection.objectid.treeid not in safelist
+        ]
+        events = processes_to_add + netflows_to_add
         return self._sort_things_by_time_observed(events)
 
     def get_non_safelisted_processes(self, safelist: List[str]) -> List[Process]:
@@ -2050,7 +2271,7 @@ class SandboxOntology:
         tree = self._convert_events_dict_to_tree(events_dict)
         self._create_treeids(tree)
         if safelist:
-            tree = SandboxOntology._filter_event_tree_against_safe_treeids(
+            tree = OntologyResults._filter_event_tree_against_safe_treeids(
                 tree, safelist
             )
         return tree
@@ -2073,7 +2294,9 @@ class SandboxOntology:
             if "process" in event:
                 # event is a NetworkConnection, we don't want this in the process tree result section, only the counts
                 continue
-            self._convert_event_tree_to_result_section(items, event, safelist, process_tree_result_section)
+            self._convert_event_tree_to_result_section(
+                items, event, safelist, process_tree_result_section
+            )
         for item in items:
             process_tree_result_section.add_process(item)
         return process_tree_result_section
@@ -2115,14 +2338,16 @@ class SandboxOntology:
         :return: A ResultSection containing any Artifact ResultSections
         """
 
-        validated_artifacts = SandboxOntology._validate_artifacts(artifact_list)
+        validated_artifacts = OntologyResults._validate_artifacts(artifact_list)
 
         artifacts_result_section = ResultSection(
             "Sandbox Artifacts", auto_collapse=collapsed
         )
 
         for artifact in validated_artifacts:
-            SandboxOntology._handle_artifact(artifact, artifacts_result_section, injection_heur_id)
+            OntologyResults._handle_artifact(
+                artifact, artifacts_result_section, injection_heur_id
+            )
 
             if artifact.to_be_extracted:
                 try:
@@ -2165,10 +2390,10 @@ class SandboxOntology:
         if process.objectid.guid is None and process.pid is None:
             log.warning("Process requires at least a GUID or a PID, skipping...")
             return False
-        elif not process.objectid.guid and process.pid not in pids:
-            # This means we have a unique process that is not yet in the lookup table.
-            # Before we add it, assign a GUID to it.
-            process.objectid.assign_guid()
+        # elif not process.objectid.guid and process.pid not in pids:
+        #     # This means we have a unique process that is not yet in the lookup table.
+        #     # Before we add it, assign a GUID to it.
+        #     process.objectid.assign_guid()
         elif process.objectid.guid in guids and process.pid in pids:
             # We cannot have two items in the table that share process IDs and GUIDs
             log.warning("Duplicate process, skipping...")
@@ -2241,7 +2466,7 @@ class SandboxOntology:
         :return: None
         """
         try:
-            self.network_http.remove(network_http)
+            self.http_netflows.remove(network_http)
         except ValueError:
             return
 
@@ -2252,7 +2477,7 @@ class SandboxOntology:
         :return: None
         """
         try:
-            self.network_dns.remove(network_dns)
+            self.dns_netflows.remove(network_dns)
         except ValueError:
             return
 
@@ -2263,7 +2488,7 @@ class SandboxOntology:
         :return: None
         """
         try:
-            self.network_connections.remove(network_connection)
+            self.netflows.remove(network_connection)
         except ValueError:
             return
 
@@ -2377,7 +2602,15 @@ class SandboxOntology:
                 return things_to_sort_by_time_observed
 
             def time_observed(x):
-                return x["objectid"]["time_observed"]
+                # We should only be sorting with floats
+                time_obs = x["objectid"]["time_observed"]
+                if isinstance(time_obs, str):
+                    if time_obs == MIN_TIME:
+                        time_obs = epoch_to_local(0)
+                    time_obs = datetime.strptime(
+                        time_obs, LOCAL_FMT
+                    ).timestamp()
+                return time_obs
 
         else:
 
@@ -2389,15 +2622,23 @@ class SandboxOntology:
                 return things_to_sort_by_time_observed
 
             def time_observed(x):
-                return x.objectid.time_observed
+                # We should only be sorting with floats
+                time_obs = x.objectid.time_observed
+                if isinstance(time_obs, str):
+                    if time_obs == MIN_TIME:
+                        time_obs = epoch_to_local(0)
+                    time_obs = datetime.strptime(
+                        time_obs, LOCAL_FMT
+                    ).timestamp()
+                return time_obs
 
         sorted_things = sorted(things_to_sort_by_time_observed, key=time_observed)
         return sorted_things
 
     @staticmethod
     def _sort_things_by_relationship(
-            things_to_sort_by_relationship: List[Union[Process, NetworkConnection, Dict]]) -> List[
-            Union[Process, NetworkConnection, Dict]]:
+        things_to_sort_by_relationship: List[Union[Process, NetworkConnection, Dict]]
+    ) -> List[Union[Process, NetworkConnection, Dict]]:
         """
         This method sorts a list of things by their relationships
         :param things_to_sort_by_relationship: A list of things to sort by their relationships to one another
@@ -2430,10 +2671,17 @@ class SandboxOntology:
                     continue
 
                 # If the parent object exists in the rest of the list
-                for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
-                    if pobjectid["guid"] == parent["objectid"]["guid"] \
-                            and pobjectid["time_observed"] == parent["objectid"]["time_observed"]:
-                        popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
+                for parent_index, parent in enumerate(
+                    things_to_sort_by_relationship[index + 1 :]
+                ):
+                    if (
+                        pobjectid["guid"] == parent["objectid"]["guid"]
+                        and pobjectid["time_observed"]
+                        == parent["objectid"]["time_observed"]
+                    ):
+                        popped_item = things_to_sort_by_relationship.pop(
+                            index + 1 + parent_index
+                        )
                         things_to_sort_by_relationship.insert(index, popped_item)
                         recurse_again = True
                         break
@@ -2457,9 +2705,13 @@ class SandboxOntology:
                 if thing.objectid.time_observed != thing.pobjectid.time_observed:
                     continue
                 # If the parent object exists in the rest of the list
-                for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
+                for parent_index, parent in enumerate(
+                    things_to_sort_by_relationship[index + 1 :]
+                ):
                     if thing.pobjectid.guid == parent.objectid.guid:
-                        popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
+                        popped_item = things_to_sort_by_relationship.pop(
+                            index + 1 + parent_index
+                        )
                         things_to_sort_by_relationship.insert(index, popped_item)
                         recurse_again = True
                         break
@@ -2467,7 +2719,7 @@ class SandboxOntology:
                     break
 
         if recurse_again:
-            SandboxOntology ._sort_things_by_relationship(things_to_sort_by_relationship)
+            OntologyResults._sort_things_by_relationship(things_to_sort_by_relationship)
         return things_to_sort_by_relationship
 
     @staticmethod
@@ -2502,7 +2754,7 @@ class SandboxOntology:
             if isinstance(children, list):
                 if not children:
                     return 1
-                return 1 + max(SandboxOntology._depth(child) for child in children)
+                return 1 + max(OntologyResults._depth(child) for child in children)
         return 0
 
     @staticmethod
@@ -2519,14 +2771,14 @@ class SandboxOntology:
         root = {
             "children": [],
         }
-        sorted_events = SandboxOntology._sort_things_by_time_observed(
+        sorted_events = OntologyResults._sort_things_by_time_observed(
             list(events_dict.values())
         )
         try:
             # If events all have the same time observed, but there are child-parent relationships between events,
             # we should order based on relationship
-            sorted_events_by_relationship_and_time = SandboxOntology._sort_things_by_relationship(
-                sorted_events
+            sorted_events_by_relationship_and_time = (
+                OntologyResults._sort_things_by_relationship(sorted_events)
             )
         except RecursionError:
             log.error("Unable to sort events by relationship due to recursion error.")
@@ -2540,7 +2792,7 @@ class SandboxOntology:
 
             # This the main difference between Process and NetworkConnection
             pguid = None
-            if "pobjectid" in e and e["pobjectid"]["guid"]:
+            if "pobjectid" in e and e["pobjectid"] and e["pobjectid"]["guid"]:
                 # This is a Process
                 pguid = e["pobjectid"]["guid"]
             elif "process" in e and e["process"] and e["process"]["objectid"]["guid"]:
@@ -2549,7 +2801,7 @@ class SandboxOntology:
 
             if pguid and pguid in events_seen:
                 # Check if depth is too DEEP
-                if any(SandboxOntology._depth(event_dict) >= PROCESS_TREE_DEPTH_LIMIT for event_dict in events_dict.values()):
+                if any(OntologyResults._depth(event_dict) >= PROCESS_TREE_DEPTH_LIMIT for event_dict in events_dict.values()):
                     # We still want to register the process in events_seen, so
                     # that they don't get added to the root children
                     pass
@@ -2560,7 +2812,7 @@ class SandboxOntology:
 
             events_seen.append(e["objectid"]["guid"])
 
-        return SandboxOntology._sort_things_by_time_observed(root["children"])
+        return OntologyResults._sort_things_by_time_observed(root["children"])
 
     def _convert_event_tree_to_result_section(
         self,
@@ -2592,9 +2844,13 @@ class SandboxOntology:
         if event["objectid"]["treeid"] in safelist:
             e.safelist()
         else:
-            result_section.add_tag("dynamic.processtree_id", event["objectid"]["processtree"])
+            result_section.add_tag(
+                "dynamic.processtree_id", event["objectid"]["processtree"]
+            )
 
         for signature in self.get_signatures_by_pid(event["pid"]):
+            if signature.score is None:
+                signature.set_score(0)
             e.add_signature(signature.name, signature.score)
 
         for child in event["children"][:]:
@@ -2603,7 +2859,9 @@ class SandboxOntology:
                 # event is a NetworkConnection, we don't want this in the process tree result section, only the counts
                 pass
             else:
-                self._convert_event_tree_to_result_section(items, child, safelist, result_section, parent=e)
+                self._convert_event_tree_to_result_section(
+                    items, child, safelist, result_section, parent=e
+                )
             event["children"].remove(child)
 
         if not event["children"] and not parent:
@@ -2631,9 +2889,9 @@ class SandboxOntology:
 
         if parent_processtree:
             processtree = f"{parent_processtree}|{tag}"
-        elif node.get("pobjectid", {}).get("processtree"):
+        elif node.get("pobjectid") and node["pobjectid"].get("processtree"):
             processtree = f"{node['pobjectid']['processtree']}|{tag}"
-        elif node.get("pobjectid", {}).get("tag"):
+        elif node.get("pobjectid") and node["pobjectid"].get("tag"):
             processtree = f"{node['pobjectid']['tag']}|{tag}"
         else:
             processtree = tag
@@ -2673,7 +2931,7 @@ class SandboxOntology:
         len_of_children = len(children)
         for index in range(len_of_children):
             child_to_operate_on = children[index - num_removed]
-            hash_to_remove = SandboxOntology._remove_safe_leaves_helper(
+            hash_to_remove = OntologyResults._remove_safe_leaves_helper(
                 child_to_operate_on, safe_treeids
             )
             if (
@@ -2705,7 +2963,7 @@ class SandboxOntology:
         :return: None
         """
         for root in process_tree[:]:
-            _ = SandboxOntology._remove_safe_leaves_helper(root, safe_treeids)
+            _ = OntologyResults._remove_safe_leaves_helper(root, safe_treeids)
             if root["objectid"]["treeid"] in safe_treeids and not root["children"]:
                 process_tree.remove(root)
 
@@ -2720,7 +2978,7 @@ class SandboxOntology:
         :param safe_treeids: A List of tree IDs representing safe leaf nodes/branches
         :return: A list of processes in a tree structure, with the safe branches filtered out
         """
-        SandboxOntology._remove_safe_leaves(event_tree, safe_treeids)
+        OntologyResults._remove_safe_leaves(event_tree, safe_treeids)
         return event_tree
 
     @staticmethod
@@ -2748,7 +3006,9 @@ class SandboxOntology:
 
     @staticmethod
     def _handle_artifact(
-        artifact: Artifact = None, artifacts_result_section: ResultSection = None, injection_heur_id: int = 17
+        artifact: Artifact = None,
+        artifacts_result_section: ResultSection = None,
+        injection_heur_id: int = 17,
     ) -> None:
         """
         This method handles a single artifact and creates a ResultSection for the artifact, if appropriate
@@ -2812,35 +3072,99 @@ class SandboxOntology:
         if item is None:
             return
         if isinstance(item, Process):
-            if item.start_time == float("-inf"):
-                item.set_start_time(self.analysis_metadata.start_time)
-            if item.end_time == float("inf"):
-                item.set_end_time(self.analysis_metadata.end_time)
-            if item.objectid.time_observed == float("-inf"):
-                item.objectid.set_time_observed(self.analysis_metadata.start_time)
-            if item.objectid.time_observed == float("inf"):
-                item.objectid.set_time_observed(self.analysis_metadata.end_time)
+            start_time = next(
+                (
+                    sandbox.analysis_metadata.start_time
+                    for sandbox in self.sandboxes
+                    if sandbox.objectid.session == item.objectid.session
+                ),
+                None,
+            )
+            end_time = next(
+                (
+                    sandbox.analysis_metadata.end_time
+                    for sandbox in self.sandboxes
+                    if sandbox.objectid.session == item.objectid.session
+                ),
+                None,
+            )
+            if start_time == MIN_TIME:
+                start_time = epoch_to_local(0)
+            if item.start_time == MIN_TIME:
+                item.set_start_time(start_time)
+            if item.end_time == MAX_TIME:
+                item.set_end_time(end_time)
+            if item.objectid.time_observed == MIN_TIME:
+                item.objectid.set_time_observed(start_time)
+            if item.objectid.time_observed == MAX_TIME:
+                item.objectid.set_time_observed(end_time)
+            if item.pobjectid and item.pobjectid.time_observed == MIN_TIME:
+                item.pobjectid.set_time_observed(start_time)
+            if item.pobjectid and item.pobjectid.time_observed == MAX_TIME:
+                item.pobjectid.set_time_observed(end_time)
         elif isinstance(item, ObjectID):
-            if item.time_observed == float("-inf"):
-                item.set_time_observed(self.analysis_metadata.start_time)
-            if item.time_observed == float("inf"):
-                item.set_time_observed(self.analysis_metadata.end_time)
+            start_time = next(
+                (
+                    sandbox.analysis_metadata.start_time
+                    for sandbox in self.sandboxes
+                    if sandbox.objectid.session == item.session
+                ),
+                None,
+            )
+            end_time = next(
+                (
+                    sandbox.analysis_metadata.end_time
+                    for sandbox in self.sandboxes
+                    if sandbox.objectid.session == item.session
+                ),
+                None,
+            )
+            if start_time == MIN_TIME:
+                start_time = epoch_to_local(0)
+            if item.time_observed == MIN_TIME:
+                item.set_time_observed(start_time)
+            elif item.time_observed == MAX_TIME:
+                item.set_time_observed(end_time)
         else:
             log.warning(f"Given object {item} is neither Process or ObjectID...")
 
-    def _remove_safelisted_processes(self, safelist: List[str]) -> None:
+    def _remove_safelisted_processes(
+        self, safelist: List[str], need_tree_id: bool = False
+    ) -> None:
         """
         This method removes all safelisted processes and all activities associated with those processes
+        :param need_tree_id:
         :return: None
         """
-        safelisted_processes = [process for process in self.get_processes() if process.objectid.treeid in safelist]
-        safelisted_network_http = [http for http in self.get_network_http()
-                                   if http.connection_details.process in safelisted_processes]
-        safelisted_network_dns = [dns for dns in self.get_network_dns()
-                                  if dns.connection_details.process in safelisted_processes]
-        safelisted_network_connections = [nc for nc in self.get_network_connections()
-                                          if nc.process in safelisted_processes]
-        safelisted_signatures = [sig for sig in self.get_signatures() if sig.process in safelisted_processes]
+        safelisted_processes = [
+            process
+            for process in self.get_processes()
+            if process.objectid.treeid in safelist
+            or (need_tree_id and process.objectid.treeid is None)
+        ]
+
+        safelisted_network_connections = [
+            nc
+            for nc in self.get_network_connections()
+            if nc.process in safelisted_processes
+        ]
+        safelisted_network_http = [
+            nc.http_details for nc in safelisted_network_connections if nc.http_details
+        ]
+        safelisted_network_dns = [
+            nc.dns_details for nc in safelisted_network_connections if nc.dns_details
+        ]
+        safelisted_signatures = [
+            sig
+            for sig in self.get_signatures()
+            if any(
+                all(
+                    attribute.source == safelisted_process.objectid
+                    for attribute in sig.attributes
+                )
+                for safelisted_process in safelisted_processes
+            )
+        ]
         # TODO Somehow get safelisted subjects
         # safelisted_signatures = [sig for sig in self.get_signatures() if sig.process in safelisted_processes]
         for safelisted_http in safelisted_network_http:
@@ -2854,7 +3178,9 @@ class SandboxOntology:
         for safelisted_process in safelisted_processes:
             self._remove_process(safelisted_process)
 
-    def preprocess_ontology(self, safelist: List[str] = None, from_main: bool = False, so_json: str = None) -> None:
+    def preprocess_ontology(
+        self, safelist: List[str] = None, from_main: bool = False, so_json: str = None
+    ) -> None:
         """
         This method preprocesses the ontology before it gets validated by Assemblyline's base ODM
         :param from_main: A boolean flag that indicates if this method is being run from __main__
@@ -2864,67 +3190,45 @@ class SandboxOntology:
         if safelist is None:
             safelist: List[str] = []
 
-        # DEBUGGING case
-        if from_main:
-            from assemblyline.odm.models.ontology.results.sandbox import Sandbox
-            from json import loads
+        self._remove_safelisted_processes(safelist, need_tree_id=True)
 
-            with open(so_json, "r") as f:
-                file_contents = loads(f.read())
+        for process in self.get_processes():
+            self._set_item_times(process)
 
-            self.load_from_json(file_contents)
-            for process in self.get_processes():
-                self._set_item_times(process)
+        for signature in self.get_signatures():
+            for subject in signature.get_attributes():
+                self._set_item_times(subject.source)
 
-            for signature in self.get_signatures():
-                self._set_item_times(signature.process)
-                for subject in signature.get_subjects():
-                    self._set_item_times(subject.process)
+        for network_connection in self.get_network_connections():
+            self._set_item_times(network_connection.process)
 
-            for network_connection in self.get_network_connections():
-                self._set_item_times(network_connection.process)
 
-            for dns in self.get_network_dns():
-                self._set_item_times(dns.connection_details.process)
-
-            for http in self.get_network_http():
-                self._set_item_times(http.connection_details.process)
-
-            self._remove_safelisted_processes(safelist)
-
-            Sandbox(
-                data=self.as_primitives(), ignore_extra_values=False
-            ).as_primitives()
-        # Service runtime case
-        else:
-            self._remove_safelisted_processes(safelist)
-
-            for process in self.get_processes():
-                self._set_item_times(process)
-
-            for signature in self.get_signatures():
-                self._set_item_times(signature.process)
-                for subject in signature.get_subjects():
-                    self._set_item_times(subject.process)
-
-            for network_connection in self.get_network_connections():
-                self._set_item_times(network_connection.process)
-
-            for dns in self.get_network_dns():
-                self._set_item_times(dns.connection_details.process)
-
-            for http in self.get_network_http():
-                self._set_item_times(http.connection_details.process)
+def attach_dynamic_ontology(service: ServiceBase, ontres: OntologyResults) -> None:
+    """
+    This method takes a given service instance and an instance of the OntologyResults class and adds the ontologies
+    :param service: The service instance that will have ontologies added to it
+    :param ontres: The OntologyResults instance that contains the ontologies data
+    :return: None
+    """
+    [service.ontology.add_result_part(ProcessModel, process.as_primitives()) for process in ontres.get_processes()]
+    [service.ontology.add_result_part(SandboxModel, sandbox.as_primitives()) for sandbox in ontres.get_sandboxes()]
+    [service.ontology.add_result_part(SignatureModel, signature.as_primitives()) for signature in ontres.get_signatures()]
+    [service.ontology.add_result_part(NetworkConnectionModel, network_connection.as_primitives()) for network_connection in ontres.get_network_connections()]
 
 
 def extract_iocs_from_text_blob(
-        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None,
-        enforce_char_min: bool = False) -> None:
+    blob: str,
+    result_section: ResultTableSection,
+    so_sig: Optional[Signature] = None,
+    source: Optional[ObjectID] = None,
+    enforce_char_min: bool = False,
+) -> None:
     """
     This method searches for domains, IPs and URIs used in blobs of text and tags them
     :param blob: The blob of text that we will be searching through
     :param result_section: The result section that that tags will be added to
-    :param so_sig: The signature for the Sandbox Ontology
+    :param so_sig: The signature for the Ontology Results
+    :param source: The source of the signature for the Ontology Results
     :param enforce_char_min: Enforce the minimum amount of characters that an ioc can have
     :return: None
     """
@@ -2942,10 +3246,11 @@ def extract_iocs_from_text_blob(
         if add_tag(result_section, "network.dynamic.ip", ip):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
-            elif dumps({"ioc_type": "ip", "ioc": ip}) not in result_section.section_body.body:
+            elif (
+                dumps({"ioc_type": "ip", "ioc": ip})
+                not in result_section.section_body.body
+            ):
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
-            if so_sig:
-                so_sig.add_subject(ip=ip)
     for domain in domains:
         if enforce_char_min and len(domain) < MIN_DOMAIN_CHARS:
             continue
@@ -2954,10 +3259,11 @@ def extract_iocs_from_text_blob(
         if add_tag(result_section, "network.dynamic.domain", domain):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
-            elif dumps({"ioc_type": "domain", "ioc": domain}) not in result_section.section_body.body:
+            elif (
+                dumps({"ioc_type": "domain", "ioc": domain})
+                not in result_section.section_body.body
+            ):
                 result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
-            if so_sig:
-                so_sig.add_subject(domain=domain)
 
     for uri in uris:
         if enforce_char_min and len(uri) < MIN_URI_CHARS:
@@ -2965,10 +3271,13 @@ def extract_iocs_from_text_blob(
         if add_tag(result_section, "network.dynamic.uri", uri):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
-            elif dumps({"ioc_type": "uri", "ioc": uri}) not in result_section.section_body.body:
+            elif (
+                dumps({"ioc_type": "uri", "ioc": uri})
+                not in result_section.section_body.body
+            ):
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
-            if so_sig:
-                so_sig.add_subject(uri=uri)
+            if so_sig and source:
+                so_sig.add_attribute(so_sig.create_attribute(source=source, uri=uri))
         if "//" in uri:
             uri = uri.split("//")[1]
         for uri_path in findall(URI_PATH, uri):
@@ -2977,15 +3286,18 @@ def extract_iocs_from_text_blob(
             if add_tag(result_section, "network.dynamic.uri_path", uri_path):
                 if not result_section.section_body.body:
                     result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
-                elif dumps({"ioc_type": "uri_path", "ioc": uri_path}) not in result_section.section_body.body:
+                elif (
+                    dumps({"ioc_type": "uri_path", "ioc": uri_path})
+                    not in result_section.section_body.body
+                ):
                     result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
 
 
 # DEBUGGING METHOD
 if __name__ == "__main__":
-    # This method is for validating the output from the SandboxOntology class -> Sandbox class
+    # This method is for validating the output from the OntologyResults class -> Sandbox class
     from sys import argv
 
     so_json_path = argv[1]
-    default_so = SandboxOntology()
+    default_so = OntologyResults()
     default_so.preprocess_ontology(safelist=[], from_main=True, so_json=so_json_path)
