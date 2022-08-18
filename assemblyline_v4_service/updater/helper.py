@@ -170,6 +170,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
     key = source.get('private_key', None)
     username = source.get('username', None)
     password = source.get('password', None)
+    branch = source.get('git_branch', None) or None
 
     ignore_ssl_errors = source.get("ssl_ignore_errors", False)
     ca_cert = source.get("ca_cert")
@@ -210,7 +211,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
             git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
             git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
 
-        repo = Repo.clone_from(url, clone_dir, env=git_env, git_config=git_config)
+        repo = Repo.clone_from(url, clone_dir, env=git_env, git_config=git_config, branch=branch)
 
         # Check repo last commit
         if previous_update:
