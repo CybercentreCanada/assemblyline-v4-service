@@ -14,14 +14,17 @@ from cart import unpack_file
 
 class TestHelper:
     def __init__(self, service_class, result_folder, extra_sample_locations=None):
-        if not extra_sample_locations:
-            extra_sample_locations = []
-
         # Set service class to use
         self.service_class = service_class
 
         # Set location for samples
-        self.locations = extra_sample_locations
+        self.locations = []
+
+        # Extra samples location
+        if extra_sample_locations:
+            self.locations.append(extra_sample_locations)
+
+        # Main samples location
         full_samples_location = os.environ.get("FULL_SAMPLES_LOCATION", None)
         if full_samples_location:
             self.locations.append(full_samples_location)
@@ -136,8 +139,20 @@ class TestHelper:
             if os.path.exists(file_path):
                 os.remove(file_path)
 
+    def result_list(self):
+        return [f for f in os.listdir(self.result_folder)
+                if len(f.split("_")[0]) == 64 and os.path.isdir(os.path.join(self.result_folder, f))]
+
+    def compare_sample_results(self, sample):
+        original_results_file = os.path.join(self.result_folder, sample, 'result.json')
+
+        if os.path.exists(original_results_file):
+            original_results = json.load(open(original_results_file))
+            results = self._execute_sample(sample)
+            assert original_results == results
+
     def regenerate_results(self):
-        for f in os.listdir(self.result_folder):
+        for f in self.result_list():
             try:
                 self._execute_sample(f, save=True)
             except FileNotFoundError:
