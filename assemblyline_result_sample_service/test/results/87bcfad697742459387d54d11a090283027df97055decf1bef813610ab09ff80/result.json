@@ -1,0 +1,65 @@
+{
+  "response": {
+    "extracted": [
+      {
+        "name": "classified.doc",
+        "sha256": "5ce5ae8ef56a54af2c44415800a81ecffd49a33ae8895dfe38fc1075d3f619ec"
+      },
+      {
+        "name": "empty.txt",
+        "sha256": "cc1d2f838445db7aec431df9ee8a871f40e7aa5e064fc056633ef8c60fab7b06"
+      },
+      {
+        "name": "file.txt",
+        "sha256": "d729ecfb2cf40bc4af8038dac609a57f57dbe6515d35357af973677d5e66417a"
+      }
+    ],
+    "supplementary": [
+      "0634c029797cbb72e481dc05ac51127f88cffd96eaf4cef0561cf0345a9aead2",
+      "07ea8db8991c1ebf1c3468baeaadb5b6f24a2ec7502ca9352078171b9825dcc1",
+      "12efe95c7648480313e8e993405c4c9a65008fec1fe0e15cf7753512a12170b9",
+      "142747595574a7c2cea51b7a46b0ce47cea51ffaac1106cdf08218483d38d372",
+      "2f1cf5d2fb05da0b93d4311cad14e5932d0c6bc074cf2c0bb04fae20c1bb0e63",
+      "3468c56ae3a041ff5991437255fcd18fcae8b8e0877f9eea0bf7035af499cc24",
+      "4219ed595d6d2191c5f0932bae04daee9db22fbab07c60262d8a1247bb706924",
+      "77ca9a54b431c9b97d90ed81b95ded52dfd9275b56ec92f90b887a3cb669a8ef",
+      "8a900534fd24dfd8a1f5ea3133816bfc2bee78dfa7f24a2a8d5e5f3a667d844e",
+      "9870fa9be636d6d794cfbdd6edc3670b19b2191b1fa29b8537abdc408c1f2c2f",
+      "b3910c6cd34e6be154ceb5c389e605d4101dffc1102213f4f131c23bf9a42fb8",
+      "b73246eb98e4fcf52e18aa559d94f2eb0d93a1bcffe8717777fe61e9d374497e",
+      "cdda32e4ed0dcd52d90e7e25248a6c31ca9e5d0ada346d4c3b3af0cb83df7ed5",
+      "ec7523811bcf8881b08afb96dad1293d3212cf6f60120c9ec89c924098486575"
+    ]
+  },
+  "result": {
+    "heuristics": [
+      2,
+      2,
+      3,
+      4,
+      4,
+      5
+    ],
+    "tags": {
+      "attribution.implant": [
+        "ResultSample"
+      ],
+      "file.pe.sections.name": [
+        ".UPX0",
+        ".UPX1",
+        ".UPX2"
+      ],
+      "network.static.domain": [
+        "enhanced.edu",
+        "partners.edu",
+        "us.com"
+      ],
+      "network.static.ip": [
+        "127.0.0.1",
+        "206.231.242.37",
+        "239.76.83.20",
+        "33.235.18.182"
+      ]
+    }
+  }
+}
