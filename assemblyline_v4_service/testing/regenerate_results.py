@@ -25,12 +25,9 @@ def run():
         if os.environ.get(env, None) is None:
             print(f"[W] {env} environement variable is not set, it should probably be...")
 
-    extra_folder = os.environ.get('SERVICE_TESTING_EXTRA_SAMPLE_FOLDER', None)
-    if extra_folder:
-        extra_folder = [extra_folder]
-
     th = TestHelper(load_module_by_path(os.environ['SERVICE_PATH']),
-                    os.environ['SERVICE_TESTING_RESULT_FOLDER'], extra_folder)
+                    os.environ['SERVICE_TESTING_RESULT_FOLDER'],
+                    os.environ.get('SERVICE_TESTING_EXTRA_SAMPLE_FOLDER', None))
     th.regenerate_results()
 
 
