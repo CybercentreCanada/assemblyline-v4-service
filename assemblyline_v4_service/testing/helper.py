@@ -36,6 +36,7 @@ class TestHelper:
         self.identify = forge.get_identify(use_cache=False)
 
         # Load submission params
+        # TODO: load temp_submission_data, metadata and other service tags
         self.submission_params = helper.get_service_attributes().submission_params
 
     def _create_service_task(self, file_path):
@@ -68,47 +69,72 @@ class TestHelper:
         raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), sample)
 
     @staticmethod
-    def _generalize_result(result):
-        # At first we were comparing the full result and removing the random/unpredictable information.
-        # Now we are only keeping the strict minimum to compare with.
-        # supplementary/extracted sha256 + heuristics heur_id + tags
-        trimed_result = {}
-        if "response" in result:
-            trimed_result["response"] = {}
-            if "supplementary" in result["response"]:
-                trimed_result["response"]["supplementary"] = sorted(
-                    [x["sha256"] for x in result["response"]["supplementary"]]
+    def _generalize_result(result, temp_submission_data=None):
+        # Create a result for this file that contain generalized information for testing and
+        # detailed information as well so the service writter has a better idea of the impact
+        # of its changes to the service output.
+        # TODO: temp_submission_data
+        generalized_results = {
+            "files": {
+                "extracted": sorted(
+                    [{"name": x["name"], "sha256": x["sha256"]}
+                     for x in result.get("response", {}).get("extracted", [])], key=lambda x: x["sha256"]
+                ),
+                "supplementary": sorted(
+                    [{"name": x["name"], "sha256": x["sha256"]}
+                     for x in result.get("response", {}).get("supplementary", [])], key=lambda x: x["sha256"]
                 )
-            if "extracted" in result["response"]:
-                trimed_result["response"]["extracted"] = sorted(
-                    [{"name": x["name"], "sha256": x["sha256"]} for x in result["response"]["extracted"]],
-                    key=lambda x: x["sha256"],
+            },
+            "results": {
+                "attack": {},
+                "heuristics": [],
+                "tags": {}
+            },
+            "extra": {
+                "sections": [],
+                "score": result.get("result", {}).get('score', 0),
+                "drop_file": result.get("drop", False)
+            }
+        }
+
+        # Parse sections
+        for section in result.get("result", {}).get("sections", []):
+
+            # Add section to extras (This will not be tested)
+            generalized_results['extra']['sections'].append(section)
+
+            # Parse Heuristics
+            heuristic = section.get('heuristic', None)
+            sigs = []
+            heur_id = None
+            if heuristic:
+                sigs = list(heuristic['signatures'].keys())
+                heur_id = heuristic['heur_id']
+                generalized_results["results"]["heuristics"].append(
+                    {
+                        "heur_id": heur_id,
+                        "attack_ids": heuristic['attack_ids'],
+                        'signatures': sigs
+                    }
                 )
+            # Sort Heuristics
+            generalized_results["results"]["heuristics"] = \
+                sorted(generalized_results["results"]["heuristics"], key=lambda x: x["heur_id"])
 
-        if "result" in result:
-            trimed_result["result"] = {}
-            if "sections" in result["result"]:
-                trimed_result["result"] = {"heuristics": [], "tags": {}}
-                for section in result["result"]["sections"]:
-                    if "heuristic" in section:
-                        if section["heuristic"] is not None:
-                            if "heur_id" in section["heuristic"]:
-                                trimed_result["result"]["heuristics"].append(section["heuristic"]["heur_id"])
-                    if "tags" in section:
-                        if section["tags"]:
-                            for k, v in flatten(section["tags"]).items():
-                                if k in trimed_result["result"]["tags"]:
-                                    trimed_result["result"]["tags"][k].extend(v)
-                                else:
-                                    trimed_result["result"]["tags"][k] = v
+            # Parse tags
+            for k, v in flatten(section.get("tags", {})).items():
+                generalized_results["results"]["tags"].setdefault(k, [])
+                for tag in v:
+                    generalized_results["results"]["tags"][k].append({
+                        "value": tag,
+                        "heur_id": heur_id,
+                        "signatures": sigs
+                    })
+            # Sort Tags
+            for k, v in generalized_results["results"]["tags"].items():
+                generalized_results["results"]["tags"][k] = sorted(v, key=lambda x: x["value"])
 
-                # Sort the heur_id and tags lists so they always appear in the same order even if
-                # the result sections where moved around.
-                trimed_result["result"]["heuristics"] = sorted(trimed_result["result"]["heuristics"])
-                for k, v in trimed_result["result"]["tags"].items():
-                    trimed_result["result"]["tags"][k] = sorted(v)
-
-        return trimed_result
+        return generalized_results
 
     def _execute_sample(self, sample, save=False):
         file_path = os.path.join("/tmp", sample)
