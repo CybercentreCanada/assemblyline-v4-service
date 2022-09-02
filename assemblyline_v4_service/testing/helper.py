@@ -11,16 +11,6 @@ from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 from cart import unpack_file
 
-TEST_DIR = os.path.dirname(os.path.abspath(__file__))
-ROOT_DIR = os.path.dirname(TEST_DIR)
-SELF_LOCATION = os.environ.get("FULL_SELF_LOCATION", ROOT_DIR)
-SAMPLES_LOCATION = os.environ.get("FULL_SAMPLES_LOCATION", None)
-[SELF_LOCATION, SAMPLES_LOCATION]
-
-
-def _list_results(location):
-    return [f.rstrip(".json") for f in os.listdir(os.path.join(location, "tests", "results"))]
-
 
 class TestHelper:
     def __init__(self, service_class, result_folder, extra_sample_locations=None):
@@ -145,3 +135,10 @@ class TestHelper:
                 cls._cleanup()
             if os.path.exists(file_path):
                 os.remove(file_path)
+
+    def regenerate_results(self):
+        for f in os.listdir(self.result_folder):
+            try:
+                self._execute_sample(f, save=True)
+            except FileNotFoundError:
+                print(f"[W] File {f} was not for in any of the following locations: {', '.join(self.locations)}")
