@@ -64,7 +64,8 @@ def get_service_attributes() -> Service:
 
 
 def get_service_manifest() -> Dict:
-    service_manifest_yml = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml"
+    service_manifest_yml = os.environ.get(
+        'SERVICE_MANIFEST_PATH', f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml")
     if not os.path.exists(service_manifest_yml):
         service_manifest_yml = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
 
