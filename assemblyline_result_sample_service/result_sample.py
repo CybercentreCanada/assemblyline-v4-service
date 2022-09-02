@@ -384,8 +384,10 @@ class ResultSample(ServiceBase):
             #     This type of section allows the service writer to display images to the user
             image_section = ResultImageSection(request, 'Example of Image section')
             for x in range(6):
-                image_section.add_image(f'data/000{x+1}.jpg', f'000{x+1}.jpg',
-                                        f'ResultSample screenshot 000{x+1}', ocr_heuristic_id=6)
+                image_section.add_image(
+                    os.path.join(os.path.dirname(__file__),
+                                 'data', f'000{x+1}.jpg'),
+                    f'000{x+1}.jpg', f'ResultSample screenshot 000{x+1}', ocr_heuristic_id=6)
             result.add_section(image_section)
 
             # ==================================================================
