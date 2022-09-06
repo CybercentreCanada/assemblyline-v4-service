@@ -1,20 +1,20 @@
 {
   "extra": {
     "drop_file": false,
-    "score": 2610,
+    "score": 2520,
     "sections": [
       {
         "auto_collapse": false,
-        "body": "in companies feedback visit\ninvite stays laboratory tools marketplace survey\nacademia marketplace\nexamine invite Canadian engaging environment environment\nfeedback companies\nus the",
+        "body": "them across testing\nis cutting about problems survey\npartnerships To\nindustry also cutting",
         "body_format": "TEXT",
         "classification": "TLP:WHITE",
         "depth": 0,
         "heuristic": {
           "attack_ids": [
-            "S0298",
-            "T1606.002",
-            "G0022",
-            "T1561.002"
+            "S0452",
+            "T1211",
+            "G0105",
+            "T1552.002"
           ],
           "frequency": 0,
           "heur_id": 3,
@@ -53,7 +53,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "{\"type\": \"colormap\", \"data\": {\"domain\": [0, 20], \"values\": [19.417387750780662, 14.953654452167985, 4.385806029307946, 13.574513870836046, 19.470982694978932, 19.19831207891627, 15.7215097389883, 16.59738250368052, 10.90839544097146, 11.6264274343131, 13.711609213790252, 18.881922146237493, 5.408132252486986, 15.254659052186561, 14.10388025875245, 9.855342890370887, 9.555497504618643, 8.787635040607649, 7.956887366137386, 2.8822996030845793, 0.3856392735480263, 5.418376882219413, 7.464574342312835, 7.666978033892673, 10.528073062884264, 8.153565852226665, 12.107322029523706, 16.560677050806, 13.14467085945168, 12.4257193597345, 3.2622539624735825, 18.26119017525848, 5.425314480493224, 12.673099140279858, 10.156026839436567, 8.245058983805427, 8.343988325859218, 2.1249164643900453, 14.153612048325817, 5.782521500715765, 19.21645767913589, 12.872149517539587, 18.079945547702245, 17.54476876868292, 15.238914539627554, 11.549354490715992, 0.534123813734193, 16.723455614669966, 9.133408296059095, 5.570247786477989]}}",
+        "body": "{\"type\": \"colormap\", \"data\": {\"domain\": [0, 20], \"values\": [3.005627120456895, 5.640801861306111, 9.162540112384992, 13.096920486979752, 13.171837203046115, 12.459079930969327, 15.388073210893221, 1.5032168393269307, 4.548666304110571, 19.790939112762803, 12.020315647821748, 7.5070916835512875, 5.559731812312374, 4.567426715539218, 19.12641059358518, 0.6478158634225362, 16.216130633327012, 6.895669021705643, 12.242942038404923, 6.026499688756022, 17.759045168872703, 9.629605186351895, 9.32018707627206, 11.91036912295157, 15.194139317866826, 7.935523322519837, 15.726123773220229, 2.4208435949925966, 7.350341474485582, 6.006448157137569, 9.304724002394867, 6.552345245370734, 3.932990749009364, 6.533006756515118, 5.969550522380073, 0.8396756588705312, 18.99093853027069, 4.384033181065532, 18.675079908109957, 7.352588353276062, 0.5078414666869779, 11.679320879910609, 7.682719589254326, 7.264298276531869, 3.0082981351576854, 10.940232324476737, 12.724231109045768, 6.895185290107266, 6.83558139663389, 6.083096500181917]}}",
         "body_format": "GRAPH_DATA",
         "classification": "TLP:AMBER//COMMERCIAL",
         "depth": 0,
@@ -64,7 +64,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://on.edu/\", \"name\": \"Random url!\"}]",
+        "body": "[{\"url\": \"https://goods.com/\", \"name\": \"Random url!\"}]",
         "body_format": "URL",
         "classification": "TLP:WHITE",
         "depth": 0,
@@ -73,7 +73,7 @@
           "network": {
             "static": {
               "domain": [
-                "on.edu"
+                "goods.com"
               ]
             }
           }
@@ -83,7 +83,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://provide.ca/\"}, {\"url\": \"https://marketplace.biz/\"}]",
+        "body": "[{\"url\": \"https://new.ca/\"}, {\"url\": \"https://innovations.edu/\"}]",
         "body_format": "URL",
         "classification": "TLP:AMBER//COMMERCIAL",
         "depth": 1,
@@ -102,8 +102,8 @@
           "network": {
             "static": {
               "domain": [
-                "provide.ca",
-                "marketplace.biz"
+                "new.ca",
+                "innovations.edu"
               ]
             }
           }
@@ -113,7 +113,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://234.119.15.211/\"}, {\"url\": \"https://131.217.207.164/\"}, {\"url\": \"https://137.157.177.23/\"}]",
+        "body": "[{\"url\": \"https://147.63.32.182/\"}, {\"url\": \"https://202.212.44.207/\"}, {\"url\": \"https://180.79.254.230/\"}]",
         "body_format": "URL",
         "classification": "TLP:WHITE",
         "depth": 2,
@@ -122,9 +122,9 @@
           "network": {
             "static": {
               "ip": [
-                "234.119.15.211",
-                "131.217.207.164",
-                "137.157.177.23"
+                "147.63.32.182",
+                "202.212.44.207",
+                "180.79.254.230"
               ]
             }
           }
@@ -139,13 +139,10 @@
         "classification": "TLP:WHITE",
         "depth": 0,
         "heuristic": {
-          "attack_ids": [
-            "T1027",
-            "T1127"
-          ],
+          "attack_ids": [],
           "frequency": 1,
-          "heur_id": 4,
-          "score": 100,
+          "heur_id": 3,
+          "score": 10,
           "score_map": {},
           "signatures": {}
         },
@@ -269,7 +266,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[[\"TEXT\", \"We have detected very high entropy multiple sections of your file, this section is most-likely packed or encrypted.\\n\\nHere are affected sections:\"], [\"KEY_VALUE\", {\"section_name\": \".UPX0\", \"offset\": \"0x008000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.957970982075253, 7.13031924803512, 7.174091168458611, 7.662860384695831, 7.822962204454541, 7.406315557726526, 7.506689613594212, 7.371111714195105, 7.0722338040870145, 7.861532483072885, 7.600603966795285, 7.123491391842424, 7.386099671802775, 7.935809016120457, 7.565402258804989, 7.0886962052940214, 7.537852811004343, 7.680646627331511, 7.428644864408532, 7.138458739236265]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX1\", \"offset\": \"0x009000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.162643477625542, 7.489826827702313, 7.892261120258164, 7.41958038232675, 7.689418298785854, 7.473312372720913, 7.404372700713893, 7.544426855238661, 7.551964430033014, 7.876028595723769, 7.952602869598745, 7.29288490754083, 7.618931616671064, 7.702629918665515, 7.582388956835729, 7.797976888568696, 7.414970462145393, 7.110961097987558, 7.201171631789374, 7.212967209395799]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX2\", \"offset\": \"0x0010000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.322277797779972, 7.575704835434178, 7.262573164636123, 7.47544917704065, 7.734682748488866, 7.614930202264637, 7.170728449589181, 7.086640550876541, 7.3508554045252135, 7.490943103384427, 7.358683784056066, 7.9489643633894795, 7.271077268008378, 7.163948202936462, 7.837183701577506, 7.784780110762534, 7.6412031399255556, 7.684264756241601, 7.896866915086504, 7.759076555700339]}}]]",
+        "body": "[[\"TEXT\", \"We have detected very high entropy multiple sections of your file, this section is most-likely packed or encrypted.\\n\\nHere are affected sections:\"], [\"KEY_VALUE\", {\"section_name\": \".UPX0\", \"offset\": \"0x008000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.179317568750148, 7.068769324858375, 7.1335697041402835, 7.999801941333485, 7.184244665774581, 7.173929318222883, 7.560790634431048, 7.372925863593511, 7.0825826344232965, 7.791999244620625, 7.330596831778212, 7.982522636329207, 7.33175683396794, 7.843311789938031, 7.729397238125402, 7.068156295304685, 7.099606001708916, 7.740113060359909, 7.054240865778726, 7.322315436934567]}}]]",
         "body_format": "MULTI",
         "classification": "TLP:WHITE",
         "depth": 0,
@@ -286,9 +283,7 @@
             "pe": {
               "sections": {
                 "name": [
-                  ".UPX0",
-                  ".UPX1",
-                  ".UPX2"
+                  ".UPX0"
                 ]
               }
             }
@@ -345,7 +340,7 @@
       },
       {
         "name": "urls.json",
-        "sha256": "6e116a15bd534830e2d91cba79fc3f13d0ef9de05f243242c573bdd14561c5de"
+        "sha256": "6c56e0d23f5b308acd10bd8d27a06d653060f88e448c92d0321fa9b66e3f09af"
       },
       {
         "name": "0002.jpg",
@@ -392,10 +387,10 @@
       },
       {
         "attack_ids": [
-          "S0298",
-          "T1606.002",
-          "G0022",
-          "T1561.002"
+          "S0452",
+          "T1211",
+          "G0105",
+          "T1552.002"
         ],
         "heur_id": 3,
         "signatures": [
@@ -406,11 +401,8 @@
         ]
       },
       {
-        "attack_ids": [
-          "T1027",
-          "T1127"
-        ],
-        "heur_id": 4,
+        "attack_ids": [],
+        "heur_id": 3,
         "signatures": []
       },
       {
@@ -445,33 +437,23 @@
           "heur_id": 5,
           "signatures": [],
           "value": ".UPX0"
-        },
-        {
-          "heur_id": 5,
-          "signatures": [],
-          "value": ".UPX1"
-        },
-        {
-          "heur_id": 5,
-          "signatures": [],
-          "value": ".UPX2"
         }
       ],
       "network.static.domain": [
         {
-          "heur_id": 4,
-          "signatures": [],
-          "value": "marketplace.biz"
-        },
-        {
           "heur_id": null,
           "signatures": [],
-          "value": "on.edu"
+          "value": "goods.com"
         },
         {
           "heur_id": 4,
           "signatures": [],
-          "value": "provide.ca"
+          "value": "innovations.edu"
+        },
+        {
+          "heur_id": 4,
+          "signatures": [],
+          "value": "new.ca"
         }
       ],
       "network.static.ip": [
@@ -483,19 +465,24 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "131.217.207.164"
+          "value": "147.63.32.182"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "137.157.177.23"
+          "value": "180.79.254.230"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "234.119.15.211"
+          "value": "202.212.44.207"
         }
       ]
+    },
+    "temp_submission_data": {
+      "kv_section": "{\"key\": \"value\", \"a_str\": \"Some string\", \"a_bool\": false, \"an_int\": 102}",
+      "process_tree_section": "[{\"process_pid\": 123, \"process_name\": \"evil.exe\", \"command_line\": \"c:\\\\evil.exe\", \"signatures\": {}, \"children\": [{\"process_pid\": 321, \"process_name\": \"takeovercomputer.exe\", \"command_line\": \"C:\\\\Temp\\\\takeovercomputer.exe -f do_bad_stuff\", \"signatures\": {\"one\": 250}, \"children\": [{\"process_pid\": 456, \"process_name\": \"evenworsethanbefore.exe\", \"command_line\": \"C:\\\\Temp\\\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad\", \"signatures\": {\"one\": 10, \"two\": 10, \"three\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 234, \"process_name\": \"badfile.exe\", \"command_line\": \"C:\\\\badfile.exe -k nothing_to_see_here\", \"signatures\": {\"one\": 1000, \"two\": 10, \"three\": 10, \"four\": 10, \"five\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 345, \"process_name\": \"benignexe.exe\", \"command_line\": \"C:\\\\benignexe.exe -f \\\"just kidding, i'm evil\\\"\", \"signatures\": {\"one\": 2000}, \"children\": [], \"network_count\": 4, \"file_count\": 7000, \"registry_count\": 10, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 987, \"process_name\": \"runzeroday.exe\", \"command_line\": \"C:\\\\runzeroday.exe -f insert_bad_spelling\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 678, \"process_name\": \"trustme.exe\", \"command_line\": \"C:\\\\trustme.exe\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": true}]",
+      "url_section": "[{\"url\": \"https://new.ca/\"}, {\"url\": \"https://innovations.edu/\"}]"
     }
   }
 }

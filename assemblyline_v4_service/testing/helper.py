@@ -73,7 +73,6 @@ class TestHelper:
         # Create a result for this file that contain generalized information for testing and
         # detailed information as well so the service writter has a better idea of the impact
         # of its changes to the service output.
-        # TODO: temp_submission_data
         generalized_results = {
             "files": {
                 "extracted": sorted(
@@ -88,7 +87,8 @@ class TestHelper:
             "results": {
                 "attack": {},
                 "heuristics": [],
-                "tags": {}
+                "tags": {},
+                "temp_submission_data": temp_submission_data
             },
             "extra": {
                 "sections": [],
@@ -152,7 +152,7 @@ class TestHelper:
 
             cls.execute(service_request)
 
-            results = self._generalize_result(task.get_service_result())
+            results = self._generalize_result(task.get_service_result(), task.temp_submission_data)
 
             if save:
                 result_json = os.path.join(self.result_folder, sample, 'result.json')
