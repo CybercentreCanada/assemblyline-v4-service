@@ -5,7 +5,9 @@ from urllib.parse import urlparse
 from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX
 
 URL_REGEX = compile(
-    "(?:(?:(?:[A-Za-z]*:)?//)?(?:\S+(?::\S*)?@)?(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[A-Za-z0-9\u00a1-\uffff][A-Za-z0-9\u00a1-\uffff_-]{0,62})?[A-Za-z0-9\u00a1-\uffff]\.)+(?:xn--)?(?:[A-Za-z0-9\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?)(?:[/?#][^\s,\\\\]*)?")
+    "(?:(?:(?:[A-Za-z]*:)?//)?(?:\S+(?::\S*)?@)?(?:(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}"
+    "(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)|(?:(?:[A-Za-z0-9\u00a1-\uffff][A-Za-z0-9\u00a1-\uffff_-]{0,62})"
+    "?[A-Za-z0-9\u00a1-\uffff]\.)+(?:xn--)?(?:[A-Za-z0-9\u00a1-\uffff]{2,}\.?))(?::\d{2,5})?)(?:[/?#][^\s,\\\\]*)?")
 
 
 def is_tag_safelisted(
@@ -16,7 +18,8 @@ def is_tag_safelisted(
     This method determines if a given value has any safelisted components.
     :param value: The value to be checked if it has been safelisted
     :param tags: The tags which will be used for grabbing specific values from the safelist
-    :param safelist: The safelist containing matches and regexs. The product of a service using self.get_api_interface().get_safelist().
+    :param safelist: The safelist containing matches and regexs. The
+                     product of a service using self.get_api_interface().get_safelist().
     :param substring: A flag that indicates if we should check if the value is contained within the match
     :return: A boolean indicating if the value has been safelisted
     """
