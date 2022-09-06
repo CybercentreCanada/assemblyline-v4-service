@@ -25,7 +25,8 @@ def add_tag(
     :param result_section: The ResultSection that the tag will be added to
     :param tag: The tag type that the value will be tagged under
     :param value: The value, a single item or a list, that will be tagged under the tag type
-    :param safelist: The safelist containing matches and regexs. The product of a service using self.get_api_interface().get_safelist().
+    :param safelist: The safelist containing matches and regexs. The product of a
+                     service using self.get_api_interface().get_safelist().
     :return: Tag was successfully added
     """
     if safelist is None:
@@ -73,7 +74,8 @@ def _validate_tag(
     :param result_section: The ResultSection that the tag will be added to
     :param tag: The tag type that the value will be tagged under
     :param value: The item that will be tagged under the tag type
-    :param safelist: The safelist containing matches and regexs. The product of a service using self.get_api_interface().get_safelist().
+    :param safelist: The safelist containing matches and regexs. The product of a
+                     service using self.get_api_interface().get_safelist().
     :return: Tag was successfully added
     """
     if safelist is None:

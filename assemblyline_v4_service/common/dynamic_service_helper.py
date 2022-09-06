@@ -1027,7 +1027,8 @@ class SandboxOntology:
                 registry: str = None,
             ) -> None:
                 """
-                An subject of interest, aka something interesting that the signature was raised on that is worth reporting
+                An subject of interest, aka something interesting that the signature
+                as raised on that is worth reporting
                 :param ip: An IP that is a subject of interest
                 :param domain: A domain that is a subject of interest
                 :param uri: An URI that is a subject of interest
@@ -1368,7 +1369,8 @@ class SandboxOntology:
             and not ("start_time" in kwargs or "end_time" in kwargs)
         ):
             log.warning(
-                "You must pass GUID kwarg or a PID kwarg with a timestamp such as start_time or end_time if you want to update a process."
+                "You must pass GUID kwarg or a PID kwarg with a timestamp such as start_time "
+                "or end_time if you want to update a process."
             )
             return
 
@@ -1696,7 +1698,8 @@ class SandboxOntology:
                 [source_ip, source_port, destination_ip, destination_port, direction, transport_layer_protocol]):
             return None
 
-        # Due to the way INetSim traffic can be handled, let's check for network connections that are both HTTP and HTTPS
+        # Due to the way INetSim traffic can be handled, let's check for
+        # network connections that are both HTTP and HTTPS
         if destination_port == 80:
             destination_ports = [80, 443]
         else:
@@ -2004,10 +2007,12 @@ class SandboxOntology:
             safelist: List[str] = []
 
         events = [process for process in self.processes
-                  if process.start_time is not None and process.objectid.treeid not in safelist] + [network_connection
-                                                                                                    for network_connection in self.network_connections
-                                                                                                    if network_connection.objectid.time_observed is not None and network_connection.objectid.treeid
-                                                                                                    not in safelist]
+                  if process.start_time is not None and process.objectid.treeid not in safelist]
+        network_conns = [network_connection
+                         for network_connection in self.network_connections
+                         if network_connection.objectid.time_observed is not None and network_connection.objectid.treeid
+                         not in safelist]
+        events += network_conns
         return self._sort_things_by_time_observed(events)
 
     def get_non_safelisted_processes(self, safelist: List[str]) -> List[Process]:
@@ -2421,7 +2426,8 @@ class SandboxOntology:
 
                 # If the parent object exists in the rest of the list
                 for parent_index, parent in enumerate(things_to_sort_by_relationship[index+1:]):
-                    if pobjectid["guid"] == parent["objectid"]["guid"] and pobjectid["time_observed"] == parent["objectid"]["time_observed"]:
+                    if pobjectid["guid"] == parent["objectid"]["guid"] \
+                            and pobjectid["time_observed"] == parent["objectid"]["time_observed"]:
                         popped_item = things_to_sort_by_relationship.pop(index+1+parent_index)
                         things_to_sort_by_relationship.insert(index, popped_item)
                         recurse_again = True
@@ -2885,7 +2891,8 @@ class SandboxOntology:
 
 
 def extract_iocs_from_text_blob(
-        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None, enforce_char_min: bool = False) -> None:
+        blob: str, result_section: ResultTableSection, so_sig: SandboxOntology.Signature = None,
+        enforce_char_min: bool = False) -> None:
     """
     This method searches for domains, IPs and URIs used in blobs of text and tags them
     :param blob: The blob of text that we will be searching through
