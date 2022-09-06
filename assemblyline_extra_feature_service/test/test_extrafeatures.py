@@ -17,4 +17,4 @@ th = TestHelper(ExtraFeature, RESULTS_FOLDER, SAMPLES_FOLDER)
 
 @pytest.mark.parametrize("sample", th.result_list())
 def test_sample(sample):
-    th.compare_sample_results(sample)
+    th.run_test_comparison(sample)
