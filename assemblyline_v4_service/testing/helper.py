@@ -1,6 +1,8 @@
 import errno
 import json
 import os
+import pytest
+
 from pathlib import Path
 
 from assemblyline.common import forge
@@ -98,7 +100,6 @@ class TestHelper:
                 )
             },
             "results": {
-                "attack": {},
                 "heuristics": [],
                 "tags": {},
                 "temp_submission_data": temp_submission_data
@@ -197,12 +198,137 @@ class TestHelper:
                 if len(f.split("_")[0]) == 64 and os.path.isdir(os.path.join(self.result_folder, f))]
 
     def compare_sample_results(self, sample):
+        issues = []
         original_results_file = os.path.join(self.result_folder, sample, 'result.json')
 
         if os.path.exists(original_results_file):
             original_results = json.load(open(original_results_file))
             results = self._execute_sample(sample)
-            assert original_results == results
+
+            # Pop off extra results
+            original_results.pop('extra')
+            results.pop('extra')
+
+            # Compile the list of issues between the two results
+            # Extracted files
+            self._file_compare(
+                issues, "Extracted", original_results['files']['extracted'],
+                results['files']['extracted'])
+            # Supplementary files
+            self._file_compare(issues,
+                               "Supplementary", original_results['files']['supplementary'],
+                               results['files']['supplementary'])
+            # Heuristics triggered
+            self._heuristic_compare(issues, original_results['results']['heuristics'], results['results']['heuristics'])
+            # Tags generated
+            self._tag_compare(issues, original_results['results']['tags'], results['results']['tags'])
+            # Temp submission data generated
+            self._temp_data_compare(
+                issues, original_results['results']['temp_submission_data'],
+                results['results']['temp_submission_data'])
+        else:
+            issues.append(f"Original result file missing for sample: {sample}")
+
+        return issues
+
+    def run_test_comparison(self, sample):
+        # WARNING: This function is only to be run into a pytest context!
+        issues = self.compare_sample_results(sample)
+        if len(issues) != 0:
+            issues.insert(0, "")
+            pytest.fail("\n".join(issues))
+
+    @ staticmethod
+    def _heuristic_compare(issues, original, new):
+        oh_map = {x['heur_id']: x for x in original}
+        nh_map = {x['heur_id']: x for x in new}
+        for heur_id, heur in oh_map.items():
+            if heur_id not in nh_map:
+                issues.append(f"[HEUR] Heuristic #{heur_id} missing from results.")
+            else:
+                new_heur = nh_map[heur_id]
+                for attack_id in heur['attack_ids']:
+                    if attack_id not in new_heur['attack_ids']:
+                        issues.append(f"[HEUR] Attack ID '{attack_id}' missing from heuristic #{heur_id}.")
+                for signature in heur['signatures']:
+                    if signature not in new_heur['signatures']:
+                        issues.append(f"[HEUR] Signature '{signature}' missing from heuristic #{heur_id}.")
+
+                for attack_id in new_heur['attack_ids']:
+                    if attack_id not in heur['attack_ids']:
+                        issues.append(f"[HEUR] Attack ID '{attack_id}' added to heuristic #{heur_id}.")
+                for signature in new_heur['signatures']:
+                    if signature not in heur['signatures']:
+                        issues.append(f"[HEUR] Signature '{signature}' added to heuristic #{heur_id}.")
+
+        for heur_id in nh_map.keys():
+            if heur_id not in oh_map:
+                issues.append(f"[HEUR] Heuristic #{heur_id} added to results.")
+
+    @ staticmethod
+    def _tag_compare(issues, original, new):
+        for tag_type, tags in original.items():
+            if tag_type not in new:
+                issues.append(f"[TAG] Tag type '{tag_type}' missing from results.")
+            else:
+                otm = {x['value']: x for x in tags}
+                ntm = {x['value']: x for x in new[tag_type]}
+                for v, tag in otm.items():
+                    if v not in ntm:
+                        issues.append(f"[TAG] Tag '{v} [{tag_type}]' missing from the results.")
+                    else:
+                        new_tag = ntm[v]
+                        if tag['heur_id'] != new_tag['heur_id']:
+                            issues.append(f"[TAG] Heuristic ID for tag '{v} [{tag_type}]' has changed.")
+                        if tag['signatures'] != new_tag['signatures']:
+                            issues.append(f"[TAG] Associated signatures for tag '{v} [{tag_type}]' has changed.")
+
+                for v in ntm.keys():
+                    if v not in otm:
+                        issues.append(f"[TAG] Tag '{v} [{tag_type}]' added to results.")
+
+        for tag_type in new.keys():
+            if tag_type not in original:
+                issues.append(f"[TAG] Tag type '{tag_type}' added to results.")
+
+    @ staticmethod
+    def _temp_data_compare(issues, original, new):
+        for k, v in original.items():
+            if k not in new:
+                issues.append(f"[TEMP_DATA] Temporary submission data with key '{k}' is missing from the results.")
+            elif v != new[k]:
+                issues.append(f"[TEMP_DATA] Value of temporary submission data with key '{k}' has changed.")
+
+        for k, v in new.items():
+            if k not in original:
+                issues.append(f"[TEMP_DATA] Temporary submission data with key '{k}' was added to the results.")
+
+    @ staticmethod
+    def _file_compare(issues, f_type, original, new):
+        oh_map = {x['sha256']: x['name'] for x in original}
+        on_map = {x['name']: x['sha256'] for x in original}
+        nh_map = {x['sha256']: x['name'] for x in new}
+        nn_map = {x['name']: x['sha256'] for x in new}
+
+        for sha256, name in oh_map.items():
+            if sha256 not in nh_map:
+                if name not in nn_map:
+                    issues.append(f"[{f_type.upper()}] File '{name} [{sha256}]' missing from the file list.")
+                    continue
+
+                if sha256 != nn_map[name]:
+                    issues.append(f"[{f_type.upper()}] The sha256 of the file '{name}' has changed.")
+                    continue
+
+            if name != nh_map[sha256]:
+                issues.append(f"[{f_type.upper()}] The name of the file '{sha256}' has changed.")
+                continue
+
+        for sha256, name in nh_map.items():
+            if sha256 not in oh_map and name not in on_map:
+                issues.append(f"[{f_type.upper()}] File '{name} [{sha256}]' added to the file list.")
+
+        return issues
 
     def regenerate_results(self):
         for f in self.result_list():
