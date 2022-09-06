@@ -36,24 +36,37 @@ class TestHelper:
         self.identify = forge.get_identify(use_cache=False)
 
         # Load submission params
-        # TODO: load temp_submission_data, metadata and other service tags
         self.submission_params = helper.get_service_attributes().submission_params
 
-    def _create_service_task(self, file_path):
+    def _create_service_task(self, file_path, params):
         fileinfo_keys = ["magic", "md5", "mime", "sha1", "sha256", "size", "type"]
+
+        # Set proper default values
+        if params is None:
+            params = {}
+
+        metadata = params.get('metadata', {})
+        temp_submission_data = params.get('temp_submission_data', {})
+        submission_params = params.get('submission_params', {})
+        tags = params.get('tags', [])
 
         return ServiceTask(
             {
                 "sid": 1,
-                "metadata": {},
+                "metadata": metadata,
                 "deep_scan": False,
                 "service_name": "Not Important",
-                "service_config": {param.name: param.default for param in self.submission_params},
+                "service_config": {param.name: submission_params.get(param.name, param.default)
+                                   for param in self.submission_params},
                 "fileinfo": {k: v for k, v in self.identify.fileinfo(file_path).items() if k in fileinfo_keys},
                 "filename": os.path.basename(file_path),
                 "min_classification": "TLP:WHITE",
                 "max_files": 501,
                 "ttl": 3600,
+                "temporary_submission_data": [
+                    {'name': name, 'value': value} for name, value in temp_submission_data.items()
+                ],
+                "tags": tags,
             }
         )
 
@@ -141,25 +154,39 @@ class TestHelper:
         cls = None
 
         try:
+            # Find and unpack sample
             sample_path = self._find_sample(sample)
             unpack_file(sample_path, file_path)
 
+            # Initialize service class
             cls = self.service_class()
             cls.start()
 
-            task = Task(self._create_service_task(file_path))
+            # Load optional submission parameters
+            params_file = os.path.join(self.result_folder, sample, 'params.json')
+            if os.path.exists(params_file):
+                params = json.load(open(params_file))
+            else:
+                params = {}
+
+            # Create the service request
+            task = Task(self._create_service_task(file_path, params))
             service_request = ServiceRequest(task)
 
+            # Execute the service
             cls.execute(service_request)
 
+            # Get results from the scan
             results = self._generalize_result(task.get_service_result(), task.temp_submission_data)
 
+            # Save results if needs be
             if save:
                 result_json = os.path.join(self.result_folder, sample, 'result.json')
                 json.dump(results, open(result_json, 'w'), indent=2, allow_nan=False, sort_keys=True)
 
             return results
         finally:
+            # Cleanup files
             if cls:
                 cls._cleanup()
             if os.path.exists(file_path):
