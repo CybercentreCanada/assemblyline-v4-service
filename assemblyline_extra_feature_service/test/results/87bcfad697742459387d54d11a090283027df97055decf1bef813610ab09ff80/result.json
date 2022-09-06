@@ -43,7 +43,7 @@
     "supplementary": []
   },
   "results": {
-    "attack": {},
+    "attack_ids": [],
     "heuristics": [],
     "tags": {},
     "temp_submission_data": {

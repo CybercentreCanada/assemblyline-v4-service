@@ -1,20 +1,20 @@
 {
   "extra": {
     "drop_file": false,
-    "score": 2520,
+    "score": 2610,
     "sections": [
       {
         "auto_collapse": false,
-        "body": "them across testing\nis cutting about problems survey\npartnerships To\nindustry also cutting",
+        "body": "transition levels invite\nprograms Cyber\norder programs Cyber For is Cyber\ngoods Government promote support Cyber\nopen Centre constantly problems experts website",
         "body_format": "TEXT",
         "classification": "TLP:WHITE",
         "depth": 0,
         "heuristic": {
           "attack_ids": [
-            "S0452",
-            "T1211",
-            "G0105",
-            "T1552.002"
+            "S0100",
+            "T1557.002",
+            "G0011",
+            "T1546.008"
           ],
           "frequency": 0,
           "heur_id": 3,
@@ -53,7 +53,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "{\"type\": \"colormap\", \"data\": {\"domain\": [0, 20], \"values\": [3.005627120456895, 5.640801861306111, 9.162540112384992, 13.096920486979752, 13.171837203046115, 12.459079930969327, 15.388073210893221, 1.5032168393269307, 4.548666304110571, 19.790939112762803, 12.020315647821748, 7.5070916835512875, 5.559731812312374, 4.567426715539218, 19.12641059358518, 0.6478158634225362, 16.216130633327012, 6.895669021705643, 12.242942038404923, 6.026499688756022, 17.759045168872703, 9.629605186351895, 9.32018707627206, 11.91036912295157, 15.194139317866826, 7.935523322519837, 15.726123773220229, 2.4208435949925966, 7.350341474485582, 6.006448157137569, 9.304724002394867, 6.552345245370734, 3.932990749009364, 6.533006756515118, 5.969550522380073, 0.8396756588705312, 18.99093853027069, 4.384033181065532, 18.675079908109957, 7.352588353276062, 0.5078414666869779, 11.679320879910609, 7.682719589254326, 7.264298276531869, 3.0082981351576854, 10.940232324476737, 12.724231109045768, 6.895185290107266, 6.83558139663389, 6.083096500181917]}}",
+        "body": "{\"type\": \"colormap\", \"data\": {\"domain\": [0, 20], \"values\": [17.101869642677812, 11.543801175385216, 1.967386307889949, 1.0971766951390172, 11.273543653225861, 11.518245567551732, 10.593937529163618, 8.657948947590214, 11.30276235588009, 5.971016705090024, 16.61774102082106, 8.765208129620792, 11.439713261215058, 7.986530663150047, 10.169832355100173, 8.89377592835922, 8.112537705599847, 19.91014579494092, 11.559225105427927, 1.7750551350840182, 16.983288645167164, 9.926403878077377, 13.720385199217944, 2.152582298262118, 6.333204263805589, 10.012122601106185, 1.3907734604554434, 15.742143494460212, 18.430724790588734, 19.05749728608807, 9.91539643121454, 2.443272156139955, 17.116924380615906, 19.21868544186684, 8.216437323240715, 16.715484115292682, 17.03047472976144, 13.797724926190778, 18.088115589721223, 2.942677644931766, 16.762584857043073, 18.380507806052897, 12.136649600494458, 9.073361870064833, 18.583009337785573, 9.834868905483471, 8.429782504325887, 5.048276732282073, 19.062946291772818, 17.888107981365653]}}",
         "body_format": "GRAPH_DATA",
         "classification": "TLP:AMBER//COMMERCIAL",
         "depth": 0,
@@ -64,7 +64,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://goods.com/\", \"name\": \"Random url!\"}]",
+        "body": "[{\"url\": \"https://cyber.edu/\", \"name\": \"Random url!\"}]",
         "body_format": "URL",
         "classification": "TLP:WHITE",
         "depth": 0,
@@ -73,7 +73,7 @@
           "network": {
             "static": {
               "domain": [
-                "goods.com"
+                "cyber.edu"
               ]
             }
           }
@@ -83,7 +83,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://new.ca/\"}, {\"url\": \"https://innovations.edu/\"}]",
+        "body": "[{\"url\": \"https://defence.biz/\"}, {\"url\": \"https://centre.biz/\"}]",
         "body_format": "URL",
         "classification": "TLP:AMBER//COMMERCIAL",
         "depth": 1,
@@ -102,8 +102,8 @@
           "network": {
             "static": {
               "domain": [
-                "new.ca",
-                "innovations.edu"
+                "defence.biz",
+                "centre.biz"
               ]
             }
           }
@@ -113,7 +113,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://147.63.32.182/\"}, {\"url\": \"https://202.212.44.207/\"}, {\"url\": \"https://180.79.254.230/\"}]",
+        "body": "[{\"url\": \"https://221.10.91.161/\"}, {\"url\": \"https://248.171.248.229/\"}, {\"url\": \"https://180.225.118.88/\"}]",
         "body_format": "URL",
         "classification": "TLP:WHITE",
         "depth": 2,
@@ -122,9 +122,9 @@
           "network": {
             "static": {
               "ip": [
-                "147.63.32.182",
-                "202.212.44.207",
-                "180.79.254.230"
+                "221.10.91.161",
+                "248.171.248.229",
+                "180.225.118.88"
               ]
             }
           }
@@ -139,10 +139,13 @@
         "classification": "TLP:WHITE",
         "depth": 0,
         "heuristic": {
-          "attack_ids": [],
+          "attack_ids": [
+            "T1027",
+            "T1127"
+          ],
           "frequency": 1,
-          "heur_id": 3,
-          "score": 10,
+          "heur_id": 4,
+          "score": 100,
           "score_map": {},
           "signatures": {}
         },
@@ -163,7 +166,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[[\"key0\", \"value0\"], [\"key1\", \"value1\"], [\"key2\", \"value2\"], [\"key3\", \"value3\"], [\"key4\", \"value4\"]]",
+        "body": "[[\"key0\", \"value0\"], [\"key1\", \"value1\"], [\"key2\", \"value2\"], [\"key3\", \"value3\"]]",
         "body_format": "ORDERED_KEY_VALUE",
         "classification": "TLP:WHITE",
         "depth": 0,
@@ -266,7 +269,7 @@
       },
       {
         "auto_collapse": false,
-        "body": "[[\"TEXT\", \"We have detected very high entropy multiple sections of your file, this section is most-likely packed or encrypted.\\n\\nHere are affected sections:\"], [\"KEY_VALUE\", {\"section_name\": \".UPX0\", \"offset\": \"0x008000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.179317568750148, 7.068769324858375, 7.1335697041402835, 7.999801941333485, 7.184244665774581, 7.173929318222883, 7.560790634431048, 7.372925863593511, 7.0825826344232965, 7.791999244620625, 7.330596831778212, 7.982522636329207, 7.33175683396794, 7.843311789938031, 7.729397238125402, 7.068156295304685, 7.099606001708916, 7.740113060359909, 7.054240865778726, 7.322315436934567]}}]]",
+        "body": "[[\"TEXT\", \"We have detected very high entropy multiple sections of your file, this section is most-likely packed or encrypted.\\n\\nHere are affected sections:\"], [\"KEY_VALUE\", {\"section_name\": \".UPX0\", \"offset\": \"0x008000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.6986033341868785, 7.570188386798208, 7.051860870754415, 7.381086544931583, 7.867833347472563, 7.461446980961638, 7.285479881730915, 7.580791734635416, 7.681916481815287, 7.686238581548069, 7.774020144875976, 7.514060029325749, 7.70930251379391, 7.197432969743381, 7.654784241975435, 7.666862031066247, 7.920040676007484, 7.974345825681638, 7.590400723114494, 7.963060974890974]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX1\", \"offset\": \"0x009000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.307461399793593, 7.835964505410814, 7.200822676855, 7.835040842431006, 7.743188082512582, 7.258251702532751, 7.033740253765469, 7.002404138264908, 7.9536360582775805, 7.6116413190619605, 7.481634725529544, 7.89084944990256, 7.361190597255431, 7.926130698296483, 7.90918340070264, 7.8971446100473, 7.134942968773211, 7.277394957354902, 7.76811084563114, 7.420238826729997]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX2\", \"offset\": \"0x0010000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.2435710604378505, 7.290980509381948, 7.528895891083775, 7.1651344111242725, 7.241162839546866, 7.929305439934393, 7.7220110191245634, 7.238454462563274, 7.057449705825705, 7.903488386005566, 7.484156509067218, 7.173590159230242, 7.97557090729449, 7.672804819278188, 7.38497601735917, 7.7303153222440075, 7.755460302823458, 7.094245469521529, 7.583382941486845, 7.387958262555202]}}]]",
         "body_format": "MULTI",
         "classification": "TLP:WHITE",
         "depth": 0,
@@ -283,7 +286,9 @@
             "pe": {
               "sections": {
                 "name": [
-                  ".UPX0"
+                  ".UPX0",
+                  ".UPX1",
+                  ".UPX2"
                 ]
               }
             }
@@ -327,6 +332,10 @@
         "sha256": "142747595574a7c2cea51b7a46b0ce47cea51ffaac1106cdf08218483d38d372"
       },
       {
+        "name": "urls.json",
+        "sha256": "17c7f58c6bf2984e7c06c61b3fe4805fa5600318f5a452e859282688ecf9d3a0"
+      },
+      {
         "name": "0003.jpg.thumb",
         "sha256": "2f1cf5d2fb05da0b93d4311cad14e5932d0c6bc074cf2c0bb04fae20c1bb0e63"
       },
@@ -337,10 +346,6 @@
       {
         "name": "0001.jpg",
         "sha256": "4219ed595d6d2191c5f0932bae04daee9db22fbab07c60262d8a1247bb706924"
-      },
-      {
-        "name": "urls.json",
-        "sha256": "6c56e0d23f5b308acd10bd8d27a06d653060f88e448c92d0321fa9b66e3f09af"
       },
       {
         "name": "0002.jpg",
@@ -369,7 +374,18 @@
     ]
   },
   "results": {
-    "attack": {},
+    "attack_ids": [
+      "S0100",
+      "T1557.002",
+      "G0011",
+      "T1546.008",
+      "T1027",
+      "T1127",
+      "T1027",
+      "T1127",
+      "T1574.002",
+      "T1574.002"
+    ],
     "heuristics": [
       {
         "attack_ids": [
@@ -387,10 +403,10 @@
       },
       {
         "attack_ids": [
-          "S0452",
-          "T1211",
-          "G0105",
-          "T1552.002"
+          "S0100",
+          "T1557.002",
+          "G0011",
+          "T1546.008"
         ],
         "heur_id": 3,
         "signatures": [
@@ -401,8 +417,11 @@
         ]
       },
       {
-        "attack_ids": [],
-        "heur_id": 3,
+        "attack_ids": [
+          "T1027",
+          "T1127"
+        ],
+        "heur_id": 4,
         "signatures": []
       },
       {
@@ -437,23 +456,33 @@
           "heur_id": 5,
           "signatures": [],
           "value": ".UPX0"
+        },
+        {
+          "heur_id": 5,
+          "signatures": [],
+          "value": ".UPX1"
+        },
+        {
+          "heur_id": 5,
+          "signatures": [],
+          "value": ".UPX2"
         }
       ],
       "network.static.domain": [
         {
+          "heur_id": 4,
+          "signatures": [],
+          "value": "centre.biz"
+        },
+        {
           "heur_id": null,
           "signatures": [],
-          "value": "goods.com"
+          "value": "cyber.edu"
         },
         {
           "heur_id": 4,
           "signatures": [],
-          "value": "innovations.edu"
-        },
-        {
-          "heur_id": 4,
-          "signatures": [],
-          "value": "new.ca"
+          "value": "defence.biz"
         }
       ],
       "network.static.ip": [
@@ -465,24 +494,24 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "147.63.32.182"
+          "value": "180.225.118.88"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "180.79.254.230"
+          "value": "221.10.91.161"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "202.212.44.207"
+          "value": "248.171.248.229"
         }
       ]
     },
     "temp_submission_data": {
       "kv_section": "{\"key\": \"value\", \"a_str\": \"Some string\", \"a_bool\": false, \"an_int\": 102}",
       "process_tree_section": "[{\"process_pid\": 123, \"process_name\": \"evil.exe\", \"command_line\": \"c:\\\\evil.exe\", \"signatures\": {}, \"children\": [{\"process_pid\": 321, \"process_name\": \"takeovercomputer.exe\", \"command_line\": \"C:\\\\Temp\\\\takeovercomputer.exe -f do_bad_stuff\", \"signatures\": {\"one\": 250}, \"children\": [{\"process_pid\": 456, \"process_name\": \"evenworsethanbefore.exe\", \"command_line\": \"C:\\\\Temp\\\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad\", \"signatures\": {\"one\": 10, \"two\": 10, \"three\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 234, \"process_name\": \"badfile.exe\", \"command_line\": \"C:\\\\badfile.exe -k nothing_to_see_here\", \"signatures\": {\"one\": 1000, \"two\": 10, \"three\": 10, \"four\": 10, \"five\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 345, \"process_name\": \"benignexe.exe\", \"command_line\": \"C:\\\\benignexe.exe -f \\\"just kidding, i'm evil\\\"\", \"signatures\": {\"one\": 2000}, \"children\": [], \"network_count\": 4, \"file_count\": 7000, \"registry_count\": 10, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 987, \"process_name\": \"runzeroday.exe\", \"command_line\": \"C:\\\\runzeroday.exe -f insert_bad_spelling\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 678, \"process_name\": \"trustme.exe\", \"command_line\": \"C:\\\\trustme.exe\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": true}]",
-      "url_section": "[{\"url\": \"https://new.ca/\"}, {\"url\": \"https://innovations.edu/\"}]"
+      "url_section": "[{\"url\": \"https://defence.biz/\"}, {\"url\": \"https://centre.biz/\"}]"
     }
   }
 }
