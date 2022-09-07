@@ -11,7 +11,8 @@ required_env = [
 
 optional_env = [
     'SERVICE_TESTING_EXTRA_SAMPLE_FOLDER',
-    'FULL_SAMPLES_LOCATION'
+    'FULL_SAMPLES_LOCATION',
+    'SERVICE_TESTING_SAVE_FILES'
 ]
 
 
@@ -28,7 +29,8 @@ def run():
     th = TestHelper(load_module_by_path(os.environ['SERVICE_PATH']),
                     os.environ['SERVICE_TESTING_RESULT_FOLDER'],
                     os.environ.get('SERVICE_TESTING_EXTRA_SAMPLE_FOLDER', None))
-    th.regenerate_results()
+    save_files = os.environ.get('SERVICE_TESTING_SAVE_FILES', 'false').lower() == 'true'
+    th.regenerate_results(save_files=save_files)
 
 
 if __name__ == "__main__":

@@ -2,6 +2,7 @@ import errno
 import json
 import os
 import pytest
+import shutil
 
 from pathlib import Path
 
@@ -181,7 +182,7 @@ class TestHelper:
 
         return generalized_results
 
-    def _execute_sample(self, sample, save=False):
+    def _execute_sample(self, sample, save=False, save_files=False):
         file_path = os.path.join("/tmp", sample)
         cls = None
 
@@ -213,8 +214,27 @@ class TestHelper:
 
             # Save results if needs be
             if save:
+                # Cleanup old files
+                sample_res_dir = os.path.join(self.result_folder, sample)
+                shutil.rmtree(sample_res_dir)
+                os.makedirs(sample_res_dir, exist_ok=True)
+
+                # Save results
                 result_json = os.path.join(self.result_folder, sample, 'result.json')
                 json.dump(results, open(result_json, 'w'), indent=2, allow_nan=False, sort_keys=True)
+
+                if save_files:
+                    # Save extracted files
+                    for ext in task.extracted:
+                        target_file = os.path.join(self.result_folder, sample, 'extracted', ext['name'])
+                        os.makedirs(os.path.dirname(target_file), exist_ok=True)
+                        shutil.move(ext['path'], target_file)
+
+                    # Save supplementary files
+                    for ext in task.supplementary:
+                        target_file = os.path.join(self.result_folder, sample, 'supplementary', ext['name'])
+                        os.makedirs(os.path.dirname(target_file), exist_ok=True)
+                        shutil.move(ext['path'], target_file)
 
             return results
         finally:
@@ -373,9 +393,9 @@ class TestHelper:
             if sha256 not in oh_map and name not in on_map:
                 ih.add_issue(f_type, ih.ACTION_ADDED, f"File '{name} [{sha256}]' added to the file list.")
 
-    def regenerate_results(self):
+    def regenerate_results(self, save_files=False):
         for f in self.result_list():
             try:
-                self._execute_sample(f, save=True)
+                self._execute_sample(f, save=True, save_files=save_files)
             except FileNotFoundError:
                 print(f"[W] File {f} was not for in any of the following locations: {', '.join(self.locations)}")
