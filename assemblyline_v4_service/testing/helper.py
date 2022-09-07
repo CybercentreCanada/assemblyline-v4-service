@@ -214,16 +214,15 @@ class TestHelper:
 
             # Save results if needs be
             if save:
-                # Cleanup old files
-                sample_res_dir = os.path.join(self.result_folder, sample)
-                shutil.rmtree(sample_res_dir)
-                os.makedirs(sample_res_dir, exist_ok=True)
-
                 # Save results
                 result_json = os.path.join(self.result_folder, sample, 'result.json')
                 json.dump(results, open(result_json, 'w'), indent=2, allow_nan=False, sort_keys=True)
 
                 if save_files:
+                    # Cleanup old extracted and supplementary
+                    shutil.rmtree(os.path.join(self.result_folder, sample, 'extracted'))
+                    shutil.rmtree(os.path.join(self.result_folder, sample, 'supplementary'))
+
                     # Save extracted files
                     for ext in task.extracted:
                         target_file = os.path.join(self.result_folder, sample, 'extracted', ext['name'])
