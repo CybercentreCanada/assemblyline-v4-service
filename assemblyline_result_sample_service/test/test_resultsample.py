@@ -18,5 +18,6 @@ th = TestHelper(ResultSample, RESULTS_FOLDER, SAMPLES_FOLDER)
 @pytest.mark.parametrize("sample", th.result_list())
 def test_sample(sample):
     # Result sample randomize results therefor it should always have issues
+    # th.run_test_comparison(sample) cannot be used in this case
     ih = th.compare_sample_results(sample)
     assert ih.has_issues()
