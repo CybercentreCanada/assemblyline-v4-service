@@ -16,6 +16,10 @@ from assemblyline_v4_service.common.task import Task
 from cart import unpack_file
 
 
+class FileMissing(Exception):
+    pass
+
+
 class IssueHelper:
     ACTION_MISSING = "--"
     ACTION_ADDED = "++"
@@ -113,7 +117,7 @@ class TestHelper:
             if len(p) == 1:
                 return p[0]
 
-        raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), sample)
+        raise FileMissing(sample)
 
     @staticmethod
     def _generalize_result(result, temp_submission_data=None):
@@ -220,8 +224,12 @@ class TestHelper:
 
                 if save_files:
                     # Cleanup old extracted and supplementary
-                    shutil.rmtree(os.path.join(self.result_folder, sample, 'extracted'))
-                    shutil.rmtree(os.path.join(self.result_folder, sample, 'supplementary'))
+                    extracted_dir = os.path.join(self.result_folder, sample, 'extracted')
+                    supplementary_dir = os.path.join(self.result_folder, sample, 'supplementary')
+                    if os.path.exists(extracted_dir):
+                        shutil.rmtree(extracted_dir)
+                    if os.path.exists(supplementary_dir):
+                        shutil.rmtree(supplementary_dir)
 
                     # Save extracted files
                     for ext in task.extracted:
@@ -396,5 +404,5 @@ class TestHelper:
         for f in self.result_list():
             try:
                 self._execute_sample(f, save=True, save_files=save_files)
-            except FileNotFoundError:
-                print(f"[W] File {f} was not for in any of the following locations: {', '.join(self.locations)}")
+            except FileMissing:
+                print(f"[W] File {f} was not found in any of the following locations: {', '.join(self.locations)}")
