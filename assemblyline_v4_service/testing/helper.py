@@ -7,11 +7,42 @@ from pathlib import Path
 
 from assemblyline.common import forge
 from assemblyline.common.dict_utils import flatten
+from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 from cart import unpack_file
+
+
+class IssueHelper:
+    ACTION_MISSING = "--"
+    ACTION_ADDED = "++"
+    ACTION_CHANGED = "-+"
+
+    TYPE_HEUR = "HEURISTICS"
+    TYPE_TAGS = "TAGS"
+    TYPE_TEMP = "TEMP_DATA"
+    TYPE_SUPPLEMENTARY = "SUPPLEMENTARY"
+    TYPE_EXTRACTED = "EXTRACTED"
+
+    def __init__(self):
+        self.issues = {}
+
+    def add_issue(self, itype: str, action: str, message: str):
+        self.issues.setdefault(itype, [])
+        self.issues[itype].append((action, message))
+
+    def get_issue_list(self):
+        return [f"[{k.upper()}] {action.capitalize()} {message}"
+                for k, v in self.issues.items()
+                for action, message in v]
+
+    def get_issues(self):
+        return self.issues
+
+    def has_issues(self):
+        return len(self.issues.keys()) != 0
 
 
 class TestHelper:
@@ -54,10 +85,10 @@ class TestHelper:
 
         return ServiceTask(
             {
-                "sid": 1,
+                "sid": get_random_id(),
                 "metadata": metadata,
                 "deep_scan": False,
-                "service_name": "Not Important",
+                "service_name": self.service_class.__name__,
                 "service_config": {param.name: submission_params.get(param.name, param.default)
                                    for param in self.submission_params},
                 "fileinfo": {k: v for k, v in self.identify.fileinfo(file_path).items() if k in fileinfo_keys},
@@ -198,7 +229,7 @@ class TestHelper:
                 if len(f.split("_")[0]) == 64 and os.path.isdir(os.path.join(self.result_folder, f))]
 
     def compare_sample_results(self, sample):
-        issues = []
+        ih = IssueHelper()
         original_results_file = os.path.join(self.result_folder, sample, 'result.json')
 
         if os.path.exists(original_results_file):
@@ -212,99 +243,113 @@ class TestHelper:
             # Compile the list of issues between the two results
             # Extracted files
             self._file_compare(
-                issues, "Extracted", original_results['files']['extracted'],
+                ih, ih.TYPE_EXTRACTED, original_results['files']['extracted'],
                 results['files']['extracted'])
             # Supplementary files
-            self._file_compare(issues,
-                               "Supplementary", original_results['files']['supplementary'],
+            self._file_compare(ih, ih.TYPE_SUPPLEMENTARY, original_results['files']['supplementary'],
                                results['files']['supplementary'])
             # Heuristics triggered
-            self._heuristic_compare(issues, original_results['results']['heuristics'], results['results']['heuristics'])
+            self._heuristic_compare(ih, original_results['results']['heuristics'], results['results']['heuristics'])
             # Tags generated
-            self._tag_compare(issues, original_results['results']['tags'], results['results']['tags'])
+            self._tag_compare(ih, original_results['results']['tags'], results['results']['tags'])
             # Temp submission data generated
             self._temp_data_compare(
-                issues, original_results['results']['temp_submission_data'],
+                ih, original_results['results']['temp_submission_data'],
                 results['results']['temp_submission_data'])
         else:
-            issues.append(f"Original result file missing for sample: {sample}")
+            ih.append(f"Original result file missing for sample: {sample}")
 
-        return issues
+        return ih
 
     def run_test_comparison(self, sample):
         # WARNING: This function is only to be run into a pytest context!
-        issues = self.compare_sample_results(sample)
-        if len(issues) != 0:
+        ih = self.compare_sample_results(sample)
+        if ih.has_issues():
+            issues = ih.get_issue_list()
             issues.insert(0, "")
             pytest.fail("\n".join(issues))
 
     @ staticmethod
-    def _heuristic_compare(issues, original, new):
+    def _heuristic_compare(ih: IssueHelper, original, new):
         oh_map = {x['heur_id']: x for x in original}
         nh_map = {x['heur_id']: x for x in new}
         for heur_id, heur in oh_map.items():
             if heur_id not in nh_map:
-                issues.append(f"[HEUR] Heuristic #{heur_id} missing from results.")
+                ih.add_issue(ih.TYPE_HEUR, ih.ACTION_MISSING, f"Heuristic #{heur_id} missing from results.")
             else:
                 new_heur = nh_map[heur_id]
                 for attack_id in heur['attack_ids']:
                     if attack_id not in new_heur['attack_ids']:
-                        issues.append(f"[HEUR] Attack ID '{attack_id}' missing from heuristic #{heur_id}.")
+                        ih.add_issue(ih.TYPE_HEUR, ih.ACTION_MISSING,
+                                     f"Attack ID '{attack_id}' missing from heuristic #{heur_id}.")
                 for signature in heur['signatures']:
                     if signature not in new_heur['signatures']:
-                        issues.append(f"[HEUR] Signature '{signature}' missing from heuristic #{heur_id}.")
+                        ih.add_issue(ih.TYPE_HEUR, ih.ACTION_MISSING,
+                                     f"Signature '{signature}' missing from heuristic #{heur_id}.")
 
                 for attack_id in new_heur['attack_ids']:
                     if attack_id not in heur['attack_ids']:
-                        issues.append(f"[HEUR] Attack ID '{attack_id}' added to heuristic #{heur_id}.")
+                        ih.add_issue(ih.TYPE_HEUR, ih.ACTION_ADDED,
+                                     f"Attack ID '{attack_id}' added to heuristic #{heur_id}.")
                 for signature in new_heur['signatures']:
                     if signature not in heur['signatures']:
-                        issues.append(f"[HEUR] Signature '{signature}' added to heuristic #{heur_id}.")
+                        ih.add_issue(ih.TYPE_HEUR, ih.ACTION_ADDED,
+                                     f"Signature '{signature}' added to heuristic #{heur_id}.")
 
         for heur_id in nh_map.keys():
             if heur_id not in oh_map:
-                issues.append(f"[HEUR] Heuristic #{heur_id} added to results.")
+                ih.add_issue(ih.TYPE_HEUR, ih.ACTION_ADDED, f"Heuristic #{heur_id} added to results.")
 
     @ staticmethod
-    def _tag_compare(issues, original, new):
+    def _tag_compare(ih: IssueHelper, original, new):
         for tag_type, tags in original.items():
             if tag_type not in new:
-                issues.append(f"[TAG] Tag type '{tag_type}' missing from results.")
+                for t in tags:
+                    ih.add_issue(ih.TYPE_TAGS, ih.ACTION_MISSING,
+                                 f"Tag '{t['value']} [{tag_type}]' missing from the results.")
             else:
                 otm = {x['value']: x for x in tags}
                 ntm = {x['value']: x for x in new[tag_type]}
                 for v, tag in otm.items():
                     if v not in ntm:
-                        issues.append(f"[TAG] Tag '{v} [{tag_type}]' missing from the results.")
+                        ih.add_issue(ih.TYPE_TAGS, ih.ACTION_MISSING,
+                                     f"Tag '{v} [{tag_type}]' missing from the results.")
                     else:
                         new_tag = ntm[v]
                         if tag['heur_id'] != new_tag['heur_id']:
-                            issues.append(f"[TAG] Heuristic ID for tag '{v} [{tag_type}]' has changed.")
+                            ih.add_issue(ih.TYPE_TAGS, ih.ACTION_CHANGED,
+                                         f"Heuristic ID for tag '{v} [{tag_type}]' has changed.")
                         if tag['signatures'] != new_tag['signatures']:
-                            issues.append(f"[TAG] Associated signatures for tag '{v} [{tag_type}]' has changed.")
+                            ih.add_issue(ih.TYPE_TAGS, ih.ACTION_CHANGED,
+                                         f"Associated signatures for tag '{v} [{tag_type}]' have changed.")
 
                 for v in ntm.keys():
                     if v not in otm:
-                        issues.append(f"[TAG] Tag '{v} [{tag_type}]' added to results.")
+                        ih.add_issue(ih.TYPE_TAGS, ih.ACTION_ADDED, f"Tag '{v} [{tag_type}]' added to results.")
 
-        for tag_type in new.keys():
+        for tag_type, tags in new.items():
             if tag_type not in original:
-                issues.append(f"[TAG] Tag type '{tag_type}' added to results.")
+                for t in tags:
+                    ih.add_issue(ih.TYPE_TAGS, ih.ACTION_ADDED,
+                                 f"Tag '{t['value']} [{tag_type}]' added to the results.")
 
     @ staticmethod
-    def _temp_data_compare(issues, original, new):
+    def _temp_data_compare(ih: IssueHelper, original, new):
         for k, v in original.items():
             if k not in new:
-                issues.append(f"[TEMP_DATA] Temporary submission data with key '{k}' is missing from the results.")
+                ih.add_issue(ih.TYPE_TEMP, ih.ACTION_MISSING,
+                             f"Temporary submission data with key '{k}' is missing from the results.")
             elif v != new[k]:
-                issues.append(f"[TEMP_DATA] Value of temporary submission data with key '{k}' has changed.")
+                ih.add_issue(ih.TYPE_TEMP, ih.ACTION_CHANGED,
+                             f"Value of temporary submission data with key '{k}' has changed.")
 
         for k, v in new.items():
             if k not in original:
-                issues.append(f"[TEMP_DATA] Temporary submission data with key '{k}' was added to the results.")
+                ih.add_issue(ih.TYPE_TEMP, ih.ACTION_ADDED,
+                             f"Temporary submission data with key '{k}' was added to the results.")
 
     @ staticmethod
-    def _file_compare(issues, f_type, original, new):
+    def _file_compare(ih: IssueHelper, f_type, original, new):
         oh_map = {x['sha256']: x['name'] for x in original}
         on_map = {x['name']: x['sha256'] for x in original}
         nh_map = {x['sha256']: x['name'] for x in new}
@@ -313,22 +358,20 @@ class TestHelper:
         for sha256, name in oh_map.items():
             if sha256 not in nh_map:
                 if name not in nn_map:
-                    issues.append(f"[{f_type.upper()}] File '{name} [{sha256}]' missing from the file list.")
+                    ih.add_issue(f_type, ih.ACTION_MISSING, f"File '{name} [{sha256}]' missing from the file list.")
                     continue
 
                 if sha256 != nn_map[name]:
-                    issues.append(f"[{f_type.upper()}] The sha256 of the file '{name}' has changed.")
+                    ih.add_issue(f_type, ih.ACTION_CHANGED, f"The sha256 of the file '{name}' has changed.")
                     continue
 
             if name != nh_map[sha256]:
-                issues.append(f"[{f_type.upper()}] The name of the file '{sha256}' has changed.")
+                ih.add_issue(f_type, ih.ACTION_CHANGED, f"The name of the file '{sha256}' has changed.")
                 continue
 
         for sha256, name in nh_map.items():
             if sha256 not in oh_map and name not in on_map:
-                issues.append(f"[{f_type.upper()}] File '{name} [{sha256}]' added to the file list.")
-
-        return issues
+                ih.add_issue(f_type, ih.ACTION_ADDED, f"File '{name} [{sha256}]' added to the file list.")
 
     def regenerate_results(self):
         for f in self.result_list():
