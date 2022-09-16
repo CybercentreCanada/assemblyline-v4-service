@@ -1,7 +1,7 @@
 import os
 import pytest
 
-from assemblyline_result_sample_service.result_sample import ResultSample
+from assemblyline.common.importing import load_module_by_path
 from assemblyline_v4_service.testing.helper import TestHelper
 
 # Force manifest location
@@ -12,7 +12,8 @@ RESULTS_FOLDER = os.path.join(os.path.dirname(__file__), 'results')
 SAMPLES_FOLDER = os.path.join(os.path.dirname(__file__), 'samples')
 
 # Initialize test helper
-th = TestHelper(ResultSample, RESULTS_FOLDER, SAMPLES_FOLDER)
+service_class = load_module_by_path("result_sample.ResultSample", os.path.join(os.path.dirname(__file__), ".."))
+th = TestHelper(service_class, RESULTS_FOLDER, SAMPLES_FOLDER)
 
 
 @pytest.mark.parametrize("sample", th.result_list())
