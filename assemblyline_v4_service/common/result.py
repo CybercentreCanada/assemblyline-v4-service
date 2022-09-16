@@ -4,9 +4,9 @@ import json
 import logging
 from typing import List, Union, Optional, Dict, Any
 
-from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
+from assemblyline.common.classification import Classification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
@@ -14,8 +14,8 @@ from assemblyline_v4_service.common.helper import get_service_attributes, get_he
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')
 
-Classification = forge.get_classification()
-SERVICE_ATTRIBUTES = get_service_attributes()
+SERVICE_ATTRIBUTES = None
+HEUR_LIST = None
 
 BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TEXT', 0),
@@ -45,9 +45,6 @@ class ResultAggregationException(Exception):
     pass
 
 
-HEUR_LIST = get_heuristics()
-
-
 def get_heuristic_primitives(heur: Heuristic):
     if heur is None:
         return None
@@ -70,6 +67,11 @@ class Heuristic:
                  signatures: Optional[Dict[(str, None), int]] = None,
                  frequency: Optional[int] = 1,
                  score_map: Optional[Dict[str, int]] = None):
+
+        # Lazy load heuristics
+        global HEUR_LIST
+        if not HEUR_LIST:
+            HEUR_LIST = get_heuristics()
 
         # Validate heuristic
         if heur_id not in HEUR_LIST:
@@ -429,6 +431,11 @@ class ResultSection:
             auto_collapse: bool = False,
             zeroize_on_sig_safe: bool = True,
     ):
+        # Lazy load service attributes
+        global SERVICE_ATTRIBUTES
+        if not SERVICE_ATTRIBUTES:
+            SERVICE_ATTRIBUTES = get_service_attributes()
+
         self._finalized: bool = False
         self.parent = parent
         self._section = None

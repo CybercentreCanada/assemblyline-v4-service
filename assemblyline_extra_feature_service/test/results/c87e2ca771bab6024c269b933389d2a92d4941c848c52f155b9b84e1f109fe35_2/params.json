@@ -1,0 +1,27 @@
+{
+    "metadata": {
+        "key1": "value",
+        "key2": 2
+    },
+    "submission_params": {
+        "bob": true
+    },
+    "temp_submission_data": {
+        "body": "This is the body",
+        "a_bool": true
+    },
+    "tags": [
+        {
+            "type": "network.static.ip",
+            "short_type": "IP",
+            "value": "127.0.0.1",
+            "score": 1000
+        },
+        {
+            "type": "file.attribution",
+            "short_type": "attrib",
+            "value": "Malware1",
+            "score": 2000
+        }
+    ]
+}
