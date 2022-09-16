@@ -29,6 +29,7 @@ class IssueHelper:
     TYPE_TEMP = "TEMP_DATA"
     TYPE_SUPPLEMENTARY = "SUPPLEMENTARY"
     TYPE_EXTRACTED = "EXTRACTED"
+    TYPE_EXTRA = "EXTRA"
 
     def __init__(self):
         self.issues = {}
@@ -254,7 +255,7 @@ class TestHelper:
         return [f for f in os.listdir(self.result_folder)
                 if len(f.split("_")[0]) == 64 and os.path.isdir(os.path.join(self.result_folder, f))]
 
-    def compare_sample_results(self, sample):
+    def compare_sample_results(self, sample, test_extra=False):
         ih = IssueHelper()
         original_results_file = os.path.join(self.result_folder, sample, 'result.json')
 
@@ -262,11 +263,11 @@ class TestHelper:
             original_results = json.load(open(original_results_file))
             results = self._execute_sample(sample)
 
-            # Pop off extra results
-            original_results.pop('extra')
-            results.pop('extra')
-
             # Compile the list of issues between the two results
+            # Test extra results
+            if test_extra and original_results.get('extra', None) != results.get('extra', None):
+                ih.add_issue(ih.TYPE_EXTRA, ih.ACTION_CHANGED, "Extra results have changed.")
+
             # Extracted files
             self._file_compare(
                 ih, ih.TYPE_EXTRACTED, original_results['files']['extracted'],
@@ -287,9 +288,9 @@ class TestHelper:
 
         return ih
 
-    def run_test_comparison(self, sample):
+    def run_test_comparison(self, sample, test_extra=False):
         # WARNING: This function is only to be run into a pytest context!
-        ih = self.compare_sample_results(sample)
+        ih = self.compare_sample_results(sample, test_extra=test_extra)
         if ih.has_issues():
             issues = ih.get_issue_list()
             issues.insert(0, "")
