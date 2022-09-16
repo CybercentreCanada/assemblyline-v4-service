@@ -1,20 +1,20 @@
 {
   "extra": {
     "drop_file": false,
-    "score": 3510,
+    "score": 2610,
     "sections": [
       {
         "auto_collapse": false,
-        "body": "innovations this Canada tools\nsurvey across development",
+        "body": "selling us innovations companies problems\nstays selling The sizes invite\nwebsite art examine new are\nsecurity BCIP engaging key certain",
         "body_format": "TEXT",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": {
           "attack_ids": [
-            "S0218",
-            "T1124",
-            "G0076",
-            "T1548.002"
+            "S0153",
+            "T1027.002",
+            "G0056",
+            "T1566.002"
           ],
           "frequency": 0,
           "heur_id": 3,
@@ -44,7 +44,7 @@
         "auto_collapse": false,
         "body": null,
         "body_format": "TEXT",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 1,
         "heuristic": null,
         "tags": {},
@@ -53,9 +53,9 @@
       },
       {
         "auto_collapse": false,
-        "body": "{\"type\": \"colormap\", \"data\": {\"domain\": [0, 20], \"values\": [7.804080712953909, 12.457997906046288, 9.877820795292907, 12.251733894286792, 18.348196368187924, 14.09992739308218, 5.993047115310071, 5.601078960274812, 16.40875697872061, 11.08447448515972, 14.715300083635135, 15.557638228504345, 5.372335048227028, 2.142826430576583, 11.756260712307729, 16.723718375490307, 14.226681089299495, 14.567182605007103, 7.850534779768954, 1.1964037757214596, 9.233552557472715, 9.515638399042139, 15.737363046502235, 1.6945483294403374, 19.291171937478932, 15.480095300092758, 11.80784945957818, 10.246045235162963, 7.328759725212453, 1.3456811665192703, 12.92386360202771, 7.291746843206985, 13.494739472674077, 2.7046447219037506, 12.53767088126402, 0.40833326825703287, 12.012941494853276, 11.224457309136227, 4.423114370532623, 17.701547430721355, 12.29519507276581, 1.8188162843785505, 15.50401548193358, 14.44917695502243, 2.9027461205314475, 11.505666864575382, 15.691537810322366, 14.286698311763363, 16.65910165398483, 17.728125108169127]}}",
+        "body": "{\"type\": \"colormap\", \"data\": {\"domain\": [0, 20], \"values\": [15.837710337244364, 5.570494276367574, 12.612707951159498, 15.73912033007489, 16.703765295171916, 6.138313632974199, 17.926914386202665, 17.615506881506022, 5.404507391580131, 5.805788591101848, 6.8569573843703395, 0.09874899049441499, 5.442089001495594, 15.384703975868543, 8.732381215822116, 10.058553151269793, 17.945963115011587, 7.7991672261535, 5.0139400132280105, 9.130897128085886, 15.541430660692928, 16.922755789603034, 3.598888873263184, 2.4070986729470056, 18.931366404719878, 17.153898743227437, 5.6301050817902105, 17.100350808008617, 11.534292738430079, 16.67980546858005, 9.448486245283938, 16.755837104886815, 5.732092258101622, 8.058783898997344, 19.53887263936672, 0.2361495485704368, 14.411540190741691, 17.087363437558174, 9.15911397596709, 12.662404297408383, 5.813429032441791, 14.732080314554974, 17.838656015010915, 9.297143143942515, 5.732812703528028, 19.06207203109749, 4.962965883787749, 10.219904717319272, 9.21595742725605, 19.728388377718606]}}",
         "body_format": "GRAPH_DATA",
-        "classification": "TLP:AMBER//COMMERCIAL",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -64,16 +64,16 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://innovation.edu/\", \"name\": \"Random url!\"}]",
+        "body": "[{\"url\": \"https://innovations.com/\", \"name\": \"Random url!\"}]",
         "body_format": "URL",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {
           "network": {
             "static": {
               "domain": [
-                "innovation.edu"
+                "innovations.com"
               ]
             }
           }
@@ -83,9 +83,9 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://development.ca/\"}, {\"url\": \"https://performs.com/\"}]",
+        "body": "[{\"url\": \"https://the.biz/\"}, {\"url\": \"https://programs.biz/\"}]",
         "body_format": "URL",
-        "classification": "TLP:AMBER//COMMERCIAL",
+        "classification": "TLP:W",
         "depth": 1,
         "heuristic": {
           "attack_ids": [
@@ -102,8 +102,8 @@
           "network": {
             "static": {
               "domain": [
-                "development.ca",
-                "performs.com"
+                "the.biz",
+                "programs.biz"
               ]
             }
           }
@@ -113,18 +113,18 @@
       },
       {
         "auto_collapse": false,
-        "body": "[{\"url\": \"https://128.92.130.189/\"}, {\"url\": \"https://19.123.68.193/\"}, {\"url\": \"https://250.123.40.18/\"}]",
+        "body": "[{\"url\": \"https://159.187.50.163/\"}, {\"url\": \"https://210.148.93.36/\"}, {\"url\": \"https://78.254.230.128/\"}]",
         "body_format": "URL",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 2,
         "heuristic": null,
         "tags": {
           "network": {
             "static": {
               "ip": [
-                "128.92.130.189",
-                "19.123.68.193",
-                "250.123.40.18"
+                "159.187.50.163",
+                "210.148.93.36",
+                "78.254.230.128"
               ]
             }
           }
@@ -136,15 +136,16 @@
         "auto_collapse": false,
         "body": "00000000:  54 68 69 73 20 69 73 20 73 6f 6d 65 20 72 61 6e   This is some ran\n00000010:  64 6f 6d 20 74 65 78 74 20 74 68 61 74 20 77 65   dom text that we\n00000020:  20 77 69 6c 6c 20 66 6f 72 6d 61 74 20 61 73 20    will format as \n00000030:  61 6e 20 68 65 78 64 75 6d 70 20 61 6e 64 20 79   an hexdump and y\n00000040:  6f 75 27 6c 6c 20 73 65 65 20 74 68 61 74 20 74   ou'll see that t\n00000050:  68 65 20 68 65 78 64 75 6d 70 20 66 6f 72 6d 61   he hexdump forma\n00000060:  74 74 69 6e 67 20 77 69 6c 6c 20 62 65 20 70 72   tting will be pr\n00000070:  65 73 65 72 76 65 64 20 62 79 20 74 68 65 20 6d   eserved by the m\n00000080:  65 6d 6f 72 79 20 64 75 6d 70 20 73 65 63 74 69   emory dump secti\n00000090:  6f 6e 21                                          on!",
         "body_format": "MEMORY_DUMP",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": {
           "attack_ids": [
-            "T1574.002"
+            "T1027",
+            "T1127"
           ],
           "frequency": 1,
-          "heur_id": 2,
-          "score": 1000,
+          "heur_id": 4,
+          "score": 100,
           "score_map": {},
           "signatures": {}
         },
@@ -156,7 +157,7 @@
         "auto_collapse": false,
         "body": "{\"key\": \"value\", \"a_str\": \"Some string\", \"a_bool\": false, \"an_int\": 102}",
         "body_format": "KEY_VALUE",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -165,9 +166,9 @@
       },
       {
         "auto_collapse": false,
-        "body": "[[\"key0\", \"value0\"], [\"key1\", \"value1\"], [\"key2\", \"value2\"], [\"key3\", \"value3\"], [\"key4\", \"value4\"]]",
+        "body": "[[\"key0\", \"value0\"], [\"key1\", \"value1\"], [\"key2\", \"value2\"], [\"key3\", \"value3\"], [\"key4\", \"value4\"], [\"key5\", \"value5\"]]",
         "body_format": "ORDERED_KEY_VALUE",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -178,7 +179,7 @@
         "auto_collapse": false,
         "body": "{\"a_str\": \"Some string\", \"a_list\": [\"a\", \"b\", \"c\"], \"a_bool\": false, \"an_int\": 1000, \"a_dict\": {\"list_of_dict\": [{\"d1_key\": \"val\", \"d1_key2\": \"val2\"}, {\"d2_key\": \"val\", \"d2_key2\": \"val2\"}], \"bool\": true}, \"updated_key\": \"updated_value\"}",
         "body_format": "JSON",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -189,7 +190,7 @@
         "auto_collapse": false,
         "body": "[{\"process_pid\": 123, \"process_name\": \"evil.exe\", \"command_line\": \"c:\\\\evil.exe\", \"signatures\": {}, \"children\": [{\"process_pid\": 321, \"process_name\": \"takeovercomputer.exe\", \"command_line\": \"C:\\\\Temp\\\\takeovercomputer.exe -f do_bad_stuff\", \"signatures\": {\"one\": 250}, \"children\": [{\"process_pid\": 456, \"process_name\": \"evenworsethanbefore.exe\", \"command_line\": \"C:\\\\Temp\\\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad\", \"signatures\": {\"one\": 10, \"two\": 10, \"three\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 234, \"process_name\": \"badfile.exe\", \"command_line\": \"C:\\\\badfile.exe -k nothing_to_see_here\", \"signatures\": {\"one\": 1000, \"two\": 10, \"three\": 10, \"four\": 10, \"five\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 345, \"process_name\": \"benignexe.exe\", \"command_line\": \"C:\\\\benignexe.exe -f \\\"just kidding, i'm evil\\\"\", \"signatures\": {\"one\": 2000}, \"children\": [], \"network_count\": 4, \"file_count\": 7000, \"registry_count\": 10, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 987, \"process_name\": \"runzeroday.exe\", \"command_line\": \"C:\\\\runzeroday.exe -f insert_bad_spelling\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 678, \"process_name\": \"trustme.exe\", \"command_line\": \"C:\\\\trustme.exe\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": true}]",
         "body_format": "PROCESS_TREE",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -200,7 +201,7 @@
         "auto_collapse": false,
         "body": "[{\"a_str\": \"Some string1\", \"extra_column_here\": \"confirmed\", \"a_bool\": false, \"an_int\": 101}, {\"a_str\": \"Some string2\", \"a_bool\": true, \"an_int\": 102}, {\"a_str\": \"Some string3\", \"a_bool\": false, \"an_int\": 103}, {\"a_str\": \"Some string4\", \"a_bool\": null, \"an_int\": -1000000000000000000, \"extra_column_there\": \"confirmed\", \"nested_key_value_pair\": {\"a_str\": \"Some string3\", \"a_bool\": false, \"nested_kv_thats_too_deep\": {\"a_str\": \"Some string3\", \"a_bool\": false, \"an_int\": 103}}}]",
         "body_format": "TABLE",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -211,7 +212,7 @@
         "auto_collapse": false,
         "body": "This section will have a zero score if all tags are safelisted.",
         "body_format": "TEXT",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": {
           "attack_ids": [
@@ -239,7 +240,7 @@
         "auto_collapse": true,
         "body": "This section was collapsed when first loaded in the UI",
         "body_format": "TEXT",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": {
           "attack_ids": [
@@ -259,7 +260,7 @@
         "auto_collapse": false,
         "body": "[{\"img\": {\"name\": \"0001.jpg\", \"sha256\": \"4219ed595d6d2191c5f0932bae04daee9db22fbab07c60262d8a1247bb706924\", \"description\": \"ResultSample screenshot 0001\"}, \"thumb\": {\"name\": \"0001.jpg.thumb\", \"sha256\": \"07ea8db8991c1ebf1c3468baeaadb5b6f24a2ec7502ca9352078171b9825dcc1\", \"description\": \"ResultSample screenshot 0001 (thumbnail)\"}}, {\"img\": {\"name\": \"0002.jpg\", \"sha256\": \"77ca9a54b431c9b97d90ed81b95ded52dfd9275b56ec92f90b887a3cb669a8ef\", \"description\": \"ResultSample screenshot 0002\"}, \"thumb\": {\"name\": \"0002.jpg.thumb\", \"sha256\": \"12efe95c7648480313e8e993405c4c9a65008fec1fe0e15cf7753512a12170b9\", \"description\": \"ResultSample screenshot 0002 (thumbnail)\"}}, {\"img\": {\"name\": \"0003.jpg\", \"sha256\": \"ec7523811bcf8881b08afb96dad1293d3212cf6f60120c9ec89c924098486575\", \"description\": \"ResultSample screenshot 0003\"}, \"thumb\": {\"name\": \"0003.jpg.thumb\", \"sha256\": \"2f1cf5d2fb05da0b93d4311cad14e5932d0c6bc074cf2c0bb04fae20c1bb0e63\", \"description\": \"ResultSample screenshot 0003 (thumbnail)\"}}, {\"img\": {\"name\": \"0004.jpg\", \"sha256\": \"9870fa9be636d6d794cfbdd6edc3670b19b2191b1fa29b8537abdc408c1f2c2f\", \"description\": \"ResultSample screenshot 0004\"}, \"thumb\": {\"name\": \"0004.jpg.thumb\", \"sha256\": \"142747595574a7c2cea51b7a46b0ce47cea51ffaac1106cdf08218483d38d372\", \"description\": \"ResultSample screenshot 0004 (thumbnail)\"}}, {\"img\": {\"name\": \"0005.jpg\", \"sha256\": \"0634c029797cbb72e481dc05ac51127f88cffd96eaf4cef0561cf0345a9aead2\", \"description\": \"ResultSample screenshot 0005\"}, \"thumb\": {\"name\": \"0005.jpg.thumb\", \"sha256\": \"3468c56ae3a041ff5991437255fcd18fcae8b8e0877f9eea0bf7035af499cc24\", \"description\": \"ResultSample screenshot 0005 (thumbnail)\"}}, {\"img\": {\"name\": \"0006.jpg\", \"sha256\": \"8a900534fd24dfd8a1f5ea3133816bfc2bee78dfa7f24a2a8d5e5f3a667d844e\", \"description\": \"ResultSample screenshot 0006\"}, \"thumb\": {\"name\": \"0006.jpg.thumb\", \"sha256\": \"b3910c6cd34e6be154ceb5c389e605d4101dffc1102213f4f131c23bf9a42fb8\", \"description\": \"ResultSample screenshot 0006 (thumbnail)\"}}]",
         "body_format": "IMAGE",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": null,
         "tags": {},
@@ -268,9 +269,9 @@
       },
       {
         "auto_collapse": false,
-        "body": "[[\"TEXT\", \"We have detected very high entropy multiple sections of your file, this section is most-likely packed or encrypted.\\n\\nHere are affected sections:\"], [\"KEY_VALUE\", {\"section_name\": \".UPX0\", \"offset\": \"0x008000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.90545454416314, 7.66931264065103, 7.396173109894957, 7.4363683779469625, 7.449320390809651, 7.0133379561303935, 7.605443553262402, 7.261671129725908, 7.733933198247906, 7.157458480057922, 7.85695578951258, 7.783687990332589, 7.198388142020331, 7.85444360505881, 7.566485616644989, 7.4174139611592675, 7.680329037545083, 7.183228508873748, 7.268203369849681, 7.795362263684684]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX1\", \"offset\": \"0x009000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.9843251536269175, 7.408078754557313, 7.172560562044719, 7.656139971389155, 7.139737785013138, 7.2827583058851255, 7.642590042313734, 7.561992063734174, 7.047007964348083, 7.036593646701842, 7.657132713685672, 7.087222841509027, 7.305335075318508, 7.6417679211884515, 7.878344841431465, 7.125591073410157, 7.5314263897829274, 7.447249577011333, 7.41950230414571, 7.780726912754563]}}]]",
+        "body": "[[\"TEXT\", \"We have detected very high entropy multiple sections of your file, this section is most-likely packed or encrypted.\\n\\nHere are affected sections:\"], [\"KEY_VALUE\", {\"section_name\": \".UPX0\", \"offset\": \"0x008000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.769552712061657, 7.638677125904798, 7.553942957481276, 7.1754382069014815, 7.953859970605237, 7.930840365724954, 7.469085800975851, 7.28282309238299, 7.315207191966213, 7.788392418038763, 7.000955376466084, 7.892886573441669, 7.632525454494869, 7.524527730875002, 7.035043951382976, 7.4857273540583265, 7.985358856288326, 7.051863832812774, 7.153592780232135, 7.6020865191722695]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX1\", \"offset\": \"0x009000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.307629622334518, 7.122049900274689, 7.458966197934511, 7.456238837841168, 7.804400216034802, 7.499602923593235, 7.276582551373038, 7.318637038854917, 7.087099409514573, 7.09821661589067, 7.330239188785088, 7.853656960974171, 7.44899203124385, 7.998990072998669, 7.951490939930437, 7.53952945832782, 7.3765561185424415, 7.763342408814099, 7.035445321337756, 7.83726284294523]}}], [\"DIVIDER\", null], [\"KEY_VALUE\", {\"section_name\": \".UPX2\", \"offset\": \"0x0010000\", \"size\": \"4196 bytes\"}], [\"GRAPH_DATA\", {\"type\": \"colormap\", \"data\": {\"domain\": [0, 8], \"values\": [7.772262590835514, 7.565757720000051, 7.573231866031585, 7.357039409927438, 7.800031774405549, 7.786051168737967, 7.557703385672064, 7.91902045731056, 7.1394298514382, 7.701587645802983, 7.730446868490584, 7.631109716654514, 7.420724194401526, 7.717403093987307, 7.763795253327741, 7.001325562940128, 7.309042947558048, 7.674802293276554, 7.053003586643081, 7.13762248092306]}}]]",
         "body_format": "MULTI",
-        "classification": "TLP:WHITE",
+        "classification": "TLP:W",
         "depth": 0,
         "heuristic": {
           "attack_ids": [],
@@ -286,7 +287,8 @@
               "sections": {
                 "name": [
                   ".UPX0",
-                  ".UPX1"
+                  ".UPX1",
+                  ".UPX2"
                 ]
               }
             }
@@ -363,7 +365,7 @@
       },
       {
         "name": "urls.json",
-        "sha256": "dea909ce562bb37e691241b2e8da26a5231894bb47fdc64e136b327a54d7a6ec"
+        "sha256": "c941c5a1e58c408985c2266113ba19a97d0a6af0e291920420e17cd312215262"
       },
       {
         "name": "0003.jpg",
@@ -389,17 +391,10 @@
       },
       {
         "attack_ids": [
-          "T1574.002"
-        ],
-        "heur_id": 2,
-        "signatures": []
-      },
-      {
-        "attack_ids": [
-          "S0218",
-          "T1124",
-          "G0076",
-          "T1548.002"
+          "S0153",
+          "T1027.002",
+          "G0056",
+          "T1566.002"
         ],
         "heur_id": 3,
         "signatures": [
@@ -408,6 +403,14 @@
           "sig_three",
           "sig_four"
         ]
+      },
+      {
+        "attack_ids": [
+          "T1027",
+          "T1127"
+        ],
+        "heur_id": 4,
+        "signatures": []
       },
       {
         "attack_ids": [
@@ -446,23 +449,28 @@
           "heur_id": 5,
           "signatures": [],
           "value": ".UPX1"
+        },
+        {
+          "heur_id": 5,
+          "signatures": [],
+          "value": ".UPX2"
         }
       ],
       "network.static.domain": [
         {
-          "heur_id": 4,
-          "signatures": [],
-          "value": "development.ca"
-        },
-        {
           "heur_id": null,
           "signatures": [],
-          "value": "innovation.edu"
+          "value": "innovations.com"
         },
         {
           "heur_id": 4,
           "signatures": [],
-          "value": "performs.com"
+          "value": "programs.biz"
+        },
+        {
+          "heur_id": 4,
+          "signatures": [],
+          "value": "the.biz"
         }
       ],
       "network.static.ip": [
@@ -474,24 +482,24 @@
         {
           "heur_id": null,
           "signatures": [],
-          "value": "128.92.130.189"
+          "value": "159.187.50.163"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "19.123.68.193"
+          "value": "210.148.93.36"
         },
         {
           "heur_id": null,
           "signatures": [],
-          "value": "250.123.40.18"
+          "value": "78.254.230.128"
         }
       ]
     },
     "temp_submission_data": {
       "kv_section": "{\"key\": \"value\", \"a_str\": \"Some string\", \"a_bool\": false, \"an_int\": 102}",
       "process_tree_section": "[{\"process_pid\": 123, \"process_name\": \"evil.exe\", \"command_line\": \"c:\\\\evil.exe\", \"signatures\": {}, \"children\": [{\"process_pid\": 321, \"process_name\": \"takeovercomputer.exe\", \"command_line\": \"C:\\\\Temp\\\\takeovercomputer.exe -f do_bad_stuff\", \"signatures\": {\"one\": 250}, \"children\": [{\"process_pid\": 456, \"process_name\": \"evenworsethanbefore.exe\", \"command_line\": \"C:\\\\Temp\\\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad\", \"signatures\": {\"one\": 10, \"two\": 10, \"three\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 234, \"process_name\": \"badfile.exe\", \"command_line\": \"C:\\\\badfile.exe -k nothing_to_see_here\", \"signatures\": {\"one\": 1000, \"two\": 10, \"three\": 10, \"four\": 10, \"five\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 345, \"process_name\": \"benignexe.exe\", \"command_line\": \"C:\\\\benignexe.exe -f \\\"just kidding, i'm evil\\\"\", \"signatures\": {\"one\": 2000}, \"children\": [], \"network_count\": 4, \"file_count\": 7000, \"registry_count\": 10, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 987, \"process_name\": \"runzeroday.exe\", \"command_line\": \"C:\\\\runzeroday.exe -f insert_bad_spelling\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 678, \"process_name\": \"trustme.exe\", \"command_line\": \"C:\\\\trustme.exe\", \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": true}]",
-      "url_section": "[{\"url\": \"https://development.ca/\"}, {\"url\": \"https://performs.com/\"}]"
+      "url_section": "[{\"url\": \"https://the.biz/\"}, {\"url\": \"https://programs.biz/\"}]"
     }
   }
 }
