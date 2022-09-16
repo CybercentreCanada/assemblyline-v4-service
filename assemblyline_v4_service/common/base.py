@@ -1,9 +1,7 @@
 from __future__ import annotations
-from collections import defaultdict
 
 import hashlib
 import logging
-import json
 import os
 import requests
 import shutil

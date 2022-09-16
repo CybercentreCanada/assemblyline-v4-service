@@ -1,0 +1,53 @@
+{
+  "extra": {
+    "drop_file": false,
+    "score": 0,
+    "sections": [
+      {
+        "auto_collapse": false,
+        "body": "{ 'file.attribution': [('Malware1', 1000)],\n  'network.static.ip': [('127.0.0.1', 100)]}",
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:W",
+        "depth": 0,
+        "heuristic": null,
+        "tags": {},
+        "title_text": "Tags generated from other services",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "{'key1': 'value1', 'key2': '2'}",
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:W",
+        "depth": 0,
+        "heuristic": null,
+        "tags": {},
+        "title_text": "Metadata provided during submission",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
+        "body": "{'a_bool': False, 'body': 'This is the body'}",
+        "body_format": "MEMORY_DUMP",
+        "classification": "TLP:W",
+        "depth": 0,
+        "heuristic": null,
+        "tags": {},
+        "title_text": "Temporary submission data",
+        "zeroize_on_tag_safe": false
+      }
+    ]
+  },
+  "files": {
+    "extracted": [],
+    "supplementary": []
+  },
+  "results": {
+    "heuristics": [],
+    "tags": {},
+    "temp_submission_data": {
+      "a_bool": false,
+      "body": "This is the body"
+    }
+  }
+}
