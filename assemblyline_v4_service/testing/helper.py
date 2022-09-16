@@ -110,7 +110,7 @@ class TestHelper:
 
     def _find_sample(self, sample):
         # Assume samples are carted
-        sample = f"{sample}.cart"
+        sample = f"{sample.split('_', 1)[0]}.cart"
 
         for location in self.locations:
             p = [path for path in Path(location).rglob(sample)]
