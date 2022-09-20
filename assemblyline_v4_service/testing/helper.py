@@ -187,7 +187,7 @@ class TestHelper:
         return generalized_results
 
     def _execute_sample(self, sample, save=False, save_files=False):
-        file_path = os.path.join("/tmp", sample)
+        file_path = os.path.join("/tmp", sample.split('_', 1)[0])
         cls = None
 
         try:
