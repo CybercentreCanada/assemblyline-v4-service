@@ -157,7 +157,7 @@ class RunService:
 
                 # Add timestamps for creation, archive and expiry
                 result['created'] = now_as_iso()
-                result['archive_ts'] = now_as_iso(1 * 24 * 60 * 60)
+                result['archive_ts'] = None
                 result['expiry_ts'] = now_as_iso(service_task.ttl * 24 * 60 * 60)
 
                 result = Result(result)
