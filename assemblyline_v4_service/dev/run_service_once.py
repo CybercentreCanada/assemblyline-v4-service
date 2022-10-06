@@ -72,6 +72,13 @@ class RunService:
             target_file = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             shutil.copyfile(FILE_PATH, target_file)
 
+        if SUBMISSION_PARAMS:
+            for kv in SUBMISSION_PARAMS:
+                if "=" not in kv:
+                    continue
+                k, v = kv.split("=", 1)
+                self.submission_params[k] = v
+
         # Create service processing task
         service_task = ServiceTask(dict(
             sid=get_random_id(),
@@ -219,6 +226,9 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument("-d", "--debug", action="store_true", help="turn on debugging mode")
     parser.add_argument("-p", "--profile", action="store_true", help="profile and save results to <SERVICE_NAME>.prof")
+    parser.add_argument(
+        "-s", "--submission", action="append", help="Set a number of key-value pairs for the submission parameters"
+    )
     parser.add_argument("service_path", help="python path of the service")
     parser.add_argument("file_path", help="file path of the file to be processed")
 
@@ -227,6 +237,7 @@ if __name__ == '__main__':
     SERVICE_PATH = args.service_path
     SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
     FILE_PATH = args.file_path
+    SUBMISSION_PARAMS = args.submission
 
     # create logger
     LOG = logging.getLogger(f"assemblyline.service.{SERVICE_NAME}")
