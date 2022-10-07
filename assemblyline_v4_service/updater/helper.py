@@ -17,7 +17,6 @@ from assemblyline.common.identify import Identify
 
 
 BLOCK_SIZE = 64 * 1024
-FORCE_UPDATE = os.environ.get('FORCE_SIGNATURE_UPDATE', 'false').lower() == 'true'
 
 identify = Identify()
 
@@ -87,8 +86,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
     session.verify = not ignore_ssl_errors
 
     # Let https requests go through proxy
-    if proxy:
-        os.environ['https_proxy'] = proxy
+    proxies = {'http': proxy, 'https': proxy} if proxy else None
 
     try:
         response = None
@@ -107,7 +105,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 last_modified = time.mktime(time.strptime(last_modified, "%a, %d %b %Y %H:%M:%S %Z"))
 
                 # Compare the last modified time with the last updated time
-                if previous_update and last_modified <= previous_update and not FORCE_UPDATE:
+                if previous_update and last_modified <= previous_update:
                     # File has not been modified since last update, do nothing
                     raise SkipSource()
 
@@ -118,10 +116,10 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 else:
                     headers = {'If-Modified-Since': previous_update}
 
-            response = session.get(uri, auth=auth, headers=headers)
+            response = session.get(uri, auth=auth, headers=headers, proxies=proxies)
 
         # Check the response code
-        if response.status_code == requests.codes['not_modified'] and not FORCE_UPDATE:
+        if response.status_code == requests.codes['not_modified']:
             # File has not been modified since last update, do nothing
             raise SkipSource()
         elif response.ok:
@@ -133,10 +131,6 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
             with open(file_path, 'wb') as f:
                 for content in response.iter_content(BLOCK_SIZE):
                     f.write(content)
-
-            # Clear proxy setting
-            if proxy:
-                del os.environ['https_proxy']
 
             ident_type = identify.fileinfo(file_path)['type']
             if ident_type.startswith('archive'):
@@ -189,7 +183,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
 
     # Let https requests go through proxy
     if proxy:
-        os.environ['https_proxy'] = proxy
+        git_env['https_proxy'] = proxy
 
     if ca_cert:
         logger.info("A CA certificate has been provided with this source.")
@@ -215,19 +209,15 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
             git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
             git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
 
-        repo = Repo.clone_from(url, clone_dir, env=git_env, git_config=git_config, branch=branch)
+        repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch)
 
         # Check repo last commit
         if previous_update:
             if isinstance(previous_update, str):
                 previous_update = iso_to_epoch(previous_update)
             for c in repo.iter_commits():
-                if c.committed_date < previous_update and not FORCE_UPDATE:
+                if c.committed_date < previous_update:
                     raise SkipSource()
                 break
-
-    # Clear proxy setting
-    if proxy:
-        del os.environ['https_proxy']
 
     return filter_downloads(clone_dir, pattern, default_pattern)
