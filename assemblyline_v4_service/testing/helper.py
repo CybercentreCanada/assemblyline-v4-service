@@ -182,7 +182,18 @@ class TestHelper:
                     })
             # Sort Tags
             for k, v in generalized_results["results"]["tags"].items():
-                generalized_results["results"]["tags"][k] = sorted(v, key=lambda x: x["value"])
+                try:
+                    generalized_results["results"]["tags"][k] = sorted(v, key=lambda x: x["value"])
+                except TypeError:
+                    # Sorting for list with different types: https://stackoverflow.com/a/68416981
+                    type_weights = {}
+                    for element in v:
+                        if type(element["value"]) not in type_weights:
+                            type_weights[type(element["value"])] = len(type_weights)
+
+                    generalized_results["results"]["tags"][k] = sorted(
+                        v, key=lambda x: (type_weights[type(x["value"])], str(x["value"]))
+                    )
 
         return generalized_results
 
@@ -195,16 +206,16 @@ class TestHelper:
             sample_path = self._find_sample(sample)
             unpack_file(sample_path, file_path)
 
-            # Initialize service class
-            cls = self.service_class()
-            cls.start()
-
             # Load optional submission parameters
             params_file = os.path.join(self.result_folder, sample, 'params.json')
             if os.path.exists(params_file):
                 params = json.load(open(params_file))
             else:
                 params = {}
+
+            # Initialize service class
+            cls = self.service_class(params.get('config', {}))
+            cls.start()
 
             # Create the service request
             task = Task(self._create_service_task(file_path, params))
