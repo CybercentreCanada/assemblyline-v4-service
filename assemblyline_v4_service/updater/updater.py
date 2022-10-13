@@ -248,6 +248,7 @@ class ServiceUpdater(ThreadedCoreBase):
         # Received an event regarding a change to source
         self.log.info(f'Triggered to update the following: {data}')
         self.do_source_update(self._service, specific_sources=data)
+        self.do_local_update()
 
     def _handle_signature_change_event(self, data: SignatureChange):
         self.local_update_flag.set()
