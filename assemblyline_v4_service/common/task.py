@@ -162,18 +162,6 @@ class Task:
     def clear_supplementary(self) -> None:
         self.supplementary.clear()
 
-    def download_file(self) -> str:
-        file_path = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), self.sha256)
-        if not os.path.exists(file_path):
-            raise Exception("File download failed. File not found on local filesystem.")
-
-        received_sha256 = get_sha256_for_file(file_path)
-        if received_sha256 != self.sha256:
-            raise Exception(f"SHA256 mismatch between requested and "
-                            f"downloaded file. {self.sha256} != {received_sha256}")
-
-        return file_path
-
     def drop(self) -> None:
         self.drop_file = True
 
@@ -282,6 +270,18 @@ class Task:
     def success(self) -> None:
         self._service_completed = now_as_iso()
         self.save_result()
+
+    def validate_file(self) -> str:
+        file_path = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), self.sha256)
+        if not os.path.exists(file_path):
+            raise Exception("File download failed. File not found on local filesystem.")
+
+        received_sha256 = get_sha256_for_file(file_path)
+        if received_sha256 != self.sha256:
+            raise Exception(f"SHA256 mismatch between requested and "
+                            f"downloaded file. {self.sha256} != {received_sha256}")
+
+        return file_path
 
     @property
     def working_directory(self) -> str:
