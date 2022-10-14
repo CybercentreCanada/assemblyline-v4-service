@@ -28,6 +28,7 @@ class ServiceRequest:
         self.file_name = task.file_name
         self.file_type = task.file_type
         self.file_size = task.file_size
+        self._file_path = None
         self.max_extracted = task.max_extracted
         self.md5 = task.md5
         self.sha1 = task.sha1
@@ -140,7 +141,9 @@ class ServiceRequest:
 
         :return: File path to the downloaded file
         """
-        return self.task.download_file()
+        if not self._file_path:
+            self._file_path = self.task.validate_file()
+        return self._file_path
 
     @property
     def file_contents(self):
