@@ -18,6 +18,8 @@ ONTOLOGY_CLASS_TO_FIELD = {
     NetworkConnection: "netflow"
 }
 
+Classification = forge.get_classification()
+
 
 class OntologyHelper:
     def __init__(self, logger, service_name) -> None:
@@ -86,7 +88,7 @@ class OntologyHelper:
         def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
             for section in sections:
                 # Determine max classification of the overall result
-                current_max = forge.get_classification().max_classification(section.classification, current_max)
+                current_max = Classification.max_classification(section.classification, current_max)
 
                 # Cleanup invalid tagging from service results
                 def validate_tags(tag_map):
@@ -134,9 +136,11 @@ class OntologyHelper:
             return
 
         max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
-            request.result.sections, request.task.service_default_result_classification,
-            defaultdict(lambda: {"tags": dict(), "times_raised": int()}),
-            defaultdict(list))
+            sections=request.result.sections,
+            current_max=Classification.max_classification(request.task.min_classification,
+                                                          request.task.service_default_result_classification),
+            heur_tag_map=defaultdict(lambda: {"tags": dict(), "times_raised": int()}),
+            tag_map=defaultdict(list))
 
         if not tag_map and not self._result_parts:
             # No tagging or ontologies found, therefore informational results
