@@ -8049,16 +8049,19 @@ class TestSandboxOntology:
          'network.dynamic.uri': ['https://blah.ca/blah'],
          "network.dynamic.uri_path": ["/blah"]}, [{"domain": "blah.ca"}, {"uri": "https://blah.ca/blah"}]),
      ("drive:\\\\path to\\\\microsoft office\\\\officeverion\\\\winword.exe", False, {}, [{}]),
-     ("DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
+     ("DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\"
+        "WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
         False, {}, [{}]),
      ("DRIVE:\\\\PATH TO\\\\PYTHON27.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.py",
         False, {}, [{}]),
-     ("POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\nContent-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
+     ("POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\n"
+     "Content-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
         False, {"network.dynamic.domain": ["evil.ca"]}, [{"domain": "evil.ca"}]),
-     ("evil.ca/some/thing/bad.exe",
+     ("ftp://evil.ca/some/thing/bad.exe",
         False, {"network.dynamic.domain": ["evil.ca"],
-          "network.dynamic.uri": ["evil.ca/some/thing/bad.exe"],
-          "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"}, {"uri": "evil.ca/some/thing/bad.exe"}]),
+                "network.dynamic.uri": ["ftp://evil.ca/some/thing/bad.exe"],
+                "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"},
+                                                                       {"uri": "ftp://evil.ca/some/thing/bad.exe"}]),
      ("POST abc.de#fgh", True, {}, [{}]), ])
 def test_extract_iocs_from_text_blob(blob, enforce_min, correct_tags, expected_iocs):
     from assemblyline_v4_service.common.dynamic_service_helper import extract_iocs_from_text_blob, SandboxOntology
