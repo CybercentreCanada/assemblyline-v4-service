@@ -8053,7 +8053,7 @@ class TestSandboxOntology:
      ("POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\n"
      "Content-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
         False, {"network.dynamic.domain": ["evil.ca"]}, [{"domain": "evil.ca"}]),
-     ("evil.ca/some/thing/bad.exe",
+     ("ftp://evil.ca/some/thing/bad.exe",
         False, {"network.dynamic.domain": ["evil.ca"],
                 "network.dynamic.uri": ["ftp://evil.ca/some/thing/bad.exe"],
                 "network.dynamic.uri_path": ["/some/thing/bad.exe"]}, [{"domain": "evil.ca"},
