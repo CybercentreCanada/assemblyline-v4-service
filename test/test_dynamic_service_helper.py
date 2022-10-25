@@ -6743,6 +6743,74 @@ class TestSandboxOntology:
         assert actual_result == expected_result
 
     @staticmethod
+    def test_convert_events_dict_to_tree_with_recursion():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        # This is used to generate a large dict
+        # The default maximum recursion depth is 1000, so we want to exceed that
+        events_dict = {}
+        for i in range(1001):
+            events_dict[f"blah_{i+1}"] = {
+                "pid": i+1,
+                "ppid": i,
+                "image": "blah",
+                "command_line": "blah",
+                "start_time": 1,
+                "objectid": {
+                    "guid": f"blah_{i+1}",
+                    "tag": "blah",
+                    "treeid": None,
+                    "processtree": None,
+                    "time_observed": i+1,
+                },
+                "pobjectid": {
+                    "guid": f"blah_{i}",
+                    "tag": None,
+                    "treeid": None,
+                    "processtree": None,
+                    "time_observed": i,
+                },
+            }
+
+        # We also want to test that only the too deep dicts are affected
+        events_dict["blah_9999"] = {
+            "pid": 9999,
+            "ppid": 9998,
+            "image": "blah",
+            "command_line": "blah",
+            "start_time": 1,
+            "objectid": {
+                "guid": "blah_9999",
+                "tag": "blah",
+                "treeid": None,
+                "processtree": None,
+                "time_observed": 9999,
+            },
+            "pobjectid": {
+                "guid": "blah_9998",
+                "tag": None,
+                "treeid": None,
+                "processtree": None,
+                "time_observed": 9998,
+            },
+        }
+
+        # This method is only used in this test
+        def _depth(d) -> int:
+            if isinstance(d, dict):
+                for child in d.get("children", []):
+                    val = _depth(child)
+                    return 1 + val
+            return 0
+
+        # We have no problem generating a large value, we just cannot use this value for the UI
+        actual_result = SandboxOntology._convert_events_dict_to_tree(events_dict)
+        assert _depth(actual_result[0]) == 10
+        assert len(actual_result) == 2
+
+    @staticmethod
     def test_convert_event_tree_to_result_section():
         from assemblyline_v4_service.common.result import ResultProcessTreeSection
         from assemblyline_v4_service.common.dynamic_service_helper import (
