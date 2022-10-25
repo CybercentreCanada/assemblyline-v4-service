@@ -2491,6 +2491,21 @@ class SandboxOntology:
         return events_dict
 
     @staticmethod
+    def _depth(d: Dict[str, Any]) -> int:
+        """
+        This method uses recursion to determine the depth of a dictionary
+        :param d: The dictionary to determine the depth of
+        :return: The integer value representing the current depth at the current iteration
+        """
+        if isinstance(d, dict):
+            children = d.get("children", [])
+            if isinstance(children, list):
+                if not children:
+                    return 1
+                return 1 + max(SandboxOntology._depth(child) for child in children)
+        return 0
+
+    @staticmethod
     def _convert_events_dict_to_tree(
         events_dict: Dict[str, Any] = None
     ) -> List[Dict[str, Any]]:
@@ -2500,17 +2515,6 @@ class SandboxOntology:
         :param events_dict: A dictionary of events
         :return: A list of event tree roots, each which their respective branches and leaves
         """
-        def _depth(d: Dict[str, Any]) -> int:
-            """
-            This method uses recursion to determine the depth of a dictionary
-            :param d: The dictionary to determine the depth of
-            :return: The integer value representing the current depth at the current iteration
-            """
-            if isinstance(d, dict):
-                for child in d.get("children", []):
-                    val = _depth(child)
-                    return 1 + val
-            return 0
 
         root = {
             "children": [],
@@ -2545,7 +2549,7 @@ class SandboxOntology:
 
             if pguid and pguid in events_seen:
                 # Check if depth is too DEEP
-                if any(_depth(event_dict) >= PROCESS_TREE_DEPTH_LIMIT for event_dict in events_dict.values()):
+                if any(SandboxOntology._depth(event_dict) >= PROCESS_TREE_DEPTH_LIMIT for event_dict in events_dict.values()):
                     # We still want to register the process in events_seen, so
                     # that they don't get added to the root children
                     pass
