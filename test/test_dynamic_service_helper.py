@@ -6743,6 +6743,17 @@ class TestSandboxOntology:
         assert actual_result == expected_result
 
     @staticmethod
+    def test_depth():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        dict_1 = { "children": [ {"children": [{"children": []}]}, {"children": []}, ], }
+        dict_2 = { "children": [ {"children": []}, {"children": [{"children": []}]}, ], }
+        assert SandboxOntology._depth(dict_1) == 3
+        assert SandboxOntology._depth(dict_2) == 3
+
+    @staticmethod
     def test_convert_events_dict_to_tree_with_recursion():
         from assemblyline_v4_service.common.dynamic_service_helper import (
             SandboxOntology,
@@ -6797,17 +6808,9 @@ class TestSandboxOntology:
             },
         }
 
-        # This method is only used in this test
-        def _depth(d) -> int:
-            if isinstance(d, dict):
-                for child in d.get("children", []):
-                    val = _depth(child)
-                    return 1 + val
-            return 0
-
         # We have no problem generating a large value, we just cannot use this value for the UI
         actual_result = SandboxOntology._convert_events_dict_to_tree(events_dict)
-        assert _depth(actual_result[0]) == 10
+        assert SandboxOntology._depth(actual_result[0]) == 10
         assert len(actual_result) == 2
 
     @staticmethod
