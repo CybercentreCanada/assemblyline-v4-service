@@ -6743,6 +6743,77 @@ class TestSandboxOntology:
         assert actual_result == expected_result
 
     @staticmethod
+    def test_depth():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        dict_1 = { "children": [ {"children": [{"children": []}]}, {"children": []}, ], }
+        dict_2 = { "children": [ {"children": []}, {"children": [{"children": []}]}, ], }
+        assert SandboxOntology._depth(dict_1) == 3
+        assert SandboxOntology._depth(dict_2) == 3
+
+    @staticmethod
+    def test_convert_events_dict_to_tree_with_recursion():
+        from assemblyline_v4_service.common.dynamic_service_helper import (
+            SandboxOntology,
+        )
+
+        # This is used to generate a large dict
+        # The default maximum recursion depth is 1000, so we want to exceed that
+        events_dict = {}
+        for i in range(1001):
+            events_dict[f"blah_{i+1}"] = {
+                "pid": i+1,
+                "ppid": i,
+                "image": "blah",
+                "command_line": "blah",
+                "start_time": 1,
+                "objectid": {
+                    "guid": f"blah_{i+1}",
+                    "tag": "blah",
+                    "treeid": None,
+                    "processtree": None,
+                    "time_observed": i+1,
+                },
+                "pobjectid": {
+                    "guid": f"blah_{i}",
+                    "tag": None,
+                    "treeid": None,
+                    "processtree": None,
+                    "time_observed": i,
+                },
+            }
+
+        # We also want to test that only the too deep dicts are affected
+        events_dict["blah_9999"] = {
+            "pid": 9999,
+            "ppid": 9998,
+            "image": "blah",
+            "command_line": "blah",
+            "start_time": 1,
+            "objectid": {
+                "guid": "blah_9999",
+                "tag": "blah",
+                "treeid": None,
+                "processtree": None,
+                "time_observed": 9999,
+            },
+            "pobjectid": {
+                "guid": "blah_9998",
+                "tag": None,
+                "treeid": None,
+                "processtree": None,
+                "time_observed": 9998,
+            },
+        }
+
+        # We have no problem generating a large value, we just cannot use this value for the UI
+        actual_result = SandboxOntology._convert_events_dict_to_tree(events_dict)
+        assert SandboxOntology._depth(actual_result[0]) == 10
+        assert len(actual_result) == 2
+
+    @staticmethod
     def test_convert_event_tree_to_result_section():
         from assemblyline_v4_service.common.result import ResultProcessTreeSection
         from assemblyline_v4_service.common.dynamic_service_helper import (

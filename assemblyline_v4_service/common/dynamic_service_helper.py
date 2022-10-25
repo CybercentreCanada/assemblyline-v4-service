@@ -56,6 +56,11 @@ MIN_DOMAIN_CHARS = 8
 MIN_URI_CHARS = 11
 MIN_URI_PATH_CHARS = 4
 
+# There are samples that inject themselves for the entire analysis time
+# and have the potential to exceed depths of 1000. Also, the assumption with 10 is that no process
+# tree would be that complex and useful at the same time.
+PROCESS_TREE_DEPTH_LIMIT = 10
+
 
 def update_object_items(self, update_items: Dict[str, Any]) -> None:
     """
@@ -2486,6 +2491,21 @@ class SandboxOntology:
         return events_dict
 
     @staticmethod
+    def _depth(d: Dict[str, Any]) -> int:
+        """
+        This method uses recursion to determine the depth of a dictionary
+        :param d: The dictionary to determine the depth of
+        :return: The integer value representing the current depth at the current iteration
+        """
+        if isinstance(d, dict):
+            children = d.get("children", [])
+            if isinstance(children, list):
+                if not children:
+                    return 1
+                return 1 + max(SandboxOntology._depth(child) for child in children)
+        return 0
+
+    @staticmethod
     def _convert_events_dict_to_tree(
         events_dict: Dict[str, Any] = None
     ) -> List[Dict[str, Any]]:
@@ -2495,6 +2515,7 @@ class SandboxOntology:
         :param events_dict: A dictionary of events
         :return: A list of event tree roots, each which their respective branches and leaves
         """
+
         root = {
             "children": [],
         }
@@ -2527,7 +2548,13 @@ class SandboxOntology:
                 pguid = e["process"]["objectid"]["guid"]
 
             if pguid and pguid in events_seen:
-                events_dict[pguid]["children"].append(e)
+                # Check if depth is too DEEP
+                if any(SandboxOntology._depth(event_dict) >= PROCESS_TREE_DEPTH_LIMIT for event_dict in events_dict.values()):
+                    # We still want to register the process in events_seen, so
+                    # that they don't get added to the root children
+                    pass
+                else:
+                    events_dict[pguid]["children"].append(e)
             else:
                 root["children"].append(e)
 
