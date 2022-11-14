@@ -400,11 +400,19 @@ class TestHelper:
                     continue
 
                 if sha256 != nn_map[name]:
-                    ih.add_issue(f_type, ih.ACTION_CHANGED, f"The sha256 of the file '{name}' has changed.")
+                    ih.add_issue(
+                        f_type,
+                        ih.ACTION_CHANGED,
+                        f"The sha256 of the file '{name}' has changed. {sha256} -> {nn_map[name]}"
+                    )
                     continue
 
             if name != nh_map[sha256]:
-                ih.add_issue(f_type, ih.ACTION_CHANGED, f"The name of the file '{sha256}' has changed.")
+                ih.add_issue(
+                    f_type,
+                    ih.ACTION_CHANGED,
+                    f"The name of the file '{sha256}' has changed. {name} -> {nh_map[sha256]}"
+                )
                 continue
 
         for sha256, name in nh_map.items():
