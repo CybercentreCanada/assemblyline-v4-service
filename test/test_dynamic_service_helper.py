@@ -5,13 +5,6 @@ from uuid import UUID
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
 
-if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-    open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-    open_manifest.write(
-        "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n"
-        "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250"
-    )
-    open_manifest.close()
 
 from assemblyline_v4_service.common.dynamic_service_helper import (
     extract_iocs_from_text_blob,
@@ -30,6 +23,21 @@ from assemblyline_v4_service.common.dynamic_service_helper import (
     Signature,
     Process,
 )
+
+
+def setup_module():
+    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
+        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
+        open_manifest.write(
+            "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n"
+            "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250"
+        )
+        open_manifest.close()
+
+
+def teardown_module():
+    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
+        os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
 def check_section_equality(this, that) -> bool:
