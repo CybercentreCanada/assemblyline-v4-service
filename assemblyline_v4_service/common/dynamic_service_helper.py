@@ -1965,7 +1965,7 @@ class OntologyResults:
 
         if parent_kwargs.get("guid") or parent_kwargs.get("pobjectid", {}).get("guid"):
             # Only update if ObjectID is not associated with another process
-            if any(
+            if process_to_update and any(
                 process_to_update.pobjectid == process.objectid
                 for process in self.get_processes()
             ):
@@ -1976,7 +1976,8 @@ class OntologyResults:
                 else parent_kwargs.get("pobjectid", {}).get("guid")
             )
             parent = self.get_process_by_guid(pguid)
-            process_to_update.set_parent(parent)
+            if process_to_update and parent:
+                process_to_update.set_parent(parent)
 
     def update_objectid(self, **kwargs) -> None:
         """
