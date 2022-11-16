@@ -1960,7 +1960,8 @@ class OntologyResults:
                 return
             process_to_update = self.get_process_by_guid(guid)
             kwargs["guid"] = guid
-            process_to_update.update(**kwargs)
+            if process_to_update:
+                process_to_update.update(**kwargs)
 
         if parent_kwargs.get("guid") or parent_kwargs.get("pobjectid", {}).get("guid"):
             # Only update if ObjectID is not associated with another process
