@@ -2398,11 +2398,11 @@ class OntologyResults:
         #     process.objectid.assign_guid()
         elif process.objectid.guid in guids and process.pid in pids:
             # We cannot have two items in the table that share process IDs and GUIDs
-            log.warning("Duplicate process, skipping...")
+            log.debug("Duplicate process, skipping...")
             return False
         elif process.objectid.guid in guids and process.pid not in pids:
             # We cannot have two items in the table that share GUIDs
-            log.warning("Duplicate process, skipping...")
+            log.debug("Duplicate process, skipping...")
             return False
         elif process.objectid.guid not in guids and process.pid in pids:
             # We can have two items in the table that share PIDs that don't share GUIDs
