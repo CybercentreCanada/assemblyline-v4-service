@@ -1112,13 +1112,14 @@ class Signature:
             log.warning(f"Could not generate Att&ck output for ID: {attack_id}")
 
     @staticmethod
-    def create_attribute(**kwargs) -> Attribute:
+    def create_attribute(**kwargs) -> Optional[Attribute]:
         """
         This method creates an Attribute, assigns its attributes based on keyword arguments provided,
         and returns the Attribute
         :param kwargs: Key word arguments to be used for updating the Attribute's attributes
         :return: Attribute object
         """
+        # We want to perform this backend check for Attribute kwargs since they have a high degree of variability
         if all(value is None for value in kwargs.values()):
             return
 
@@ -1536,6 +1537,16 @@ class OntologyResults:
                     signatures_with_pid.append(signature)
 
         return signatures_with_pid
+
+    @staticmethod
+    def create_attribute(**kwargs) -> Attribute:
+        """
+        This method creates an Attribute, assigns its attributes based on keyword arguments provided,
+        and returns the Attribute
+        :param kwargs: Key word arguments to be used for updating the Attribute's attributes
+        :return: Attribute object
+        """
+        return Signature.create_attribute(**kwargs)
 
     # NetworkConnection manipulation methods
     def set_netflows(self, network_connections: List[NetworkConnection]) -> None:
