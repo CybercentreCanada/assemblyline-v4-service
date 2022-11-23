@@ -1347,6 +1347,25 @@ class TestSignature:
         ]
 
     @staticmethod
+    def test_create_attribute():
+        assert Signature.create_attribute() is None
+        with pytest.raises(ValueError):
+            Signature.create_attribute(blah="blah")
+        with pytest.raises(ValueError):
+            Signature.create_attribute(source="blah")
+        source = ObjectID(tag="blah", ontology_id="blah", service_name="blah")
+        assert Signature.create_attribute(source=source).as_primitives() == {
+            "source": source.as_primitives(),
+            'action': None,
+            'domain': None,
+            'event_record_id': None,
+            'file_hash': None,
+            'meta': None,
+            'target': None,
+            'uri': None
+        }
+
+    @staticmethod
     def test_add_attribute():
         current_objectid = ObjectID(tag="blah", ontology_id="blah", service_name="blah")
         sig = Signature(objectid=current_objectid, name="blah", type="CUCKOO")
@@ -2374,6 +2393,25 @@ class TestOntologyResults:
         )
         default_or.add_process(p)
         assert default_or.get_processes_by_pguid(guid) == [p]
+
+    @staticmethod
+    def test_create_attribute():
+        assert OntologyResults.create_attribute() is None
+        with pytest.raises(ValueError):
+            OntologyResults.create_attribute(blah="blah")
+        with pytest.raises(ValueError):
+            OntologyResults.create_attribute(source="blah")
+        source = ObjectID(tag="blah", ontology_id="blah", service_name="blah")
+        assert OntologyResults.create_attribute(source=source).as_primitives() == {
+            "source": source.as_primitives(),
+            'action': None,
+            'domain': None,
+            'event_record_id': None,
+            'file_hash': None,
+            'meta': None,
+            'target': None,
+            'uri': None
+        }
 
     @staticmethod
     def test_set_netflows():
