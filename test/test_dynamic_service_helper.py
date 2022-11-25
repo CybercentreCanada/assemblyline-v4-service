@@ -7540,7 +7540,7 @@ class TestOntologyResults:
             "registry_count": 0,
             "safelisted": True,
         }
-        assert result_section.tags == {"dynamic.processtree_id": ["blahblahblahblah"]}
+        assert result_section.tags == {"dynamic.processtree_id": ["blahblahblahblah"], "dynamic.process.command_line": ["blah"]}
 
     @staticmethod
     @pytest.mark.parametrize(
