@@ -792,6 +792,8 @@ class TestProcess:
                 "?usrtmp\\word.exe",
             ),
             ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
+            ("%WINDIR%\\explorer.exe", None, "?win\\explorer.exe"),
+            ("%SAMPLEPATH%\\diagerr.exe", None, "?usrtmp\\diagerr.exe"),
         ],
     )
     def test_normalize_path(path, arch, expected_result):

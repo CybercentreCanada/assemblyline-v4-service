@@ -51,6 +51,8 @@ X86 = "x86"
 
 SYSTEM_DRIVE = "c:\\"
 SYSTEM_ROOT = "c:\\windows\\"
+WINDIR_ENV_VARIABLE = "%windir%"
+SAMPLEPATH_ENV_VARIABLE = "%samplepath%"
 SZ_USR_TEMP_PATH = "users\\*\\appdata\\local\\temp\\"
 SZ_USR_PATH = "users\\*\\"
 ARCH_SPECIFIC_DEFAULTS = {
@@ -610,6 +612,8 @@ class Process:
         )
         rules.append({"pattern": SYSTEM_ROOT, "replacement": "?win\\"})
         rules.append({"pattern": SYSTEM_DRIVE, "replacement": "?c\\"})
+        rules.append({"pattern": WINDIR_ENV_VARIABLE, "replacement": "?win"})
+        rules.append({"pattern": SAMPLEPATH_ENV_VARIABLE, "replacement": "?usrtmp"})
         for rule in rules:
             if "pattern" in rule:
                 path = Process._pattern_substitution(path, rule)
