@@ -93,12 +93,6 @@ class PrivilegedServiceAPI:
     def __init__(self, logger):
         self.log = logger
         self.safelist_client = SafelistClient()
-        DEVELOPMENT_MODE = False
-        with StringIO() as stack_trace:
-            traceback.print_stack(limit=3, file=stack_trace)
-            stack_trace.seek(0)
-            if 'run_service_once' in stack_trace.read():
-                DEVELOPMENT_MODE = True
 
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
