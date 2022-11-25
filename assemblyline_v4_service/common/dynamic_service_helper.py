@@ -2860,6 +2860,10 @@ class OntologyResults:
             result_section.add_tag(
                 "dynamic.processtree_id", event["objectid"]["processtree"]
             )
+            if event["command_line"]:
+                result_section.add_tag(
+                    "dynamic.process.command_line", event["command_line"]
+                )
 
         for signature in self.get_signatures_by_pid(event["pid"]):
             if signature.score is None:
