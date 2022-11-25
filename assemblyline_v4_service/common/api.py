@@ -1,11 +1,20 @@
 import os
 import requests
 import time
+import traceback
 
 from assemblyline_core.safelist_client import SafelistClient
-
+from io import StringIO
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
+DEVELOPMENT_MODE = False
+
+with StringIO() as stack_trace:
+    # Check if run_service_once is in the stack trace to determine if we're running the service in a development mode
+    traceback.print_stack(file=stack_trace)
+    stack_trace.seek(0)
+    if 'run_service_once' in stack_trace.read():
+        DEVELOPMENT_MODE = True
 
 
 class ServiceAPIError(Exception):
@@ -56,6 +65,9 @@ class ServiceAPI:
                 time.sleep(min(2, 2 ** (retries - 7)))
 
     def get_safelist(self, tag_list=None):
+        if DEVELOPMENT_MODE:
+            return {}
+
         if tag_list:
             if not isinstance(tag_list, list):
                 raise ValueError("Parameter tag_list should be a list of strings.")
@@ -66,6 +78,8 @@ class ServiceAPI:
         return self._with_retries(self.session.get, url)
 
     def lookup_safelist(self, qhash):
+        if DEVELOPMENT_MODE:
+            return None
         try:
             return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/safelist/{qhash}/")
         except ServiceAPIError as e:
@@ -79,8 +93,16 @@ class PrivilegedServiceAPI:
     def __init__(self, logger):
         self.log = logger
         self.safelist_client = SafelistClient()
+        DEVELOPMENT_MODE = False
+        with StringIO() as stack_trace:
+            traceback.print_stack(limit=3, file=stack_trace)
+            stack_trace.seek(0)
+            if 'run_service_once' in stack_trace.read():
+                DEVELOPMENT_MODE = True
 
     def get_safelist(self, tag_list=None):
+        if DEVELOPMENT_MODE:
+            return {}
         tag_types = None
 
         if tag_list and not isinstance(tag_list, list):
@@ -89,4 +111,6 @@ class PrivilegedServiceAPI:
         return self.safelist_client.get_safelisted_tags(tag_types)
 
     def lookup_safelist(self, qhash):
+        if DEVELOPMENT_MODE:
+            return None
         return self.safelist_client.exists(qhash)
