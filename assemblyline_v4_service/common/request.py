@@ -38,7 +38,8 @@ class ServiceRequest:
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
-                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None) -> bool:
+                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
+                      allow_dynamic_recursion: bool = False) -> bool:
         """
         Add an extracted file for additional processing.
 
@@ -47,11 +48,14 @@ class ServiceRequest:
         :param description: Descriptive text about the extracted file
         :param classification: Classification of the extracted file (default: service classification)
         :param safelist_interface: Safelisting interface provided by service. Used to filter extracted files.
+        :param allow_dynamic_recursion: Allow this file to be analyzed during Dynamic Analysis even if
+               Dynamic Recursion Prevention (DRP) is enabled.
         :return: None
         """
 
         try:
-            r = self.task.add_extracted(path, name, description, classification, safelist_interface)
+            r = self.task.add_extracted(path, name, description, classification,
+                                        safelist_interface, allow_dynamic_recursion)
             return r
         except MaxExtractedExceeded:
             raise
