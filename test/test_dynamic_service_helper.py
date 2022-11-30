@@ -5,13 +5,6 @@ from uuid import UUID
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
 
-if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-    open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-    open_manifest.write(
-        "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n"
-        "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250"
-    )
-    open_manifest.close()
 
 from assemblyline_v4_service.common.dynamic_service_helper import (
     extract_iocs_from_text_blob,
@@ -30,6 +23,21 @@ from assemblyline_v4_service.common.dynamic_service_helper import (
     Signature,
     Process,
 )
+
+
+def setup_module():
+    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
+        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
+        open_manifest.write(
+            "name: Sample\nversion: sample\ndocker_config: \n  image: sample\nheuristics:\n  - heur_id: 17\n"
+            "    name: blah\n    description: blah\n    filetype: '*'\n    score: 250"
+        )
+        open_manifest.close()
+
+
+def teardown_module():
+    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
+        os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
 def check_section_equality(this, that) -> bool:
@@ -784,6 +792,8 @@ class TestProcess:
                 "?usrtmp\\word.exe",
             ),
             ("C:\\Users\\buddy\\Word.exe", None, "?usr\\word.exe"),
+            ("%WINDIR%\\explorer.exe", None, "?win\\explorer.exe"),
+            ("%SAMPLEPATH%\\diagerr.exe", None, "?usrtmp\\diagerr.exe"),
         ],
     )
     def test_normalize_path(path, arch, expected_result):
@@ -1337,6 +1347,25 @@ class TestSignature:
                 "pattern": "Forced Authentication",
             }
         ]
+
+    @staticmethod
+    def test_create_attribute():
+        assert Signature.create_attribute() is None
+        with pytest.raises(ValueError):
+            Signature.create_attribute(blah="blah")
+        with pytest.raises(ValueError):
+            Signature.create_attribute(source="blah")
+        source = ObjectID(tag="blah", ontology_id="blah", service_name="blah")
+        assert Signature.create_attribute(source=source).as_primitives() == {
+            "source": source.as_primitives(),
+            'action': None,
+            'domain': None,
+            'event_record_id': None,
+            'file_hash': None,
+            'meta': None,
+            'target': None,
+            'uri': None
+        }
 
     @staticmethod
     def test_add_attribute():
@@ -2366,6 +2395,25 @@ class TestOntologyResults:
         )
         default_or.add_process(p)
         assert default_or.get_processes_by_pguid(guid) == [p]
+
+    @staticmethod
+    def test_create_attribute():
+        assert OntologyResults.create_attribute() is None
+        with pytest.raises(ValueError):
+            OntologyResults.create_attribute(blah="blah")
+        with pytest.raises(ValueError):
+            OntologyResults.create_attribute(source="blah")
+        source = ObjectID(tag="blah", ontology_id="blah", service_name="blah")
+        assert OntologyResults.create_attribute(source=source).as_primitives() == {
+            "source": source.as_primitives(),
+            'action': None,
+            'domain': None,
+            'event_record_id': None,
+            'file_hash': None,
+            'meta': None,
+            'target': None,
+            'uri': None
+        }
 
     @staticmethod
     def test_set_netflows():
@@ -7494,7 +7542,7 @@ class TestOntologyResults:
             "registry_count": 0,
             "safelisted": True,
         }
-        assert result_section.tags == {"dynamic.processtree_id": ["blahblahblahblah"]}
+        assert result_section.tags == {"dynamic.processtree_id": ["blahblahblahblah"], "dynamic.process.command_line": ["blah"]}
 
     @staticmethod
     @pytest.mark.parametrize(
