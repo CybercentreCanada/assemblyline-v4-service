@@ -51,6 +51,8 @@ X86 = "x86"
 
 SYSTEM_DRIVE = "c:\\"
 SYSTEM_ROOT = "c:\\windows\\"
+WINDIR_ENV_VARIABLE = "%windir%"
+SAMPLEPATH_ENV_VARIABLE = "%samplepath%"
 SZ_USR_TEMP_PATH = "users\\*\\appdata\\local\\temp\\"
 SZ_USR_PATH = "users\\*\\"
 ARCH_SPECIFIC_DEFAULTS = {
@@ -610,6 +612,8 @@ class Process:
         )
         rules.append({"pattern": SYSTEM_ROOT, "replacement": "?win\\"})
         rules.append({"pattern": SYSTEM_DRIVE, "replacement": "?c\\"})
+        rules.append({"pattern": WINDIR_ENV_VARIABLE, "replacement": "?win"})
+        rules.append({"pattern": SAMPLEPATH_ENV_VARIABLE, "replacement": "?usrtmp"})
         for rule in rules:
             if "pattern" in rule:
                 path = Process._pattern_substitution(path, rule)
@@ -1112,13 +1116,14 @@ class Signature:
             log.warning(f"Could not generate Att&ck output for ID: {attack_id}")
 
     @staticmethod
-    def create_attribute(**kwargs) -> Attribute:
+    def create_attribute(**kwargs) -> Optional[Attribute]:
         """
         This method creates an Attribute, assigns its attributes based on keyword arguments provided,
         and returns the Attribute
         :param kwargs: Key word arguments to be used for updating the Attribute's attributes
         :return: Attribute object
         """
+        # We want to perform this backend check for Attribute kwargs since they have a high degree of variability
         if all(value is None for value in kwargs.values()):
             return
 
@@ -1536,6 +1541,16 @@ class OntologyResults:
                     signatures_with_pid.append(signature)
 
         return signatures_with_pid
+
+    @staticmethod
+    def create_attribute(**kwargs) -> Attribute:
+        """
+        This method creates an Attribute, assigns its attributes based on keyword arguments provided,
+        and returns the Attribute
+        :param kwargs: Key word arguments to be used for updating the Attribute's attributes
+        :return: Attribute object
+        """
+        return Signature.create_attribute(**kwargs)
 
     # NetworkConnection manipulation methods
     def set_netflows(self, network_connections: List[NetworkConnection]) -> None:
@@ -1960,11 +1975,12 @@ class OntologyResults:
                 return
             process_to_update = self.get_process_by_guid(guid)
             kwargs["guid"] = guid
-            process_to_update.update(**kwargs)
+            if process_to_update:
+                process_to_update.update(**kwargs)
 
         if parent_kwargs.get("guid") or parent_kwargs.get("pobjectid", {}).get("guid"):
             # Only update if ObjectID is not associated with another process
-            if any(
+            if process_to_update and any(
                 process_to_update.pobjectid == process.objectid
                 for process in self.get_processes()
             ):
@@ -1975,7 +1991,8 @@ class OntologyResults:
                 else parent_kwargs.get("pobjectid", {}).get("guid")
             )
             parent = self.get_process_by_guid(pguid)
-            process_to_update.set_parent(parent)
+            if process_to_update and parent:
+                process_to_update.set_parent(parent)
 
     def update_objectid(self, **kwargs) -> None:
         """
@@ -2396,11 +2413,11 @@ class OntologyResults:
         #     process.objectid.assign_guid()
         elif process.objectid.guid in guids and process.pid in pids:
             # We cannot have two items in the table that share process IDs and GUIDs
-            log.warning("Duplicate process, skipping...")
+            log.debug("Duplicate process, skipping...")
             return False
         elif process.objectid.guid in guids and process.pid not in pids:
             # We cannot have two items in the table that share GUIDs
-            log.warning("Duplicate process, skipping...")
+            log.debug("Duplicate process, skipping...")
             return False
         elif process.objectid.guid not in guids and process.pid in pids:
             # We can have two items in the table that share PIDs that don't share GUIDs
@@ -2847,6 +2864,10 @@ class OntologyResults:
             result_section.add_tag(
                 "dynamic.processtree_id", event["objectid"]["processtree"]
             )
+            if event["command_line"]:
+                result_section.add_tag(
+                    "dynamic.process.command_line", event["command_line"]
+                )
 
         for signature in self.get_signatures_by_pid(event["pid"]):
             if signature.score is None:
