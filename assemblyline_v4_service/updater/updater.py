@@ -380,8 +380,12 @@ class ServiceUpdater(ThreadedCoreBase):
                         self.push_status("UPDATING", "Pulling..")
 
                         # Pull sources from external locations (method depends on the URL)
-                        files = git_clone_repo(source, old_update_time, self.default_pattern, self.log, update_dir) \
-                            if uri.endswith('.git') else url_download(source, old_update_time, self.log, update_dir)
+                        files = git_clone_repo(source, old_update_time, self.default_pattern, self.log, update_dir)
+
+                        # As not all services end with .git, we rely on the exception thrown by git_clone which sets (files is None)
+                        # to determine if its a valid git repo or not.
+                        if (files is None) and (not uri.endswith('.git')):
+                            files = url_download(source, old_update_time, self.log, update_dir)
 
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
