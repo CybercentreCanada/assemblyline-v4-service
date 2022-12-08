@@ -2,7 +2,7 @@ from datetime import datetime
 from hashlib import sha256
 from json import dumps
 from logging import getLogger
-from re import compile, escape, sub, findall
+from re import compile, escape, sub, findall, match as re_match
 from typing import Any, Dict, List, Optional, Union
 from uuid import UUID, uuid4
 
@@ -22,7 +22,7 @@ from assemblyline.common.isotime import (
     format_time,
 )
 from assemblyline.common.uid import get_random_id
-from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, URI_PATH
+from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, FULL_URI, URI_PATH
 from assemblyline.odm.models.ontology.results import (
     Process as ProcessModel, Sandbox as SandboxModel,
     Signature as SignatureModel,
@@ -3289,6 +3289,12 @@ def extract_iocs_from_text_blob(
     for uri in uris:
         if enforce_char_min and len(uri) < MIN_URI_CHARS:
             continue
+        if any(invalid_uri_char in uri for invalid_uri_char in ['"', "'", '<', '>']):
+            for invalid_uri_char in ['"', "'", '<', '>']:
+                for u in uri.split(invalid_uri_char):
+                    if re_match(FULL_URI, u):
+                        uri = u
+                        break
         if add_tag(result_section, "network.dynamic.uri", uri):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
