@@ -8875,6 +8875,16 @@ class TestOntologyResults:
             [{"uri": "http://evil.ca/some/thing/bad.exe"}],
         ),
         ("POST abc.de#fgh", True, {}, [{}]),
+        (
+            "'<script src=\"https://blah.link/blah/blah?filename=blah.js\"></script>'",
+            True,
+            {
+                "network.dynamic.domain": ["blah.link"],
+                "network.dynamic.uri": ["https://blah.link/blah/blah?filename=blah.js"],
+                "network.dynamic.uri_path": ['/blah/blah?filename=blah.js']
+            },
+            [{"uri": "https://blah.link/blah/blah?filename=blah.js"}]
+        ),
     ],
 )
 def test_extract_iocs_from_text_blob(blob, enforce_min, correct_tags, expected_iocs):
