@@ -385,7 +385,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         # As not all services end with .git, we rely on the exception thrown by git_clone which sets (files is None)
                         # to determine if its a valid git repo or not.
                         if (files is None) and (not uri.endswith('.git')):
-                            url_download(source, old_update_time, self.log, update_dir)
+                            files = url_download(source, old_update_time, self.log, update_dir)
 
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
