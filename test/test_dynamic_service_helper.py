@@ -8806,11 +8806,12 @@ class TestOntologyResults:
 
 
 @pytest.mark.parametrize(
-    "blob, enforce_min, correct_tags, expected_iocs",
+    "blob, enforce_min, enforce_max, correct_tags, expected_iocs",
     [
-        ("", False, {}, [{}]),
+        ("", False, False, {}, [{}]),
         (
             "192.168.100.1",
+            False,
             False,
             {"network.dynamic.ip": ["192.168.100.1"]},
             [],
@@ -8818,11 +8819,13 @@ class TestOntologyResults:
         (
             "blah.ca",
             False,
+            False,
             {"network.dynamic.domain": ["blah.ca"]},
             [],
         ),
         (
             "https://blah.ca",
+            False,
             False,
             {
                 "network.dynamic.domain": ["blah.ca"],
@@ -8832,6 +8835,7 @@ class TestOntologyResults:
         ),
         (
             "https://blah.ca/blah",
+            False,
             False,
             {
                 "network.dynamic.domain": ["blah.ca"],
@@ -8843,11 +8847,13 @@ class TestOntologyResults:
         (
             "drive:\\\\path to\\\\microsoft office\\\\officeverion\\\\winword.exe",
             False,
+            False,
             {},
             [{}],
         ),
         (
             "DRIVE:\\\\PATH TO\\\\MICROSOFT OFFICE\\\\OFFICEVERION\\\\WINWORD.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.DOC",
+            False,
             False,
             {},
             [{}],
@@ -8855,17 +8861,20 @@ class TestOntologyResults:
         (
             "DRIVE:\\\\PATH TO\\\\PYTHON27.EXE C:\\\\USERS\\\\BUDDY\\\\APPDATA\\\\LOCAL\\\\TEMP\\\\BLAH.py",
             False,
+            False,
             {},
             [{}],
         ),
         (
             "POST /some/thing/bad.exe HTTP/1.0\nUser-Agent: Mozilla\nHost: evil.ca\nAccept: */*\nContent-Type: application/octet-stream\nContent-Encoding: binary\n\nConnection: close",
             False,
+            False,
             {"network.dynamic.domain": ["evil.ca"]},
             [],
         ),
         (
             "http://evil.ca/some/thing/bad.exe",
+            False,
             False,
             {
                 "network.dynamic.domain": ["evil.ca"],
@@ -8874,10 +8883,11 @@ class TestOntologyResults:
             },
             [{"uri": "http://evil.ca/some/thing/bad.exe"}],
         ),
-        ("POST abc.de#fgh", True, {}, [{}]),
+        ("POST abc.de#fgh", True, False, {}, [{}]),
         (
             "'<script src=\"https://blah.link/blah/blah?filename=blah.js\"></script>'",
             True,
+            False,
             {
                 "network.dynamic.domain": ["blah.link"],
                 "network.dynamic.uri": ["https://blah.link/blah/blah?filename=blah.js"],
@@ -8885,9 +8895,16 @@ class TestOntologyResults:
             },
             [{"uri": "https://blah.link/blah/blah?filename=blah.js"}]
         ),
+        (
+            "POST abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcde.abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk.abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk.abcdefghijklmnopqrstuvwxyzabcdefghijklmnopqrstuvwxyzabcdefghijk.com ...(Truncated)",
+            True,
+            True,
+            {},
+            [{}]
+        ),
     ],
 )
-def test_extract_iocs_from_text_blob(blob, enforce_min, correct_tags, expected_iocs):
+def test_extract_iocs_from_text_blob(blob, enforce_min, enforce_max, correct_tags, expected_iocs):
     from assemblyline_v4_service.common.result import ResultTableSection
 
     test_result_section = ResultTableSection("blah")
@@ -8904,6 +8921,7 @@ def test_extract_iocs_from_text_blob(blob, enforce_min, correct_tags, expected_i
         so_sig=so_sig,
         source=source,
         enforce_char_min=enforce_min,
+        enforce_domain_char_max=enforce_max,
     )
     assert test_result_section.tags == correct_tags
     if correct_tags:
