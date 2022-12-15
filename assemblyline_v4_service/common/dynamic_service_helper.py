@@ -71,6 +71,8 @@ HOLLOWSHUNTER_DLL_REGEX = r"[0-9]{1,}_hollowshunter\/hh_process_[0-9]{3,}_[0-9a-
 HOLLOWSHUNTER_TITLE = "HollowsHunter Injected Portable Executable"
 
 MIN_DOMAIN_CHARS = 8
+# Choosing an arbitrary number, based on https://webmasters.stackexchange.com/questions/16996/maximum-domain-name-length
+MAX_DOMAIN_CHARS = 100
 MIN_URI_CHARS = 11
 MIN_URI_PATH_CHARS = 4
 
@@ -3243,6 +3245,7 @@ def extract_iocs_from_text_blob(
     so_sig: Optional[Signature] = None,
     source: Optional[ObjectID] = None,
     enforce_char_min: bool = False,
+    enforce_domain_char_max: bool = False,
 ) -> None:
     """
     This method searches for domains, IPs and URIs used in blobs of text and tags them
@@ -3251,6 +3254,7 @@ def extract_iocs_from_text_blob(
     :param so_sig: The signature for the Ontology Results
     :param source: The source of the signature for the Ontology Results
     :param enforce_char_min: Enforce the minimum amount of characters that an ioc can have
+    :param enforce_domain_char_max: Enforce the maximum amount of characters that a domain can have
     :return: None
     """
     if not blob:
@@ -3274,6 +3278,8 @@ def extract_iocs_from_text_blob(
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
     for domain in domains:
         if enforce_char_min and len(domain) < MIN_DOMAIN_CHARS:
+            continue
+        if enforce_domain_char_max and len(domain) > MAX_DOMAIN_CHARS:
             continue
         # File names match the domain and URI regexes, so we need to avoid tagging them
         # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
