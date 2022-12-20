@@ -15,6 +15,7 @@ import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from contextlib import contextmanager
 from passlib.hash import bcrypt
+from urllib.parse import urlparse
 from zipfile import ZipFile, BadZipFile
 
 from assemblyline.common import forge, log as al_log
@@ -136,6 +137,16 @@ class ServiceUpdater(ThreadedCoreBase):
         self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
         if not os.path.exists(self.latest_updates_dir):
             os.makedirs(self.latest_updates_dir)
+
+        # SSL configuration to UI_SERVER
+        self.verify, self.cert = False, None
+        if UI_SERVER.startswith('https'):
+            hostname = urlparse(UI_SERVER).hostname
+            self.verify = os.environ.get('UI_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/root-ca.crt')
+            self.cert = (
+                os.environ.get('UI_SERVER_CLIENT_CERT_PATH', f'/etc/assemblyline/ssl/{hostname}.crt'),
+                os.environ.get('UI_SERVER_CLIENT_KEY_PATH', f'/etc/assemblyline/ssl/{hostname}.key')
+            )
 
     def trigger_update(self):
         self.source_update_flag.set()
@@ -292,7 +303,7 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info("Create temporary API key.")
             with temporary_api_key(self.datastore, username) as api_key:
                 self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, cert=self.cert)
 
                 # Check if new signatures have been added
                 self.log.info("Check for new signatures.")
@@ -354,7 +365,7 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, cert=self.cert)
                 self.log.info("Connected!")
 
                 # Parse updater configuration
