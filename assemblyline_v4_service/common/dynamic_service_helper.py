@@ -13,6 +13,7 @@ from assemblyline.common.attack_map import (
     group_map,
     revoke_map,
 )
+from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import (
     epoch_to_local,
     LOCAL_FMT,
@@ -184,6 +185,7 @@ class Artifact:
         path: str = None,
         description: str = None,
         to_be_extracted: bool = None,
+        sha256: str = None,
     ):
         """
         This method initializes an artifact object
@@ -191,6 +193,7 @@ class Artifact:
         :param path: The path of the artifact
         :param description: The description of the artifact
         :param to_be_extracted: A flag indicating if the artifact should be extracted or added as a supplementary file
+        :param sha256: The SHA256 hash of the artifact's contents
         """
         if any(item is None for item in [name, path, description, to_be_extracted]):
             raise Exception("Missing positional arguments for Artifact validation")
@@ -199,6 +202,7 @@ class Artifact:
         self.path = path
         self.description = description
         self.to_be_extracted = to_be_extracted
+        self.sha256 = sha256
 
     def as_primitives(self) -> Dict[str, Any]:
         """
@@ -2368,7 +2372,7 @@ class OntologyResults:
                 artifact, artifacts_result_section, injection_heur_id
             )
 
-            if artifact.to_be_extracted:
+            if artifact.to_be_extracted and not any(artifact.sha256 == previously_extracted["sha256"] for previously_extracted in request.extracted):
                 try:
                     request.add_extracted(
                         artifact.path, artifact.name, artifact.description
@@ -2376,7 +2380,7 @@ class OntologyResults:
                 except MaxExtractedExceeded:
                     # To avoid errors from being raised when too many files have been extracted
                     pass
-            else:
+            elif not artifact.to_be_extracted and not any(artifact.sha256 == previously_supplemented["sha256"] for previously_supplemented in request.task.supplementary):
                 request.add_supplementary(
                     artifact.path, artifact.name, artifact.description
                 )
@@ -3023,6 +3027,7 @@ class OntologyResults:
                 path=artifact["path"],
                 description=artifact["description"],
                 to_be_extracted=artifact["to_be_extracted"],
+                sha256=artifact["sha256"] if artifact.get("sha256") else get_sha256_for_file(artifact["path"])
             )
             validated_artifacts.append(validated_artifact)
         return validated_artifacts
