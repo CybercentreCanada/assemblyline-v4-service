@@ -8902,6 +8902,13 @@ class TestOntologyResults:
             {},
             [{}]
         ),
+        (
+            "POST blah.adobe.com)",
+            True,
+            True,
+            {},
+            [{}]
+        ),
     ],
 )
 def test_extract_iocs_from_text_blob(blob, enforce_min, enforce_max, correct_tags, expected_iocs):
@@ -8913,6 +8920,7 @@ def test_extract_iocs_from_text_blob(blob, enforce_min, enforce_max, correct_tag
         name="blah",
         type="CUCKOO",
     )
+    safelist = {"regex": {"network.dynamic.domain": [".+\.adobe\.com$"]}}
     default_iocs = []
     source = ObjectID(ontology_id="blah", tag="blah", service_name="blah")
     extract_iocs_from_text_blob(
@@ -8922,6 +8930,7 @@ def test_extract_iocs_from_text_blob(blob, enforce_min, enforce_max, correct_tag
         source=source,
         enforce_char_min=enforce_min,
         enforce_domain_char_max=enforce_max,
+        safelist=safelist,
     )
     assert test_result_section.tags == correct_tags
     if correct_tags:
