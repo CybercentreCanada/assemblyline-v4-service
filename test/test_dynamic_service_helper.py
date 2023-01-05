@@ -123,6 +123,7 @@ def dummy_request_class(dummy_task_class):
         def __init__(self):
             super(DummyRequest, self).__init__()
             self.task = dummy_task_class()
+            self.extracted = self.task.extracted
 
         def add_supplementary(self, path, name, description):
             self.task.supplementary.append(
@@ -213,13 +214,14 @@ class TestArtifact:
     @staticmethod
     def test_artifact_as_primitives():
         a = Artifact(
-            name="blah", path="blah", description="blah", to_be_extracted="blah"
+            name="blah", path="blah", description="blah", to_be_extracted="blah", sha256="blah"
         )
         assert a.as_primitives() == {
             "name": "blah",
             "path": "blah",
             "description": "blah",
             "to_be_extracted": "blah",
+            "sha256": "blah",
         }
 
 
@@ -4655,6 +4657,7 @@ class TestOntologyResults:
                         "path": "blah",
                         "description": "blah",
                         "to_be_extracted": True,
+                        "sha256": "blah",
                     }
                 ],
                 None,
@@ -4666,6 +4669,7 @@ class TestOntologyResults:
                         "path": "blah",
                         "description": "blah",
                         "to_be_extracted": False,
+                        "sha256": "blah",
                     }
                 ],
                 None,
@@ -8592,6 +8596,7 @@ class TestOntologyResults:
                     "path": "blah",
                     "description": "blah",
                     "to_be_extracted": True,
+                    "sha256": "blah",
                 }
             ],
         ],
@@ -8608,6 +8613,7 @@ class TestOntologyResults:
                 path=artifact["path"],
                 description=artifact["description"],
                 to_be_extracted=artifact["to_be_extracted"],
+                sha256=artifact["sha256"],
             )
             assert expected_artifact.as_primitives(), actual_validated_artifact_list[
                 index

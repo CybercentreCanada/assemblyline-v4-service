@@ -422,6 +422,7 @@ class TestHelper:
     def regenerate_results(self, save_files=False):
         for f in self.result_list():
             try:
+                print(f"Executing {f}")
                 self._execute_sample(f, save=True, save_files=save_files)
             except FileMissing:
                 print(f"[W] File {f} was not found in any of the following locations: {', '.join(self.locations)}")
