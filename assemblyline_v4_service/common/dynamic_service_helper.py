@@ -3303,8 +3303,8 @@ def extract_iocs_from_text_blob(
     for uri in uris:
         if enforce_char_min and len(uri) < MIN_URI_CHARS:
             continue
-        if any(invalid_uri_char in uri for invalid_uri_char in ['"', "'", '<', '>']):
-            for invalid_uri_char in ['"', "'", '<', '>']:
+        if any(invalid_uri_char in uri for invalid_uri_char in ['"', "'", '<', '>', "(", ")"]):
+            for invalid_uri_char in ['"', "'", '<', '>', "(", ")"]:
                 for u in uri.split(invalid_uri_char):
                     if re_match(FULL_URI, u):
                         uri = u
