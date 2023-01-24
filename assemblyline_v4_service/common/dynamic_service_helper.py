@@ -3251,7 +3251,8 @@ def extract_iocs_from_text_blob(
     source: Optional[ObjectID] = None,
     enforce_char_min: bool = False,
     enforce_domain_char_max: bool = False,
-    safelist: Dict[str, Dict[str, List[str]]] = None
+    safelist: Dict[str, Dict[str, List[str]]] = None,
+    is_network_static: bool = False
 ) -> None:
     """
     This method searches for domains, IPs and URIs used in blobs of text and tags them
@@ -3263,10 +3264,18 @@ def extract_iocs_from_text_blob(
     :param enforce_domain_char_max: Enforce the maximum amount of characters that a domain can have
     :param safelist: The safelist containing matches and regexs. The product of a
                      service using self.get_api_interface().get_safelist().
+    :param is_network_static: Should we tag these IOCs as static or dynamic? Default to dynamic since this method
+                        is in the dynamic service helper module.
     :return: None
     """
     if not blob:
         return
+
+    if is_network_static:
+        network_tag_type = "static"
+    else:
+        network_tag_type = "dynamic"
+
     blob = blob.lower()
     ips = set(findall(IP_REGEX, blob))
     # There is overlap here between regular expressions, so we want to isolate domains that are not ips
@@ -3276,7 +3285,7 @@ def extract_iocs_from_text_blob(
     # uris = {uri.decode() for uri in set(findall(PatternMatch.PAT_URI_NO_PROTOCOL, blob.encode()))} - domains - ips
     uris = set(findall(URL_REGEX, blob)) - domains - ips
     for ip in ips:
-        if add_tag(result_section, "network.dynamic.ip", ip, safelist):
+        if add_tag(result_section, f"network.{network_tag_type}.ip", ip, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
             elif (
@@ -3291,7 +3300,7 @@ def extract_iocs_from_text_blob(
             continue
         # File names match the domain and URI regexes, so we need to avoid tagging them
         # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
-        if add_tag(result_section, "network.dynamic.domain", domain, safelist):
+        if add_tag(result_section, f"network.{network_tag_type}.domain", domain, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
             elif (
@@ -3309,7 +3318,7 @@ def extract_iocs_from_text_blob(
                     if re_match(FULL_URI, u):
                         uri = u
                         break
-        if add_tag(result_section, "network.dynamic.uri", uri, safelist):
+        if add_tag(result_section, f"network.{network_tag_type}.uri", uri, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
             elif (
@@ -3324,7 +3333,7 @@ def extract_iocs_from_text_blob(
         for uri_path in findall(URI_PATH, uri):
             if enforce_char_min and len(uri_path) < MIN_URI_PATH_CHARS:
                 continue
-            if add_tag(result_section, "network.dynamic.uri_path", uri_path, safelist):
+            if add_tag(result_section, f"network.{network_tag_type}.uri_path", uri_path, safelist):
                 if not result_section.section_body.body:
                     result_section.add_row(TableRow(ioc_type="uri_path", ioc=uri_path))
                 elif (
