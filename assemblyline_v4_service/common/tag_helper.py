@@ -81,6 +81,11 @@ def _validate_tag(
     if safelist is None:
         safelist = {}
 
+    if tag.startswith("network.static."):
+        network_tag_type = "static"
+    else:
+        network_tag_type = "dynamic"
+
     regex = _get_regex_for_tag(tag)
     if regex and not match(regex, value):
         return False
@@ -106,13 +111,13 @@ def _validate_tag(
         domain = search(DOMAIN_REGEX, value)
         if domain:
             domain = domain.group()
-            valid_domain = _validate_tag(result_section, "network.dynamic.domain", domain, safelist)
+            valid_domain = _validate_tag(result_section, f"network.{network_tag_type}.domain", domain, safelist)
         # Then try to get the IP
         valid_ip = False
         ip = search(IP_REGEX, value)
         if ip:
             ip = ip.group()
-            valid_ip = _validate_tag(result_section, "network.dynamic.ip", ip, safelist)
+            valid_ip = _validate_tag(result_section, f"network.{network_tag_type}.ip", ip, safelist)
 
         if value not in [domain, ip] and (valid_domain or valid_ip):
             result_section.add_tag(tag, safe_str(value))
