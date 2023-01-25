@@ -4,11 +4,17 @@ import os
 import requests
 from flask import jsonify, make_response, request, send_from_directory, send_file, Flask
 from werkzeug.exceptions import Unauthorized, ServiceUnavailable
-
+from assemblyline.common import forge
 
 session = requests.session()
 app = Flask('service_updater')
 AUTH_KEY = os.environ.get('AL_INSTANCE_KEY', 'ThisIsARandomAuthKey...ChangeMe!')
+AL_ROOT_CA = os.environ.get('AL_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
+
+ssl_context = None
+if os.path.exists(AL_ROOT_CA):
+    hostname = os.environ.get('updates_host')
+    ssl_context = ('/etc/assemblyline/ssl/al_updates/tls.crt', '/etc/assemblyline/ssl/al_updates/tls.key')
 
 
 @app.route('/healthz/live')
@@ -28,6 +34,7 @@ def update_status():
         mimetype='application/json'
     )
     return response
+
 
 def api_login(func):
     @functools.wraps(func)
@@ -55,6 +62,7 @@ def get_paths():
     except Exception:
         raise ServiceUnavailable("No update ready")
     return path, tar
+
 
 @app.route('/files')
 @api_login
@@ -88,4 +96,4 @@ def get_all_files():
 
 
 if __name__ == '__main__':
-    app.run()
+    app.run(ssl_context=ssl_context)
