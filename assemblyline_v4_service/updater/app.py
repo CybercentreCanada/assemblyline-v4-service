@@ -9,14 +9,12 @@ from assemblyline.common import forge
 session = requests.session()
 app = Flask('service_updater')
 AUTH_KEY = os.environ.get('AL_INSTANCE_KEY', 'ThisIsARandomAuthKey...ChangeMe!')
+AL_ROOT_CA = os.environ.get('AL_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 
 ssl_context = None
-if forge.get_config().system.internal_encryption.enabled:
+if os.path.exists(AL_ROOT_CA):
     hostname = os.environ.get('updates_host')
-    ssl_context = (
-        f'/etc/assemblyline/ssl/{hostname}.crt',
-        f'/etc/assemblyline/ssl/{hostname}.key'
-    )
+    ssl_context = ('/etc/assemblyline/ssl/al_updates/tls.crt', '/etc/assemblyline/ssl/al_updates/tls.key')
 
 
 @app.route('/healthz/live')

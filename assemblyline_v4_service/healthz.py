@@ -14,7 +14,7 @@ def perform_check():
         forge.get_service_queue(service=environ['AL_SERVICE_NAME'])
     else:
         service_api_host = environ['SERVICE_API_HOST']
-        verify = True if not service_api_host.startswith('https') else \
+        verify = None if not service_api_host.startswith('https') else \
             environ.get('SERVICE_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/al_root-ca.crt')
         # Otherwise, perform a test for service-server availability
         if not requests.get(f"{service_api_host}/healthz/live", verify=verify).ok:

@@ -51,6 +51,7 @@ LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 SOURCE_STATUS_KEY = 'status'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
+UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 
 classification = forge.get_classification()
@@ -139,14 +140,7 @@ class ServiceUpdater(ThreadedCoreBase):
             os.makedirs(self.latest_updates_dir)
 
         # SSL configuration to UI_SERVER
-        self.verify, self.cert = False, None
-        if UI_SERVER.startswith('https'):
-            hostname = urlparse(UI_SERVER).hostname
-            self.verify = os.environ.get('UI_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/root-ca.crt')
-            self.cert = (
-                os.environ.get('UI_SERVER_CLIENT_CERT_PATH', f'/etc/assemblyline/ssl/{hostname}.crt'),
-                os.environ.get('UI_SERVER_CLIENT_KEY_PATH', f'/etc/assemblyline/ssl/{hostname}.key')
-            )
+        self.verify = None if not os.path.exists(UI_SERVER_ROOT_CA) else UI_SERVER_ROOT_CA
 
     def trigger_update(self):
         self.source_update_flag.set()
@@ -303,7 +297,7 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info("Create temporary API key.")
             with temporary_api_key(self.datastore, username) as api_key:
                 self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, cert=self.cert)
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
 
                 # Check if new signatures have been added
                 self.log.info("Check for new signatures.")
@@ -365,7 +359,7 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, cert=self.cert)
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
                 self.log.info("Connected!")
 
                 # Parse updater configuration
