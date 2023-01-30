@@ -15,7 +15,6 @@ import subprocess
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from contextlib import contextmanager
 from passlib.hash import bcrypt
-from urllib.parse import urlparse
 from zipfile import ZipFile, BadZipFile
 
 from assemblyline.common import forge, log as al_log
