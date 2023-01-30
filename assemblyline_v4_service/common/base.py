@@ -264,7 +264,7 @@ class ServiceBase:
         old_rules_list = self.rules_list
         try:
             with os.fdopen(buffer_handle, 'wb') as buffer:
-                resp = requests.get(url_base + 'tar', headers=headers)
+                resp = requests.get(url_base + 'tar', headers=headers, verify=verify)
                 resp.raise_for_status()
                 for chunk in resp.iter_content(chunk_size=1024):
                     buffer.write(chunk)
