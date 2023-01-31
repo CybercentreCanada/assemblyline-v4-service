@@ -219,9 +219,17 @@ class ServiceBase:
 
     @property
     def working_directory(self):
-        # If no working directory is assigned, then use the task's working directory
+        # If no working directory is assigned
         if not self._working_directory:
-            self._working_directory = self._task.working_directory
+            if self._task:
+                # Then use the working directory provided by the task
+                self._working_directory = self._task.working_directory
+            else:
+                # Or create a new working directory
+                temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
+                if not os.path.isdir(temp_dir):
+                    os.makedirs(temp_dir)
+                self._working_directory = tempfile.mkdtemp(dir=temp_dir)
 
         return self._working_directory
 
