@@ -220,7 +220,11 @@ class ServiceBase:
 
     @property
     def working_directory(self):
-        return self._task.working_directory
+        # If no working directory is assigned, then use the task's working directory
+        if not self._working_directory:
+            self._working_directory = self._task.working_directory
+
+        return self._working_directory
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
