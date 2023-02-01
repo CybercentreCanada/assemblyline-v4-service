@@ -219,11 +219,18 @@ class ServiceBase:
 
     @property
     def working_directory(self):
-        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
-        if not os.path.isdir(temp_dir):
-            os.makedirs(temp_dir)
-        if self._working_directory is None:
-            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+        # If no working directory is assigned
+        if not self._working_directory:
+            if self._task:
+                # Then use the working directory provided by the task
+                self._working_directory = self._task.working_directory
+            else:
+                # Or create a new working directory
+                temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
+                if not os.path.isdir(temp_dir):
+                    os.makedirs(temp_dir)
+                self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+
         return self._working_directory
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)

@@ -220,6 +220,7 @@ class TestHelper:
             # Create the service request
             task = Task(self._create_service_task(file_path, params))
             service_request = ServiceRequest(task)
+            cls._working_directory = task.working_directory
 
             # Execute the service
             cls.execute(service_request)
