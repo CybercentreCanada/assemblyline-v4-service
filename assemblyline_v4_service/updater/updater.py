@@ -51,6 +51,7 @@ SOURCE_EXTRA_KEY = 'source_extra'
 SOURCE_STATUS_KEY = 'status'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
+UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access']
 
 classification = forge.get_classification()
 
@@ -64,7 +65,8 @@ def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R
         user = ds.user.get(user_name)
         user.apikeys[name] = {
             "password": bcrypt.hash(random_pass),
-            "acl": permissions
+            "acl": permissions,
+            "roles": UPDATER_API_ROLES
         }
         ds.user.save(user_name, user)
 
@@ -557,7 +559,7 @@ class ServiceUpdater(ThreadedCoreBase):
             "password": get_password_hash(''.join(random.choices(string.ascii_letters, k=20))),
             "uname": uname,
             "type": ["custom"],
-            "roles": ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access']
+            "roles": UPDATER_API_ROLES
         })
         self.datastore.user.save(uname, user_data)
         self.datastore.user_settings.save(uname, UserSettings())
