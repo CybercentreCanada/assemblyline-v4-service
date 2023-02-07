@@ -7,13 +7,6 @@ from assemblyline.odm.base import DOMAIN_ONLY_REGEX, DOMAIN_REGEX, FULL_URI, IP_
 from assemblyline_v4_service.common.result import ResultSection
 from assemblyline_v4_service.common.safelist_helper import is_tag_safelisted
 
-FALSE_POSITIVE_DOMAINS_FOUND_IN_PATHS = ["microsoft.net", "wscript.shell", "message.zip"]
-COMMON_FILE_EXTENSIONS = [
-    'bat', 'bin', 'cpl', 'dll', 'doc', 'docm', 'docx', 'dotm', 'elf', 'eml', 'exe', 'hta', 'htm', 'html',
-    'hwp', 'jar', 'js', 'lnk', 'mht', 'msg', 'msi', 'pdf', 'potm', 'potx', 'pps', 'ppsm', 'ppsx', 'ppt',
-    'pptm', 'pptx', 'ps1', 'pub', 'py', 'pyc', 'rar', 'rtf', 'sh', 'swf', 'vbs', 'wsf', 'xls', 'xlsm', 'xlsx'
-]
-
 
 def add_tag(
     result_section: ResultSection,
@@ -93,12 +86,7 @@ def _validate_tag(
     if "ip" in tag and not is_valid_ip(value):
         return False
 
-    if "domain" in tag:
-        if not is_valid_domain(value):
-            return False
-        elif value in FALSE_POSITIVE_DOMAINS_FOUND_IN_PATHS:
-            return False
-        elif isinstance(value, str) and value.split(".")[-1] in COMMON_FILE_EXTENSIONS:
+    if "domain" in tag and not is_valid_domain(value):
             return False
 
     if is_tag_safelisted(value, [tag], safelist):
