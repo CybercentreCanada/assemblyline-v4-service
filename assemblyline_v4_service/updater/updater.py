@@ -546,8 +546,8 @@ class ServiceUpdater(ThreadedCoreBase):
     def ensure_service_account(self):
         """Check that the update service account exists, if it doesn't, create it."""
         uname = 'update_service_account'
-
-        if self.datastore.user.get_if_exists(uname):
+        user_obj = self.datastore.user.get_if_exists(uname)
+        if user_obj and user_obj.roles:
             return uname
 
         user_data = User({
@@ -556,7 +556,8 @@ class ServiceUpdater(ThreadedCoreBase):
             "name": "Update Account",
             "password": get_password_hash(''.join(random.choices(string.ascii_letters, k=20))),
             "uname": uname,
-            "type": ["signature_importer", "user"]
+            "type": ["custom"],
+            "roles": ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access']
         })
         self.datastore.user.save(uname, user_data)
         self.datastore.user_settings.save(uname, UserSettings())
