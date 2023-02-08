@@ -17,6 +17,7 @@ from assemblyline.common.identify import Identify
 
 
 BLOCK_SIZE = 64 * 1024
+GIT_ALLOW_UNSAFE_PROTOCOLS = os.environ.get('GIT_ALLOW_UNSAFE_PROTOCOLS', 'false').lower() == 'true'
 
 identify = Identify()
 
@@ -98,7 +99,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 session.cert = private_key_file.name
 
             # Check the response header for the last modified date
-            response = session.head(uri, auth=auth, headers=headers)
+            response = session.head(uri, auth=auth, headers=headers, proxies=proxies)
             last_modified = response.headers.get('Last-Modified', None)
             if last_modified:
                 # Convert the last modified time to epoch
@@ -212,10 +213,11 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
         # As checking for .git at the end of the URI is not reliable
         # we will use the exception to determine if its a git repo or direct download.
         try:
-            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch)
+            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
+                                   allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
         except Exception as ex:
             logger.warning(f"Repo clone failed with: {str(ex)}")
-            return None # !!!Warning!!! Caller checks this to determine if we should try a direct download.
+            return None  # !!!Warning!!! Caller checks this to determine if we should try a direct download.
 
         # Check repo last commit
         if previous_update:
