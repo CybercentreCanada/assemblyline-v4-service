@@ -99,7 +99,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 session.cert = private_key_file.name
 
             # Check the response header for the last modified date
-            response = session.head(uri, auth=auth, headers=headers)
+            response = session.head(uri, auth=auth, headers=headers, proxies=proxies)
             last_modified = response.headers.get('Last-Modified', None)
             if last_modified:
                 # Convert the last modified time to epoch
