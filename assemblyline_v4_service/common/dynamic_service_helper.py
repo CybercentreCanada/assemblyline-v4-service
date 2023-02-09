@@ -4,6 +4,7 @@ from json import dumps
 from logging import getLogger
 from re import compile, escape, sub, findall, match as re_match
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 from assemblyline.common import log as al_log
@@ -108,6 +109,13 @@ MAX_TIME = format_time(MAX_TIME, LOCAL_FMT)
 MIN_TIME = format_time(MIN_TIME, LOCAL_FMT)
 
 SERVICE_NAME = None
+
+# The following lists of domains and top-level domains are used for finding false-positives
+# when extracting domains from text blobs
+COMMON_FP_DOMAINS = ["example.com"]
+COMMON_FP_TLDS_THAT_ARE_FILE_EXTS = [".one", ".pub", ".py", ".sh", ".zip"]
+COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS = [".test", ".id", ".call", ".top", ".map", ".support", ".run", ".shell", ".net"]
+COMMON_FP_TLDS = COMMON_FP_TLDS_THAT_ARE_FILE_EXTS + COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS
 
 
 def set_required_argument(self: object, name: str, value: Any, value_type: Any) -> None:
@@ -3298,6 +3306,22 @@ def extract_iocs_from_text_blob(
             continue
         if enforce_domain_char_max and len(domain) > MAX_DOMAIN_CHARS:
             continue
+
+        # Check if the domain ends with a TLD that is frequently a false positive
+        if any(domain.lower().endswith(tld) for tld in COMMON_FP_TLDS):
+            is_domain_present_in_uri = False
+            for uri in uris:
+                parsed_uri = urlparse(uri.lower())
+                if domain == parsed_uri.hostname:
+                    is_domain_present_in_uri = True
+                    break
+
+            # If it does, then double check that the domain is not the domain of any URI
+            if not is_domain_present_in_uri:
+                continue
+        elif domain.lower() in COMMON_FP_DOMAINS:
+            continue
+
         # File names match the domain and URI regexes, so we need to avoid tagging them
         # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
         if add_tag(result_section, f"network.{network_tag_type}.domain", domain, safelist):
