@@ -8915,6 +8915,20 @@ class TestOntologyResults:
             {},
             [{}]
         ),
+        (
+            "Wscript.Shell.Run(blah.py)",
+            True,
+            True,
+            {},
+            [{}]
+        ),
+        (
+            "blah microsoft.net blah",
+            True,
+            True,
+            {},
+            [{}]
+        ),
     ],
 )
 def test_extract_iocs_from_text_blob(blob, enforce_min, enforce_max, correct_tags, expected_iocs):

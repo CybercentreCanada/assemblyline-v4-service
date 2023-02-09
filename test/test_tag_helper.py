@@ -65,10 +65,10 @@ def test_get_regex_for_tag():
         ("domain", "blah", {}, False),
         # Regex match but not valid domain
         ("domain", "blah.blah", {}, False),
-        # Regex match, but FP found
-        ("domain", "microsoft.net", {}, False),
-        # Regex match, but FP found
-        ("domain", "blah.py", {}, False),
+        # Regex match, but FP found (the determination of the FP is no longer handled in this method)
+        ("domain", "microsoft.net", {"domain": ["microsoft.net"]}, True),
+        # Regex match, but FP found (the determination of the FP is no longer handled in this method)
+        ("domain", "blah.py", {"domain": ["blah.py"]}, True),
         # Safelisted value
         ("domain", "blah.ca", {}, False),
         # URI with invalid domain
