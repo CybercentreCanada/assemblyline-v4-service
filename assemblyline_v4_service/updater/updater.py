@@ -50,6 +50,7 @@ LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 SOURCE_STATUS_KEY = 'status'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
+UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 
 classification = forge.get_classification()
@@ -136,6 +137,9 @@ class ServiceUpdater(ThreadedCoreBase):
         self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
         if not os.path.exists(self.latest_updates_dir):
             os.makedirs(self.latest_updates_dir)
+
+        # SSL configuration to UI_SERVER
+        self.verify = None if not os.path.exists(UI_SERVER_ROOT_CA) else UI_SERVER_ROOT_CA
 
     def trigger_update(self):
         self.source_update_flag.set()
@@ -292,7 +296,7 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info("Create temporary API key.")
             with temporary_api_key(self.datastore, username) as api_key:
                 self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
 
                 # Check if new signatures have been added
                 self.log.info("Check for new signatures.")
@@ -354,7 +358,7 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=False)
+                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
                 self.log.info("Connected!")
 
                 # Parse updater configuration

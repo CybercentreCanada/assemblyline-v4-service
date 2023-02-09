@@ -38,6 +38,8 @@ class ServiceAPI:
             service_name=service_attributes.name,
             service_version=service_attributes.version
         ))
+        if self.service_api_host.startswith('https'):
+            self.session.verify = os.environ.get('SERVICE_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/al_root-ca.crt')
 
     def _with_retries(self, func, url):
         retries = 0

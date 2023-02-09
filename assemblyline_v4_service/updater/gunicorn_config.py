@@ -25,3 +25,7 @@ max_requests_jitter = int(env.get('MAX_REQUESTS_JITTER', '100'))
 #  - Defaults to double what the poll length for services should be
 graceful_timeout = int(env.get('GRACEFUL_TIMEOUT', '60'))
 timeout = int(env.get('TIMEOUT', '60'))
+
+# TLS/SSL Configuration
+certfile = env.get('CERTFILE')
+keyfile = env.get('KEYFILE')
