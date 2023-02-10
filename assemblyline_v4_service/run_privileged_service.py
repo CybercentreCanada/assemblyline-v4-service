@@ -242,7 +242,10 @@ class RunPrivilegedService(ServerBase):
                 self.tasking_client.upload_file(
                     file_info['path'],
                     file_info['classification'],
-                    task.ttl, file_info.get('is_section_image', False))
+                    task.ttl,
+                    file_info.get('is_section_image', False),
+                    expected_sha256=file_info['sha256']
+                )
 
             try:
                 resp = self.tasking_client.task_finished(
