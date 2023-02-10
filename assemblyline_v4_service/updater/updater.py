@@ -58,7 +58,7 @@ classification = forge.get_classification()
 
 
 @contextmanager
-def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('C')):
+def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R', 'W')):
     """Creates a context where a temporary API key is available."""
     with Lock(f'user-{user_name}', timeout=10):
         name = ''.join(random.choices(string.ascii_lowercase, k=20))
