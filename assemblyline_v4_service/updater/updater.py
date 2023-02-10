@@ -58,7 +58,7 @@ classification = forge.get_classification()
 
 
 @contextmanager
-def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R', 'W')):
+def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('C')):
     """Creates a context where a temporary API key is available."""
     with Lock(f'user-{user_name}', timeout=10):
         name = ''.join(random.choices(string.ascii_lowercase, k=20))
@@ -311,7 +311,8 @@ class ServiceUpdater(ThreadedCoreBase):
                     extracted_zip = False
                     attempt = 0
 
-                    # Sometimes a zip file isn't always returned, will affect service's use of signature source. Patience..
+                    # Sometimes a zip file isn't always returned, will affect
+                    # service's use of signature source. Patience..
                     while not extracted_zip and attempt < 5:
                         temp_zip_file = os.path.join(output_directory, 'temp.zip')
                         al_client.signature.download(
@@ -388,7 +389,8 @@ class ServiceUpdater(ThreadedCoreBase):
                         # Pull sources from external locations (method depends on the URL)
                         files = git_clone_repo(source, old_update_time, self.default_pattern, self.log, update_dir)
 
-                        # As not all services end with .git, we rely on the exception thrown by git_clone which sets (files is None)
+                        # As not all services end with .git, we rely on the exception
+                        # thrown by git_clone which sets (files is None)
                         # to determine if its a valid git repo or not.
                         if (files is None) and (not uri.endswith('.git')):
                             files = url_download(source, old_update_time, self.log, update_dir)
@@ -461,7 +463,8 @@ class ServiceUpdater(ThreadedCoreBase):
             update_interval = service.update_config.update_interval_seconds
 
             # Is it time to update yet?
-            if time.time() - self.get_scheduled_update_time() < update_interval and not self.source_update_flag.is_set():
+            if time.time() - self.get_scheduled_update_time() < update_interval \
+                    and not self.source_update_flag.is_set():
                 self.source_update_flag.wait(60)
                 continue
 
@@ -552,19 +555,28 @@ class ServiceUpdater(ThreadedCoreBase):
     def ensure_service_account(self):
         """Check that the update service account exists, if it doesn't, create it."""
         uname = 'update_service_account'
-        user_obj = self.datastore.user.get_if_exists(uname)
-        if user_obj and user_obj.roles:
-            return uname
+        user_data = self.datastore.user.get_if_exists(uname)
+        if user_data:
+            if user_data.roles:
+                # User exists and has roles, we're good to go
+                return uname
 
-        user_data = User({
-            "agrees_with_tos": "NOW",
-            "classification": "RESTRICTED",
-            "name": "Update Account",
-            "password": get_password_hash(''.join(random.choices(string.ascii_letters, k=20))),
-            "uname": uname,
-            "type": ["custom"],
-            "roles": UPDATER_API_ROLES
-        })
+            # User exist but has no roles, let's update the user's roles
+            user_data.type = ["custom"]
+            user_data.roles = UPDATER_API_ROLES
+        else:
+            # User does not exist, let's create the user
+            user_data = User({
+                "agrees_with_tos": "NOW",
+                "classification": classification.RESTRICTED,
+                "name": "Update Account",
+                "password": get_password_hash(''.join(random.choices(string.ascii_letters, k=20))),
+                "uname": uname,
+                "type": ["custom"],
+                "roles": UPDATER_API_ROLES
+            })
+
         self.datastore.user.save(uname, user_data)
         self.datastore.user_settings.save(uname, UserSettings())
+
         return uname
