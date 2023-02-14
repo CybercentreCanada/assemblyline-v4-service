@@ -12,6 +12,7 @@ from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
 from assemblyline_v4_service.common.result import Result
+from assemblyline_v4_service.common.helper import get_service_manifest
 
 
 class MaxExtractedExceeded(Exception):
@@ -174,6 +175,10 @@ class Task:
         if param is not None:
             return param
         else:
+            # Check service manifest commited to disk and use param's default, if it exists.
+            for s_param in get_service_manifest().get('config', {}).get('submission_params', []):
+                if s_param.get('name') == name:
+                    return s_param['default']
             raise Exception(f"Service submission parameter not found: {name}")
 
     def get_service_error(self) -> Dict[str, Any]:
