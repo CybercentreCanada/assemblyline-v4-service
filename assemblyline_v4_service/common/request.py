@@ -76,6 +76,7 @@ class ServiceRequest:
         """
 
         outtmp = tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False)
+        data = {}
         with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as thumbtmp:
             # Load Image
             img = Image.open(path)
@@ -90,32 +91,35 @@ class ServiceRequest:
                 img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
 
             # Save and upload new image
-            img.save(outtmp.name, format=img_format)
-            img_res = self.task.add_supplementary(outtmp.name, name, description, classification,
-                                                  is_section_image=True)
+            try:
+                img.save(outtmp.name, format=img_format)
 
-            # Save and upload thumbnail
-            img.thumbnail((128, 128))
-            img.save(thumbtmp.name, format=img_format, optimize=True)
-            thumb_res = self.task.add_supplementary(thumbtmp.name, f"{name}.thumb",
-                                                    f"{description} (thumbnail)", classification,
-                                                    is_section_image=True)
+                img_res = self.task.add_supplementary(outtmp.name, name, description, classification,
+                                                      is_section_image=True)
 
-        data = {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
-                'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
+                # Save and upload thumbnail
+                img.thumbnail((128, 128))
+                img.save(thumbtmp.name, format=img_format, optimize=True)
+                thumb_res = self.task.add_supplementary(thumbtmp.name, f"{name}.thumb",
+                                                        f"{description} (thumbnail)", classification,
+                                                        is_section_image=True)
+                data = {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
+                        'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
+            except ValueError as e:
+                if e.args and e.args[0] == 'buffer is not large enough':
+                    self.log.warning('Unable to convert image to PNG/WEBP formats..')
 
         if ocr_heuristic_id:
             detections = {}
-
             try:
                 detections = ocr_detections(path, ocr_io)
             except ImportError as e:
                 self.log.warning(str(e))
-            except (SystemError, TypeError):
+            except (SystemError, TypeError, RuntimeError):
                 # If we encounter a system error with the original file, attempt OCR with alternative format (WEBP, PNG)
                 try:
                     detections = ocr_detections(outtmp.name, ocr_io)
-                except SystemError:
+                except (SystemError, RuntimeError):
                     # If we encountered a system error, then let OCR analysis go
                     # This shouldn't affect service analysis
                     pass
