@@ -2,7 +2,7 @@ import logging
 import tempfile
 
 from PIL import Image
-from typing import Dict, Optional, Any, Union
+from typing import Any, Dict, Optional, TextIO, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -62,7 +62,7 @@ class ServiceRequest:
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
-                  ocr_heuristic_id: Optional[int] = None) -> dict:
+                  ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> dict:
         """
         Add a image file to be viewed in the result section.
 
@@ -70,6 +70,8 @@ class ServiceRequest:
         :param name: Display name of the image file
         :param description: Descriptive text about the image file
         :param classification: Classification of the image file (default: service classification)
+        :param ocr_heuristic_id: Heuristic ID associated to suspicious OCR detections
+        :param ocr_ouput: String buffer to write the raw OCR output to
         :return: None
         """
 
@@ -104,9 +106,10 @@ class ServiceRequest:
 
         if ocr_heuristic_id:
             try:
-                detections = ocr_detections(path)
+                detections = ocr_detections(path, ocr_io)
                 if detections:
-                    heuristic = Heuristic(ocr_heuristic_id, signatures={k: len(v) for k, v in detections.items()})
+                    heuristic = Heuristic(ocr_heuristic_id, signatures={
+                                          f'{k}_strings': len(v) for k, v in detections.items()})
                     ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
                     ocr_section.set_heuristic(heuristic)
                     for k, v in detections.items():
