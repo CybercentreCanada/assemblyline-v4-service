@@ -81,6 +81,7 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
                 detection_output[indicator] = list_of_strings
 
     if ocr_io:
+        ocr_io.flush()
         ocr_io.write(ocr_output)
         ocr_io.flush()
 
