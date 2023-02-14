@@ -2,7 +2,7 @@ import logging
 import tempfile
 
 from PIL import Image
-from typing import Dict, Optional, Any, Union
+from typing import Any, Dict, Optional, TextIO, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -62,7 +62,7 @@ class ServiceRequest:
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
-                  ocr_heuristic_id: Optional[int] = None) -> dict:
+                  ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> dict:
         """
         Add a image file to be viewed in the result section.
 
@@ -70,25 +70,30 @@ class ServiceRequest:
         :param name: Display name of the image file
         :param description: Descriptive text about the image file
         :param classification: Classification of the image file (default: service classification)
+        :param ocr_heuristic_id: Heuristic ID associated to suspicious OCR detections
+        :param ocr_ouput: String buffer to write the raw OCR output to
         :return: None
         """
 
-        with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as outtmp:
-            with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as thumbtmp:
-                # Load Image
-                img = Image.open(path)
+        outtmp = tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False)
+        data = {}
+        with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as thumbtmp:
+            # Load Image
+            img = Image.open(path)
 
-                # Force image format switch to prevent exploit to cross-over
-                img_format = 'WEBP'
-                if img.format == img_format:
-                    img_format = 'PNG'
+            # Force image format switch to prevent exploit to cross-over
+            img_format = 'WEBP'
+            if img.format == img_format:
+                img_format = 'PNG'
 
-                if img_format == "WEBP" and (img.height > WEBP_MAX_SIZE or img.width > WEBP_MAX_SIZE):
-                    # Maintain aspect ratio
-                    img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
+            if img_format == "WEBP" and (img.height > WEBP_MAX_SIZE or img.width > WEBP_MAX_SIZE):
+                # Maintain aspect ratio
+                img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
 
-                # Save and upload new image
+            # Save and upload new image
+            try:
                 img.save(outtmp.name, format=img_format)
+
                 img_res = self.task.add_supplementary(outtmp.name, name, description, classification,
                                                       is_section_image=True)
 
@@ -98,22 +103,36 @@ class ServiceRequest:
                 thumb_res = self.task.add_supplementary(thumbtmp.name, f"{name}.thumb",
                                                         f"{description} (thumbnail)", classification,
                                                         is_section_image=True)
-
-        data = {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
-                'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
+                data = {'img': {k: v for k, v in img_res.items() if k in ['name', 'description', 'sha256']},
+                        'thumb': {k: v for k, v in thumb_res.items() if k in ['name', 'description', 'sha256']}}
+            except ValueError as e:
+                if e.args and e.args[0] == 'buffer is not large enough':
+                    self.log.warning('Unable to convert image to PNG/WEBP formats..')
 
         if ocr_heuristic_id:
+            detections = {}
             try:
-                detections = ocr_detections(path)
-                if detections:
-                    heuristic = Heuristic(ocr_heuristic_id, signatures={k: len(v) for k, v in detections.items()})
-                    ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
-                    ocr_section.set_heuristic(heuristic)
-                    for k, v in detections.items():
-                        ocr_section.set_item(k, v)
-                    data['ocr_section'] = ocr_section
+                detections = ocr_detections(path, ocr_io)
             except ImportError as e:
                 self.log.warning(str(e))
+            except (SystemError, TypeError, RuntimeError):
+                # If we encounter a system error with the original file, attempt OCR with alternative format (WEBP, PNG)
+                try:
+                    detections = ocr_detections(outtmp.name, ocr_io)
+                except (SystemError, RuntimeError):
+                    # If we encountered a system error, then let OCR analysis go
+                    # This shouldn't affect service analysis
+                    pass
+
+            if detections:
+                heuristic = Heuristic(ocr_heuristic_id, signatures={
+                    f'{k}_strings': len(v) for k, v in detections.items()})
+                ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
+                ocr_section.set_heuristic(heuristic)
+                for k, v in detections.items():
+                    ocr_section.set_item(k, v)
+                data['ocr_section'] = ocr_section
+
         return data
 
     def add_supplementary(self, path: str, name: str, description: str,
