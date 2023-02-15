@@ -59,10 +59,12 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
     indicators = set(list(OCR_INDICATORS_MAPPING.keys()) + list(ocr_config.keys()))
     # Iterate over the different indicators and include lines of detection in response
     for indicator in indicators:
-        list_of_terms = ocr_config.get(indicator, [])
-        default_list_of_terms = OCR_INDICATORS_MAPPING.get(indicator, [])
+        list_of_terms = ocr_config.get(indicator, []) or OCR_INDICATORS_MAPPING.get(indicator, [])
+        if not list_of_terms:
+            # If no terms specified, move onto next indicator
+            continue
         indicator_hits = set()
-        regex_exp = regex.compile(f"({')|('.join(list_of_terms or default_list_of_terms).lower()})")
+        regex_exp = regex.compile(f"({')|('.join(list_of_terms).lower()})")
         list_of_strings = []
         for line in ocr_output.split('\n'):
             search = regex_exp.search(line.lower())
