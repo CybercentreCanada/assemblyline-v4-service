@@ -71,7 +71,7 @@ class ServiceRequest:
         :param description: Descriptive text about the image file
         :param classification: Classification of the image file (default: service classification)
         :param ocr_heuristic_id: Heuristic ID associated to suspicious OCR detections
-        :param ocr_ouput: String buffer to write the raw OCR output to
+        :param ocr_io: Stream to write the raw OCR output to
         :return: None
         """
 
