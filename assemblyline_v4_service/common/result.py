@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import List, Union, Optional, Dict, Any
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
@@ -396,8 +396,8 @@ class ImageSectionBody(SectionBody):
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
-                  ocr_heuristic_id: Optional[int] = None) -> bool:
-        res = self._request.add_image(path, name, description, classification, ocr_heuristic_id)
+                  ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> bool:
+        res = self._request.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
         sections = res.pop('ocr_section', None)
         self._data.append(res)
 
@@ -703,9 +703,10 @@ class ResultImageSection(TypeSpecificResultSection):
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
                   ocr_heuristic_id: Optional[int] = None,
+                  ocr_io: Optional[TextIO] = None,
                   auto_add_ocr_section: bool = True) -> bool:
 
-        ocr_section = self.section_body.add_image(path, name, description, classification, ocr_heuristic_id)
+        ocr_section = self.section_body.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
         if ocr_section and auto_add_ocr_section:
             self.add_subsection(ocr_section)
             return None
