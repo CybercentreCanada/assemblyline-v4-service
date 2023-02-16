@@ -114,7 +114,7 @@ SERVICE_NAME = None
 # when extracting domains from text blobs
 COMMON_FP_DOMAINS = ["example.com"]
 COMMON_FP_TLDS_THAT_ARE_FILE_EXTS = [".one", ".pub", ".py", ".sh", ".zip"]
-COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS = [".test", ".id", ".call", ".top", ".map", ".support", ".run", ".shell", ".net"]
+COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS = [".test", ".id", ".call", ".top", ".map", ".support", ".run", ".shell", ".net", ".stream"]
 COMMON_FP_TLDS = COMMON_FP_TLDS_THAT_ARE_FILE_EXTS + COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS
 
 
