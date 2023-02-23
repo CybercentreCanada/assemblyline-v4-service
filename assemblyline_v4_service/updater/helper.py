@@ -212,12 +212,8 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
 
         # As checking for .git at the end of the URI is not reliable
         # we will use the exception to determine if its a git repo or direct download.
-        try:
-            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
-                                   allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
-        except Exception as ex:
-            logger.warning(f"Repo clone failed with: {str(ex)}")
-            return None  # !!!Warning!!! Caller checks this to determine if we should try a direct download.
+        repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
+                               allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
 
         # Check repo last commit
         if previous_update:
