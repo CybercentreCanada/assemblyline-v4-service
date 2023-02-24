@@ -421,6 +421,8 @@ class ServiceUpdater(ThreadedCoreBase):
                             files_sha256[source_name] = previous_hashes[source_name]
                         self.push_status("DONE", "Skipped.")
                     except Exception as e:
+                        # There was an issue with this source, report and continue to the next
+                        self.log.error(f"Problem with {source['name']}: {e}")
                         self.push_status("ERROR", str(e))
                         continue
 

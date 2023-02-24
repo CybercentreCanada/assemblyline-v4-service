@@ -117,7 +117,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 else:
                     headers = {'If-Modified-Since': previous_update}
 
-            response = session.get(uri, auth=auth, headers=headers, proxies=proxies)
+            response = session.get(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
 
         # Check the response code
         if response.status_code == requests.codes['not_modified']:
@@ -154,8 +154,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
         raise
     except Exception as e:
         # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
-        logger.warning(str(e))
-        exit()
+        raise e
     finally:
         # Close the requests session
         session.close()
