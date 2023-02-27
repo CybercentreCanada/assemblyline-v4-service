@@ -3352,6 +3352,9 @@ def extract_iocs_from_text_blob(
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
             if so_sig and source:
                 so_sig.add_attribute(so_sig.create_attribute(source=source, uri=uri))
+        # If the tag was safelisted or invalid, don't try to tag the uri_path
+        else:
+            continue
         if "//" in uri:
             uri = uri.split("//")[1]
         for uri_path in findall(URI_PATH, uri):
