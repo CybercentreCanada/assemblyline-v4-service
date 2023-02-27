@@ -79,7 +79,8 @@ class Task:
     def _add_file(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
                   is_section_image: bool = False,
-                  allow_dynamic_recursion: bool = False) -> Optional[Dict[str, str]]:
+                  allow_dynamic_recursion: bool = False,
+                  parent_relation: str = "EXTRACTED") -> Optional[Dict[str, str]]:
         # Reject empty files
         if os.path.getsize(path) == 0:
             self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
@@ -97,7 +98,8 @@ class Task:
             classification=self._classification.max_classification(self.min_classification, classification),
             path=path,
             is_section_image=is_section_image,
-            allow_dynamic_recursion=allow_dynamic_recursion
+            allow_dynamic_recursion=allow_dynamic_recursion,
+            parent_relation=parent_relation
         )
 
         return file
@@ -105,7 +107,7 @@ class Task:
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
                       safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
-                      allow_dynamic_recursion: bool = False) -> bool:
+                      allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
 
         # Service-based safelisting of files has to be configured at the global configuration
         # Allows the administrator to be selective about the types of hashes to lookup in the safelist
@@ -133,7 +135,8 @@ class Task:
             raise ValueError("Description cannot be empty")
 
         file = self._add_file(path, name, description, classification,
-                              allow_dynamic_recursion=allow_dynamic_recursion)
+                              allow_dynamic_recursion=allow_dynamic_recursion,
+                              parent_relation=parent_relation)
 
         if not file:
             return False
