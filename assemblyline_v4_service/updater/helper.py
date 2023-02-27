@@ -1,5 +1,6 @@
 import certifi
 import os
+import psutil
 import regex as re
 import requests
 import shutil
@@ -117,7 +118,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 else:
                     headers = {'If-Modified-Since': previous_update}
 
-            response = session.get(uri, auth=auth, headers=headers, proxies=proxies)
+            response = session.get(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
 
         # Check the response code
         if response.status_code == requests.codes['not_modified']:
@@ -154,8 +155,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
         raise
     except Exception as e:
         # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
-        logger.warning(str(e))
-        exit()
+        raise e
     finally:
         # Close the requests session
         session.close()
@@ -199,29 +199,43 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)
 
-    with tempfile.NamedTemporaryFile() as git_ssh_identity_file:
-        if key:
-            logger.info(f"key found for {url}")
-            # Save the key to a file
-            git_ssh_identity_file.write(key.encode())
-            git_ssh_identity_file.seek(0)
-            os.chmod(git_ssh_identity_file.name, 0o0400)
+    try:
+        with tempfile.NamedTemporaryFile() as git_ssh_identity_file:
+            if key:
+                logger.info(f"key found for {url}")
+                # Save the key to a file
+                git_ssh_identity_file.write(key.encode())
+                git_ssh_identity_file.seek(0)
+                os.chmod(git_ssh_identity_file.name, 0o0400)
 
-            git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
-            git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
+                git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
+                git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
 
-        # As checking for .git at the end of the URI is not reliable
-        # we will use the exception to determine if its a git repo or direct download.
-        repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
-                               allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
+            # As checking for .git at the end of the URI is not reliable
+            # we will use the exception to determine if its a git repo or direct download.
+            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
+                                   allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
 
-        # Check repo last commit
-        if previous_update:
-            if isinstance(previous_update, str):
-                previous_update = iso_to_epoch(previous_update)
-            for c in repo.iter_commits():
-                if c.committed_date < previous_update:
-                    raise SkipSource()
+            # Check repo last commit
+            if previous_update:
+                if isinstance(previous_update, str):
+                    previous_update = iso_to_epoch(previous_update)
+                for c in repo.iter_commits():
+                    if c.committed_date < previous_update:
+                        raise SkipSource()
+                    break
+
+        return filter_downloads(clone_dir, pattern, default_pattern)
+    except SkipSource:
+        # Raise to calling function for handling
+        raise
+    except Exception as e:
+        # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
+        raise e
+    finally:
+        # Cleanup any lingering Git zombies
+        for p in psutil.process_iter():
+            if 'git' in p.name() and p.status() == 'zombie':
+                p.terminate()
+                p.wait()
                 break
-
-    return filter_downloads(clone_dir, pattern, default_pattern)
