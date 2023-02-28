@@ -359,10 +359,10 @@ class TestHelper:
                         new_tag = ntm[v]
                         if tag['heur_id'] != new_tag['heur_id']:
                             ih.add_issue(ih.TYPE_TAGS, ih.ACTION_CHANGED,
-                                         f"Heuristic ID for tag '{v} [{tag_type}]' has changed.")
+                                         f"Heuristic ID for tag '{v} [{tag_type}]' has changed from {tag['heur_id']} to {new_tag['heur_id']}.")
                         if tag['signatures'] != new_tag['signatures']:
                             ih.add_issue(ih.TYPE_TAGS, ih.ACTION_CHANGED,
-                                         f"Associated signatures for tag '{v} [{tag_type}]' have changed.")
+                                         f"Associated signatures for tag '{v} [{tag_type}]' have changed from {tag['signatures']} to {new_tag['signatures']}.")
 
                 for v in ntm.keys():
                     if v not in otm:
