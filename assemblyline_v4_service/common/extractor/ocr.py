@@ -51,7 +51,7 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
         pass
 
     try:
-        ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=5)  # Stop OCR after 5 seconds
+        ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=15)  # Stop OCR after 15 seconds
     except (TypeError, RuntimeError):
         # Image given isn't supported therefore no OCR output can be given with tesseract
         return detection_output
