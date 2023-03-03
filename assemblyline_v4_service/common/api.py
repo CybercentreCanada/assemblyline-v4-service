@@ -10,12 +10,12 @@ DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 DEVELOPMENT_MODE = False
 
 with StringIO() as stack_trace:
-    # Check if run_service_once or pytest is in the stack trace to determine if we're running the service in a development mode
+    # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the stack trace to determine if we're running the service in a development mode
     traceback.print_stack(file=stack_trace)
     stack_trace.seek(0)
     read_stack_trace = stack_trace.read()
 
-    if 'run_service_once' in read_stack_trace or 'pytest' in read_stack_trace:
+    if 'run_service_once' in read_stack_trace or 'pytest' in read_stack_trace or 'assemblyline_v4_service.testing.helper' in read_stack_trace:
         DEVELOPMENT_MODE = True
 
 
