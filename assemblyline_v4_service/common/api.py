@@ -15,7 +15,7 @@ with StringIO() as stack_trace:
     stack_trace.seek(0)
     read_stack_trace = stack_trace.read()
 
-    if 'run_service_once' in read_stack_trace or 'pytest' in read_stack_trace or 'assemblyline_v4_service.testing.helper' in read_stack_trace:
+    if any(msg in read_stack_trace for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
         DEVELOPMENT_MODE = True
 
 
