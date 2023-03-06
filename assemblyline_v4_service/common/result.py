@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, TextIO, Union
+from typing import Any, Dict, List, Optional, TextIO, TYPE_CHECKING, Union
 
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
@@ -10,7 +10,9 @@ from assemblyline.common.classification import Classification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
-from assemblyline_v4_service.common.request import ServiceRequest
+
+if TYPE_CHECKING:  # Avoid circular dependency
+    from assemblyline_v4_service.common.request import ServiceRequest
 
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')
@@ -65,7 +67,7 @@ class Heuristic:
                  attack_id: Optional[str] = None,
                  signature: Optional[str] = None,
                  attack_ids: Optional[List[str]] = None,
-                 signatures: Optional[Dict[(str, None), int]] = None,
+                 signatures: Optional[Dict[str, int]] = None,
                  frequency: Optional[int] = 1,
                  score_map: Optional[Dict[str, int]] = None):
 
