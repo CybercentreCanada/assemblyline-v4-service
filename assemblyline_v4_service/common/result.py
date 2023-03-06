@@ -699,6 +699,7 @@ class ResultTableSection(TypeSpecificResultSection):
 
 class ResultImageSection(TypeSpecificResultSection):
     def __init__(self, request: ServiceRequest, title_text: Union[str, List], **kwargs):
+        self.section_body: ImageSectionBody
         super().__init__(title_text, ImageSectionBody(request), **kwargs)
 
     def add_image(self, path: str, name: str, description: str,
@@ -707,7 +708,7 @@ class ResultImageSection(TypeSpecificResultSection):
                   ocr_io: Optional[TextIO] = None,
                   auto_add_ocr_section: bool = True) -> bool:
 
-        ocr_section: Optional[ResultSection] = self.section_body.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
+        ocr_section = self.section_body.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
         if ocr_section and auto_add_ocr_section:
             self.add_subsection(ocr_section)
             return None
