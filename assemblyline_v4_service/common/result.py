@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, TextIO, Union
+from typing import Any, Dict, List, Optional, TextIO, TYPE_CHECKING, Union
 
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
@@ -10,6 +10,9 @@ from assemblyline.common.classification import Classification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
 from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
+
+if TYPE_CHECKING:  # Avoid circular dependency
+    from assemblyline_v4_service.common.request import ServiceRequest
 
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')
@@ -64,7 +67,7 @@ class Heuristic:
                  attack_id: Optional[str] = None,
                  signature: Optional[str] = None,
                  attack_ids: Optional[List[str]] = None,
-                 signatures: Optional[Dict[(str, None), int]] = None,
+                 signatures: Optional[Dict[str, int]] = None,
                  frequency: Optional[int] = 1,
                  score_map: Optional[Dict[str, int]] = None):
 
@@ -220,8 +223,8 @@ class SectionBody:
 
 
 class TextSectionBody(SectionBody):
-    def __init__(self, body=None):
-        return super().__init__(BODY_FORMAT.TEXT, body=body)
+    def __init__(self, body=None) -> None:
+        super().__init__(BODY_FORMAT.TEXT, body=body)
 
     def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
@@ -245,13 +248,13 @@ class TextSectionBody(SectionBody):
 
 
 class MemorydumpSectionBody(SectionBody):
-    def __init__(self, body=None):
-        return super().__init__(BODY_FORMAT.MEMORY_DUMP, body=body)
+    def __init__(self, body=None) -> None:
+        super().__init__(BODY_FORMAT.MEMORY_DUMP, body=body)
 
 
 class URLSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.URL, body=[])
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.URL, body=[])
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
         url_data = {'url': url}
@@ -261,8 +264,8 @@ class URLSectionBody(SectionBody):
 
 
 class GraphSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.GRAPH_DATA)
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.GRAPH_DATA)
 
     def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
         cmap = {'type': 'colormap',
@@ -274,8 +277,8 @@ class GraphSectionBody(SectionBody):
 
 
 class KVSectionBody(SectionBody):
-    def __init__(self, **kwargs):
-        return super().__init__(BODY_FORMAT.KEY_VALUE, body=kwargs)
+    def __init__(self, **kwargs) -> None:
+        super().__init__(BODY_FORMAT.KEY_VALUE, body=kwargs)
 
     def set_item(self, key: str, value: Union[str, bool, int]) -> None:
         self._data[str(key)] = value
@@ -285,16 +288,16 @@ class KVSectionBody(SectionBody):
 
 
 class OrderedKVSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[])
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[])
 
     def add_item(self, key: str, value: Union[str, bool, int]) -> None:
         self._data.append((str(key), value))
 
 
 class JSONSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.JSON, body={})
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.JSON, body={})
 
     def set_json(self, json_body: dict) -> None:
         self._data = json_body
@@ -365,8 +368,8 @@ class ProcessItem:
 
 
 class ProcessTreeSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.PROCESS_TREE, body=[])
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.PROCESS_TREE, body=[])
 
     def add_process(self, process: ProcessItem) -> None:
         self._data.append(process.as_primitives())
@@ -378,25 +381,25 @@ class TableRow(dict):
         for arg in args:
             data.update(arg)
         data.update(kwargs)
-        return super().__init__(**data)
+        super().__init__(**data)
 
 
 class TableSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.TABLE, body=[])
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.TABLE, body=[])
 
     def add_row(self, row: TableRow) -> None:
         self._data.append(row)
 
 
 class ImageSectionBody(SectionBody):
-    def __init__(self, request):
+    def __init__(self, request: ServiceRequest) -> None:
         self._request = request
-        return super().__init__(BODY_FORMAT.IMAGE, body=[])
+        super().__init__(BODY_FORMAT.IMAGE, body=[])
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
-                  ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> bool:
+                  ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> Optional[ResultSection]:
         res = self._request.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
         sections = res.pop('ocr_section', None)
         self._data.append(res)
@@ -405,16 +408,16 @@ class ImageSectionBody(SectionBody):
 
 
 class MultiSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.MULTI, body=[])
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.MULTI, body=[])
 
     def add_section_body(self, section_body: SectionBody) -> str:
         self._data.append((section_body.format, section_body._data))
 
 
 class DividerSectionBody(SectionBody):
-    def __init__(self):
-        return super().__init__(BODY_FORMAT.DIVIDER, body=None)
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.DIVIDER, body=None)
 
 
 class ResultSection:
@@ -697,14 +700,15 @@ class ResultTableSection(TypeSpecificResultSection):
 
 
 class ResultImageSection(TypeSpecificResultSection):
-    def __init__(self, request, title_text: Union[str, List], **kwargs):
+    def __init__(self, request: ServiceRequest, title_text: Union[str, List], **kwargs) -> None:
+        self.section_body: ImageSectionBody
         super().__init__(title_text, ImageSectionBody(request), **kwargs)
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
                   ocr_heuristic_id: Optional[int] = None,
                   ocr_io: Optional[TextIO] = None,
-                  auto_add_ocr_section: bool = True) -> bool:
+                  auto_add_ocr_section: bool = True) -> Optional[ResultSection]:
 
         ocr_section = self.section_body.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
         if ocr_section and auto_add_ocr_section:
