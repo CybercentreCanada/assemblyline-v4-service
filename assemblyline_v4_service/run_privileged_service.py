@@ -63,7 +63,8 @@ class RunPrivilegedService(ServerBase):
             private=False,
         )
 
-        self.tasking_client = TaskingClient(redis=self.redis, redis_persist=self.redis_persist)
+        self.tasking_client = TaskingClient(redis=self.redis, redis_persist=self.redis_persist,
+                                            register_only=REGISTER_ONLY)
         self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
 
         self.filestore = forge.get_filestore()
