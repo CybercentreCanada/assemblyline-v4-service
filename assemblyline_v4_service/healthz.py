@@ -22,8 +22,8 @@ def perform_check():
         if not requests.get(f"{service_api_host}/healthz/live", verify=verify).ok:
             raise Exception('Unable to reach service-server')
 
-    # If running with an updater, check for availability. Make sure test doesn't run on the actual updater.
-    if environ.get('updates_host') and not environ['HOSTNAME'].startswith(environ['updates_host']):
+    # If running with an updater, check for availability.
+    if environ.get('updates_host'):
         scheme, verify = ("http", None) if not path.exists(UPDATES_CA) else ("https", UPDATES_CA)
         if not requests.get(f"{scheme}://{environ['updates_host']}:{environ['updates_port']}/healthz/live",
                             verify=verify).ok:
