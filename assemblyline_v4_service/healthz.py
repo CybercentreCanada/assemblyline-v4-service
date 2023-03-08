@@ -24,8 +24,11 @@ def perform_check():
 
     # If running with an updater, check for availability.
     if environ.get('updates_host'):
+        updater_host = environ['updates_host']
         scheme, verify = ("http", None) if not path.exists(UPDATES_CA) else ("https", UPDATES_CA)
-        if not requests.get(f"{scheme}://{environ['updates_host']}:{environ['updates_port']}/healthz/live",
+        if environ['HOSTNAME'].startswith(environ['updates_host']):
+            updater_host = "127.0.0.1"
+        if not requests.get(f"{scheme}://{updater_host}:{environ['updates_port']}/healthz/live",
                             verify=verify).ok:
             raise Exception('Unable to reach local update server')
     exit()
