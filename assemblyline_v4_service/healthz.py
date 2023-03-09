@@ -27,7 +27,7 @@ def perform_check():
         updater_host = environ['updates_host']
         scheme, verify = ("http", None) if not path.exists(UPDATES_CA) else ("https", UPDATES_CA)
         if environ['HOSTNAME'].startswith(environ['updates_host']):
-            updater_host = "127.0.0.1"
+            updater_host = environ["HOSTNAME"]
         if not requests.get(f"{scheme}://{updater_host}:{environ['updates_port']}/healthz/live",
                             verify=verify).ok:
             raise Exception('Unable to reach local update server')
