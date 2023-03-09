@@ -87,6 +87,7 @@ class TestHelper:
         temp_submission_data = params.get('temp_submission_data', {})
         submission_params = params.get('submission_params', {})
         tags = params.get('tags', [])
+        filename = params.get('filename', os.path.basename(file_path))
 
         return ServiceTask(
             {
@@ -97,7 +98,7 @@ class TestHelper:
                 "service_config": {param.name: submission_params.get(param.name, param.default)
                                    for param in self.submission_params},
                 "fileinfo": {k: v for k, v in self.identify.fileinfo(file_path).items() if k in fileinfo_keys},
-                "filename": os.path.basename(file_path),
+                "filename": filename,
                 "min_classification": "TLP:W",
                 "max_files": 501,
                 "ttl": 3600,
