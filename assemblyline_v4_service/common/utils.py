@@ -5,20 +5,28 @@ import re
 
 libc = ctypes.CDLL("libc.so.6")
 
-# Arabic, Chinese Simplified, Chinese Traditional, English, French, German, Italian, Portuguese, Russian, Spanish
 PASSWORD_WORDS = [
-    "كلمه السر",
-    "密码",
-    "密碼",
-    "password",
-    "mot de passe",
-    "passwort",
-    "parola d'ordine",
-    "senha",
-    "пароль",
-    "contraseña",
+    "كلمه السر",  # Arabic
+    "密码",  # Chinese Simplified
+    "密碼",  # Chinese Traditional
+    "password",  # English
+    "mot de passe",  # French
+    "passwort",  # German
+    "parola d'ordine",  # Italian
+    "비밀번호",  # Korean
+    "parole",  # Latvian, Lithuanian
+    "senha",  # Portuguese
+    "пароль",  # Russian
+    "contraseña",  # Spanish
 ]
 PASSWORD_REGEXES = [re.compile(fr".*{p}:(.+)", re.I) for p in PASSWORD_WORDS]
+
+PASSWORD_STRIP = [
+    '"',
+    "'",
+    "입니다",
+    "이에요",
+]
 
 
 def set_death_signal(sig=signal.SIGTERM):
@@ -69,5 +77,7 @@ def extract_passwords(text):
             if PASSWORD_WORDS[i] in line.lower():
                 passwords.update(re.split(r, line))
     for p in list(passwords):
-        passwords.update([p.strip(), p.strip().strip('"'), p.strip().strip("'")])
+        p = p.strip()
+        # We can assume that at least one of the strip_char won't be there, to have the simple space stripping option
+        passwords.update([p.strip(strip_char) for strip_char in PASSWORD_STRIP])
     return passwords
