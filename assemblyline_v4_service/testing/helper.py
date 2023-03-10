@@ -239,7 +239,7 @@ class TestHelper:
 
             # Save results if needs be
             if save:
-                # If we are re-writing the results, validate that the heuristics applies were meant for the sample
+                # If we are re-writing the results, validate that the heuristics raised were meant for the sample
                 for heuristic in results["results"]["heuristics"]:
                     if not re.match(self.heuristics[heuristic["heur_id"]].filetype, task.file_type):
                         raise HeuristicFiletypeMismatch(
