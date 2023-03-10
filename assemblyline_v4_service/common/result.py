@@ -423,9 +423,9 @@ class TimelineSectionBody(SectionBody):
         return super().__init__(BODY_FORMAT.TIMELINE, body=[])
 
     def add_node(self, title: str, content: str, opposite_content: str,
-                 icon: str = None, icon_tooltip: str = None, color: str = None) -> None:
+                 icon: str = None, signatures: List[str] = [], color: str = None) -> None:
         self._data.append(dict(title=title, content=content, opposite_content=opposite_content,
-                          icon=icon, icon_tooltip=icon_tooltip, color=color))
+                          icon=icon, signatures=signatures, color=color))
 
 
 class ResultSection:
@@ -729,9 +729,9 @@ class ResultTimelineSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         super().__init__(title_text,  TimelineSectionBody(), **kwargs)
 
-    def add_node(self, title: str, content: str, opposite_content: str, icon=None, icon_tooltip=None, color=None) -> None:
+    def add_node(self, title: str, content: str, opposite_content: str, icon=None, signatures=[], color=None) -> None:
         self.section_body.add_node(title=title, content=content, opposite_content=opposite_content,
-                                   icon=icon, icon_tooltip=icon_tooltip, color=color)
+                                   icon=icon, signatures=signatures, color=color)
 
 
 class ResultMultiSection(TypeSpecificResultSection):
