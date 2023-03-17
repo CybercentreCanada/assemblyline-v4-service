@@ -36,9 +36,9 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
     try:
         import pytesseract
         from PIL import Image
-    except ImportError:
+    except ImportError as exc:
         raise ImportError('In order to scan for OCR detections, ensure you have the following installed:\n'
-                          'tesseract, pytesseract, and Pillow')
+                          'tesseract, pytesseract, and Pillow') from exc
 
     # Use OCR library to extract strings from an image file
     ocr_output = ""
