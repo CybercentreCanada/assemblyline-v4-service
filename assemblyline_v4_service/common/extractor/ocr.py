@@ -41,21 +41,30 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
                           'tesseract, pytesseract, and Pillow')
 
     # Use OCR library to extract strings from an image file
-    detection_output = {}
     ocr_output = ""
+
+    try:
+        ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=15)  # Stop OCR after 15 seconds
+    except (TypeError, RuntimeError):
+        # Image given isn't supported therefore no OCR output can be given with tesseract
+        return {}
+
+    if ocr_io:
+        ocr_io.flush()
+        ocr_io.write(ocr_output)
+        ocr_io.flush()
+
+    return detections(ocr_output)
+
+
+def detections(ocr_output: str) -> dict:
+    detection_output = {}
     ocr_config = {}
     try:
         # If running an AL service, grab OCR configuration from service manifest
         ocr_config = get_service_manifest().get('config', {}).get('ocr', {})
     except Exception:
         pass
-
-    try:
-        ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=15)  # Stop OCR after 15 seconds
-    except (TypeError, RuntimeError):
-        # Image given isn't supported therefore no OCR output can be given with tesseract
-        return detection_output
-
     indicators = set(list(OCR_INDICATORS_MAPPING.keys()) + list(ocr_config.keys()))
     # Iterate over the different indicators and include lines of detection in response
     for indicator in indicators:
@@ -81,10 +90,4 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
             if indicator == 'banned':
                 # Except if we're dealing with banned, one hit is more than enough
                 detection_output[indicator] = list_of_strings
-
-    if ocr_io:
-        ocr_io.flush()
-        ocr_io.write(ocr_output)
-        ocr_io.flush()
-
     return detection_output
