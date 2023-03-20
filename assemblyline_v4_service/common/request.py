@@ -39,7 +39,7 @@ class ServiceRequest:
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
                       safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
-                      allow_dynamic_recursion: bool = False) -> bool:
+                      allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
         """
         Add an extracted file for additional processing.
 
@@ -55,7 +55,7 @@ class ServiceRequest:
 
         try:
             r = self.task.add_extracted(path, name, description, classification,
-                                        safelist_interface, allow_dynamic_recursion)
+                                        safelist_interface, allow_dynamic_recursion, parent_relation)
             return r
         except MaxExtractedExceeded:
             raise

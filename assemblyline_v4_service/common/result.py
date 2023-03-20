@@ -32,7 +32,8 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('IMAGE', 8),
     ('MULTI', 9),
     ('DIVIDER', 10),  # This is not a real result section and can only be use inside a multi section
-    ('ORDERED_KEY_VALUE', 11)
+    ('ORDERED_KEY_VALUE', 11),
+    ('TIMELINE', 12)
 ])
 
 
@@ -420,6 +421,16 @@ class DividerSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.DIVIDER, body=None)
 
 
+class TimelineSectionBody(SectionBody):
+    def __init__(self):
+        return super().__init__(BODY_FORMAT.TIMELINE, body=[])
+
+    def add_node(self, title: str, content: str, opposite_content: str,
+                 icon: str = None, signatures: List[str] = [], score: int = 0) -> None:
+        self._data.append(dict(title=title, content=content, opposite_content=opposite_content,
+                          icon=icon, signatures=signatures, score=score))
+
+
 class ResultSection:
     def __init__(
             self,
@@ -716,6 +727,16 @@ class ResultImageSection(TypeSpecificResultSection):
             return None
 
         return ocr_section
+
+
+class ResultTimelineSection(TypeSpecificResultSection):
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        super().__init__(title_text,  TimelineSectionBody(), **kwargs)
+
+    def add_node(self, title: str, content: str, opposite_content: str, icon: str = None, signatures: List[str] = [],
+                 score: int = 0) -> None:
+        self.section_body.add_node(title=title, content=content, opposite_content=opposite_content,
+                                   icon=icon, signatures=signatures, score=score)
 
 
 class ResultMultiSection(TypeSpecificResultSection):
