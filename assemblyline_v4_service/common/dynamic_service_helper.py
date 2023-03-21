@@ -117,6 +117,12 @@ COMMON_FP_TLDS_THAT_ARE_FILE_EXTS = [".one", ".pub", ".py", ".sh", ".zip"]
 COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS = [".test", ".id", ".call", ".top", ".map", ".support", ".run", ".shell", ".net", ".stream"]
 COMMON_FP_TLDS = COMMON_FP_TLDS_THAT_ARE_FILE_EXTS + COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS
 
+# Arbitrarily chosen common URL schemes from https://en.wikipedia.org/wiki/List_of_URI_schemes
+COMMON_SCHEMES = [
+    "dns", "dntp", "file", "ftp", "git", "http", "https", "icap", "imap", "irc", "irc6", "ircs", "nfs", "rdp",
+    "s3", "sftp", "shttp", "smb", "sms", "snmp", "ssh", "telnet", "tftp", "udp",
+]
+
 
 def set_required_argument(self: object, name: str, value: Any, value_type: Any) -> None:
     """
@@ -3342,6 +3348,17 @@ def extract_iocs_from_text_blob(
                     if re_match(FULL_URI, u):
                         uri = u
                         break
+
+        # If there is an common protocol in the URI, and there are some nonsense characters included, exclude them!
+        if ":" in uri:
+            scheme, location = uri.split(":", 1)
+            if scheme not in COMMON_SCHEMES:
+                for common_scheme in COMMON_SCHEMES:
+                    if scheme.endswith(common_scheme):
+                        scheme = common_scheme
+                        uri = f"{scheme}:{location}"
+                        break
+
         if add_tag(result_section, f"network.{network_tag_type}.uri", uri, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
