@@ -8929,6 +8929,16 @@ class TestOntologyResults:
             {},
             [{}]
         ),
+        (
+            "blah blahhttps://microsoft.net blah",
+            True,
+            True,
+            {
+                "network.dynamic.domain": ["microsoft.net"],
+                "network.dynamic.uri": ["https://microsoft.net"],
+            },
+            [{"uri": "https://microsoft.net"}]
+        ),
     ],
 )
 def test_extract_iocs_from_text_blob(blob, enforce_min, enforce_max, correct_tags, expected_iocs):
