@@ -56,8 +56,7 @@ def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tu
     return f_files
 
 
-def url_download(source: Dict[str, Any], previous_update: int = None,
-                 logger=None, output_dir: str = None) -> List[Tuple[str, str]]:
+def url_download(source: Dict[str, Any], previous_update: int = None, logger=None, output_dir: str = None) -> str:
     """
 
     :param source:
@@ -66,7 +65,6 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
     """
     name = source['name']
     uri = source['uri']
-    pattern = source.get('pattern', None)
     username = source.get('username', None)
     password = source.get('password', None)
     ca_cert = source.get('ca_cert', None)
@@ -143,9 +141,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 format = format if format in ["zip", "tar"] else None
                 shutil.unpack_archive(file_path, extract_dir=extract_dir, format=format)
 
-                return filter_downloads(extract_dir, pattern)
+                return extract_dir
             else:
-                return [(file_path, get_sha256_for_file(file_path))]
+                return file_path
         else:
             logger.warning(f"Download not successful: {response.content}")
             return []
@@ -161,11 +159,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
         session.close()
 
 
-def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_pattern: str = "*",
-                   logger=None, output_dir: str = None) -> List[Tuple[str, str]]:
+def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=None, output_dir: str = None) -> str:
     name = source['name']
     url = source['uri']
-    pattern = source.get('pattern', None)
     key = source.get('private_key', None)
     username = source.get('username', None)
     password = source.get('password', None)
@@ -225,7 +221,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
                         raise SkipSource()
                     break
 
-        return filter_downloads(clone_dir, pattern, default_pattern)
+        return clone_dir
     except SkipSource:
         # Raise to calling function for handling
         raise
