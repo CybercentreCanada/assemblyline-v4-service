@@ -107,7 +107,7 @@ class TestHelper:
                                    for param in self.submission_params},
                 "fileinfo": {k: v for k, v in self.identify.fileinfo(file_path).items() if k in fileinfo_keys},
                 "filename": filename,
-                "min_classification": "TLP:W",
+                "min_classification": "TLP:C",
                 "max_files": 501,
                 "ttl": 3600,
                 "temporary_submission_data": [
