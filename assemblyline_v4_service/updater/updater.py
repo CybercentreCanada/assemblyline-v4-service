@@ -286,16 +286,19 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def _set_service_stage(self):
         old_service_stage = self._service_stage_hash.get(SERVICE_NAME)
-        new_service_stage = ServiceStage.Running if self._inventory_check() else ServiceStage.Update
+        new_service_stage = ServiceStage.Running
+        if self._service.update_config.wait_for_update:
+            new_service_stage = ServiceStage.Running if self._inventory_check() else ServiceStage.Update
 
         self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
         if old_service_stage != new_service_stage:
             # There has been a change in service stages, alert Scaler
             self.log.info(f"Moving service from stage: {old_service_stage} to {new_service_stage}")
+            self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
             self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
 
     # A sanity check to make sure we do in fact have things to send to services
-    def _inventory_check(self):
+    def _inventory_check(self) -> bool:
         trigger_update = check_passed = False
         for source_name in [_s.name for _s in self._service.update_config.sources]:
             # Source name should exist in the output directory, either as a file or a subdirectory
