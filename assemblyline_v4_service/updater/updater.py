@@ -284,6 +284,35 @@ class ServiceUpdater(ThreadedCoreBase):
         self.update_data_hash.set(key=f'{self._current_source}.{SOURCE_STATUS_KEY}',
                                   value=dict(state=state, message=message, ts=now_as_iso()))
 
+    def _set_service_stage(self):
+        old_service_stage = self._service_stage_hash.get(SERVICE_NAME)
+        new_service_stage = ServiceStage.Running if self._inventory_check() else ServiceStage.Update
+
+        self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
+        if old_service_stage != new_service_stage:
+            # There has been a change in service stages, alert Scaler
+            self.log.info(f"Moving service from stage: {old_service_stage} to {new_service_stage}")
+            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
+
+    # A sanity check to make sure we do in fact have things to send to services
+    def _inventory_check(self):
+        trigger_update = check_passed = False
+        for source_name in [_s.name for _s in self._service.update_config.sources]:
+            # Source name should exist in the output directory, either as a file or a subdirectory
+            if source_name not in os.listdir(self._update_dir):
+                # If it doesn't exist, then clear caching from Redis and trigger source updates
+                self._current_source = source_name
+                self.set_source_update_time(0)
+                trigger_update = True
+            else:
+                # We have at least one source we can pass to the service for now
+                check_passed = True
+
+        if trigger_update:
+            self.trigger_update()
+
+        return check_passed
+
     def do_local_update(self) -> None:
         old_update_time = self.get_local_update_time()
         if not os.path.exists(UPDATER_DIR):
@@ -457,8 +486,7 @@ class ServiceUpdater(ThreadedCoreBase):
         try:
             self.log.info("Checking for in cluster update cache")
             self.do_local_update()
-            self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
-            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
+            self._set_service_stage()
         except Exception:
             self.log.exception('An error occurred loading cached update files. Continuing.')
         self.local_update_start.set()
@@ -550,9 +578,7 @@ class ServiceUpdater(ThreadedCoreBase):
             # noinspection PyBroadException
             try:
                 self.do_local_update()
-                if self._service_stage_hash.get(SERVICE_NAME) == ServiceStage.Update:
-                    self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
-                    self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
+                self._set_service_stage()
             except Exception:
                 self.log.exception('An error occurred finding new local files. Will retry...')
                 self.local_update_flag.set()
