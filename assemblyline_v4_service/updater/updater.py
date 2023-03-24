@@ -304,11 +304,17 @@ class ServiceUpdater(ThreadedCoreBase):
             return check_passed
         for _, dirs, files in os.walk(self._update_dir):
             # Walk through update directory (account for sources being nested)
-            for i in dirs + files:
-                # We have at least one source we can pass to the service for now
-                if i in missing_sources:
-                    missing_sources.remove(i)
-                    check_passed = True
+            for path in dirs + files:
+                remove_source = None
+                for source in missing_sources:
+                    if source in path:
+                        # We have at least one source we can pass to the service for now
+                        remove_source = source
+                        check_passed = True
+                        break
+                if remove_source:
+                    missing_sources.remove(source)
+
             if not missing_sources:
                 break
 
