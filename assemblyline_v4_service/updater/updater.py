@@ -298,19 +298,25 @@ class ServiceUpdater(ThreadedCoreBase):
 
     # A sanity check to make sure we do in fact have things to send to services
     def _inventory_check(self) -> bool:
-        trigger_update = check_passed = False
-        for source_name in [_s.name for _s in self._service.update_config.sources]:
-            # Source name should exist in the output directory, either as a file or a subdirectory
-            if source_name not in os.listdir(self._update_dir):
-                # If it doesn't exist, then clear caching from Redis and trigger source updates
-                self._current_source = source_name
-                self.set_source_update_time(0)
-                trigger_update = True
-            else:
+        check_passed = False
+        missing_sources = [_s.name for _s in self._service.update_config.sources]
+        if not self._update_dir:
+            return check_passed
+        for _, dirs, files in os.walk(self._update_dir):
+            # Walk through update directory (account for sources being nested)
+            for i in dirs + files:
                 # We have at least one source we can pass to the service for now
-                check_passed = True
+                if i in missing_sources:
+                    missing_sources.remove(i)
+                    check_passed = True
+            if not missing_sources:
+                break
 
-        if trigger_update:
+        if missing_sources:
+            # If sources are missing, then clear caching from Redis and trigger source updates
+            for source in missing_sources:
+                self._current_source = source
+                self.set_source_update_time(0)
             self.trigger_update()
 
         return check_passed
