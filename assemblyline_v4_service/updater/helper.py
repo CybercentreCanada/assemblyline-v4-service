@@ -34,12 +34,18 @@ def add_cacert(cert: str) -> None:
         ca_editor.write(f"\n{cert}")
 
 
-def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
+def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
     f_files = []
     if not pattern:
         # Regex will either match on the filename, directory, or filepath, either with default or given pattern for source
         pattern = default_pattern
-    for path_in_dir, subdirs, files in os.walk(update_directory):
+
+    if os.path.isfile(output_path):
+        if re.match(pattern, output_path):
+            return [(output_path, get_sha256_for_file(output_path))]
+        return []
+
+    for path_in_dir, subdirs, files in os.walk(output_path):
         for filename in files:
             filepath = os.path.join(path_in_dir, filename)
             if re.match(pattern, filepath) or re.match(pattern, filename):
@@ -49,9 +55,9 @@ def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tu
             if re.match(pattern, dirpath):
                 f_files.append((dirpath, get_sha256_for_file(make_archive(subdir, 'tar', root_dir=dirpath))))
 
-    if re.match(pattern, f"{update_directory}/"):
-        f_files.append((f"{update_directory}/", get_sha256_for_file(make_archive(
-            os.path.basename(update_directory), 'tar', root_dir=update_directory))))
+    if re.match(pattern, f"{output_path}/"):
+        f_files.append((f"{output_path}/", get_sha256_for_file(make_archive(
+            os.path.basename(output_path), 'tar', root_dir=output_path))))
 
     return f_files
 
