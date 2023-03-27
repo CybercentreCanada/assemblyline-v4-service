@@ -1,11 +1,13 @@
-import regex
+from __future__ import annotations
 
-from typing import Dict, TextIO, List
+from typing import TextIO
+
+import regex
 
 from assemblyline_v4_service.common.helper import get_service_manifest
 
 # TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
-OCR_INDICATORS_MAPPING = {
+OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
     'ransomware': [
         # https://github.com/cuckoosandbox/community/blob/master/modules/signatures/windows/ransomware_message.py
         "your files", "your data", "your documents", "restore files",
@@ -32,30 +34,39 @@ OCR_INDICATORS_MAPPING = {
 }
 
 
-def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str]]:
+def ocr_detections(image_path: str, ocr_io: TextIO = None) -> dict[str, list[str]]:
     try:
         import pytesseract
         from PIL import Image
-    except ImportError:
+    except ImportError as exc:
         raise ImportError('In order to scan for OCR detections, ensure you have the following installed:\n'
-                          'tesseract, pytesseract, and Pillow')
+                          'tesseract, pytesseract, and Pillow') from exc
 
     # Use OCR library to extract strings from an image file
-    detection_output = {}
     ocr_output = ""
-    ocr_config = {}
-    try:
-        # If running an AL service, grab OCR configuration from service manifest
-        ocr_config = get_service_manifest().get('config', {}).get('ocr', {})
-    except Exception:
-        pass
 
     try:
         ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=15)  # Stop OCR after 15 seconds
     except (TypeError, RuntimeError):
         # Image given isn't supported therefore no OCR output can be given with tesseract
-        return detection_output
+        return {}
 
+    if ocr_io:
+        ocr_io.flush()
+        ocr_io.write(ocr_output)
+        ocr_io.flush()
+
+    return detections(ocr_output)
+
+
+def detections(ocr_output: str) -> dict[str, list[str]]:
+    detection_output: dict[str, list[str]] = {}
+    ocr_config: dict[str, list[str]] = {}
+    try:
+        # If running an AL service, grab OCR configuration from service manifest
+        ocr_config = get_service_manifest().get('config', {}).get('ocr', {})
+    except Exception:
+        pass
     indicators = set(list(OCR_INDICATORS_MAPPING.keys()) + list(ocr_config.keys()))
     # Iterate over the different indicators and include lines of detection in response
     for indicator in indicators:
@@ -63,9 +74,9 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
         if not list_of_terms:
             # If no terms specified, move onto next indicator
             continue
-        indicator_hits = set()
+        indicator_hits: set[str | None] = set()
         regex_exp = regex.compile(f"({')|('.join(list_of_terms).lower()})")
-        list_of_strings = []
+        list_of_strings: list[str] = []
         for line in ocr_output.split('\n'):
             search = regex_exp.search(line.lower())
             if search:
@@ -81,10 +92,4 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
             if indicator == 'banned':
                 # Except if we're dealing with banned, one hit is more than enough
                 detection_output[indicator] = list_of_strings
-
-    if ocr_io:
-        ocr_io.flush()
-        ocr_io.write(ocr_output)
-        ocr_io.flush()
-
     return detection_output
