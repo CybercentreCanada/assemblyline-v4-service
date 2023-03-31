@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import signal
 import sys
 import ctypes
@@ -64,8 +66,8 @@ class alarm_clock:
         signal.signal(signal.SIGALRM, self.alarm_default)
 
 
-def extract_passwords(text):
-    passwords = set()
+def extract_passwords(text: str) -> set[str]:
+    passwords: set[str] = set()
     text_split, text_split_n = set(text.split()), set(text.split("\n"))
     passwords.update(text_split)
     passwords.update(re.split(r"\W+", text))
