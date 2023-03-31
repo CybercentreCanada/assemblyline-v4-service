@@ -78,7 +78,7 @@ def extract_passwords(text: str) -> set[str]:
         for line in text_split_n:
             if PASSWORD_WORDS[i] in line.lower():
                 passwords.update(re.split(r, line))
-    for p in passwords:
+    for p in list(passwords):
         p = p.strip()
         # We can assume that at least one of the strip_char won't be there, to have the simple space stripping option
         passwords.update([p.strip(strip_char) for strip_char in PASSWORD_STRIP])
