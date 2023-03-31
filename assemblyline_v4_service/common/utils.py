@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import signal
 import sys
 import ctypes
@@ -64,8 +66,8 @@ class alarm_clock:
         signal.signal(signal.SIGALRM, self.alarm_default)
 
 
-def extract_passwords(text):
-    passwords = set()
+def extract_passwords(text: str) -> set[str]:
+    passwords: set[str] = set()
     text_split, text_split_n = set(text.split()), set(text.split("\n"))
     passwords.update(text_split)
     passwords.update(re.split(r"\W+", text))
@@ -76,7 +78,7 @@ def extract_passwords(text):
         for line in text_split_n:
             if PASSWORD_WORDS[i] in line.lower():
                 passwords.update(re.split(r, line))
-    for p in list(passwords):
+    for p in passwords:
         p = p.strip()
         # We can assume that at least one of the strip_char won't be there, to have the simple space stripping option
         passwords.update([p.strip(strip_char) for strip_char in PASSWORD_STRIP])
