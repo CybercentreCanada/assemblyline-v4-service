@@ -12,7 +12,6 @@ import random
 import tarfile
 import threading
 import subprocess
-from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from contextlib import contextmanager
 from passlib.hash import bcrypt
 from zipfile import ZipFile, BadZipFile
@@ -53,6 +52,7 @@ UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access']
+STATUS_FILE = '/tmp/status'
 
 classification = forge.get_classification()
 
@@ -127,11 +127,9 @@ class ServiceUpdater(ThreadedCoreBase):
         self._current_source: str = None
 
         # Load threads
-        self._internal_server = None
         self.expected_threads = {
             'Sync Service Settings': self._sync_settings,
             'Outward HTTP Server': self._run_http,
-            'Internal HTTP Server': self._run_internal_http,
             'Run source updates': self._run_source_updates,
             'Run local updates': self._run_local_updates,
         }
@@ -197,38 +195,12 @@ class ServiceUpdater(ThreadedCoreBase):
         self.source_update_flag.set()
         self.local_update_flag.set()
         self.local_update_start.set()
-        if self._internal_server:
-            self._internal_server.shutdown()
 
     def try_run(self):
         self.signature_change_watcher.start()
         self.service_change_watcher.start()
         self.source_update_watcher.start()
         self.maintain_threads(self.expected_threads)
-
-    def _run_internal_http(self):
-        """run backend insecure http server
-
-        A small inprocess server to syncronize info between gunicorn and the updater daemon.
-        This HTTP server is not safe for exposing externally, but fine for IPC.
-        """
-        them = self
-
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(self):
-                self.send_response(200)
-                self.send_header("Content-type", "application/json")
-                self.end_headers()
-                self.wfile.write(json.dumps(them.status()).encode())
-
-            def log_error(self, format: str, *args: Any):
-                them.log.info(format % args)
-
-            def log_message(self, format: str, *args: Any):
-                them.log.debug(format % args)
-
-        self._internal_server = ThreadingHTTPServer(('0.0.0.0', 9999), Handler)
-        self._internal_server.serve_forever()
 
     def _run_http(self):
         # Start a server for our http interface in a separate process
@@ -506,6 +478,12 @@ class ServiceUpdater(ThreadedCoreBase):
             self._update_dir, new_directory = new_directory, self._update_dir
             self._update_tar, new_tar = new_tar, self._update_tar
             self._time_keeper, new_time = new_time, self._time_keeper
+
+            # Write the new status file
+            temp_status = tempfile.NamedTemporaryFile('w+', delete=False, dir='/tmp')
+            json.dump(self.status(), temp_status.file)
+            os.rename(temp_status.name, STATUS_FILE)
+
             self.log.info(f"Now serving: {self._update_dir} and {self._update_tar} ({self.get_local_update_time()})")
         finally:
             if new_tar and os.path.exists(new_tar):
