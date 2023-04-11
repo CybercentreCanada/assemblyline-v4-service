@@ -31,7 +31,7 @@ from assemblyline.remote.datatypes.lock import Lock
 from assemblyline.odm.models.user import User
 from assemblyline.odm.models.user_settings import UserSettings
 
-from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource
+from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
 
 
 if typing.TYPE_CHECKING:
@@ -341,6 +341,9 @@ class ServiceUpdater(ThreadedCoreBase):
                 sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
                 files_sha256: dict[str, dict[str, str]] = {}
 
+                # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
+                seen_fetches = dict()
+
                 # Go through each source and download file
                 for source_name, source_obj in sources.items():
                     # Set current source for pushing state to UI
@@ -357,20 +360,29 @@ class ServiceUpdater(ThreadedCoreBase):
                     default_classification = source.get('default_classification', classification.UNRESTRICTED)
                     try:
                         self.push_status("UPDATING", "Pulling..")
+                        output = None
+                        if uri in seen_fetches:
+                            # We've already fetched something from the same URI, re-use downloaded path
+                            self.log.info(f'Already visited {uri} in this run. Using cached download path..')
+                            output = seen_fetches[uri]
+                        else:
+                            # Pull sources from external locations (method depends on the URL)
+                            try:
+                                # First we'll attempt by performing a Git clone
+                                # (since not all services hint at being a repository in their URL),
+                                output = git_clone_repo(source, old_update_time, self.log, update_dir)
+                            except Exception as git_ex:
+                                # Should that fail, we'll attempt a direct-download using Python Requests
+                                if not uri.endswith('.git'):
+                                    # Proceed with direct download, raise exception as required if necessary
+                                    output = url_download(source, old_update_time, self.log, update_dir)
+                                else:
+                                    # Raise Git Exception
+                                    raise git_ex
+                            # Add output path to the list of seen fetches in this run
+                            seen_fetches[uri] = output
 
-                        # Pull sources from external locations (method depends on the URL)
-                        try:
-                            # First we'll attempt by performing a Git clone
-                            # (since not all services hint at being a repository in their URL),
-                            files = git_clone_repo(source, old_update_time, self.default_pattern, self.log, update_dir)
-                        except Exception as git_ex:
-                            # Should that fail, we'll attempt a direct-download using Python Requests
-                            if not uri.endswith('.git'):
-                                # Proceed with direct download, raise exception as required if necessary
-                                files = url_download(source, old_update_time, self.log, update_dir)
-                            else:
-                                # Raise Git Exception
-                                raise git_ex
+                        files = filter_downloads(output, source['pattern'], self.default_pattern)
 
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
