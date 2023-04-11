@@ -405,6 +405,10 @@ class ServiceUpdater(ThreadedCoreBase):
                         self.push_status("UPDATING", "Pulling..")
                         output = None
                         if uri in seen_fetches:
+                            if seen_fetches[uri] == 'skipped':
+                                # Skip source if another source says nothing has changed
+                                raise SkipSource
+
                             # We've already fetched something from the same URI, re-use downloaded path
                             self.log.info(f'Already visited {uri} in this run. Using cached download path..')
                             output = seen_fetches[uri]
@@ -446,6 +450,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
                         if source_name in previous_hashes:
                             files_sha256[source_name] = previous_hashes[source_name]
+                        seen_fetches[uri] = "skipped"
                         self.push_status("DONE", "Skipped.")
                     except Exception as e:
                         # There was an issue with this source, report and continue to the next
