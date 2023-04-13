@@ -125,6 +125,11 @@ class ServiceRequest:
                     pass
 
             if detections:
+                # If we were able to detect potential passwords, add it to the submission's password list
+                if detections.get('password'):
+                    [self.temp_submission_data.setdefault('passwords', []).extend(pw_string.split())
+                     for pw_string in detections['password']]
+
                 heuristic = Heuristic(ocr_heuristic_id, signatures={
                     f'{k}_strings': len(v) for k, v in detections.items()})
                 ocr_section = ResultKeyValueSection(f'Suspicious strings found during OCR analysis on file {name}')
