@@ -129,8 +129,7 @@ class ServiceRequest:
                 # If we were able to detect potential passwords, add it to the submission's password list
                 if detections.get('password'):
                     pw_list = set()
-                    for pw_string in detections['password']:
-                        pw_list = pw_list.union(extract_passwords(pw_string))
+                    [pw_list.update(extract_passwords(pw_string)) for pw_string in detections['password']]
                     self.temp_submission_data.setdefault('passwords', []).extend(list(pw_list))
 
                 heuristic = Heuristic(ocr_heuristic_id, signatures={
