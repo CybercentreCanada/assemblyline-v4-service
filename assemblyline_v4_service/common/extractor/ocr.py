@@ -5,6 +5,7 @@ from typing import TextIO
 import regex
 
 from assemblyline_v4_service.common.helper import get_service_manifest
+from assemblyline_v4_service.common.utils import PASSWORD_WORDS
 
 # TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
 OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
@@ -30,7 +31,8 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "enable content",
         "enable editing",
     ],
-    'banned': []
+    'banned': [],
+    'password': PASSWORD_WORDS
 }
 
 
@@ -89,7 +91,7 @@ def detections(ocr_output: str) -> dict[str, list[str]]:
             if len(indicator_hits) >= 2:
                 # We consider the detection to be credible if there's more than a single indicator hit
                 detection_output[indicator] = list_of_strings
-            if indicator == 'banned':
-                # Except if we're dealing with banned, one hit is more than enough
+            if indicator in ['banned', 'password']:
+                # Except if we're dealing with banned/password, one hit is more than enough
                 detection_output[indicator] = list_of_strings
     return detection_output
