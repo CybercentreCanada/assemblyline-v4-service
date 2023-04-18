@@ -107,14 +107,17 @@ class ServiceUpdater(ThreadedCoreBase):
                                         host=self.config.core.redis.nonpersistent.host,
                                         port=self.config.core.redis.nonpersistent.port)
 
-        self.service_change_watcher = EventWatcher(self.redis, deserializer=ServiceChange.deserialize)
+        self.watcher_wakeup_flag = threading.Event()
+        self.service_change_watcher = EventWatcher(self.redis, deserializer=ServiceChange.deserialize,
+                                                   error_event=self.watcher_wakeup_flag)
         self.service_change_watcher.register(f'changes.services.{SERVICE_NAME}', self._handle_service_change_event)
 
-        self.signature_change_watcher = EventWatcher(self.redis, deserializer=SignatureChange.deserialize)
+        self.signature_change_watcher = EventWatcher(self.redis, deserializer=SignatureChange.deserialize,
+                                                     error_event=self.watcher_wakeup_flag)
         self.signature_change_watcher.register(f'changes.signatures.{SERVICE_NAME.lower()}',
                                                self._handle_signature_change_event)
 
-        self.source_update_watcher = EventWatcher(self.redis)
+        self.source_update_watcher = EventWatcher(self.redis, error_event=self.watcher_wakeup_flag)
         self.source_update_watcher.register(f'changes.sources.{SERVICE_NAME.lower()}',
                                             self._handle_source_update_event)
 
@@ -132,6 +135,7 @@ class ServiceUpdater(ThreadedCoreBase):
             'Outward HTTP Server': self._run_http,
             'Run source updates': self._run_source_updates,
             'Run local updates': self._run_local_updates,
+            'Reconnect Handler': self._reconnect_watcher,
         }
         # Only used by updater with 'generates_signatures: false'
         self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
@@ -195,12 +199,22 @@ class ServiceUpdater(ThreadedCoreBase):
         self.source_update_flag.set()
         self.local_update_flag.set()
         self.local_update_start.set()
+        self.watcher_wakeup_flag.set()
 
     def try_run(self):
         self.signature_change_watcher.start()
         self.service_change_watcher.start()
         self.source_update_watcher.start()
         self.maintain_threads(self.expected_threads)
+
+    def _reconnect_watcher(self):
+        while self.running:
+            if self.watcher_wakeup_flag.wait():
+                self.watcher_wakeup_flag.clear()
+                if self.running:
+                    self._pull_settings()
+                    self.local_update_flag.set()
+                    self.source_update_flag.set()
 
     def _run_http(self):
         # Start a server for our http interface in a separate process
