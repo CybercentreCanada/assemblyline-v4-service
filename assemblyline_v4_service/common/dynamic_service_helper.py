@@ -2,46 +2,39 @@ from datetime import datetime
 from hashlib import sha256
 from json import dumps
 from logging import getLogger
-from re import compile, escape, sub, findall, match as re_match
+from re import compile, escape, findall
+from re import match as re_match
+from re import sub
 from typing import Any, Dict, List, Optional, Union
 from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 from assemblyline.common import log as al_log
-from assemblyline.common.attack_map import (
-    attack_map,
-    software_map,
-    group_map,
-    revoke_map,
-)
+from assemblyline.common.attack_map import (attack_map, group_map, revoke_map,
+                                            software_map)
 from assemblyline.common.digests import get_sha256_for_file
-from assemblyline.common.isotime import (
-    epoch_to_local,
-    LOCAL_FMT,
-    local_to_epoch,
-    MAX_TIME,
-    MIN_TIME,
-    format_time,
-)
+from assemblyline.common.isotime import (LOCAL_FMT, MAX_TIME, MIN_TIME,
+                                         epoch_to_local, format_time,
+                                         local_to_epoch)
 from assemblyline.common.uid import get_random_id
-from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, IPV4_REGEX, FULL_URI, URI_PATH
-from assemblyline.odm.models.ontology.results import (
-    Process as ProcessModel, Sandbox as SandboxModel,
-    Signature as SignatureModel,
+from assemblyline.odm.base import (DOMAIN_REGEX, FULL_URI, IP_REGEX,
+                                   IPV4_REGEX, URI_PATH)
+from assemblyline.odm.models.ontology.results import \
     NetworkConnection as NetworkConnectionModel
-)
-
+from assemblyline.odm.models.ontology.results import Process as ProcessModel
+from assemblyline.odm.models.ontology.results import Sandbox as SandboxModel
+from assemblyline.odm.models.ontology.results import \
+    Signature as SignatureModel
 # from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import (
-    ResultSection,
-    ProcessItem,
-    ResultProcessTreeSection,
-    ResultTableSection,
-    TableRow,
-)
-from assemblyline_v4_service.common.safelist_helper import is_tag_safelisted, URL_REGEX
+from assemblyline_v4_service.common.result import (ProcessItem,
+                                                   ResultProcessTreeSection,
+                                                   ResultSection,
+                                                   ResultTableSection,
+                                                   TableRow)
+from assemblyline_v4_service.common.safelist_helper import (URL_REGEX,
+                                                            is_tag_safelisted)
 from assemblyline_v4_service.common.tag_helper import add_tag
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
@@ -1875,13 +1868,17 @@ class OntologyResults:
         else:
             return network_http_with_details[0]
 
-    def get_network_connection_by_network_http(self, network_http: NetworkHTTP) -> Optional[NetworkHTTP]:
+    def get_network_connection_by_network_http(self, network_http: NetworkHTTP) -> Optional[NetworkConnection]:
         """
         This method returns the network connection corresponding to the given network http object
         :param network_http: The given network http object
         :return: The corresponding network connection
         """
-        return next((netflow for netflow in self.netflows if netflow.http_details == network_http), None)
+        for netflow in self.netflows:
+            if netflow.http_details == network_http:
+                return netflow
+
+        return None
 
     # Process manipulation methods
     def set_processes(self, processes: List[Process]) -> None:
