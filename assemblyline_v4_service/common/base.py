@@ -3,7 +3,6 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import requests
 import shutil
 import tarfile
 import tempfile
@@ -12,6 +11,8 @@ import warnings
 
 from typing import Dict, Optional
 from pathlib import Path
+
+import requests
 
 from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
@@ -42,6 +43,7 @@ def is_recoverable_runtime_error(error):
 
 
 class ServiceBase:
+    """Base class for Assemblyline services"""
     def __init__(self, config: Optional[Dict] = None) -> None:
         # Load the service attributes from the service manifest
         self.service_attributes = helper.get_service_attributes()
@@ -63,21 +65,15 @@ class ServiceBase:
         self.log.warning = self._warning
         self.log.error = self._error
 
-        self._task = None
+        self._task: Task | None = None
 
-        self._working_directory = None
+        self._working_directory: str | None = None
 
         # Initialize interface for interacting with system safelist
-        self._api_interface = None
+        self._api_interface: PrivilegedServiceAPI | ServiceAPI | None = None
 
         self.dependencies = self._get_dependencies_info()
         self.ontology = OntologyHelper(self.log, self.service_attributes.name)
-
-        # Updater-related
-        self.rules_directory: str = None
-        self.rules_list: list = []
-        self.update_time: int = None
-        self.rules_hash: str = None
 
     @property
     def api_interface(self):
@@ -96,14 +92,10 @@ class ServiceBase:
     def _cleanup(self) -> None:
         self._task = None
         self._working_directory = None
-        if self.dependencies.get('updates', None):
-            try:
-                self._download_rules()
-            except Exception as e:
-                raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
 
     def _handle_execute_failure(self, exception, stack_info) -> None:
         # Clear the result, in case it caused the problem
+        assert self._task
         self._task.result = None
 
         # Clear the extracted and supplementary files
@@ -120,6 +112,7 @@ class ServiceBase:
             self._task.save_error(stack_info, recoverable=False)
 
     def _success(self) -> None:
+        assert self._task
         self._task.success()
 
     def _warning(self, msg: str, *args, **kwargs) -> None:
@@ -153,7 +146,7 @@ class ServiceBase:
 
     # noinspection PyMethodMayBeStatic
     def get_tool_version(self) -> Optional[str]:
-        return self.rules_hash
+        return None
 
     def handle_task(self, task: ServiceTask) -> None:
         try:
@@ -187,22 +180,6 @@ class ServiceBase:
 
     def start_service(self) -> None:
         self.log.info(f"Starting service: {self.service_attributes.name} ({self.service_attributes.version})")
-
-        if self.dependencies.get('updates', None):
-            # Start with a clean update dir
-            if os.path.exists(UPDATES_DIR):
-                for files in os.scandir(UPDATES_DIR):
-                    path = os.path.join(UPDATES_DIR, files)
-                    try:
-                        shutil.rmtree(path)
-                    except OSError:
-                        os.remove(path)
-
-            try:
-                self._download_rules()
-            except Exception as e:
-                raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
-
         self.start()
 
     def stop(self) -> None:
@@ -233,6 +210,48 @@ class ServiceBase:
                 self._working_directory = tempfile.mkdtemp(dir=temp_dir)
 
         return self._working_directory
+
+
+class RulesServiceBase(ServiceBase):
+    """Base Class for services with updateable rules"""
+    def __init__(self, config: Optional[Dict] = None) -> None:
+        self.rules_directory: str | None = None
+        self.rules_list: list = []
+        self.update_time: int | None = None
+        self.rules_hash: str | None = None
+        super().__init__(config)
+
+    def get_tool_version(self) -> Optional[str]:
+        return self.rules_hash
+
+    def start_service(self) -> None:
+        self.log.info(f"Starting service: {self.service_attributes.name} ({self.service_attributes.version})")
+
+        if self.dependencies.get('updates', None):
+            # Start with a clean update dir
+            if os.path.exists(UPDATES_DIR):
+                for files in os.scandir(UPDATES_DIR):
+                    path = os.path.join(UPDATES_DIR, files)
+                    try:
+                        shutil.rmtree(path)
+                    except OSError:
+                        os.remove(path)
+
+            try:
+                self._download_rules()
+            except Exception as e:
+                raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
+
+        self.start()
+
+    def _cleanup(self) -> None:
+        self._task = None
+        self._working_directory = None
+        if self.dependencies.get('updates', None):
+            try:
+                self._download_rules()
+            except Exception as e:
+                raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
@@ -301,6 +320,7 @@ class ServiceBase:
 
     # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater
     def _gen_rules_hash(self) -> str:
+        assert self.rules_directory
         self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
         all_sha256s = [get_sha256_for_file(f) for f in self.rules_list]
 
