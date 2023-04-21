@@ -674,9 +674,7 @@ class ResultURLSection(TypeSpecificResultSection):
 class ResultKeyValueSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
         self.section_body: KVSectionBody
-        if not body:
-            body = {}
-        super().__init__(title_text, KVSectionBody(**body), **kwargs)
+        super().__init__(title_text, KVSectionBody(**(body if body else {})), **kwargs)
 
     def set_item(self, key: str, value: Union[str, bool, int]) -> None:
         self.section_body.set_item(key, value)
@@ -688,9 +686,7 @@ class ResultKeyValueSection(TypeSpecificResultSection):
 class ResultOrderedKeyValueSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
         self.section_body: OrderedKVSectionBody
-        if not body:
-            body = {}
-        super().__init__(title_text, OrderedKVSectionBody(**body), **kwargs)
+        super().__init__(title_text, OrderedKVSectionBody(**(body if body else {})), **kwargs)
 
     def add_item(self, key: str, value: Union[str, bool, int]) -> None:
         self.section_body.add_item(key, value)
