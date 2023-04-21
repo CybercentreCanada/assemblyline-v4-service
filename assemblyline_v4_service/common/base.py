@@ -18,7 +18,7 @@ from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
-from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
+from assemblyline_v4_service.common.api import PrivilegedServiceAPI, HostedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 from assemblyline_v4_service.common.ontology_helper import OntologyHelper
@@ -70,13 +70,13 @@ class ServiceBase:
         self._working_directory: str | None = None
 
         # Initialize interface for interacting with system safelist
-        self._api_interface: PrivilegedServiceAPI | ServiceAPI | None = None
+        self._api_interface: ServiceAPI | None = None
 
         self.dependencies = self._get_dependencies_info()
         self.ontology = OntologyHelper(self.log, self.service_attributes.name)
 
     @property
-    def api_interface(self):
+    def api_interface(self) -> ServiceAPI:
         return self.get_api_interface()
 
     def _get_dependencies_info(self) -> Dict[str, Dict[str, str]]:
@@ -125,12 +125,12 @@ class ServiceBase:
             msg = f"({self._task.sid}/{self._task.sha256}): {msg}"
         self._log_error(msg, *args, **kwargs)
 
-    def get_api_interface(self):
+    def get_api_interface(self) -> ServiceAPI:
         if not self._api_interface:
             if PRIVILEGED:
                 self._api_interface = PrivilegedServiceAPI(self.log)
             else:
-                self._api_interface = ServiceAPI(self.service_attributes, self.log)
+                self._api_interface = HostedServiceAPI(self.service_attributes, self.log)
 
         return self._api_interface
 

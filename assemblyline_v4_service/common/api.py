@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import os
 import requests
 import time
 import traceback
+
+from abc import ABC, abstractmethod
 
 from assemblyline_core.safelist_client import SafelistClient
 from io import StringIO
@@ -27,7 +31,17 @@ class ServiceAPIError(Exception):
         self.status_code = status_code
 
 
-class ServiceAPI:
+class ServiceAPI(ABC):
+    @abstractmethod
+    def get_safelist(self, tag_list: list[str] | None = None):
+        pass
+
+    @abstractmethod
+    def lookup_safelist(self, qhash):
+        pass
+
+
+class HostedServiceAPI(ServiceAPI):
     def __init__(self, service_attributes, logger):
         self.log = logger
         self.service_api_host = os.environ.get("SERVICE_API_HOST", DEFAULT_SERVICE_SERVER)
@@ -68,7 +82,7 @@ class ServiceAPI:
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
 
-    def get_safelist(self, tag_list=None):
+    def get_safelist(self, tag_list: list[str] | None = None):
         if DEVELOPMENT_MODE:
             return {}
 
@@ -93,12 +107,12 @@ class ServiceAPI:
                 raise
 
 
-class PrivilegedServiceAPI:
+class PrivilegedServiceAPI(ServiceAPI):
     def __init__(self, logger):
         self.log = logger
         self.safelist_client = SafelistClient()
 
-    def get_safelist(self, tag_list=None):
+    def get_safelist(self, tag_list: list[str] | None = None):
         if DEVELOPMENT_MODE:
             return {}
         tag_types = None

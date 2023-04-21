@@ -10,7 +10,7 @@ from assemblyline.common.classification import Classification
 from assemblyline.common.digests import get_digests_for_file, get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
+from assemblyline_v4_service.common.api import ServiceAPI
 from assemblyline_v4_service.common.result import Result
 from assemblyline_v4_service.common.helper import get_service_manifest
 
@@ -106,7 +106,7 @@ class Task:
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
-                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
+                      safelist_interface: Optional[ServiceAPI] = None,
                       allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
 
         # Service-based safelisting of files has to be configured at the global configuration
