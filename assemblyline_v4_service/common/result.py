@@ -655,6 +655,7 @@ class ResultMemoryDumpSection(ResultSection):
 
 class ResultGraphSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List],  **kwargs):
+        self.section_body: GraphSectionBody
         super().__init__(title_text, GraphSectionBody(), **kwargs)
 
     def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
@@ -663,6 +664,7 @@ class ResultGraphSection(TypeSpecificResultSection):
 
 class ResultURLSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: URLSectionBody
         super().__init__(title_text, URLSectionBody(), **kwargs)
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
@@ -671,6 +673,7 @@ class ResultURLSection(TypeSpecificResultSection):
 
 class ResultKeyValueSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
+        self.section_body: KVSectionBody
         if not body:
             body = {}
         super().__init__(title_text, KVSectionBody(**body), **kwargs)
@@ -684,6 +687,7 @@ class ResultKeyValueSection(TypeSpecificResultSection):
 
 class ResultOrderedKeyValueSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
+        self.section_body: OrderedKVSectionBody
         if not body:
             body = {}
         super().__init__(title_text, OrderedKVSectionBody(**body), **kwargs)
@@ -694,6 +698,7 @@ class ResultOrderedKeyValueSection(TypeSpecificResultSection):
 
 class ResultJSONSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: JSONSectionBody
         super().__init__(title_text, JSONSectionBody(), **kwargs)
 
     def set_json(self, json_body: dict) -> None:
@@ -705,6 +710,7 @@ class ResultJSONSection(TypeSpecificResultSection):
 
 class ResultProcessTreeSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: ProcessTreeSectionBody
         super().__init__(title_text, ProcessTreeSectionBody(), **kwargs)
 
     def add_process(self, process: ProcessItem) -> None:
@@ -713,6 +719,7 @@ class ResultProcessTreeSection(TypeSpecificResultSection):
 
 class ResultTableSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: TableSectionBody
         super().__init__(title_text, TableSectionBody(), **kwargs)
 
     def add_row(self, row: TableRow) -> None:
@@ -740,6 +747,7 @@ class ResultImageSection(TypeSpecificResultSection):
 
 class ResultTimelineSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: TimelineSectionBody
         super().__init__(title_text,  TimelineSectionBody(), **kwargs)
 
     def add_node(self, title: str, content: str, opposite_content: str, icon: str = None, signatures: List[str] = [],
@@ -750,6 +758,7 @@ class ResultTimelineSection(TypeSpecificResultSection):
 
 class ResultMultiSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: MultiSectionBody
         super().__init__(title_text,  MultiSectionBody(), **kwargs)
 
     def add_section_part(self, section_part: SectionBody) -> bool:
