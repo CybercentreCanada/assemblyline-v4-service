@@ -214,7 +214,7 @@ class SectionBody:
         return self._format
 
     @property
-    def body(self):
+    def body(self) -> str | None:
         if not self._data:
             return None
         elif not isinstance(self._data, str):
@@ -282,6 +282,7 @@ class GraphSectionBody(SectionBody):
 
 class KVSectionBody(SectionBody):
     def __init__(self, **kwargs: KV_VALUE_TYPE) -> None:
+        self._data: dict[str, KV_VALUE_TYPE]
         super().__init__(BODY_FORMAT.KEY_VALUE, body=kwargs)
 
     def set_item(self, key: str, value: KV_VALUE_TYPE) -> None:
@@ -293,6 +294,7 @@ class KVSectionBody(SectionBody):
 
 class OrderedKVSectionBody(SectionBody):
     def __init__(self, **kwargs: KV_VALUE_TYPE) -> None:
+        self._data: list[tuple[str, KV_VALUE_TYPE]]
         super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[(str(key), value) for key, value in kwargs.items()])
 
     def add_item(self, key: str, value: KV_VALUE_TYPE) -> None:
