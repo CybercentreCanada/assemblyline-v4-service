@@ -14,6 +14,9 @@ from assemblyline_v4_service.common.helper import get_service_attributes, get_he
 if TYPE_CHECKING:  # Avoid circular dependency
     from assemblyline_v4_service.common.request import ServiceRequest
 
+# Type of values in KV sections
+KV_VALUE_TYPE = Union[str, bool, int]
+
 al_log.init_logging('service.result')
 log = logging.getLogger('assemblyline.service.result')
 
@@ -278,21 +281,21 @@ class GraphSectionBody(SectionBody):
 
 
 class KVSectionBody(SectionBody):
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: KV_VALUE_TYPE) -> None:
         super().__init__(BODY_FORMAT.KEY_VALUE, body=kwargs)
 
-    def set_item(self, key: str, value: Union[str, bool, int]) -> None:
+    def set_item(self, key: str, value: KV_VALUE_TYPE) -> None:
         self._data[str(key)] = value
 
-    def update_items(self, new_dict: dict):
+    def update_items(self, new_dict: dict[str, KV_VALUE_TYPE]):
         self._data.update({str(k): v for k, v in new_dict.items()})
 
 
 class OrderedKVSectionBody(SectionBody):
-    def __init__(self) -> None:
-        super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[])
+    def __init__(self, **kwargs: KV_VALUE_TYPE) -> None:
+        super().__init__(BODY_FORMAT.ORDERED_KEY_VALUE, body=[(str(key), value) for key, value in kwargs.items()])
 
-    def add_item(self, key: str, value: Union[str, bool, int]) -> None:
+    def add_item(self, key: str, value: KV_VALUE_TYPE) -> None:
         self._data.append((str(key), value))
 
 
@@ -665,8 +668,10 @@ class ResultURLSection(TypeSpecificResultSection):
 
 
 class ResultKeyValueSection(TypeSpecificResultSection):
-    def __init__(self, title_text: Union[str, List], **kwargs):
-        super().__init__(title_text, KVSectionBody(), **kwargs)
+    def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
+        if not body:
+            body = {}
+        super().__init__(title_text, KVSectionBody(**body), **kwargs)
 
     def set_item(self, key: str, value: Union[str, bool, int]) -> None:
         self.section_body.set_item(key, value)
@@ -676,8 +681,10 @@ class ResultKeyValueSection(TypeSpecificResultSection):
 
 
 class ResultOrderedKeyValueSection(TypeSpecificResultSection):
-    def __init__(self, title_text: Union[str, List], **kwargs):
-        super().__init__(title_text, OrderedKVSectionBody(), **kwargs)
+    def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
+        if not body:
+            body = {}
+        super().__init__(title_text, OrderedKVSectionBody(**body), **kwargs)
 
     def add_item(self, key: str, value: Union[str, bool, int]) -> None:
         self.section_body.add_item(key, value)
