@@ -2,12 +2,12 @@ import logging
 import tempfile
 
 from PIL import Image
-from typing import Any, Dict, Optional, TextIO, Union
+from typing import Any, Dict, Optional, TextIO
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
-from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
+from assemblyline_v4_service.common.api import ServiceAPI
 from assemblyline_v4_service.common.extractor.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
 from assemblyline_v4_service.common.task import Task, MaxExtractedExceeded
@@ -39,7 +39,7 @@ class ServiceRequest:
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
-                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
+                      safelist_interface: Optional[ServiceAPI] = None,
                       allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
         """
         Add an extracted file for additional processing.
