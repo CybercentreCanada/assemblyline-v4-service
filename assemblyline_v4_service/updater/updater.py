@@ -31,7 +31,7 @@ from assemblyline.remote.datatypes.lock import Lock
 from assemblyline.odm.models.user import User
 from assemblyline.odm.models.user_settings import UserSettings
 
-from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource
+from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
 
 
 if typing.TYPE_CHECKING:
@@ -256,6 +256,49 @@ class ServiceUpdater(ThreadedCoreBase):
         self.update_data_hash.set(key=f'{self._current_source}.{SOURCE_STATUS_KEY}',
                                   value=dict(state=state, message=message, ts=now_as_iso()))
 
+    def _set_service_stage(self):
+        old_service_stage = self._service_stage_hash.get(SERVICE_NAME)
+        new_service_stage = ServiceStage.Running
+        if self._service.update_config.wait_for_update:
+            new_service_stage = ServiceStage.Running if self._inventory_check() else ServiceStage.Update
+
+        if old_service_stage != new_service_stage:
+            # There has been a change in service stages, alert Scaler
+            self.log.info(f"Moving service from stage: {old_service_stage} to {new_service_stage}")
+            self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
+            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
+
+    # A sanity check to make sure we do in fact have things to send to services
+    def _inventory_check(self) -> bool:
+        check_passed = False
+        missing_sources = [_s.name for _s in self._service.update_config.sources]
+        if not self._update_dir:
+            return check_passed
+        for _, dirs, files in os.walk(self._update_dir):
+            # Walk through update directory (account for sources being nested)
+            for path in dirs + files:
+                remove_source = None
+                for source in missing_sources:
+                    if source in path:
+                        # We have at least one source we can pass to the service for now
+                        remove_source = source
+                        check_passed = True
+                        break
+                if remove_source:
+                    missing_sources.remove(source)
+
+            if not missing_sources:
+                break
+
+        if missing_sources:
+            # If sources are missing, then clear caching from Redis and trigger source updates
+            for source in missing_sources:
+                self._current_source = source
+                self.set_source_update_time(0)
+            self.trigger_update()
+
+        return check_passed
+
     def do_local_update(self) -> None:
         old_update_time = self.get_local_update_time()
         if not os.path.exists(UPDATER_DIR):
@@ -341,6 +384,9 @@ class ServiceUpdater(ThreadedCoreBase):
                 sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
                 files_sha256: dict[str, dict[str, str]] = {}
 
+                # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
+                seen_fetches = dict()
+
                 # Go through each source and download file
                 for source_name, source_obj in sources.items():
                     # Set current source for pushing state to UI
@@ -357,20 +403,33 @@ class ServiceUpdater(ThreadedCoreBase):
                     default_classification = source.get('default_classification', classification.UNRESTRICTED)
                     try:
                         self.push_status("UPDATING", "Pulling..")
+                        output = None
+                        if uri in seen_fetches:
+                            if seen_fetches[uri] == 'skipped':
+                                # Skip source if another source says nothing has changed
+                                raise SkipSource
 
-                        # Pull sources from external locations (method depends on the URL)
-                        try:
-                            # First we'll attempt by performing a Git clone
-                            # (since not all services hint at being a repository in their URL),
-                            files = git_clone_repo(source, old_update_time, self.default_pattern, self.log, update_dir)
-                        except Exception as git_ex:
-                            # Should that fail, we'll attempt a direct-download using Python Requests
-                            if not uri.endswith('.git'):
-                                # Proceed with direct download, raise exception as required if necessary
-                                files = url_download(source, old_update_time, self.log, update_dir)
-                            else:
-                                # Raise Git Exception
-                                raise git_ex
+                            # We've already fetched something from the same URI, re-use downloaded path
+                            self.log.info(f'Already visited {uri} in this run. Using cached download path..')
+                            output = seen_fetches[uri]
+                        else:
+                            # Pull sources from external locations (method depends on the URL)
+                            try:
+                                # First we'll attempt by performing a Git clone
+                                # (since not all services hint at being a repository in their URL),
+                                output = git_clone_repo(source, old_update_time, self.log, update_dir)
+                            except Exception as git_ex:
+                                # Should that fail, we'll attempt a direct-download using Python Requests
+                                if not uri.endswith('.git'):
+                                    # Proceed with direct download, raise exception as required if necessary
+                                    output = url_download(source, old_update_time, self.log, update_dir)
+                                else:
+                                    # Raise Git Exception
+                                    raise git_ex
+                            # Add output path to the list of seen fetches in this run
+                            seen_fetches[uri] = output
+
+                        files = filter_downloads(output, source['pattern'], self.default_pattern)
 
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
@@ -391,6 +450,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
                         if source_name in previous_hashes:
                             files_sha256[source_name] = previous_hashes[source_name]
+                        seen_fetches[uri] = "skipped"
                         self.push_status("DONE", "Skipped.")
                     except Exception as e:
                         # There was an issue with this source, report and continue to the next
@@ -429,8 +489,7 @@ class ServiceUpdater(ThreadedCoreBase):
         try:
             self.log.info("Checking for in cluster update cache")
             self.do_local_update()
-            self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
-            self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
+            self._set_service_stage()
         except Exception:
             self.log.exception('An error occurred loading cached update files. Continuing.')
         self.local_update_start.set()
@@ -528,9 +587,7 @@ class ServiceUpdater(ThreadedCoreBase):
             # noinspection PyBroadException
             try:
                 self.do_local_update()
-                if self._service_stage_hash.get(SERVICE_NAME) == ServiceStage.Update:
-                    self._service_stage_hash.set(SERVICE_NAME, ServiceStage.Running)
-                    self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
+                self._set_service_stage()
             except Exception:
                 self.log.exception('An error occurred finding new local files. Will retry...')
                 self.local_update_flag.set()
