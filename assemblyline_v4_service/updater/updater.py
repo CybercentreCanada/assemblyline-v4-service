@@ -222,17 +222,20 @@ class ServiceUpdater(ThreadedCoreBase):
             return 0
         return hash(json.dumps(service.update_config.as_primitives()))
 
-    def _handle_source_update_event(self, data: list[str]):
-        # Received an event regarding a change to source
-        self.log.info(f'Triggered to update the following: {data}')
-        self.do_source_update(self._service, specific_sources=data)
+    def _handle_source_update_event(self, data: Optional[list[str]]):
+        if data is not None:
+            # Received an event regarding a change to source
+            self.log.info(f'Triggered to update the following: {data}')
+            self.do_source_update(self._service, specific_sources=data)
+            self.local_update_flag.set()
+        else:
+            self.source_update_flag.set()
+
+    def _handle_signature_change_event(self, data: Optional[SignatureChange]):
         self.local_update_flag.set()
 
-    def _handle_signature_change_event(self, data: SignatureChange):
-        self.local_update_flag.set()
-
-    def _handle_service_change_event(self, data: ServiceChange):
-        if data.operation == Operation.Modified:
+    def _handle_service_change_event(self, data: Optional[ServiceChange]):
+        if data is None or data.operation == Operation.Modified:
             self._pull_settings()
 
     def _sync_settings(self):
