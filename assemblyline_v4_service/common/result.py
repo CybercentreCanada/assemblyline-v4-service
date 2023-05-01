@@ -480,6 +480,7 @@ class ResultSection:
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.depth: int = 0
         self._tags = tags or {}
+        self._tag_sets = {tag_type: set(tag_list) for tag_type, tag_list in tags.items()} if tags else {}
         self._heuristic = None
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
@@ -567,9 +568,11 @@ class ResultSection:
 
         if tag_type not in self._tags:
             self._tags[tag_type] = []
+            self._tag_sets[tag_type] = set()
 
-        if value not in self._tags[tag_type]:
+        if value not in self._tag_sets[tag_type]:
             self._tags[tag_type].append(value)
+            self._tag_sets[tag_type].add(value)
 
     def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
@@ -628,8 +631,9 @@ class ResultSection:
         else:
             self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
 
-    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]):
+    def set_tags(self, tags: Dict[str, List[str]]):
         self._tags = tags
+        self._tag_sets = {tag_type: set(tag_list) for tag_type, tag_list in tags.items()}
 
 
 class TypeSpecificResultSection(ResultSection):
