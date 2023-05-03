@@ -72,7 +72,7 @@ class Heuristic:
                  signature: Optional[str] = None,
                  attack_ids: Optional[List[str]] = None,
                  signatures: Optional[Dict[str, int]] = None,
-                 frequency: Optional[int] = 1,
+                 frequency: int = 1,
                  score_map: Optional[Dict[str, int]] = None):
 
         # Lazy load heuristics
@@ -205,7 +205,7 @@ class Heuristic:
 
 
 class SectionBody:
-    def __init__(self, body_format: BODY_FORMAT, body=None):
+    def __init__(self, body_format, body=None):
         self._format = body_format
         self._data = body
 
@@ -417,7 +417,7 @@ class MultiSectionBody(SectionBody):
     def __init__(self) -> None:
         super().__init__(BODY_FORMAT.MULTI, body=[])
 
-    def add_section_body(self, section_body: SectionBody) -> str:
+    def add_section_body(self, section_body: SectionBody) -> None:
         self._data.append((section_body.format, section_body._data))
 
 
@@ -428,7 +428,7 @@ class DividerSectionBody(SectionBody):
 
 class TimelineSectionBody(SectionBody):
     def __init__(self):
-        return super().__init__(BODY_FORMAT.TIMELINE, body=[])
+        super().__init__(BODY_FORMAT.TIMELINE, body=[])
 
     def add_node(self, title: str, content: str, opposite_content: str,
                  icon: str = None, signatures: List[str] = [], score: int = 0) -> None:
@@ -442,7 +442,7 @@ class ResultSection:
             title_text: Union[str, List],
             body: Optional[Union[str, SectionBody]] = None,
             classification: Optional[Classification] = None,
-            body_format: BODY_FORMAT = BODY_FORMAT.TEXT,
+            body_format=BODY_FORMAT.TEXT,
             heuristic: Optional[Heuristic] = None,
             tags: Optional[Dict[str, List[str]]] = None,
             parent: Optional[Union[ResultSection, Result]] = None,
@@ -463,8 +463,8 @@ class ResultSection:
             self._body_format = body.format
             self._body = body.body
         else:
-            self._body_format: BODY_FORMAT = body_format
-            self._body: str = body
+            self._body_format = body_format
+            self._body = body
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.depth: int = 0
         self._tags = tags or {}
@@ -577,10 +577,10 @@ class ResultSection:
 
         return True
 
-    def set_body(self, body: Union[str, SectionBody], body_format: BODY_FORMAT = None) -> None:
+    def set_body(self, body: Union[str, SectionBody], body_format=None) -> None:
         if isinstance(body, SectionBody):
             self._body = body.body
-            self._body_format = body.body_format
+            self._body_format = body._format
         else:
             self._body = body
             if body_format:
@@ -635,7 +635,7 @@ class TypeSpecificResultSection(ResultSection):
     def add_lines(self, line_list: List[str]) -> None:
         raise InvalidFunctionException("Do not use default add_lines method in a type specific section.")
 
-    def set_body(self, body: Union[str, SectionBody], body_format: BODY_FORMAT = BODY_FORMAT.TEXT) -> None:
+    def set_body(self, body: Union[str, SectionBody], body_format=BODY_FORMAT.TEXT) -> None:
         raise InvalidFunctionException("Do not use default set_body method in a type specific section.")
 
 
@@ -757,7 +757,7 @@ class ResultMultiSection(TypeSpecificResultSection):
         self.section_body: MultiSectionBody
         super().__init__(title_text,  MultiSectionBody(), **kwargs)
 
-    def add_section_part(self, section_part: SectionBody) -> bool:
+    def add_section_part(self, section_part: SectionBody) -> None:
         self.section_body.add_section_body(section_part)
 
 
@@ -820,8 +820,8 @@ class Result:
         for section in self.sections:
             self._flatten_sections(section)
 
-        for section in self._flattened_sections:
-            heuristic = section.get('heuristic')
+        for flattened_section in self._flattened_sections:
+            heuristic = flattened_section.get('heuristic')
             if heuristic:
                 self._score += heuristic['score']
 
