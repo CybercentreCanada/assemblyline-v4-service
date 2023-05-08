@@ -174,7 +174,8 @@ class OntologyHelper:
         # Include Ontological data
         ontology_suffix = f"{request.sha256}.ontology"
         ontology_path = os.path.join(working_dir, ontology_suffix)
-        open(ontology_path, 'w').write(json.dumps(ontology))
+        with open(ontology_path, 'w') as f:
+            f.write(json.dumps(ontology))
         attachment_name = f'{request.task.service_name}_{ontology_suffix}'.lower()
         request.add_supplementary(path=ontology_path, name=attachment_name,
                                   description=f"Result Ontology from {request.task.service_name}",
