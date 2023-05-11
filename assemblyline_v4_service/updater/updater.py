@@ -51,7 +51,7 @@ SOURCE_STATUS_KEY = 'status'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
-UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access']
+UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
 STATUS_FILE = '/tmp/status'
 
 classification = forge.get_classification()
@@ -602,8 +602,8 @@ class ServiceUpdater(ThreadedCoreBase):
         uname = 'update_service_account'
         user_data = self.datastore.user.get_if_exists(uname)
         if user_data:
-            if user_data.roles:
-                # User exists and has roles, we're good to go
+            if user_data.roles and user_data.roles == UPDATER_API_ROLES:
+                # User exists and has the expected roles, we're good to go
                 return uname
 
             # User exist but has no roles, let's update the user's roles
