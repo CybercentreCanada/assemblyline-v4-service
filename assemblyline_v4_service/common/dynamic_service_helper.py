@@ -1913,7 +1913,10 @@ class OntologyResults:
         :return: None
         """
         if self._validate_process(process):
-            self._guid_process_map[process.objectid.guid] = process
+            if isinstance(process.objectid.guid, str):
+                self._guid_process_map[process.objectid.guid.upper()] = process
+            else:
+                self._guid_process_map[process.objectid.guid] = process
             self.set_parent_details(process)
             self.set_child_details(process)
             self.processes.append(process)
@@ -3279,12 +3282,6 @@ def convert_sysmon_processes(
                 else:
                     process["start_time"] = MIN_TIME
                     process["end_time"] = t
-            elif name == "utctime" and event_id in [10]:
-                if "." in text:
-                    text = text[:text.index(".")]
-                t = str(datetime.strptime(text, LOCAL_FMT))
-                process["start_time"] = t
-                process["time_observed"] = t
             elif name == "utctime":
                 if "." in text:
                     text = text[:text.index(".")]
