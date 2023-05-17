@@ -1913,7 +1913,10 @@ class OntologyResults:
         :return: None
         """
         if self._validate_process(process):
-            self._guid_process_map[process.objectid.guid.upper()] = process
+            if isinstance(process.objectid.guid, str):
+                self._guid_process_map[process.objectid.guid.upper()] = process
+            else:
+                self._guid_process_map[process.objectid.guid] = process
             self.set_parent_details(process)
             self.set_child_details(process)
             self.processes.append(process)
