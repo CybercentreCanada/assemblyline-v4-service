@@ -1,30 +1,18 @@
-import pytest
 import os
 from uuid import UUID
+
+import pytest
 
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
 
 
-from assemblyline_v4_service.common.dynamic_service_helper import (
-    convert_sysmon_network,
-    convert_sysmon_processes,
-    extract_iocs_from_text_blob,
-    set_required_argument,
-    set_optional_argument,
-    update_object_items,
-    Artifact,
-    Attribute,
-    HOLLOWSHUNTER_TITLE,
-    NetworkConnection,
-    NetworkDNS,
-    NetworkHTTP,
-    ObjectID,
-    OntologyResults,
-    Sandbox,
-    Signature,
-    Process,
-)
+from assemblyline_v4_service.common.dynamic_service_helper import (HOLLOWSHUNTER_TITLE, Artifact, Attribute,
+                                                                   NetworkConnection, NetworkDNS, NetworkHTTP, ObjectID,
+                                                                   OntologyResults, Process, Sandbox, Signature,
+                                                                   convert_sysmon_network, convert_sysmon_processes,
+                                                                   extract_iocs_from_text_blob, set_optional_argument,
+                                                                   set_required_argument, update_object_items)
 
 
 def setup_module():
@@ -1776,7 +1764,9 @@ class TestOntologyResults:
         )
         default_or.add_process(p)
         process_as_primitives = default_or.processes[0].as_primitives()
-        assert str(UUID(process_as_primitives["objectid"].pop("guid")))
+        guid = process_as_primitives["objectid"].pop("guid")
+        assert guid.isupper()
+        assert str(UUID(guid))
         assert process_as_primitives == {
             "objectid": {
                 "tag": "blah",
@@ -8665,7 +8655,7 @@ class TestOntologyResults:
         ],
     )
     def test_handle_artifact(artifact, expected_result_section_title):
-        from assemblyline_v4_service.common.result import ResultSection, Heuristic
+        from assemblyline_v4_service.common.result import Heuristic, ResultSection
 
         if artifact is None:
             with pytest.raises(Exception):
@@ -8905,7 +8895,6 @@ class TestOntologyResults:
            'pimage': None, 'pcommand_line': None, 'ppid': None, 'pid': 123, 'image': 'blah', 'command_line': None,
            'integrity_level': None, 'image_hash': None, 'original_file_name': None}), ])
     def test_convert_sysmon_processes(sysmon, expected_process, mocker):
-        from uuid import UUID
         so = OntologyResults(service_name="CAPE")
         mocker.patch.object(so, "sandboxes", return_value="blah")
         safelist = {}
