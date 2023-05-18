@@ -421,6 +421,8 @@ class ServiceUpdater(ThreadedCoreBase):
                                 # First we'll attempt by performing a Git clone
                                 # (since not all services hint at being a repository in their URL),
                                 output = git_clone_repo(source, old_update_time, self.log, update_dir)
+                            except SkipSource:
+                                raise
                             except Exception as git_ex:
                                 # Should that fail, we'll attempt a direct-download using Python Requests
                                 if not uri.endswith('.git'):
