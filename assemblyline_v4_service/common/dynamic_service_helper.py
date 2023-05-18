@@ -19,11 +19,17 @@ from assemblyline.odm.models.ontology.results import NetworkConnection as Networ
 from assemblyline.odm.models.ontology.results import Process as ProcessModel
 from assemblyline.odm.models.ontology.results import Sandbox as SandboxModel
 from assemblyline.odm.models.ontology.results import Signature as SignatureModel
+
 # from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import (ProcessItem, ResultProcessTreeSection, ResultSection,
-                                                   ResultTableSection, TableRow)
+from assemblyline_v4_service.common.result import (
+    ProcessItem,
+    ResultProcessTreeSection,
+    ResultSection,
+    ResultTableSection,
+    TableRow,
+)
 from assemblyline_v4_service.common.safelist_helper import URL_REGEX, is_tag_safelisted
 from assemblyline_v4_service.common.tag_helper import add_tag
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
@@ -3526,7 +3532,7 @@ def extract_iocs_from_text_blob(
     # TODO: Are we missing IOCs to the point where we need a different regex?
     # uris = {uri.decode() for uri in set(findall(PatternMatch.PAT_URI_NO_PROTOCOL, blob.encode()))} - domains - ips
     uris = set(findall(URL_REGEX, blob)) - domains - ips
-    for ip in ips:
+    for ip in sorted(ips):
         if add_tag(result_section, f"network.{network_tag_type}.ip", ip, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
@@ -3535,7 +3541,7 @@ def extract_iocs_from_text_blob(
                 not in result_section.section_body.body
             ):
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
-    for domain in domains:
+    for domain in sorted(domains):
         if enforce_char_min and len(domain) < MIN_DOMAIN_CHARS:
             continue
         if enforce_domain_char_max and len(domain) > MAX_DOMAIN_CHARS:
@@ -3567,7 +3573,7 @@ def extract_iocs_from_text_blob(
             ):
                 result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
 
-    for uri in uris:
+    for uri in sorted(uris):
         if enforce_char_min and len(uri) < MIN_URI_CHARS:
             continue
         if any(invalid_uri_char in uri for invalid_uri_char in ['"', "'", '<', '>', "(", ")"]):
