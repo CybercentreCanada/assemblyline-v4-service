@@ -56,7 +56,8 @@ setup(
     extra_requires={
         'updater': [
             'gevent',
-            'flask'
+            'flask',
+            'psutil',
         ]
     },
     package_data={

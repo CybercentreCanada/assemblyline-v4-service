@@ -1,20 +1,52 @@
 import functools
 import os
+import json
+import copy
 
-import requests
 from flask import jsonify, make_response, request, send_from_directory, send_file, Flask
 from werkzeug.exceptions import Unauthorized, ServiceUnavailable
-from assemblyline.common import forge
 
-session = requests.session()
+try:
+    from gevent.monkey import patch_all
+    patch_all()
+except ImportError:
+    pass
+
+from .updater import STATUS_FILE
+
+
 app = Flask('service_updater')
 AUTH_KEY = os.environ.get('AL_INSTANCE_KEY', 'ThisIsARandomAuthKey...ChangeMe!')
 AL_ROOT_CA = os.environ.get('AL_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 
 ssl_context = None
 if os.path.exists(AL_ROOT_CA):
-    hostname = os.environ.get('updates_host')
     ssl_context = ('/etc/assemblyline/ssl/al_updates/tls.crt', '/etc/assemblyline/ssl/al_updates/tls.key')
+
+
+status_last_read_time = 0
+NO_STATUS = {
+    'local_update_time': 0,
+    'download_available': False,
+    '_directory': None,
+    '_tar': None,
+}
+status_last_read = copy.deepcopy(NO_STATUS)
+
+
+def _get_status():
+    global status_last_read, status_last_read_time
+    try:
+        last_modified = os.path.getmtime(STATUS_FILE)
+    except OSError:
+        return NO_STATUS
+
+    if status_last_read_time < last_modified:
+        with open(STATUS_FILE, 'r') as handle:
+            status_last_read = json.load(handle)
+            status_last_read_time = last_modified
+
+    return status_last_read
 
 
 @app.route('/healthz/live')
@@ -26,14 +58,7 @@ def container_ready():
 @app.route('/status')
 def update_status():
     """A report on readiness for services to run."""
-    request = session.get('http://localhost:9999')
-    request.raise_for_status()
-    response = app.response_class(
-        response=request.text,
-        status=200,
-        mimetype='application/json'
-    )
-    return response
+    return _get_status()
 
 
 def api_login(func):
@@ -51,10 +76,9 @@ def api_login(func):
 
 def get_paths():
     try:
-        request = session.get('http://localhost:9999')
-        request.raise_for_status()
-        path = request.json()['_directory']
-        tar = request.json()['_tar']
+        status = _get_status()
+        path = status['_directory']
+        tar = status['_tar']
         if path is None or not os.path.isdir(path):
             raise ValueError()
         if tar is None or not os.path.isfile(tar):

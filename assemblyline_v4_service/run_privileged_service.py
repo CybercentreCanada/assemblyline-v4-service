@@ -25,6 +25,7 @@ from assemblyline_v4_service.common.base import LOG_LEVEL, is_recoverable_runtim
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_TAG = os.environ.get("SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0").encode("utf-8")
 SERVICE_MANIFEST = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
+TMP_SERVICE_MANIFEST = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml"
 REGISTER_ONLY = os.environ.get('REGISTER_ONLY', 'False').lower() == 'true'
 
 SERVICE_NAME = SERVICE_PATH.split(".")[-1].lower()
@@ -62,7 +63,8 @@ class RunPrivilegedService(ServerBase):
             private=False,
         )
 
-        self.tasking_client = TaskingClient(redis=self.redis, redis_persist=self.redis_persist)
+        self.tasking_client = TaskingClient(redis=self.redis, redis_persist=self.redis_persist,
+                                            register_only=REGISTER_ONLY)
         self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
 
         self.filestore = forge.get_filestore()
@@ -87,6 +89,16 @@ class RunPrivilegedService(ServerBase):
 
         return yaml.safe_load(bio)
 
+    def _update_manifest(self, data):
+        with open(SERVICE_MANIFEST, 'r') as yml_fh:
+            manifest = yaml.safe_load(yml_fh)
+            manifest.update(data)
+
+        with open(TMP_SERVICE_MANIFEST, 'w') as yml_fh:
+            yaml.safe_dump(manifest, yml_fh)
+
+        data = manifest
+
     def _cleanup_working_directory(self):
         # Make the tasking dir if it does not exists
         if not os.path.exists(self.tasking_dir):
@@ -95,6 +107,10 @@ class RunPrivilegedService(ServerBase):
         for file in os.listdir(self.tasking_dir):
             file_path = os.path.join(self.tasking_dir, file)
             try:
+                if file_path == TMP_SERVICE_MANIFEST:
+                    # We'd like to keep the service_manifest file committed to disk
+                    continue
+
                 if os.path.isfile(file_path):
                     os.unlink(file_path)
                 elif os.path.isdir(file_path):
@@ -124,6 +140,9 @@ class RunPrivilegedService(ServerBase):
             self.stop()
             return
 
+        # Commit service manifest changes back to disk
+        self._update_manifest(registration.get('service_config', {}))
+
         # Instantiate the service based of the registration results
         self.service_config = registration.get('service_config', {})
         self.service = service_class(config=self.service_config.get('config'))
@@ -151,8 +170,8 @@ class RunPrivilegedService(ServerBase):
             # Load Task
             try:
                 # Inspect task to ensure submission parameters are given, add defaults where necessary
-                params = {x['name']: task['service_config'].get(x['name'], x['default'])
-                          for x in service_manifest.get('submission_params', [])}
+                params = {x['name']: x['default'] for x in service_manifest.get('submission_params', [])}
+                params.update(task['service_config'])
                 task['service_config'] = params
                 service_task = ServiceTask(task)
                 self.log.info(f"[{service_task.sid}] New task received")
@@ -242,7 +261,10 @@ class RunPrivilegedService(ServerBase):
                 self.tasking_client.upload_file(
                     file_info['path'],
                     file_info['classification'],
-                    task.ttl, file_info.get('is_section_image', False))
+                    task.ttl,
+                    file_info.get('is_section_image', False),
+                    expected_sha256=file_info['sha256']
+                )
 
             try:
                 resp = self.tasking_client.task_finished(

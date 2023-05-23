@@ -29,6 +29,7 @@ LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 UPDATES_CA = os.environ.get('UPDATES_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
+MIN_SECONDS_BETWEEN_UPDATES = float(os.environ.get('MIN_SECONDS_BETWEEN_UPDATES', '10.0'))
 
 RECOVERABLE_RE_MSG = [
     "cannot schedule new futures after interpreter shutdown",
@@ -77,6 +78,7 @@ class ServiceBase:
         self.rules_directory: str = None
         self.rules_list: list = []
         self.update_time: int = None
+        self.update_check_time: float = 0.0
         self.rules_hash: str = None
 
     @property
@@ -220,15 +222,28 @@ class ServiceBase:
 
     @property
     def working_directory(self):
-        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
-        if not os.path.isdir(temp_dir):
-            os.makedirs(temp_dir)
-        if self._working_directory is None:
-            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+        # If no working directory is assigned
+        if not self._working_directory:
+            if self._task:
+                # Then use the working directory provided by the task
+                self._working_directory = self._task.working_directory
+            else:
+                # Or create a new working directory
+                temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
+                if not os.path.isdir(temp_dir):
+                    os.makedirs(temp_dir)
+                self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+
         return self._working_directory
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
+        # check if we just tried to download rules to reduce traffic
+        if time.time() - self.update_check_time < MIN_SECONDS_BETWEEN_UPDATES:
+            return
+        self.update_check_time = time.time()
+
+        # Resolve the update target
         scheme, verify = 'http', None
         if os.path.exists(UPDATES_CA):
             scheme, verify = 'https', UPDATES_CA
@@ -264,7 +279,7 @@ class ServiceBase:
         old_rules_list = self.rules_list
         try:
             with os.fdopen(buffer_handle, 'wb') as buffer:
-                resp = requests.get(url_base + 'tar', headers=headers)
+                resp = requests.get(url_base + 'tar', headers=headers, verify=verify)
                 resp.raise_for_status()
                 for chunk in resp.iter_content(chunk_size=1024):
                     buffer.write(chunk)

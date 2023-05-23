@@ -7,6 +7,9 @@ UI panel for the update container.
 """
 from os import environ as env
 
+# What backend gunicorn should use for workers
+worker_class = env.get('WORKER_CLASS', 'gevent')
+
 # Port to bind to
 bind = f":{int(env.get('PORT', 5003))}"
 
@@ -18,10 +21,14 @@ threads = int(env.get('THREADS', 4))
 worker_connections = int(env.get('WORKER_CONNECTIONS', '1000'))
 
 # Recycle the process after X request randomized by the jitter
-max_requests = int(env.get('MAX_REQUESTS', '1000'))
-max_requests_jitter = int(env.get('MAX_REQUESTS_JITTER', '100'))
+max_requests = int(env.get('MAX_REQUESTS', '0'))
+max_requests_jitter = int(env.get('MAX_REQUESTS_JITTER', '0'))
 
 # Connection timeouts
 #  - Defaults to double what the poll length for services should be
 graceful_timeout = int(env.get('GRACEFUL_TIMEOUT', '60'))
 timeout = int(env.get('TIMEOUT', '60'))
+
+# TLS/SSL Configuration
+certfile = env.get('CERTFILE')
+keyfile = env.get('KEYFILE')

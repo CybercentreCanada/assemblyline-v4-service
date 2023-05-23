@@ -117,3 +117,8 @@ def test_extract_passwords():
     wanted_password = ["mon secret"]
     res = extract_passwords(text)
     assert all(password in res for password in wanted_password)
+
+    text = "내 비밀번호는 shibboleet입니다"
+    wanted_password = ["shibboleet"]
+    res = extract_passwords(text)
+    assert all(password in res for password in wanted_password)

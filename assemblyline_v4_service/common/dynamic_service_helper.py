@@ -2,45 +2,35 @@ from datetime import datetime
 from hashlib import sha256
 from json import dumps
 from logging import getLogger
-from re import compile, escape, sub, findall, match as re_match
+from re import compile, escape, findall
+from re import match as re_match
+from re import sub
 from typing import Any, Dict, List, Optional, Union
+from urllib.parse import urlparse
 from uuid import UUID, uuid4
 
 from assemblyline.common import log as al_log
-from assemblyline.common.attack_map import (
-    attack_map,
-    software_map,
-    group_map,
-    revoke_map,
-)
+from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
 from assemblyline.common.digests import get_sha256_for_file
-from assemblyline.common.isotime import (
-    epoch_to_local,
-    LOCAL_FMT,
-    local_to_epoch,
-    MAX_TIME,
-    MIN_TIME,
-    format_time,
-)
+from assemblyline.common.isotime import LOCAL_FMT, MAX_TIME, MIN_TIME, epoch_to_local, format_time, local_to_epoch
 from assemblyline.common.uid import get_random_id
-from assemblyline.odm.base import DOMAIN_REGEX, IP_REGEX, FULL_URI, URI_PATH
-from assemblyline.odm.models.ontology.results import (
-    Process as ProcessModel, Sandbox as SandboxModel,
-    Signature as SignatureModel,
-    NetworkConnection as NetworkConnectionModel
-)
+from assemblyline.odm.base import DOMAIN_REGEX, FULL_URI, IP_REGEX, IPV4_REGEX, URI_PATH
+from assemblyline.odm.models.ontology.results import NetworkConnection as NetworkConnectionModel
+from assemblyline.odm.models.ontology.results import Process as ProcessModel
+from assemblyline.odm.models.ontology.results import Sandbox as SandboxModel
+from assemblyline.odm.models.ontology.results import Signature as SignatureModel
 
 # from assemblyline_v4_service.common.balbuzard.patterns import PatternMatch
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import (
-    ResultSection,
     ProcessItem,
     ResultProcessTreeSection,
+    ResultSection,
     ResultTableSection,
     TableRow,
 )
-from assemblyline_v4_service.common.safelist_helper import URL_REGEX
+from assemblyline_v4_service.common.safelist_helper import URL_REGEX, is_tag_safelisted
 from assemblyline_v4_service.common.tag_helper import add_tag
 from assemblyline_v4_service.common.task import MaxExtractedExceeded
 
@@ -108,6 +98,19 @@ MAX_TIME = format_time(MAX_TIME, LOCAL_FMT)
 MIN_TIME = format_time(MIN_TIME, LOCAL_FMT)
 
 SERVICE_NAME = None
+
+# The following lists of domains and top-level domains are used for finding false-positives
+# when extracting domains from text blobs
+COMMON_FP_DOMAINS = ["example.com"]
+COMMON_FP_TLDS_THAT_ARE_FILE_EXTS = [".one", ".pub", ".py", ".sh", ".zip"]
+COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS = [".test", ".id", ".call", ".top", ".map", ".support", ".run", ".shell", ".net", ".stream"]
+COMMON_FP_TLDS = COMMON_FP_TLDS_THAT_ARE_FILE_EXTS + COMMON_FP_TLDS_THAT_ARE_JS_COMMANDS
+
+# Arbitrarily chosen common URL schemes from https://en.wikipedia.org/wiki/List_of_URI_schemes
+COMMON_SCHEMES = [
+    "dns", "dntp", "file", "ftp", "git", "http", "https", "icap", "imap", "irc", "irc6", "ircs", "nfs", "rdp",
+    "s3", "sftp", "shttp", "smb", "sms", "snmp", "ssh", "telnet", "tftp", "udp",
+]
 
 
 def set_required_argument(self: object, name: str, value: Any, value_type: Any) -> None:
@@ -1861,13 +1864,17 @@ class OntologyResults:
         else:
             return network_http_with_details[0]
 
-    def get_network_connection_by_network_http(self, network_http: NetworkHTTP) -> Optional[NetworkHTTP]:
+    def get_network_connection_by_network_http(self, network_http: NetworkHTTP) -> Optional[NetworkConnection]:
         """
         This method returns the network connection corresponding to the given network http object
         :param network_http: The given network http object
         :return: The corresponding network connection
         """
-        return next((netflow for netflow in self.netflows if netflow.http_details == network_http), None)
+        for netflow in self.netflows:
+            if netflow.http_details == network_http:
+                return netflow
+
+        return None
 
     # Process manipulation methods
     def set_processes(self, processes: List[Process]) -> None:
@@ -1912,7 +1919,10 @@ class OntologyResults:
         :return: None
         """
         if self._validate_process(process):
-            self._guid_process_map[process.objectid.guid] = process
+            if isinstance(process.objectid.guid, str):
+                self._guid_process_map[process.objectid.guid.upper()] = process
+            else:
+                self._guid_process_map[process.objectid.guid] = process
             self.set_parent_details(process)
             self.set_child_details(process)
             self.processes.append(process)
@@ -3244,6 +3254,244 @@ def attach_dynamic_ontology(service: ServiceBase, ontres: OntologyResults) -> No
     [service.ontology.add_result_part(NetworkConnectionModel, network_connection.as_primitives()) for network_connection in ontres.get_network_connections()]
 
 
+def convert_sysmon_processes(
+    sysmon: List[Dict[str, Any]],
+    safelist: Dict[str, Dict[str, List[str]]],
+    ontres: OntologyResults,
+):
+    """
+    This method creates the GUID -> Process lookup table
+    :param sysmon: A list of processes observed during the analysis of the task by the Sysmon tool
+    :param safelist: A dictionary containing matches and regexes for use in safelisting values
+    :param ontres: The Ontology Results object instance
+    :return: None
+    """
+    session = ontres.sandboxes[-1].objectid.session
+    for event in sysmon:
+        event_id = int(event["System"]["EventID"])
+        # EventID 10: ProcessAccess causes too many misconfigurations of the process tree
+        if event_id == 10:
+            continue
+        process: Dict[str, str] = {}
+        event_data = event["EventData"]["Data"]
+        for data in event_data:
+            name = data["@Name"].lower()
+            text = data.get("#text")
+
+            # Process Create and Terminate
+            if name == "utctime" and event_id in [1, 5]:
+                if "." in text:
+                    text = text[:text.index(".")]
+                t = str(datetime.strptime(text, LOCAL_FMT))
+                if event_id == 1:
+                    process["start_time"] = t
+                else:
+                    process["start_time"] = MIN_TIME
+                    process["end_time"] = t
+            elif name == "utctime":
+                if "." in text:
+                    text = text[:text.index(".")]
+                t = str(datetime.strptime(text, LOCAL_FMT))
+                process["time_observed"] = t
+            elif name in ["sourceprocessguid", "parentprocessguid"]:
+                process["pguid"] = text
+            elif name in ["processguid", "targetprocessguid"]:
+                process["guid"] = text
+            elif name in ["parentprocessid", "sourceprocessid"]:
+                process["ppid"] = int(text)
+            elif name in ["processid", "targetprocessid"]:
+                process["pid"] = int(text)
+            elif name in ["sourceimage"]:
+                process["pimage"] = text
+            elif name in ["image", "targetimage"]:
+                if not is_tag_safelisted(text, ["dynamic.process.file_name"], safelist):
+                    process["image"] = text
+            elif name in ["parentcommandline"]:
+                if not is_tag_safelisted(
+                    text, ["dynamic.process.command_line"], safelist
+                ):
+                    process["pcommand_line"] = text
+            elif name in ["commandline"]:
+                if not is_tag_safelisted(
+                    text, ["dynamic.process.command_line"], safelist
+                ):
+                    process["command_line"] = text
+            elif name == "originalfilename":
+                process["original_file_name"] = text
+            elif name == "integritylevel":
+                process["integrity_level"] = text
+            elif name == "hashes":
+                split_hash = text.split("=")
+                if len(split_hash) == 2:
+                    _, hash_value = split_hash
+                    process["image_hash"] = hash_value
+
+        if (
+            not process.get("pid")
+            or not process.get("image")
+            or not process.get("start_time")
+        ):
+            continue
+
+        if ontres.is_guid_in_gpm(process["guid"]):
+            ontres.update_process(**process)
+        else:
+            p_oid = ProcessModel.get_oid(
+                {
+                    "pid": process["pid"],
+                    "ppid": process.get("ppid"),
+                    "image": process["image"],
+                    "command_line": process.get("command_line"),
+                }
+            )
+            p = ontres.create_process(
+                objectid=ontres.create_objectid(
+                    tag=Process.create_objectid_tag(process["image"]),
+                    ontology_id=p_oid,
+                    guid=process.get("guid"),
+                    session=session,
+                ),
+                **process,
+            )
+            ontres.add_process(p)
+
+
+def convert_sysmon_network(
+    sysmon: List[Dict[str, Any]],
+    network: Dict[str, Any],
+    safelist: Dict[str, Dict[str, List[str]]],
+    convert_timestamp_to_epoch: bool = False,
+) -> None:
+    """
+    This method converts network connections observed by Sysmon to the format supported by common sandboxes
+    :param sysmon: A list of processes observed during the analysis of the task by the Sysmon tool
+    :param network: The JSON of the network section from the report generated by common sandboxes
+    :param safelist: A dictionary containing matches and regexes for use in safelisting values
+    :param convert_timestamp_to_epoch: A flag indicating if we want timestamps converted to EPOCH
+    :return: None
+    """
+    for event in sysmon:
+        event_id = int(event["System"]["EventID"])
+
+        # There are two main EventIDs that describe network events: 3 (Network connection) and 22 (DNS query)
+        if event_id == 3:
+            protocol = None
+            network_conn = {
+                "src": None,
+                "dst": None,
+                "time": None,
+                "dport": None,
+                "sport": None,
+                "guid": None,
+                "pid": None,
+                "image": None,
+            }
+            for data in event["EventData"]["Data"]:
+                name = data["@Name"]
+                text = data.get("#text")
+                if name == "UtcTime":
+                    if convert_timestamp_to_epoch:
+                        network_conn["time"] = datetime.strptime(text, "%Y-%m-%d %H:%M:%S.%f").timestamp()
+                    else:
+                        if "." in text:
+                            text = text[:text.index(".")]
+                        network_conn["time"] = str(datetime.strptime(text, LOCAL_FMT))
+                elif name == "ProcessGuid":
+                    network_conn["guid"] = text
+                elif name == "ProcessId":
+                    network_conn["pid"] = int(text)
+                elif name == "Image":
+                    network_conn["image"] = text
+                elif name == "Protocol":
+                    protocol = text.lower()
+                elif name == "SourceIp":
+                    if re_match(IPV4_REGEX, text):
+                        network_conn["src"] = text
+                elif name == "SourcePort":
+                    network_conn["sport"] = int(text)
+                elif name == "DestinationIp":
+                    if re_match(IPV4_REGEX, text):
+                        network_conn["dst"] = text
+                elif name == "DestinationPort":
+                    network_conn["dport"] = int(text)
+            if (
+                any(network_conn[key] is None for key in network_conn.keys())
+                or not protocol
+            ):
+                continue
+            elif any(
+                req["dst"] == network_conn["dst"]
+                and req["dport"] == network_conn["dport"]
+                and req["src"] == network_conn["src"]
+                and req["sport"] == network_conn["sport"]
+                for req in network[protocol]
+            ):
+                # Replace record since we have more info from Sysmon
+                for req in network[protocol][:]:
+                    if (
+                        req["dst"] == network_conn["dst"]
+                        and req["dport"] == network_conn["dport"]
+                        and req["src"] == network_conn["src"]
+                        and req["sport"] == network_conn["sport"]
+                    ):
+                        network[protocol].remove(req)
+                        network[protocol].append(network_conn)
+            else:
+                network[protocol].append(network_conn)
+        elif event_id == 22:
+            dns_query = {
+                "type": "A",
+                "request": None,
+                "answers": [],
+                "time": None,
+                "guid": None,
+                "pid": None,
+                "image": None,
+            }
+            for data in event["EventData"]["Data"]:
+                name = data["@Name"]
+                text = data.get("#text")
+                if text is None:
+                    continue
+                if name == "UtcTime":
+                    if convert_timestamp_to_epoch:
+                        dns_query["time"] = datetime.strptime(text, "%Y-%m-%d %H:%M:%S.%f").timestamp()
+                    else:
+                        if "." in text:
+                            text = text[:text.index(".")]
+                        dns_query["time"] = str(datetime.strptime(text, LOCAL_FMT))
+                elif name == "ProcessGuid":
+                    dns_query["guid"] = text
+                elif name == "ProcessId":
+                    dns_query["pid"] = int(text)
+                elif name == "QueryName":
+                    if not is_tag_safelisted(
+                        text, ["network.dynamic.domain"], safelist
+                    ):
+                        dns_query["request"] = text
+                elif name == "QueryResults":
+                    ip = findall(IPV4_REGEX, text)
+                    for item in ip:
+                        dns_query["answers"].append({"data": item, "type": "A"})
+                elif name == "Image":
+                    dns_query["image"] = text
+            if any(dns_query[key] is None for key in dns_query.keys()):
+                continue
+            elif any(
+                query["request"] == dns_query["request"]
+                for query in network.get("dns", [])
+            ):
+                # Replace record since we have more info from Sysmon
+                for query in network["dns"][:]:
+                    if query["request"] == dns_query["request"]:
+                        network["dns"].remove(query)
+                        network["dns"].append(dns_query)
+            else:
+                if "dns" not in network:
+                    network["dns"] = []
+                network["dns"].append(dns_query)
+
+
 def extract_iocs_from_text_blob(
     blob: str,
     result_section: ResultTableSection,
@@ -3284,7 +3532,7 @@ def extract_iocs_from_text_blob(
     # TODO: Are we missing IOCs to the point where we need a different regex?
     # uris = {uri.decode() for uri in set(findall(PatternMatch.PAT_URI_NO_PROTOCOL, blob.encode()))} - domains - ips
     uris = set(findall(URL_REGEX, blob)) - domains - ips
-    for ip in ips:
+    for ip in sorted(ips):
         if add_tag(result_section, f"network.{network_tag_type}.ip", ip, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
@@ -3293,11 +3541,27 @@ def extract_iocs_from_text_blob(
                 not in result_section.section_body.body
             ):
                 result_section.add_row(TableRow(ioc_type="ip", ioc=ip))
-    for domain in domains:
+    for domain in sorted(domains):
         if enforce_char_min and len(domain) < MIN_DOMAIN_CHARS:
             continue
         if enforce_domain_char_max and len(domain) > MAX_DOMAIN_CHARS:
             continue
+
+        # Check if the domain ends with a TLD that is frequently a false positive
+        if any(domain.lower().endswith(tld) for tld in COMMON_FP_TLDS):
+            is_domain_present_in_uri = False
+            for uri in uris:
+                parsed_uri = urlparse(uri.lower())
+                if domain == parsed_uri.hostname:
+                    is_domain_present_in_uri = True
+                    break
+
+            # If it does, then double check that the domain is not the domain of any URI
+            if not is_domain_present_in_uri:
+                continue
+        elif domain.lower() in COMMON_FP_DOMAINS:
+            continue
+
         # File names match the domain and URI regexes, so we need to avoid tagging them
         # Note that get_tld only takes URLs so we will prepend http:// to the domain to work around this
         if add_tag(result_section, f"network.{network_tag_type}.domain", domain, safelist):
@@ -3309,7 +3573,7 @@ def extract_iocs_from_text_blob(
             ):
                 result_section.add_row(TableRow(ioc_type="domain", ioc=domain))
 
-    for uri in uris:
+    for uri in sorted(uris):
         if enforce_char_min and len(uri) < MIN_URI_CHARS:
             continue
         if any(invalid_uri_char in uri for invalid_uri_char in ['"', "'", '<', '>', "(", ")"]):
@@ -3318,6 +3582,17 @@ def extract_iocs_from_text_blob(
                     if re_match(FULL_URI, u):
                         uri = u
                         break
+
+        # If there is an common protocol in the URI, and there are some nonsense characters included, exclude them!
+        if ":" in uri:
+            scheme, location = uri.split(":", 1)
+            if scheme not in COMMON_SCHEMES:
+                for common_scheme in COMMON_SCHEMES:
+                    if scheme.endswith(common_scheme):
+                        scheme = common_scheme
+                        uri = f"{scheme}:{location}"
+                        break
+
         if add_tag(result_section, f"network.{network_tag_type}.uri", uri, safelist):
             if not result_section.section_body.body:
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
@@ -3328,6 +3603,9 @@ def extract_iocs_from_text_blob(
                 result_section.add_row(TableRow(ioc_type="uri", ioc=uri))
             if so_sig and source:
                 so_sig.add_attribute(so_sig.create_attribute(source=source, uri=uri))
+        # If the tag was safelisted or invalid, don't try to tag the uri_path
+        else:
+            continue
         if "//" in uri:
             uri = uri.split("//")[1]
         for uri_path in findall(URI_PATH, uri):

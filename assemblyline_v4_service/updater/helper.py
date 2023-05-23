@@ -1,5 +1,6 @@
 import certifi
 import os
+import psutil
 import regex as re
 import requests
 import shutil
@@ -17,6 +18,7 @@ from assemblyline.common.identify import Identify
 
 
 BLOCK_SIZE = 64 * 1024
+GIT_ALLOW_UNSAFE_PROTOCOLS = os.environ.get('GIT_ALLOW_UNSAFE_PROTOCOLS', 'false').lower() == 'true'
 
 identify = Identify()
 
@@ -32,12 +34,18 @@ def add_cacert(cert: str) -> None:
         ca_editor.write(f"\n{cert}")
 
 
-def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
+def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
     f_files = []
     if not pattern:
         # Regex will either match on the filename, directory, or filepath, either with default or given pattern for source
         pattern = default_pattern
-    for path_in_dir, subdirs, files in os.walk(update_directory):
+
+    if os.path.isfile(output_path):
+        if re.match(pattern, output_path):
+            return [(output_path, get_sha256_for_file(output_path))]
+        return []
+
+    for path_in_dir, subdirs, files in os.walk(output_path):
         for filename in files:
             filepath = os.path.join(path_in_dir, filename)
             if re.match(pattern, filepath) or re.match(pattern, filename):
@@ -47,15 +55,14 @@ def filter_downloads(update_directory, pattern, default_pattern=".*") -> List[Tu
             if re.match(pattern, dirpath):
                 f_files.append((dirpath, get_sha256_for_file(make_archive(subdir, 'tar', root_dir=dirpath))))
 
-    if re.match(pattern, f"{update_directory}/"):
-        f_files.append((f"{update_directory}/", get_sha256_for_file(make_archive(
-            os.path.basename(update_directory), 'tar', root_dir=update_directory))))
+    if re.match(pattern, f"{output_path}/"):
+        f_files.append((f"{output_path}/", get_sha256_for_file(make_archive(
+            os.path.basename(output_path), 'tar', root_dir=output_path))))
 
     return f_files
 
 
-def url_download(source: Dict[str, Any], previous_update: int = None,
-                 logger=None, output_dir: str = None) -> List[Tuple[str, str]]:
+def url_download(source: Dict[str, Any], previous_update: int = None, logger=None, output_dir: str = None) -> str:
     """
 
     :param source:
@@ -64,7 +71,6 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
     """
     name = source['name']
     uri = source['uri']
-    pattern = source.get('pattern', None)
     username = source.get('username', None)
     password = source.get('password', None)
     ca_cert = source.get('ca_cert', None)
@@ -98,7 +104,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 session.cert = private_key_file.name
 
             # Check the response header for the last modified date
-            response = session.head(uri, auth=auth, headers=headers)
+            response = session.head(uri, auth=auth, headers=headers, proxies=proxies)
             last_modified = response.headers.get('Last-Modified', None)
             if last_modified:
                 # Convert the last modified time to epoch
@@ -116,7 +122,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 else:
                     headers = {'If-Modified-Since': previous_update}
 
-            response = session.get(uri, auth=auth, headers=headers, proxies=proxies)
+            response = session.get(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
 
         # Check the response code
         if response.status_code == requests.codes['not_modified']:
@@ -141,9 +147,9 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
                 format = format if format in ["zip", "tar"] else None
                 shutil.unpack_archive(file_path, extract_dir=extract_dir, format=format)
 
-                return filter_downloads(extract_dir, pattern)
+                return extract_dir
             else:
-                return [(file_path, get_sha256_for_file(file_path))]
+                return file_path
         else:
             logger.warning(f"Download not successful: {response.content}")
             return []
@@ -153,18 +159,15 @@ def url_download(source: Dict[str, Any], previous_update: int = None,
         raise
     except Exception as e:
         # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
-        logger.warning(str(e))
-        exit()
+        raise e
     finally:
         # Close the requests session
         session.close()
 
 
-def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_pattern: str = "*",
-                   logger=None, output_dir: str = None) -> List[Tuple[str, str]]:
+def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=None, output_dir: str = None) -> str:
     name = source['name']
     url = source['uri']
-    pattern = source.get('pattern', None)
     key = source.get('private_key', None)
     username = source.get('username', None)
     password = source.get('password', None)
@@ -198,32 +201,43 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, default_
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)
 
-    with tempfile.NamedTemporaryFile() as git_ssh_identity_file:
-        if key:
-            logger.info(f"key found for {url}")
-            # Save the key to a file
-            git_ssh_identity_file.write(key.encode())
-            git_ssh_identity_file.seek(0)
-            os.chmod(git_ssh_identity_file.name, 0o0400)
+    try:
+        with tempfile.NamedTemporaryFile() as git_ssh_identity_file:
+            if key:
+                logger.info(f"key found for {url}")
+                # Save the key to a file
+                git_ssh_identity_file.write(key.encode())
+                git_ssh_identity_file.seek(0)
+                os.chmod(git_ssh_identity_file.name, 0o0400)
 
-            git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
-            git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
+                git_ssh_cmd = f"ssh -oStrictHostKeyChecking=no -i {git_ssh_identity_file.name}"
+                git_env['GIT_SSH_COMMAND'] = git_ssh_cmd
 
-        # As checking for .git at the end of the URI is not reliable
-        # we will use the exception to determine if its a git repo or direct download.
-        try:
-            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch)
-        except Exception as ex:
-            logger.warning(f"Repo clone failed with: {str(ex)}")
-            return None # !!!Warning!!! Caller checks this to determine if we should try a direct download.
+            # As checking for .git at the end of the URI is not reliable
+            # we will use the exception to determine if its a git repo or direct download.
+            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
+                                   allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
 
-        # Check repo last commit
-        if previous_update:
-            if isinstance(previous_update, str):
-                previous_update = iso_to_epoch(previous_update)
-            for c in repo.iter_commits():
-                if c.committed_date < previous_update:
-                    raise SkipSource()
+            # Check repo last commit
+            if previous_update:
+                if isinstance(previous_update, str):
+                    previous_update = iso_to_epoch(previous_update)
+                for c in repo.iter_commits():
+                    if c.committed_date < previous_update:
+                        raise SkipSource()
+                    break
+
+        return clone_dir
+    except SkipSource:
+        # Raise to calling function for handling
+        raise
+    except Exception as e:
+        # Catch all other types of exceptions such as ConnectionError, ProxyError, etc.
+        raise e
+    finally:
+        # Cleanup any lingering Git zombies
+        for p in psutil.process_iter():
+            if 'git' in p.name() and p.status() == 'zombie':
+                p.terminate()
+                p.wait()
                 break
-
-    return filter_downloads(clone_dir, pattern, default_pattern)
