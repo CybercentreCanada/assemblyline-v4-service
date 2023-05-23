@@ -323,6 +323,8 @@ class ResultSample(ServiceBase):
                         "an_int": 103,
                     },
                 }}))
+            # Optional: Set column ordering for table
+            table_section.set_column_order(['a_str', 'a_bool', 'an_int', 'extra_column_there', 'nested_key_value_pair'])
             result.add_section(table_section)
 
             # ==================================================================
