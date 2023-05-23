@@ -13,6 +13,7 @@ import tarfile
 import threading
 import subprocess
 from contextlib import contextmanager
+from hashlib import sha256
 from passlib.hash import bcrypt
 from zipfile import ZipFile, BadZipFile
 
@@ -179,9 +180,13 @@ class ServiceUpdater(ThreadedCoreBase):
             return os.path.getctime(self._time_keeper)
         return 0
 
+    def get_local_update_hash(self) -> str:
+        return sha256(open(self._update_tar, "rb").read()).hexdigest()
+
     def status(self):
         return {
             'local_update_time': self.get_local_update_time(),
+            'local_update_hash': self.get_local_update_hash(),
             'download_available': self._update_dir is not None,
             '_directory': self._update_dir,
             '_tar': self._update_tar,
