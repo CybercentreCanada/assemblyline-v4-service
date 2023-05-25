@@ -5,11 +5,11 @@ from typing import Any, Dict, Optional, TextIO, Union
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
+from assemblyline_service_utilities.common.extractor.ocr import ocr_detections
+from assemblyline_service_utilities.common.utils import extract_passwords
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
-from assemblyline_v4_service.common.extractor.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
-from assemblyline_v4_service.common.utils import extract_passwords
 from PIL import Image
 
 CLASSIFICATION = forge.get_classification()
