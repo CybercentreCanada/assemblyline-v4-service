@@ -1,6 +1,7 @@
 from pprint import pformat
+
 from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import Result, ResultSection, BODY_FORMAT
+from assemblyline_v4_service.common.result import BODY_FORMAT, Result, ResultSection
 
 
 class ExtraFeature(ServiceBase):

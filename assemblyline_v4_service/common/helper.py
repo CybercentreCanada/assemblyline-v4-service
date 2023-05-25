@@ -1,9 +1,8 @@
 import os
-import yaml
-
 from io import BytesIO
 from typing import Dict, Union
 
+import yaml
 from assemblyline.common.classification import Classification, InvalidDefinition
 from assemblyline.common.dict_utils import recursive_update
 from assemblyline.common.version import BUILD_MINOR, FRAMEWORK_VERSION, SYSTEM_VERSION

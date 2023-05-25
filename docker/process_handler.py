@@ -1,7 +1,6 @@
 import logging
 import signal
 import time
-
 from os import environ
 from subprocess import Popen, TimeoutExpired
 
