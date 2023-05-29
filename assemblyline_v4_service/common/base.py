@@ -78,6 +78,7 @@ class ServiceBase:
         self.rules_directory: str = None
         self.rules_list: list = []
         self.update_time: int = None
+        self.update_hash: str = None
         self.update_check_time: float = 0.0
         self.rules_hash: str = None
 
@@ -258,7 +259,7 @@ class ServiceBase:
             resp = requests.get(url_base + 'status', verify=verify)
             resp.raise_for_status()
             status = resp.json()
-            if self.update_time is not None and self.update_time >= status['local_update_time']:
+            if self.update_time is not None and self.update_time >= status['local_update_time'] and self.update_hash == status['local_update_hash']:
                 self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
                 return
             if status['download_available']:
@@ -287,6 +288,7 @@ class ServiceBase:
             tar_handle = tarfile.open(buffer_name)
             tar_handle.extractall(temp_directory)
             self.update_time = status['local_update_time']
+            self.update_hash = status['local_update_hash']
             self.rules_directory, temp_directory = temp_directory, self.rules_directory
             # Try to load the rules into the service before declaring we're using these rules moving forward
             temp_hash = self._gen_rules_hash()
