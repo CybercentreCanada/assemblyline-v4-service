@@ -208,6 +208,7 @@ class SectionBody:
     def __init__(self, body_format, body=None):
         self._format = body_format
         self._data = body
+        self._config = {}
 
     @property
     def format(self):
@@ -221,6 +222,10 @@ class SectionBody:
             return json.dumps(self._data)
         else:
             return self._data
+
+    @property
+    def config(self) -> dict:
+        return self._config
 
     def set_body(self, body):
         self._data = body
@@ -396,6 +401,11 @@ class TableSectionBody(SectionBody):
 
     def add_row(self, row: TableRow) -> None:
         self._data.append(row)
+        self.set_column_order(list(row.keys()))
+
+    def set_column_order(self, order: List[str]):
+        self._config = {'column_order': order}
+
 
 
 class ImageSectionBody(SectionBody):
@@ -418,7 +428,7 @@ class MultiSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.MULTI, body=[])
 
     def add_section_body(self, section_body: SectionBody) -> None:
-        self._data.append((section_body.format, section_body._data))
+        self._data.append((section_body.format, section_body._data, section_body._config))
 
 
 class DividerSectionBody(SectionBody):
@@ -461,10 +471,12 @@ class ResultSection:
         self._subsections: List[ResultSection] = []
         if isinstance(body, SectionBody):
             self._body_format = body.format
+            self._body_config = body.config
             self._body = body.body
         else:
             self._body_format = body_format
             self._body = body
+            self._body_config = {}
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.depth: int = 0
         self._tags = tags or {}
@@ -496,6 +508,10 @@ class ResultSection:
     @property
     def body_format(self):
         return self._body_format
+
+    @property
+    def body_config(self):
+        return self._body_config
 
     @property
     def heuristic(self):
@@ -629,6 +645,10 @@ class TypeSpecificResultSection(ResultSection):
     def body(self):
         return self.section_body.body
 
+    @property
+    def body_config(self):
+        return self.section_body.config
+
     def add_line(self, text: Union[str, List]) -> None:
         raise InvalidFunctionException("Do not use default add_line method in a type specific section.")
 
@@ -720,6 +740,10 @@ class ResultTableSection(TypeSpecificResultSection):
 
     def add_row(self, row: TableRow) -> None:
         self.section_body.add_row(row)
+        self.set_column_order(list(row.keys()))
+
+    def set_column_order(self, order: List[str]):
+        self.section_body.set_column_order(order)
 
 
 class ResultImageSection(TypeSpecificResultSection):
@@ -772,6 +796,7 @@ class Result:
             body=section.body,
             classification=section.classification,
             body_format=section.body_format,
+            body_config=section.body_config,
             depth=section.depth,
             heuristic=get_heuristic_primitives(section.heuristic),
             tags=unflatten(section.tags),
