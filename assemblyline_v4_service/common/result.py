@@ -2,14 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import Any, Dict, List, Optional, TextIO, TYPE_CHECKING, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
-from assemblyline.common.attack_map import attack_map, software_map, group_map, revoke_map
+from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
 from assemblyline.common.classification import Classification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
-from assemblyline_v4_service.common.helper import get_service_attributes, get_heuristics
+from assemblyline_v4_service.common.helper import get_heuristics, get_service_attributes
 
 if TYPE_CHECKING:  # Avoid circular dependency
     from assemblyline_v4_service.common.request import ServiceRequest

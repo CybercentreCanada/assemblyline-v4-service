@@ -3,24 +3,23 @@ from __future__ import annotations
 import hashlib
 import logging
 import os
-import requests
 import shutil
 import tarfile
 import tempfile
 import time
 import warnings
-
-from typing import Dict, Optional
 from pathlib import Path
+from typing import Dict, Optional
 
+import requests
 from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
+from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
-from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 
 # Ignore all other warnings that a service's libraries can generate
 warnings.filterwarnings("ignore")

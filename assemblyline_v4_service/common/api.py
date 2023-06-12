@@ -1,10 +1,11 @@
 import os
-import requests
 import time
 import traceback
-
-from assemblyline_core.safelist_client import SafelistClient
 from io import StringIO
+
+import requests
+from assemblyline_core.safelist_client import SafelistClient
+
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 DEVELOPMENT_MODE = False

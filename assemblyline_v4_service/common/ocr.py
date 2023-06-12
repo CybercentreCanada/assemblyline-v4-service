@@ -3,7 +3,6 @@ from __future__ import annotations
 from typing import TextIO
 
 import regex
-
 from assemblyline_v4_service.common.helper import get_service_manifest
 from assemblyline_v4_service.common.utils import PASSWORD_WORDS
 
