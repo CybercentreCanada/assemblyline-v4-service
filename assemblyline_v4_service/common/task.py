@@ -2,7 +2,7 @@ import json
 import logging
 import os
 import tempfile
-from typing import List, Optional, Any, Dict, Union
+from typing import Any, Dict, List, Optional, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -10,9 +10,9 @@ from assemblyline.common.classification import Classification
 from assemblyline.common.digests import get_digests_for_file, get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline_v4_service.common.api import ServiceAPI, PrivilegedServiceAPI
-from assemblyline_v4_service.common.result import Result
+from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.helper import get_service_manifest
+from assemblyline_v4_service.common.result import Result
 
 
 class MaxExtractedExceeded(Exception):

@@ -4,18 +4,38 @@ import random
 import tempfile
 
 from assemblyline.common import forge
-from assemblyline.common.attack_map import software_map, attack_map, group_map, revoke_map
+from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
 from assemblyline.common.dict_utils import flatten
 from assemblyline.common.hexdump import hexdump
-from assemblyline_v4_service.common.base import ServiceBase
-from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, ProcessItem, \
-    ResultGraphSection, ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, \
-    ResultMultiSection, ResultProcessTreeSection, ResultSection, BODY_FORMAT, Heuristic, ResultTextSection, \
-    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection, \
-    ResultTimelineSection
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
-from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
+from assemblyline.odm.randomizer import get_random_host, get_random_ip, get_random_phrase, get_random_tags
+from assemblyline_v4_service.common.base import ServiceBase
+from assemblyline_v4_service.common.result import (
+    BODY_FORMAT,
+    DividerSectionBody,
+    GraphSectionBody,
+    Heuristic,
+    KVSectionBody,
+    ProcessItem,
+    Result,
+    ResultGraphSection,
+    ResultImageSection,
+    ResultJSONSection,
+    ResultKeyValueSection,
+    ResultMemoryDumpSection,
+    ResultMultiSection,
+    ResultOrderedKeyValueSection,
+    ResultProcessTreeSection,
+    ResultSection,
+    ResultTableSection,
+    ResultTextSection,
+    ResultTimelineSection,
+    ResultURLSection,
+    TableRow,
+    TextSectionBody,
+)
+
 # DO NOT LIST BODY FORMATS LIKE THIS. This is again for the data randomizer.
 FORMAT_LIST = [BODY_FORMAT.TEXT, BODY_FORMAT.MEMORY_DUMP]
 

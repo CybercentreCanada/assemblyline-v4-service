@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-import signal
-import sys
 import ctypes
 import re
+import signal
+import sys
 
 libc = ctypes.CDLL("libc.so.6")
 

@@ -1,17 +1,16 @@
-from assemblyline.common import forge
-from assemblyline.common.dict_utils import flatten, unflatten, get_dict_fingerprint_hash
-from assemblyline.odm.base import Model, construct_safe
-from assemblyline.odm.models.ontology import ODM_VERSION
-from assemblyline.odm.models.ontology.results import NetworkConnection
-from assemblyline.odm.models.ontology.filetypes import PE
-from assemblyline.odm.models.tagging import Tagging
-from assemblyline_v4_service.common import helper
-
+import json
+import os
 from collections import defaultdict
 from typing import Dict
 
-import json
-import os
+from assemblyline.common import forge
+from assemblyline.common.dict_utils import flatten, get_dict_fingerprint_hash, unflatten
+from assemblyline.odm.base import Model, construct_safe
+from assemblyline.odm.models.ontology import ODM_VERSION
+from assemblyline.odm.models.ontology.filetypes import PE
+from assemblyline.odm.models.ontology.results import NetworkConnection
+from assemblyline.odm.models.tagging import Tagging
+from assemblyline_v4_service.common import helper
 
 ONTOLOGY_FILETYPE_MODELS = [PE]
 ONTOLOGY_CLASS_TO_FIELD = {
