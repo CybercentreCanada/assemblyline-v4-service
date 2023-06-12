@@ -33,7 +33,7 @@ jobs:
           sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev
           sudo env "PATH=$PATH" python -m pip install --no-cache-dir -U pip cython setuptools
           sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .
-          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -r test/requirements.txt
+          [ -f $(pwd)/test/requirements.txt ] && sudo env "PATH=$PATH" python -m pip install --no-cache-dir -r $(pwd)/test/requirements.txt
         displayName: Setup environment
       - script: |
           [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
