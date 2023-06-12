@@ -8,7 +8,7 @@ import tempfile
 import yaml
 import cProfile
 
-from cart import unpack_stream
+from cart import get_metadata_only, unpack_stream
 from typing import Union, Dict
 
 from assemblyline.common import forge
@@ -57,6 +57,10 @@ class RunService:
         # Identify the file
         file_info = self.identify.fileinfo(FILE_PATH)
         if file_info['type'] == "archive/cart" or file_info['magic'] == "custom: archive/cart":
+            original_file_name = get_metadata_only(FILE_PATH).get("name")
+            if original_file_name:
+                file_name = original_file_name
+
             # This is a CART file, uncart it and recreate the file info object
             original_temp = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             with open(FILE_PATH, 'rb') as ifile, open(original_temp, 'wb') as ofile:

@@ -29,6 +29,7 @@ LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 UPDATES_CA = os.environ.get('UPDATES_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
+MIN_SECONDS_BETWEEN_UPDATES = float(os.environ.get('MIN_SECONDS_BETWEEN_UPDATES', '10.0'))
 
 RECOVERABLE_RE_MSG = [
     "cannot schedule new futures after interpreter shutdown",
@@ -77,6 +78,7 @@ class ServiceBase:
         self.rules_directory: str = None
         self.rules_list: list = []
         self.update_time: int = None
+        self.update_check_time: float = 0.0
         self.rules_hash: str = None
 
     @property
@@ -236,6 +238,12 @@ class ServiceBase:
 
     # Only relevant for services using updaters (reserving 'updates' as the defacto container name)
     def _download_rules(self):
+        # check if we just tried to download rules to reduce traffic
+        if time.time() - self.update_check_time < MIN_SECONDS_BETWEEN_UPDATES:
+            return
+        self.update_check_time = time.time()
+
+        # Resolve the update target
         scheme, verify = 'http', None
         if os.path.exists(UPDATES_CA):
             scheme, verify = 'https', UPDATES_CA

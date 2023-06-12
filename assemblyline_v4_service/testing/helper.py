@@ -2,6 +2,7 @@ import json
 import os
 import pytest
 import shutil
+import re
 
 from pathlib import Path
 
@@ -16,6 +17,10 @@ from cart import unpack_file
 
 
 class FileMissing(Exception):
+    pass
+
+
+class HeuristicFiletypeMismatch(Exception):
     pass
 
 
@@ -76,6 +81,9 @@ class TestHelper:
         # Load submission params
         self.submission_params = helper.get_service_attributes().submission_params
 
+        # Load service heuristic
+        self.heuristics = helper.get_heuristics()
+
     def _create_service_task(self, file_path, params):
         fileinfo_keys = ["magic", "md5", "mime", "sha1", "sha256", "size", "type"]
 
@@ -87,6 +95,7 @@ class TestHelper:
         temp_submission_data = params.get('temp_submission_data', {})
         submission_params = params.get('submission_params', {})
         tags = params.get('tags', [])
+        filename = params.get('filename', os.path.basename(file_path))
 
         return ServiceTask(
             {
@@ -97,8 +106,8 @@ class TestHelper:
                 "service_config": {param.name: submission_params.get(param.name, param.default)
                                    for param in self.submission_params},
                 "fileinfo": {k: v for k, v in self.identify.fileinfo(file_path).items() if k in fileinfo_keys},
-                "filename": os.path.basename(file_path),
-                "min_classification": "TLP:W",
+                "filename": filename,
+                "min_classification": "TLP:C",
                 "max_files": 501,
                 "ttl": 3600,
                 "temporary_submission_data": [
@@ -230,6 +239,16 @@ class TestHelper:
 
             # Save results if needs be
             if save:
+                # If we are re-writing the results, validate that the heuristics raised were meant for the sample
+                for heuristic in results["results"]["heuristics"]:
+                    if not re.match(self.heuristics[heuristic["heur_id"]].filetype, task.file_type):
+                        raise HeuristicFiletypeMismatch(
+                            (
+                                f"Tried to raise Heuristic {heuristic['heur_id']} "
+                                f"({self.heuristics[heuristic['heur_id']].filetype}) for filetype {task.file_type}"
+                            )
+                        )
+
                 # Save results
                 result_json = os.path.join(self.result_folder, sample, 'result.json')
                 json.dump(results, open(result_json, 'w'), indent=2, allow_nan=False, sort_keys=True)
@@ -259,6 +278,8 @@ class TestHelper:
         finally:
             # Cleanup files
             if cls:
+                if os.path.exists(cls.working_directory):
+                    shutil.rmtree(cls.working_directory)
                 cls._cleanup()
             if os.path.exists(file_path):
                 os.remove(file_path)
@@ -356,11 +377,21 @@ class TestHelper:
                     else:
                         new_tag = ntm[v]
                         if tag['heur_id'] != new_tag['heur_id']:
-                            ih.add_issue(ih.TYPE_TAGS, ih.ACTION_CHANGED,
-                                         f"Heuristic ID for tag '{v} [{tag_type}]' has changed.")
+                            ih.add_issue(
+                                ih.TYPE_TAGS, ih.ACTION_CHANGED,
+                                (
+                                    f"Heuristic ID for tag '{v} [{tag_type}]' has changed "
+                                    f"from {tag['heur_id']} to {new_tag['heur_id']}."
+                                )
+                            )
                         if tag['signatures'] != new_tag['signatures']:
-                            ih.add_issue(ih.TYPE_TAGS, ih.ACTION_CHANGED,
-                                         f"Associated signatures for tag '{v} [{tag_type}]' have changed.")
+                            ih.add_issue(
+                                ih.TYPE_TAGS, ih.ACTION_CHANGED,
+                                (
+                                    f"Associated signatures for tag '{v} [{tag_type}]' have changed "
+                                    f"from {tag['signatures']} to {new_tag['signatures']}."
+                                )
+                            )
 
                 for v in ntm.keys():
                     if v not in otm:
@@ -420,8 +451,11 @@ class TestHelper:
             if sha256 not in oh_map and name not in on_map:
                 ih.add_issue(f_type, ih.ACTION_ADDED, f"File '{name} [{sha256}]' added to the file list.")
 
-    def regenerate_results(self, save_files=False):
+    def regenerate_results(self, save_files=False, sample_sha256=""):
         for f in self.result_list():
+            if sample_sha256 and f != sample_sha256:
+                print(f"{sample_sha256} requested. Skipping {f}...")
+                continue
             try:
                 print(f"Executing {f}")
                 self._execute_sample(f, save=True, save_files=save_files)

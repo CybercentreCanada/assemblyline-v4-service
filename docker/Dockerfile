@@ -18,7 +18,7 @@ RUN pip install --no-cache-dir -f dist --user \
   assemblyline-service-client==$version \
   assemblyline-v4-service==$version \
   assemblyline-client \
-  gunicorn flask gitpython git-remote-codecommit\
+  gunicorn[gevent] flask gitpython git-remote-codecommit psutil \
   && rm -rf ~/.cache/pip
 
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies

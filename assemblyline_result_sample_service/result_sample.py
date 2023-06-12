@@ -11,7 +11,8 @@ from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import DividerSectionBody, GraphSectionBody, KVSectionBody, ProcessItem, \
     ResultGraphSection, ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, \
     ResultMultiSection, ResultProcessTreeSection, ResultSection, BODY_FORMAT, Heuristic, ResultTextSection, \
-    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection
+    ResultURLSection, ResultTableSection, TableRow, TextSectionBody, Result, ResultOrderedKeyValueSection, \
+    ResultTimelineSection
 
 # DO NOT IMPORT IN YOUR SERVICE. These are just for creating randomized results.
 from assemblyline.odm.randomizer import get_random_phrase, get_random_ip, get_random_host, get_random_tags
@@ -322,6 +323,8 @@ class ResultSample(ServiceBase):
                         "an_int": 103,
                     },
                 }}))
+            # Optional: Set column ordering for table
+            table_section.set_column_order(['a_str', 'a_bool', 'an_int', 'extra_column_there', 'nested_key_value_pair'])
             result.add_section(table_section)
 
             # ==================================================================
@@ -389,6 +392,15 @@ class ResultSample(ServiceBase):
                                  'data', f'000{x+1}.jpg'),
                     f'000{x+1}.jpg', f'ResultSample screenshot 000{x+1}', ocr_heuristic_id=6)
             result.add_section(image_section)
+
+            # ==================================================================
+            # Timeline Section
+            #     This type of section allows the service writer to create a visual timeline
+            timeline_section = ResultTimelineSection("Timeline")
+            for x in range(4):
+                timeline_section.add_node(title=f"Node {x}", content=f"Description: {x}",
+                                          opposite_content=f"Value: {x}")
+            result.add_section(timeline_section)
 
             # ==================================================================
             # Multi Section
