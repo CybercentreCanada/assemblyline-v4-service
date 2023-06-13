@@ -1,4 +1,5 @@
 from assemblyline_v4_service.common.utils import extract_passwords
+import pytest
 
 
 def test_extract_passwords():
@@ -122,3 +123,29 @@ def test_extract_passwords():
     wanted_password = ["shibboleet"]
     res = extract_passwords(text)
     assert all(password in res for password in wanted_password)
+
+
+@pytest.mark.parametrize(
+    "text, password",
+    [
+        ("Please use attached#password:1234#@!# and tell me if I can do anything else", "1234#@!"),
+        ("Please use attached#password:1234#@!## and tell me if I can do anything else", "1234#@!#"),
+        ("Please use attached[password:1234#@!] and tell me if I can do anything else", "1234#@!"),
+        ("Please use attached<password:1234#@!> and tell me if I can do anything else", "1234#@!"),
+        ("Please use attached password:1234#@!) and tell me if I can do anything else", "1234#@!)"),
+        ("Please use attached(password:1234#@!) and tell me if I can do anything else", "1234#@!"),
+        ("Please use attached(password: 1234#@!) and tell me if I can do anything else", "1234#@!"),
+        ("(mot de passe:1234#@!)", "1234#@!"),
+        ("(mot de passe: 1234#@!)", "1234#@!"),
+        ("(mot de passe: 1234#@!)", " 1234#@!"),
+        # Password-keyword starting line shouldn't cause any problem
+        ("password:1234# and tell me if I can do anything else", "1234#"),
+    ]
+)
+def test_non_space_password_delimiter(text, password):
+    # The use-non-space-as-delimiter
+    # if the character preceding the word password in any language is found in the extracted password
+    # for that line, split on each.
+    # Also check for matching <> () [] {} instead if it's an opening one preceding.
+    res = extract_passwords(text)
+    assert password in res
