@@ -75,10 +75,11 @@ class alarm_clock:
 
 def __extract_passwords_from_lines(texts, password_word, password_regex):
     all_passwords = set()
+    password_keyword = f"{password_word}:"
     for line in texts:
-        if password_word in line.lower():
+        if password_keyword in line.lower():
             new_passwords = re.split(password_regex, line)
-            index = line.lower().rindex(f"{password_word}:")
+            index = line.lower().rindex(password_keyword)
             if index > 0 and line[index - 1] != " ":
                 special_char = line[index - 1]
                 if special_char in BRACKET_PAIRS:
