@@ -27,6 +27,7 @@ if os.path.exists(AL_ROOT_CA):
 status_last_read_time = 0
 NO_STATUS = {
     'local_update_time': 0,
+    'local_update_hash': None,
     'download_available': False,
     '_directory': None,
     '_tar': None,
