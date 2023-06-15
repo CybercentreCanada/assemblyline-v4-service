@@ -35,6 +35,10 @@ def add_cacert(cert: str) -> None:
 
 
 def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[str, str]]:
+    if not output_path:
+        # Nothing to filter.
+        return []
+
     f_files = []
     if not pattern:
         # Regex will either match on the filename, directory, or filepath, either with default or given pattern for source
