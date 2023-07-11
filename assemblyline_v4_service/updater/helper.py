@@ -182,7 +182,6 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
     proxy = source.get('proxy', None)
     auth = f'{username}:{password}@' if username and password else None
 
-    git_config = None
     git_env = {}
 
     if ignore_ssl_errors:
@@ -219,7 +218,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
 
             # As checking for .git at the end of the URI is not reliable
             # we will use the exception to determine if its a git repo or direct download.
-            repo = Repo.clone_from(url, clone_dir, env=git_env, config=git_config, branch=branch,
+            repo = Repo.clone_from(url, clone_dir, env=git_env, branch=branch,
                                    allow_unsafe_protocols=GIT_ALLOW_UNSAFE_PROTOCOLS)
 
             # Check repo last commit
