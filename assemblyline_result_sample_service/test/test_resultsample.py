@@ -2,7 +2,7 @@ import os
 
 import pytest
 from assemblyline.common.importing import load_module_by_path
-from assemblyline_v4_service.testing.helper import TestHelper
+from assemblyline_service_utilities.testing.helper import TestHelper
 
 # Force manifest location
 os.environ['SERVICE_MANIFEST_PATH'] = os.path.join(os.path.dirname(__file__), "..", "service_manifest.yml")
