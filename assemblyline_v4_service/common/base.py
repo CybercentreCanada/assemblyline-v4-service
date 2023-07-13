@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+import json
 import logging
 import os
 import shutil
@@ -29,6 +30,7 @@ UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 UPDATES_CA = os.environ.get('UPDATES_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 MIN_SECONDS_BETWEEN_UPDATES = float(os.environ.get('MIN_SECONDS_BETWEEN_UPDATES', '10.0'))
+SIGNATURES_META_FILENAME = "signatures_meta.json"
 
 RECOVERABLE_RE_MSG = [
     "cannot schedule new futures after interpreter shutdown",
@@ -80,6 +82,7 @@ class ServiceBase:
         self.update_hash: str = None
         self.update_check_time: float = 0.0
         self.rules_hash: str = None
+        self.signatures_meta: dict = {}
 
     @property
     def api_interface(self):
@@ -311,6 +314,11 @@ class ServiceBase:
     # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater
     def _gen_rules_hash(self) -> str:
         self.rules_list = [str(f) for f in Path(self.rules_directory).rglob("*") if os.path.isfile(str(f))]
+        signatures_meta_path = os.path.join(self.rules_directory, SIGNATURES_META_FILENAME)
+        if signatures_meta_path in self.rules_list:
+            self.rules_list.remove(signatures_meta_path)
+            self.signatures_meta = json.loads(open(signatures_meta_path, 'r').read())
+
         all_sha256s = [get_sha256_for_file(f) for f in self.rules_list]
 
         if len(all_sha256s) == 1:
