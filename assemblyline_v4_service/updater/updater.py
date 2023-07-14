@@ -243,8 +243,6 @@ class ServiceUpdater(ThreadedCoreBase):
             self.source_update_flag.set()
 
     def _handle_signature_change_event(self, data: Optional[SignatureChange]):
-        # Make sure to pull in latest changes
-        self._sync_settings()
         self.local_update_flag.set()
 
     def _handle_service_change_event(self, data: Optional[ServiceChange]):
@@ -280,7 +278,9 @@ class ServiceUpdater(ThreadedCoreBase):
 
         if old_service_stage != new_service_stage:
             # There has been a change in service stages, alert Scaler
-            self.log.info(f"Moving service from stage: {old_service_stage} to {new_service_stage}")
+            if not old_service_stage:
+                old_service_stage = ServiceStage(0)
+            self.log.info(f"Moving service from stage: {old_service_stage.name} to {new_service_stage.name}")
             self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
             self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
 
