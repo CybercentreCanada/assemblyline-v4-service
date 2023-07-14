@@ -243,6 +243,9 @@ class ServiceUpdater(ThreadedCoreBase):
             self.source_update_flag.set()
 
     def _handle_signature_change_event(self, data: Optional[SignatureChange]):
+        if data and data.signature_id == "*":
+            # A classification change to the source was made, sync settings
+            self._pull_settings()
         self.local_update_flag.set()
 
     def _handle_service_change_event(self, data: Optional[ServiceChange]):
@@ -320,16 +323,16 @@ class ServiceUpdater(ThreadedCoreBase):
         if not os.path.exists(UPDATER_DIR):
             os.makedirs(UPDATER_DIR)
 
-        _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
-        if self._service.update_config.generates_signatures:
-            output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
+        self.log.info("Setup service account.")
+        username = self.ensure_service_account()
+        self.log.info("Create temporary API key.")
+        with temporary_api_key(self.datastore, username) as api_key:
+            self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
+            al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
 
-            self.log.info("Setup service account.")
-            username = self.ensure_service_account()
-            self.log.info("Create temporary API key.")
-            with temporary_api_key(self.datastore, username) as api_key:
-                self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
+            _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
+            if self._service.update_config.generates_signatures:
+                output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
 
                 # Check if new signatures have been added
                 self.log.info("Check for new signatures.")
@@ -379,9 +382,9 @@ class ServiceUpdater(ThreadedCoreBase):
                     shutil.rmtree(output_directory, ignore_errors=True)
                     if os.path.exists(time_keeper):
                         os.unlink(time_keeper)
-        else:
-            output_directory = self.prepare_output_directory()
-            self.serve_directory(output_directory, time_keeper, al_client)
+            else:
+                output_directory = self.prepare_output_directory()
+                self.serve_directory(output_directory, time_keeper, al_client)
 
     def do_source_update(self, service: Service, specific_sources: list[str] = []) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
@@ -555,7 +558,7 @@ class ServiceUpdater(ThreadedCoreBase):
         else:
             # Pull source metadata from synced service configuration
             signature_map = {
-                source.name: {'classification': source['default_classfication']}
+                source.name: {'classification': source['default_classification'].value}
                 for source in self._service.update_config.sources
              }
         open(os.path.join(new_directory, SIGNATURES_META_FILENAME), 'w').write(json.dumps(signature_map, indent=2))
