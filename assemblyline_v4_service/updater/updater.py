@@ -32,6 +32,7 @@ from assemblyline.remote.datatypes.lock import Lock
 from assemblyline.odm.models.user import User
 from assemblyline.odm.models.user_settings import UserSettings
 
+from assemblyline_v4_service.common.base import SIGNATURES_META_FILENAME
 from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
 
 
@@ -86,7 +87,7 @@ class ServiceUpdater(ThreadedCoreBase):
                  shutdown_timeout: float = None, config: Config = None,
                  datastore: AssemblylineDatastore = None,
                  redis: RedisType = None, redis_persist: RedisType = None,
-                 default_pattern=".*"):
+                 default_pattern=".*", downloadable_signature_statuses=['DEPLOYED', 'NOISY']):
 
         self.updater_type = os.environ['SERVICE_PATH'].split('.')[-1].lower()
         self.default_pattern = default_pattern
@@ -138,6 +139,11 @@ class ServiceUpdater(ThreadedCoreBase):
         self.latest_updates_dir = os.path.join(UPDATER_DIR, 'latest_updates')
         if not os.path.exists(self.latest_updates_dir):
             os.makedirs(self.latest_updates_dir)
+
+        # Statuses that we're going to use as a filter to download signatures
+        self.statuses = downloadable_signature_statuses
+        status_query = ' OR '.join([f'status:{s}' for s in self.statuses])
+        self.signatures_query = f"type:{self.updater_type} AND ({status_query})"
 
         # SSL configuration to UI_SERVER
         self.verify = None if not os.path.exists(UI_SERVER_ROOT_CA) else UI_SERVER_ROOT_CA
@@ -272,7 +278,9 @@ class ServiceUpdater(ThreadedCoreBase):
 
         if old_service_stage != new_service_stage:
             # There has been a change in service stages, alert Scaler
-            self.log.info(f"Moving service from stage: {old_service_stage} to {new_service_stage}")
+            if not old_service_stage:
+                old_service_stage = ServiceStage(0)
+            self.log.info(f"Moving service from stage: {old_service_stage.name} to {new_service_stage.name}")
             self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
             self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
 
@@ -338,10 +346,7 @@ class ServiceUpdater(ThreadedCoreBase):
                     # service's use of signature source. Patience..
                     while not extracted_zip and attempt < 5:
                         temp_zip_file = os.path.join(output_directory, 'temp.zip')
-                        al_client.signature.download(
-                            output=temp_zip_file,
-                            query=f"type:{self.updater_type} AND (status:NOISY OR status:DEPLOYED)")
-
+                        al_client.signature.download(output=temp_zip_file, query=self.signatures_query)
                         self.log.debug(f"Downloading update to {temp_zip_file}")
                         if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
                             self.log.debug(
@@ -363,7 +368,7 @@ class ServiceUpdater(ThreadedCoreBase):
 
                     if extracted_zip:
                         self.log.info("New ruleset successfully downloaded and ready to use")
-                        self.serve_directory(output_directory, time_keeper)
+                        self.serve_directory(output_directory, time_keeper, al_client)
                     else:
                         self.log.error("Signatures aren't saved to disk.")
                         shutil.rmtree(output_directory, ignore_errors=True)
@@ -376,7 +381,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         os.unlink(time_keeper)
         else:
             output_directory = self.prepare_output_directory()
-            self.serve_directory(output_directory, time_keeper)
+            self.serve_directory(output_directory, time_keeper, al_client)
 
     def do_source_update(self, service: Service, specific_sources: list[str] = []) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
@@ -533,9 +538,28 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.sleep(60)
                 continue
 
-    def serve_directory(self, new_directory: str, new_time: str):
+    def serve_directory(self, new_directory: str, new_time: str, client: Client):
         self.log.info("Update finished with new data.")
         new_tar = ''
+
+        # Before serving directory, let's maintain a map of the different signatures and their current deployment state
+        # This map allows the service to be more responsive to changes made locally to the system such as classification changes
+        # This also avoids the need to have to insert this kind of metadata into the signature itself
+        if self._service.update_config.generates_signatures:
+            # Pull signature metadata from the API
+            signature_map = {
+                item['signature_id']: item
+                for item in client.search.stream.signature(query=self.signatures_query,
+                                                           fl="classification,source,status,signature_id,name")
+            }
+        else:
+            # Pull source metadata from synced service configuration
+            signature_map = {
+                source.name: {'classification': source['default_classfication']}
+                for source in self._service.update_config.sources
+             }
+        open(os.path.join(new_directory, SIGNATURES_META_FILENAME), 'w').write(json.dumps(signature_map, indent=2))
+
         try:
             # Tar update directory
             _, new_tar = tempfile.mkstemp(prefix="signatures_", dir=UPDATER_DIR, suffix='.tar.bz2')
