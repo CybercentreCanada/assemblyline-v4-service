@@ -32,6 +32,7 @@ from assemblyline.remote.datatypes.lock import Lock
 from assemblyline.odm.models.user import User
 from assemblyline.odm.models.user_settings import UserSettings
 
+from assemblyline_v4_service.common.base import SIGNATURES_META_FILENAME
 from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
 
 
@@ -54,7 +55,6 @@ UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/a
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
 STATUS_FILE = '/tmp/status'
-SIGNATURES_META_FILENAME = "signatures_meta.json"
 
 classification = forge.get_classification()
 
@@ -543,7 +543,7 @@ class ServiceUpdater(ThreadedCoreBase):
         new_tar = ''
 
         # Before serving directory, let's maintain a map of the different signatures and their current deployment state
-        # This map allows the service to be more responsive to changes made locally to the system that such as classification changes
+        # This map allows the service to be more responsive to changes made locally to the system such as classification changes
         # This also avoids the need to have to insert this kind of metadata into the signature itself
         if self._service.update_config.generates_signatures:
             # Pull signature metadata from the API
