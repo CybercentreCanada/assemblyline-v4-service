@@ -5,12 +5,13 @@ from typing import Any, Dict, Optional, TextIO, Union
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
+from PIL import Image
+
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
 from assemblyline_v4_service.common.utils import extract_passwords
-from PIL import Image
 
 CLASSIFICATION = forge.get_classification()
 WEBP_MAX_SIZE = 16383
@@ -50,6 +51,7 @@ class ServiceRequest:
         :param safelist_interface: Safelisting interface provided by service. Used to filter extracted files.
         :param allow_dynamic_recursion: Allow this file to be analyzed during Dynamic Analysis even if
                Dynamic Recursion Prevention (DRP) is enabled.
+        :param parent_relation: File relation to parent, if any.
         :return: None
         """
 
