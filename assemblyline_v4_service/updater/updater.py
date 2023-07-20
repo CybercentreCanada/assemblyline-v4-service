@@ -282,7 +282,8 @@ class ServiceUpdater(ThreadedCoreBase):
         if old_service_stage != new_service_stage:
             # There has been a change in service stages, alert Scaler
             if not old_service_stage:
-                old_service_stage = ServiceStage(0)
+                old_service_stage = 0
+            old_service_stage = ServiceStage(old_service_stage)
             self.log.info(f"Moving service from stage: {old_service_stage.name} to {new_service_stage.name}")
             self._service_stage_hash.set(SERVICE_NAME, new_service_stage)
             self.event_sender.send(SERVICE_NAME, {'operation': Operation.Modified, 'name': SERVICE_NAME})
