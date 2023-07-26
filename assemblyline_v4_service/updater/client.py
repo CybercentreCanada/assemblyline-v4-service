@@ -73,7 +73,7 @@ class Signature(SignatureAPI):
             def update_response(r: Dict[str, Any]):
                 # Response has to be in the same format, but show the accumulation of batches
                 response['success']: int = response['success'] + r['success']
-                response['errors']: bool = response['errors'] and r['errors']
+                response['errors']: bool = response['errors'] or r['errors']
                 response['skipped']: List[str] = response['skipped'] + r['skipped']
 
             # Split up data into batches to avoid server timeouts handling requests
