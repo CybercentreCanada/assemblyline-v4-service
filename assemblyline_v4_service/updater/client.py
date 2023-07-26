@@ -1,7 +1,6 @@
 import os
 
 from assemblyline.common import forge
-from assemblyline.odm.base import Classification
 from assemblyline.odm.models.signature import Signature as SignatureModel
 from assemblyline_client import Client4, get_client as get_AL_client
 from assemblyline_client.v4_client.module.signature import Signature as SignatureAPI
@@ -26,7 +25,6 @@ class Signature(SignatureAPI):
             i.id for i in self.datastore.signature.stream_search(f'source:{source} AND type:{sig_type}', fl='id')
             ])
         current_signature_ids = set()
-
 
         data_to_send = []
         # Iterate over the data given
