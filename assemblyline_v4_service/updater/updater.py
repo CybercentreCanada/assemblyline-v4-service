@@ -329,8 +329,7 @@ class ServiceUpdater(ThreadedCoreBase):
         self.log.info("Create temporary API key.")
         with temporary_api_key(self.datastore, username) as api_key:
             self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-            al_client = UpdaterALClient.get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify,
-                                                   logger=self.log)
+            al_client = UpdaterALClient.get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
 
             _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
             if self._service.update_config.generates_signatures:
@@ -394,8 +393,7 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = UpdaterALClient.get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify,
-                                                       logger=self.log)
+                al_client = UpdaterALClient.get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
                 self.log.info("Connected!")
 
                 # Parse updater configuration

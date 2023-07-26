@@ -11,10 +11,9 @@ SIGNATURE_UPDATE_BATCH = int(os.environ.get('SIGNATURE_UPDATE_BATCH', '1000'))
 
 
 class Signature(SignatureAPI):
-    def __init__(self, connection, logger):
+    def __init__(self, connection):
         super().__init__(connection)
         self.datastore = forge.get_datastore()
-        self.log = logger
 
     def add_update_many(self, source: str, sig_type: str, data: List[Union[dict, SignatureModel]], dedup_name=True):
         # This version of the API will sync signatures with the system by making direct changes to the datastore
@@ -87,14 +86,13 @@ class Signature(SignatureAPI):
 
 class UpdaterALClient(Client4):
     # Custom version of the Assemblyline client specifically for updaters
-    def __init__(self, connection, logger):
+    def __init__(self, connection):
         super().__init__(connection)
-        self.signature = Signature(connection, logger)
+        self.signature = Signature(connection)
 
     @staticmethod
     def get_client(server, auth=None, cert=None, debug=lambda x: None, headers=None, retries=0,
-                   silence_requests_warnings=True, apikey=None, verify=True, timeout=None, oauth=None,
-                   logger=None):
+                   silence_requests_warnings=True, apikey=None, verify=True, timeout=None, oauth=None):
         return UpdaterALClient(get_AL_client(server, auth, cert, debug, headers,
                                              retries, silence_requests_warnings,
-                                             apikey, verify, timeout, oauth)._connection, logger=logger)
+                                             apikey, verify, timeout, oauth)._connection)
