@@ -21,23 +21,24 @@ class Signature(SignatureAPI):
         # This version of the API will sync signatures with the system by making direct changes to the datastore
         # Signatures that no longer exist at the source will be DISABLED, but users can always re-deploy signatures if desired
 
-        # Get the list of signature currently existing in the system for the source
+        # Get the list of signatures that currently existing in the system for the source
         existing_signature_ids = set([
             i.id for i in self.datastore.signature.stream_search(f'source:{source} AND type:{sig_type}', fl='id')
             ])
         current_signature_ids = set()
 
-        # Iterate over the data
+
         data_to_send = []
+        # Iterate over the data given
         for d in data:
             if isinstance(d, SignatureModel):
                 d = d.as_primitives()
 
-            # Add to current signature ID list
+            # Compute the expected signature ID and add it to the list
             sig_id = f"{sig_type}_{source}_{d['signature_id']}"
             current_signature_ids.add(sig_id)
 
-            # Check to see if there's any important changes
+            # Check to see if there's any important changes made
             sig_exists: SignatureModel = self.datastore.signature.get_if_exists(sig_id, as_obj=False)
             if sig_exists and all(sig_exists[attr] == d[attr] for attr in ['status', 'data', 'classification']):
                 # If no changes, then use the old `last_modified` value
@@ -49,7 +50,7 @@ class Signature(SignatureAPI):
             # Append JSON-friendly data to be sent to API
             data_to_send.append(d)
 
-        # Find the signature IDs that don't exist at this source and disable them (if they haven't been already disabled)
+        # Find the signature IDs that don't exist at this source anymore and disable them
         for missing_signature_id in (existing_signature_ids - current_signature_ids):
             missing_signature = self.datastore.signature.get(missing_signature_id)
             if missing_signature.state_change_user in ['update_service_account', None] and missing_signature.status != 'DISABLED':
