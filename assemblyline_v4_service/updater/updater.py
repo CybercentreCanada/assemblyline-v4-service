@@ -23,7 +23,6 @@ from assemblyline.common.identify import zip_ident
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
-from assemblyline_client import Client, get_client
 from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
 from assemblyline.odm.models.service import Service, UpdateSource
 from assemblyline.remote.datatypes.hash import Hash
@@ -33,6 +32,7 @@ from assemblyline.odm.models.user import User
 from assemblyline.odm.models.user_settings import UserSettings
 
 from assemblyline_v4_service.common.base import SIGNATURES_META_FILENAME
+from assemblyline_v4_service.updater.client import UpdaterALClient
 from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
 
 
@@ -329,7 +329,8 @@ class ServiceUpdater(ThreadedCoreBase):
         self.log.info("Create temporary API key.")
         with temporary_api_key(self.datastore, username) as api_key:
             self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-            al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
+            al_client = UpdaterALClient.get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify,
+                                                   logger=self.log)
 
             _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
             if self._service.update_config.generates_signatures:
@@ -393,7 +394,8 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify)
+                al_client = UpdaterALClient.get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify,
+                                                       logger=self.log)
                 self.log.info("Connected!")
 
                 # Parse updater configuration
@@ -487,7 +489,7 @@ class ServiceUpdater(ThreadedCoreBase):
         return True
 
     # Define how your source update gets imported into Assemblyline
-    def import_update(self, files_sha256: List[Tuple[str, str]], client: Client, source_name: str,
+    def import_update(self, files_sha256: List[Tuple[str, str]], client: UpdaterALClient, source_name: str,
                       default_classification=None):
         raise NotImplementedError()
 
@@ -542,7 +544,7 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.sleep(60)
                 continue
 
-    def serve_directory(self, new_directory: str, new_time: str, client: Client):
+    def serve_directory(self, new_directory: str, new_time: str, client: UpdaterALClient):
         self.log.info("Update finished with new data.")
         new_tar = ''
 
