@@ -90,7 +90,7 @@ class ServiceRequest:
 
             if img_format == "WEBP" and (img.height > WEBP_MAX_SIZE or img.width > WEBP_MAX_SIZE):
                 # Maintain aspect ratio
-                img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.ANTIALIAS)
+                img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.LANCZOS)
 
             # Save and upload new image
             try:
