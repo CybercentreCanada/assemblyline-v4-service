@@ -49,7 +49,7 @@ setup(
         'fuzzywuzzy',
         'multidecoder',
         'pefile',
-        'pillow',
+        'pillow==10.0.0',
         'python-Levenshtein',
         'regex',
     ],
