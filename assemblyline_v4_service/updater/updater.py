@@ -598,10 +598,15 @@ class ServiceUpdater(ThreadedCoreBase):
                 os.unlink(new_time)
 
             # Cleanup old timekeepers/tars from unexpected termination(s) on persistent storage
-            [os.unlink(os.path.join(UPDATER_DIR, file)) for file in os.listdir(UPDATER_DIR)
-             if not self._update_tar.endswith(file) and file.startswith('signatures_')]
-            [os.unlink(os.path.join(UPDATER_DIR, file)) for file in os.listdir(UPDATER_DIR)
-             if not self._time_keeper.endswith(file) and file.startswith('time_keeper_')]
+            for file in os.listdir(UPDATER_DIR):
+                file_path = os.path.join(UPDATER_DIR, file)
+                if (file.startswith('signatures_') and file_path != self._time_keeper) or (file.startswith('time_keeper_') and file_path != self._time_keeper):
+                    try:
+                        # Attempt to cleanup file from directory
+                        os.unlink(file_path)
+                    except FileNotFoundError:
+                        # File has already been removed
+                        pass
 
     def _run_local_updates(self):
         # Wait until basic data is loaded
