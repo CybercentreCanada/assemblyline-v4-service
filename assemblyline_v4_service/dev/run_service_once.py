@@ -55,7 +55,7 @@ class RunService:
         self.service.start_service()
 
         # Identify the file
-        file_info = self.identify.fileinfo(FILE_PATH)
+        file_info = self.identify.fileinfo(FILE_PATH, skip_fuzzy_hashes=True)
         if file_info['type'] == "archive/cart" or file_info['magic'] == "custom: archive/cart":
             original_file_name = get_metadata_only(FILE_PATH).get("name")
             if original_file_name:
@@ -66,7 +66,7 @@ class RunService:
             with open(FILE_PATH, 'rb') as ifile, open(original_temp, 'wb') as ofile:
                 unpack_stream(ifile, ofile)
 
-            file_info = self.identify.fileinfo(original_temp)
+            file_info = self.identify.fileinfo(original_temp, skip_fuzzy_hashes=True)
             target_file = os.path.join(tempfile.gettempdir(), file_info['sha256'])
             shutil.move(original_temp, target_file)
             LOG.info(f"File was a CaRT archive, it was un-CaRTed to {target_file} for processing")

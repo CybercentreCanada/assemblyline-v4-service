@@ -113,7 +113,7 @@ class Task:
         # Allows the administrator to be selective about the types of hashes to lookup in the safelist
         if safelist_interface and self.safelist_config.enabled and not (self.deep_scan or self.ignore_filtering):
             # Ignore adding files that are known to the system to be safe
-            digests = get_digests_for_file(path)
+            digests = get_digests_for_file(path, skip_fuzzy_hashes=True)
             for hash_type in self.safelist_config.hash_types:
                 qhash = digests[hash_type]
                 resp = safelist_interface.lookup_safelist(qhash)
