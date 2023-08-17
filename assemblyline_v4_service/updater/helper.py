@@ -142,7 +142,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None, logger=Non
                 for content in response.iter_content(BLOCK_SIZE):
                     f.write(content)
 
-            ident_type = identify.fileinfo(file_path)['type']
+            ident_type = identify.fileinfo(file_path, generate_hashes=False)['type']
             if ident_type.startswith('archive'):
                 extract_dir = os.path.join(output_dir, name)
                 format = ident_type.split('archive/')[-1]
