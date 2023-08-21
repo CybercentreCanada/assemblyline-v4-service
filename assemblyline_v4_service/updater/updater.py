@@ -600,7 +600,7 @@ class ServiceUpdater(ThreadedCoreBase):
             # Cleanup old timekeepers/tars from unexpected termination(s) on persistent storage
             for file in os.listdir(UPDATER_DIR):
                 file_path = os.path.join(UPDATER_DIR, file)
-                if (file.startswith('signatures_') and file_path != self._time_keeper) or (file.startswith('time_keeper_') and file_path != self._time_keeper):
+                if (file.startswith('signatures_') and file_path != self._update_tar) or (file.startswith('time_keeper_') and file_path != self._time_keeper):
                     try:
                         # Attempt to cleanup file from directory
                         os.unlink(file_path)
