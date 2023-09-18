@@ -89,15 +89,7 @@ class RunService:
             metadata={},
             service_name=SERVICE_NAME,
             service_config=self.submission_params,
-            fileinfo=dict(
-                magic=file_info['magic'],
-                md5=file_info['md5'],
-                mime=file_info['mime'],
-                sha1=file_info['sha1'],
-                sha256=file_info['sha256'],
-                size=file_info['size'],
-                type=file_info['type'],
-            ),
+            fileinfo=file_info,
             filename=file_name,
             min_classification=forge.get_classification().UNRESTRICTED,
             max_files=501,  # TODO: get the actual value
