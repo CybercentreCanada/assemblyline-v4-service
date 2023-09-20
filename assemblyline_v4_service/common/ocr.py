@@ -40,8 +40,12 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> dict[str, list[str
         import pytesseract
         from PIL import Image
     except ImportError as exc:
-        raise ImportError('In order to scan for OCR detections, ensure you have the following installed:\n'
-                          'tesseract, pytesseract, and Pillow') from exc
+        raise ImportError(
+            'In order to use this method to scan for OCR detections, '
+            'ensure you have the following installed in your service:\n'
+            'tesseract-ocr, pytesseract, and Pillow.\n'
+            'You can do this via "apt-get install -y tesseract-ocr" and "pip install Pillow pytesseract"'
+        ) from exc
 
     # Use OCR library to extract strings from an image file
     ocr_output = ""
