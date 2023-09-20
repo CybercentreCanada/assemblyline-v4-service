@@ -4,9 +4,10 @@ from multiprocessing import Process
 
 import pytest
 import requests_mock
+from assemblyline_core.safelist_client import SafelistClient
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import *
-from requests import ConnectionError, HTTPError, Session, Timeout, exceptions
+from requests import ConnectionError, Session, Timeout
 
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
@@ -75,7 +76,7 @@ def test_serviceapi_init():
     }
 
 
-def test_service_api_with_retries():
+def test_serviceapi_with_retries():
     service_attributes = helper.get_service_attributes()
     log = logging.getLogger('assemblyline')
     sa = ServiceAPI(service_attributes, log)
@@ -113,7 +114,7 @@ def test_service_api_with_retries():
             sa._with_retries(sa.session.get, url)
 
 
-def test_get_safelist():
+def test_serviceapi_get_safelist():
     service_attributes = helper.get_service_attributes()
     log = logging.getLogger('assemblyline')
     sa = ServiceAPI(service_attributes, log)
@@ -123,11 +124,38 @@ def test_get_safelist():
     # Test not in development mode
 
 
-def test_lookup_safelist():
+def test_serviceapi_lookup_safelist():
     service_attributes = helper.get_service_attributes()
     log = logging.getLogger('assemblyline')
     sa = ServiceAPI(service_attributes, log)
     assert sa.lookup_safelist("qhash") is None
+
+    # TODO
+    # Test not in development mode
+
+# TODO
+# SafelistClient requires forge access
+
+# def test_privilegedserviceapi_init():
+#     log = logging.getLogger('assemblyline')
+#     psa = PrivilegedServiceAPI(log)
+#     assert psa.log == log
+#     assert isinstance(psa.safelist_client, SafelistClient)
+
+
+# def test_privilegedserviceapi_get_safelist():
+#     log = logging.getLogger('assemblyline')
+#     psa = PrivilegedServiceAPI(log)
+#     assert psa.get_safelist() == {}
+
+#     # TODO
+#     # Test not in development mode
+
+
+# def test_privilegedserviceapi_lookup_safelist():
+#     log = logging.getLogger('assemblyline')
+#     psa = PrivilegedServiceAPI(log)
+#     assert psa.lookup_safelist("qhash") is None
 
     # TODO
     # Test not in development mode
