@@ -1,7 +1,7 @@
 import pytest
 from assemblyline_v4_service.common.helper import *
 
-from assemblyline.common.classification import Classification
+from assemblyline.common.classification import InvalidDefinition
 
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
@@ -32,50 +32,11 @@ def teardown_module():
 
 
 def test_get_classification():
-    classification = get_classification()
-    assert classification.__dict__ == {
-        'original_definition': {
-                'enforce': False, 'dynamic_groups': False
-            },
-            'levels_map': {
-                'INV': 10001, '10001': 'INV', 'NULL': 0, '0': 'NULL'
-            },
-            'levels_map_stl': {
-                'INV': 'INVALID', 'NULL': 'NULL'
-            },
-            'levels_map_lts': {
-                'INVALID': 'INV', 'NULL': 'NULL'
-            },
-            'levels_styles_map': {},
-            'levels_aliases': {},
-            'access_req_map_lts': {},
-            'access_req_map_stl': {},
-            'access_req_aliases': {},
-            'groups_map_lts': {},
-            'groups_map_stl': {},
-            'groups_aliases': {},
-            'groups_auto_select': [],
-            'groups_auto_select_short': [],
-            'subgroups_map_lts': {},
-            'subgroups_map_stl': {},
-            'subgroups_aliases': {},
-            'subgroups_auto_select': [],
-            'subgroups_auto_select_short': [],
-            'params_map': {},
-            'description': {},
-            'invalid_mode': True,
-            '_classification_cache': set(),
-            '_classification_cache_short': set(),
-            'enforce': False,
-            'dynamic_groups': False,
-            'dynamic_groups_type': 'email',
-            'UNRESTRICTED': 'NULL',
-            'RESTRICTED': 'INVALID'
-        }
-    assert isinstance(classification, Classification)
+    with pytest.raises(InvalidDefinition):
+        get_classification()
 
     # TODO
-    # Mock '/etc/assemblyline/classification.yml'
+    # The rest of the method
 
 
 def test_get_heuristics():
