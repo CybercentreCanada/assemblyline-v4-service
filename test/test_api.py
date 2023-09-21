@@ -4,7 +4,6 @@ from multiprocessing import Process
 
 import pytest
 import requests_mock
-from assemblyline_core.safelist_client import SafelistClient
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import *
 from requests import ConnectionError, Session, Timeout

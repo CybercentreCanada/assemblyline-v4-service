@@ -1,7 +1,7 @@
 import json
 import os
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Optional
 
 from assemblyline_v4_service.common import helper
 
@@ -84,7 +84,7 @@ class OntologyHelper:
 
         ontology['results'].update(self.results)
 
-    def _attach_ontology(self, request, working_dir) -> str:
+    def _attach_ontology(self, request, working_dir) -> Optional[str]:
         # Get heuristics of service
         heuristics = helper.get_heuristics()
 
