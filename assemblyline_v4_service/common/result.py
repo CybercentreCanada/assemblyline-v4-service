@@ -224,7 +224,7 @@ class SectionBody:
         if not self._data:
             return None
         elif not isinstance(self._data, str):
-            return json.dumps(self._data)
+            return json.dumps(self._data, allow_nan=False)
         else:
             return self._data
 
