@@ -253,6 +253,9 @@ def test_attach_ontology(dummy_request_class):
                     'version': '4.0.0'},
     }
 
+    # TODO
+    # Test nested methods preprocess_result_for_dump, validate_tags and merge_tags
+
 
 def test_reset():
     oh = OntologyHelper(None, "blah")
