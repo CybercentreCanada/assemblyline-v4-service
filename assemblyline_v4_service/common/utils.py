@@ -86,7 +86,7 @@ def __extract_passwords_from_lines(texts, password_word, password_regex):
                     special_char = BRACKET_PAIRS[special_char]
                 for password in list(new_passwords):
                     new_passwords.extend([password[:i] for i, ltr in enumerate(password) if ltr == special_char])
-            all_passwords.update(new_passwords)
+            all_passwords.update({new_p for new_p in new_passwords if new_p})
     return all_passwords
 
 
@@ -102,4 +102,6 @@ def extract_passwords(text: str) -> set[str]:
         p = p.strip()
         # We can assume that at least one of the strip_char won't be there, to have the simple space stripping option
         passwords.update([p.strip(strip_char) for strip_char in PASSWORD_STRIP])
+
+    passwords = {password for password in passwords if password}
     return passwords

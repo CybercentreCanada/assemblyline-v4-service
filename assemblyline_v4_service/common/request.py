@@ -132,6 +132,7 @@ class ServiceRequest:
                     pw_list = set(self.temp_submission_data.get('passwords', []))
                     [pw_list.update(extract_passwords(pw_string)) for pw_string in detections['password']]
                     self.temp_submission_data['passwords'] = list(pw_list)
+                    self.temp_submission_data['passwords'].sort()
 
                 heuristic = Heuristic(ocr_heuristic_id, signatures={
                     f'{k}_strings': len(v) for k, v in detections.items()})

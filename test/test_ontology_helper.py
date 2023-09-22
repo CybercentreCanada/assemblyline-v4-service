@@ -37,7 +37,6 @@ def teardown_module():
         os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
-
 @pytest.fixture
 def dummy_result_class_instance():
     class DummyResult:
