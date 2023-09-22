@@ -57,7 +57,7 @@ class ResultAggregationException(Exception):
     pass
 
 
-def get_heuristic_primitives(heur: Heuristic):
+def get_heuristic_primitives(heur: Optional[Heuristic]) -> Optional[Dict[str, Union[int, List[str], Dict[str, int]]]]:
     if heur is None:
         return None
 
@@ -240,9 +240,12 @@ class TextSectionBody(SectionBody):
     def __init__(self, body=None) -> None:
         super().__init__(BODY_FORMAT.TEXT, body=body)
 
-    def add_line(self, text: Union[str, List]) -> None:
+    def add_line(self, text: Union[str, List]) -> Optional[str]:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
+        if not text:
+            return self._data
+
         if isinstance(text, list):
             text = ''.join(text)
         textstr = safe_str(text)
@@ -252,7 +255,13 @@ class TextSectionBody(SectionBody):
             self._data = textstr
         return self._data
 
-    def add_lines(self, line_list: List[str]) -> None:
+    def add_lines(self, line_list: List[str]) -> Optional[str]:
+        if not line_list:
+            return self._data
+
+        if not isinstance(line_list, list):
+            return self._data
+
         segment = safe_str('\n'.join(line_list))
         if self._data is None:
             self._data = segment
@@ -271,6 +280,9 @@ class URLSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.URL, body=[])
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
+        if not url:
+            return
+
         url_data = {'url': url}
         if name:
             url_data['name'] = name
@@ -298,7 +310,7 @@ class KVSectionBody(SectionBody):
     def set_item(self, key: str, value: KV_VALUE_TYPE) -> None:
         self._data[str(key)] = value
 
-    def update_items(self, new_dict: dict[str, KV_VALUE_TYPE]):
+    def update_items(self, new_dict: dict[str, KV_VALUE_TYPE]) -> None:
         self._data.update({str(k): v for k, v in new_dict.items()})
 
 
@@ -405,10 +417,16 @@ class TableSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.TABLE, body=[])
 
     def add_row(self, row: TableRow) -> None:
+        if row == {}:
+            return
+
         self._data.append(row)
         self.set_column_order(list(row.keys()))
 
-    def set_column_order(self, order: List[str]):
+    def set_column_order(self, order: List[str])-> None:
+        if not order:
+            return
+
         self._config = {'column_order': order}
 
 
