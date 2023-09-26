@@ -10,32 +10,6 @@ from assemblyline_v4_service.common.result import ResultSection
 from assemblyline.odm.models.ontology.filetypes import PE
 from assemblyline.odm.models.ontology.results import Antivirus
 
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
-
-
-def setup_module():
-    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("\n".join([
-            "name: Sample",
-            "version: sample",
-            "docker_config:",
-            "    image: sample",
-            "heuristics:",
-            "  - heur_id: 17",
-            "    name: blah",
-            "    description: blah",
-            "    filetype: '*'",
-            "    score: 250",
-        ]))
-        open_manifest.close()
-
-
-def teardown_module():
-    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        os.remove(TEMP_SERVICE_CONFIG_PATH)
-
 
 @pytest.fixture
 def dummy_result_class_instance():

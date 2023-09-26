@@ -4,35 +4,10 @@ from logging import Logger
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
+from assemblyline_v4_service.common.result import get_heuristic_primitives
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
 
 from assemblyline.odm.messages.task import Task as ServiceTask
-
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
-
-
-def setup_module():
-    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("\n".join([
-            "name: Sample",
-            "version: sample",
-            "docker_config:",
-            "    image: sample",
-            "heuristics:",
-            "  - heur_id: 1",
-            "    name: blah",
-            "    description: blah",
-            "    filetype: '*'",
-            "    score: 250",
-        ]))
-        open_manifest.close()
-
-
-def teardown_module():
-    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
 @pytest.fixture
@@ -208,11 +183,10 @@ def test_add_image(service_request):
         '_format': 'KEY_VALUE'
     }
 
-    heur_dict = data["ocr_section"].__dict__["_heuristic"].__dict__
+    heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
-    assert heur_dict["_definition"] == {"attack_id": [], "classification": "TLP:C", "description": "blah", "filetype": "*", "heur_id": "1", "name": "blah", "score": 250, "signature_score_map": {}, "stats": {"count": 0, "min": 0, "max": 0, "avg": 0, "sum": 0, "first_hit": None, "last_hit": None}, "max_score": None}
+    assert heur_dict == {'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'], 'signatures': {'ransomware_strings': 7}, 'frequency': 0, 'score_map': {}}
 
-    assert heur_dict['_signatures'] == {'ransomware_strings': 7}
     assert service_request.temp_submission_data == {}
 
     service_request.task.supplementary.clear()
@@ -238,11 +212,10 @@ def test_add_image(service_request):
         '_format': 'KEY_VALUE'
     }
 
-    heur_dict = data["ocr_section"].__dict__["_heuristic"].__dict__
+    heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
-    assert heur_dict["_definition"] == {"attack_id": [], "classification": "TLP:C", "description": "blah", "filetype": "*", "heur_id": "1", "name": "blah", "score": 250, "signature_score_map": {}, "stats": {"count": 0, "min": 0, "max": 0, "avg": 0, "sum": 0, "first_hit": None, "last_hit": None}, "max_score": None}
+    assert heur_dict == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {'password_strings': 1}, 'frequency': 0, 'score_map': {}}
 
-    assert heur_dict['_signatures'] == {'password_strings': 1}
     assert service_request.temp_submission_data == {'passwords':[' 975', '975', 'DOCUMENT', 'PASSWORD', 'PASSWORD:']}
 
 
@@ -315,6 +288,11 @@ def test_result_getter(service_request):
 def test_result_setter(service_request):
     service_request.result = "blah"
     assert service_request.result == "blah"
+
+
+def test_set_service_context(service_request):
+    service_request.set_service_context("blah")
+    assert service_request.task.service_context == "blah"
 
 
 def test_temp_submission_data_getter(service_request):

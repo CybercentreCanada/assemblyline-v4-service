@@ -8,32 +8,6 @@ from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import *
 from requests import ConnectionError, Session, Timeout
 
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
-
-
-def setup_module():
-    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("\n".join([
-            "name: Sample",
-            "version: sample",
-            "docker_config:",
-            "    image: sample",
-            "heuristics:",
-            "  - heur_id: 17",
-            "    name: blah",
-            "    description: blah",
-            "    filetype: '*'",
-            "    score: 250",
-        ]))
-        open_manifest.close()
-
-
-def teardown_module():
-    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        os.remove(TEMP_SERVICE_CONFIG_PATH)
-
 
 def test_development_mode():
     assert DEVELOPMENT_MODE is True
@@ -69,7 +43,7 @@ def test_serviceapi_init():
                 ('x_apikey', ('X_APIKEY', DEFAULT_AUTH_KEY)),
                 ('container_id', ('container_id', 'dev-service')),
                 ('service_name', ('service_name', 'Sample')),
-                ('service_version', ('service_version', 'sample'))
+                ('service_version', ('service_version', '4.4.0.dev0'))
             ]
         )
     }

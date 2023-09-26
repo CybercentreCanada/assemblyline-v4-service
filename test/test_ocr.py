@@ -1,32 +1,7 @@
-import os
+from test import setup_module
 
-import pytest
 from assemblyline_v4_service.common.ocr import *
 
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
-
-
-def setup_module():
-    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("\n".join([
-            "name: Sample",
-            "version: $SERVICE_TAG",
-            "docker_config:",
-            "    image: sample",
-            "config:",
-            "  ocr:",
-            "    banned: [donotscanme]",
-            "    macros: []",
-            "    ransomware: []",
-        ]))
-        open_manifest.close()
-
-
-def teardown_module():
-    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 def test_ocr_detections():
     assert ocr_detections("./test/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e") == {
@@ -48,6 +23,7 @@ def test_ocr_detections():
 
 
 def test_detections():
+    setup_module()
     # No detection
     assert detections("blah") == {}
 

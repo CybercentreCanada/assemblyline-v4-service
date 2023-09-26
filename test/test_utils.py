@@ -1,5 +1,5 @@
-from assemblyline_v4_service.common.utils import extract_passwords
 import pytest
+from assemblyline_v4_service.common.utils import extract_passwords
 
 
 def test_extract_passwords():

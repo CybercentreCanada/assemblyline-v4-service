@@ -14,32 +14,6 @@ from assemblyline.common import exceptions
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.service import Service
 
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
-
-
-def setup_module():
-    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("\n".join([
-            "name: Sample",
-            "version: sample",
-            "docker_config:",
-            "    image: sample",
-            "heuristics:",
-            "  - heur_id: 17",
-            "    name: blah",
-            "    description: blah",
-            "    filetype: '*'",
-            "    score: 250",
-        ]))
-        open_manifest.close()
-
-
-def teardown_module():
-    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        os.remove(TEMP_SERVICE_CONFIG_PATH)
-
 
 @pytest.fixture
 def dummy_tar_class():
@@ -105,7 +79,7 @@ def test_servicebase_init():
     # No config
     sb = ServiceBase()
     assert isinstance(sb.service_attributes, Service)
-    assert sb.config == {}
+    assert sb.config == {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []}}
     assert sb.name == "sample"
     assert isinstance(sb.log, Logger)
     assert sb._task is None
@@ -123,7 +97,10 @@ def test_servicebase_init():
 
     # With config
     sb = ServiceBase({"blah": "blah"})
-    assert sb.config == {"blah": "blah"}
+    assert sb.config == {
+        "blah": "blah",
+        'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []}
+    }
 
 
 def test_servicebase_get_dependencies_info():
@@ -261,7 +238,7 @@ def test_servicebase_execute():
 
 def test_servicebase_get_service_version():
     sb = ServiceBase()
-    assert sb.get_service_version() == "4.4.sample"
+    assert sb.get_service_version() == "4.4.0.dev0"
 
 
 def test_servicebase_get_tool_version():

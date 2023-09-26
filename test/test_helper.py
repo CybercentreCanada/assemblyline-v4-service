@@ -1,34 +1,9 @@
+from test import setup_module, teardown_module
+
 import pytest
 from assemblyline_v4_service.common.helper import *
 
 from assemblyline.common.classification import InvalidDefinition
-
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
-
-
-def setup_module():
-    if not os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
-        open_manifest.write("\n".join([
-            "name: Sample",
-            "version: $SERVICE_TAG",
-            "docker_config:",
-            "    image: sample",
-            "heuristics:",
-            "  - heur_id: 17",
-            "    name: blah",
-            "    description: blah",
-            "    filetype: '*'",
-            "    score: 250",
-            "    attack_id: T123",
-        ]))
-        open_manifest.close()
-
-
-def teardown_module():
-    if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
-        os.remove(TEMP_SERVICE_CONFIG_PATH)
 
 
 def test_get_classification():
@@ -41,7 +16,7 @@ def test_get_classification():
 
 def test_get_heuristics():
     heuristics = get_heuristics()
-    assert isinstance(heuristics[17], Heuristic)
+    assert isinstance(heuristics[1], Heuristic)
 
 
 def test_get_service_attributes():
@@ -52,19 +27,22 @@ def test_get_service_attributes():
 def test_get_service_manifest():
     service_manifest = get_service_manifest()
     assert service_manifest == {
+        'config': {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []}},
         'docker_config': {'image': 'sample'},
-        'heuristics': [{'attack_id': 'T123',
+        'heuristics': [{'attack_id': 'T1005',
                         'description': 'blah',
                         'filetype': '*',
-                        'heur_id': 17,
+                        'heur_id': 1,
                         'name': 'blah',
-                        'score': 250}],
+                        'score': 250,
+                        'max_score': 1200}],
         'name': 'Sample',
         'version': '4.4.0.dev0',
     }
 
+    teardown_module()
     # Stable
-    with open(TEMP_SERVICE_CONFIG_PATH, "w") as f:
+    with open("/tmp/service_manifest.yml", "w") as f:
         f.write("\n".join([
             "name: Sample",
             "version: 4.4.0.stable123",
@@ -92,12 +70,15 @@ def test_get_service_manifest():
     }
 
     # No service manifest
-    os.remove(TEMP_SERVICE_CONFIG_PATH)
+    teardown_module()
     with pytest.raises(Exception):
         get_service_manifest()
 
     # Empty service manifest
-    with open(TEMP_SERVICE_CONFIG_PATH, "w") as f:
+    with open("/tmp/service_manifest.yml", "w") as f:
         pass
     with pytest.raises(Exception):
         get_service_manifest()
+
+    teardown_module()
+    setup_module()
