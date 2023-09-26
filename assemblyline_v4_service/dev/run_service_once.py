@@ -83,6 +83,9 @@ class RunService:
                 k, v = kv.split("=", 1)
                 self.submission_params[k] = v
 
+        file_info.pop("ascii", None)
+        file_info.pop("hex", None)
+        file_info.pop("entropy", None)
         # Create service processing task
         service_task = ServiceTask(dict(
             sid=get_random_id(),
