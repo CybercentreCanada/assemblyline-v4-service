@@ -829,3 +829,557 @@ def test_resultsection_add_tag():
     # Add a bytes value
     assert rs.add_tag("blah", b"blah2") is None
     assert rs._tags == {"blah": ["blah", "blah1", "blah2"]}
+
+
+def test_resultsection_finalize():
+    rs = ResultSection("title_text_as_str")
+
+    # Basic
+    assert rs.finalize() is True
+    assert rs._finalized is True
+    assert rs.depth == 0
+    assert rs._subsections == []
+
+    # Call finalize again
+    with pytest.raises(ResultAggregationException):
+        rs.finalize()
+
+    rs._finalized = False
+
+    # Depth provided
+    assert rs.finalize(1) is True
+    assert rs.depth == 1
+
+    rs._finalized = False
+
+    # No title text
+    rs.title_text = None
+    assert rs.finalize() is False
+
+    rs.title_text = "title_text_as_str"
+
+    # Non-None body value
+    rs._body = ""
+    assert rs.finalize() is True
+    assert rs._body is None
+
+    rs._finalized = False
+
+    # Subsections exist
+    ss = ResultSection("blah")
+    rs.add_subsection(ss)
+    assert rs.finalize() is True
+    assert rs.depth == 0
+    assert ss.depth == 1
+
+    rs._finalized = False
+    ss._finalized = False
+
+    # Subsections exist with depth provided
+    ss = ResultSection("blah")
+    rs.add_subsection(ss)
+    assert rs.finalize(3) is True
+    assert rs.depth == 3
+    assert ss.depth == 4
+
+
+def test_resultsection_set_body():
+    rs = ResultSection("title_text_as_str")
+
+    # body is str
+    assert rs.set_body("") is None
+    assert rs._body == ""
+    assert rs._body_format == BODY_FORMAT.TEXT
+
+    # passing body is str, body_format is provided
+    assert rs.set_body("", BODY_FORMAT.GRAPH_DATA) is None
+    assert rs._body == ""
+    assert rs._body_format == BODY_FORMAT.GRAPH_DATA
+
+    # body is a SectionBody, note that everything is overwritten
+    assert rs.set_body(TextSectionBody("blah")) is None
+    assert rs._body == "blah"
+    assert rs._body_format == BODY_FORMAT.TEXT
+
+
+def test_resultsection_set_heuristic():
+    rs = ResultSection("title_text_as_str")
+
+    # Pass None heuristic
+    assert rs.set_heuristic(None) is None
+    assert rs._heuristic is None
+
+    # Pass int heuristic
+    assert rs.set_heuristic(1) is None
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
+
+    rs._heuristic = None
+
+    # Pass Heuristic heuristic
+    heur = Heuristic(1)
+    assert rs.set_heuristic(heur) is None
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
+
+    # Try adding a heuristic again
+    with pytest.raises(InvalidHeuristicException):
+        rs.set_heuristic(heur)
+
+    rs._heuristic = None
+
+    # Set the Heuristic heuristic with attack ID and signature
+    heur = Heuristic(1)
+    assert rs.set_heuristic(heur, attack_id="T1001", signature="blah") is None
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005', 'T1001'], 'signatures': {"blah": 1}, 'frequency': 1, 'score_map': {}}
+
+    rs._heuristic = None
+
+    # Set the int heuristic with attack ID and signature
+    # TODO: There may be an issue here with the default attack ID being overwritten
+    assert rs.set_heuristic(1, attack_id="T1001", signature="blah") is None
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1001'], 'signatures': {"blah": 1}, 'frequency': 0, 'score_map': {}}
+
+
+def test_resultsection_set_tags():
+    rs = ResultSection("title_text_as_str")
+
+    # Passing None as tags
+    assert rs.set_tags(None) is None
+    assert rs._tags == {}
+
+    # Passing valid tags
+    assert rs.set_tags({"a": "b"}) is None
+    assert rs._tags == {"a": "b"}
+
+    # Passing None as tags, note no overwrite
+    assert rs.set_tags(None) is None
+    assert rs._tags == {"a": "b"}
+
+    # Passing empty dict as tags, note overwrite
+    assert rs.set_tags({}) is None
+    assert rs._tags == {}
+
+
+def test_typespecificresultsection_init():
+    sb = SectionBody(BODY_FORMAT.TEXT, "blah")
+    # Pass the two kwargs that will be ignored
+    tsrs = TypeSpecificResultSection("title_text_as_str", sb, body_format=BODY_FORMAT.GRAPH_DATA, body="blahblah")
+    assert tsrs.section_body == sb
+    assert tsrs.body_format == BODY_FORMAT.TEXT
+    assert tsrs.body == "blah"
+
+
+def test_typespecificresultsection_body():
+    sb = SectionBody(BODY_FORMAT.TEXT, "blah")
+    tsrs = TypeSpecificResultSection("title_text_as_str", sb)
+    assert tsrs.body == "blah"
+
+
+def test_typespecificresultsection_body_config():
+    sb = SectionBody(BODY_FORMAT.TEXT, "blah")
+    tsrs = TypeSpecificResultSection("title_text_as_str", sb)
+    assert tsrs.body_config == {}
+
+
+def test_typespecificresultsection_add_line():
+    sb = SectionBody(BODY_FORMAT.TEXT, "blah")
+    tsrs = TypeSpecificResultSection("title_text_as_str", sb)
+    with pytest.raises(InvalidFunctionException):
+        tsrs.add_line("blah")
+
+
+def test_typespecificresultsection_add_lines():
+    sb = SectionBody(BODY_FORMAT.TEXT, "blah")
+    tsrs = TypeSpecificResultSection("title_text_as_str", sb)
+    with pytest.raises(InvalidFunctionException):
+        tsrs.add_lines("blah")
+
+
+def test_typespecificresultsection_set_body():
+    sb = SectionBody(BODY_FORMAT.TEXT, "blah")
+    tsrs = TypeSpecificResultSection("title_text_as_str", sb)
+    with pytest.raises(InvalidFunctionException):
+        tsrs.set_body("blah")
+
+
+def test_resulttextsection_init():
+    rts = ResultTextSection("title_text_as_str")
+    assert rts.body_format == BODY_FORMAT.TEXT
+
+
+def test_resultmemorydumpsection_init():
+    rmds = ResultMemoryDumpSection("title_text_as_str")
+    assert rmds.body_format == BODY_FORMAT.MEMORY_DUMP
+
+
+def test_resultgraphsection_init():
+    rgx = ResultGraphSection("title_text_as_str")
+    assert rgx.body_format == BODY_FORMAT.GRAPH_DATA
+
+
+def test_resultgraphsection_set_colormap():
+    rgs = ResultGraphSection("title_text_as_str", body_format=BODY_FORMAT.MEMORY_DUMP)
+    assert rgs.set_colormap(0, 0, []) is None
+    assert rgs.section_body._data == {"type": "colormap", "data": {"domain": [0, 0], "values": []}}
+    assert rgs.body_format == BODY_FORMAT.GRAPH_DATA
+
+
+def test_resulturlsection_init():
+    rux = ResultURLSection("title_text_as_str")
+    assert rux.body_format == BODY_FORMAT.URL
+
+
+def test_resulturlsection_add_url():
+    rux = ResultURLSection("title_text_as_str")
+
+    # Name
+    assert rux.add_url("blah", "blah") is None
+    assert rux.section_body._data == [{"url": "blah", "name": "blah"}]
+
+
+def test_resultkeyvaluesection_init():
+    rkvs = ResultKeyValueSection("title_text_as_str")
+
+    # No body
+    assert rkvs.body_format == BODY_FORMAT.KEY_VALUE
+    assert rkvs.section_body._data == {}
+
+    # Some body as arg
+    rkvs = ResultKeyValueSection("title_text_as_str", {"a": "b"})
+    assert rkvs.section_body._data == {"a": "b"}
+
+    # Some body as kwarg, note that this only works for the KVSectionBody
+    with pytest.raises(TypeError):
+        ResultKeyValueSection("title_text_as_str", a="b")
+
+
+def test_resultkeyvaluesection_set_item():
+    rkvs = ResultKeyValueSection("title_text_as_str")
+
+    assert rkvs.set_item("a", "b") is None
+    assert rkvs.section_body._data == {"a": "b"}
+
+
+def test_resultkeyvaluesection_update_items():
+    rkvs = ResultKeyValueSection("title_text_as_str")
+
+    assert rkvs.update_items({"a": "b"}) is None
+    assert rkvs.section_body._data == {"a": "b"}
+
+
+def test_resultorderedkeyvaluesection_init():
+    rokvs = ResultOrderedKeyValueSection("title_text_as_str")
+
+    # No body
+    assert rokvs.body_format == BODY_FORMAT.ORDERED_KEY_VALUE
+    assert rokvs.section_body._data == []
+
+    # Some body as arg
+    rokvs = ResultOrderedKeyValueSection("title_text_as_str", {"a": "b"})
+    assert rokvs.section_body._data == [("a", "b")]
+
+    # Some body as kwarg, note that this only works for the OrderedKVSectionBody
+    with pytest.raises(TypeError):
+        ResultOrderedKeyValueSection("title_text_as_str", {}, a="b")
+
+
+def test_resultorderedkeyvaluesection_add_item():
+    rokvs = ResultOrderedKeyValueSection("title_text_as_str")
+
+    assert rokvs.add_item(None, None) is None
+    assert rokvs.section_body._data == [('None', None)]
+
+
+def test_resultjsonsection_init():
+    rjs = ResultJSONSection("title_text_as_str")
+
+    # No body
+    assert rjs.body_format == BODY_FORMAT.JSON
+    assert rjs.section_body._data == {}
+
+
+def test_resultjsonsection_set_json():
+    rjs = ResultJSONSection("title_text_as_str")
+
+    # No body
+    assert rjs.set_json({}) is None
+    assert rjs.section_body._data == {}
+
+    # Some body
+    assert rjs.set_json({"a": "b"}) is None
+    assert rjs.section_body._data == {"a": "b"}
+
+    # Override
+    assert rjs.set_json({"b": "c"}) is None
+    assert rjs.section_body._data == {"b": "c"}
+
+
+def test_resultjsonsection_update_json():
+    rjs = ResultJSONSection("title_text_as_str")
+
+    # No body
+    assert rjs.update_json({}) is None
+    assert rjs.section_body._data == {}
+
+    # Some body
+    assert rjs.update_json({"a": "b"}) is None
+    assert rjs.section_body._data == {"a": "b"}
+
+    # Update
+    assert rjs.update_json({"b": "c"}) is None
+    assert rjs.section_body._data == {"a": "b", "b": "c"}
+
+
+def test_resultprocesstreesection_init():
+    rpts = ResultProcessTreeSection("title_text_as_str")
+
+    assert rpts.body_format == BODY_FORMAT.PROCESS_TREE
+    assert rpts.section_body._data == []
+
+
+def test_resultprocesstreesection_add_process():
+    rpts = ResultProcessTreeSection("title_text_as_str")
+
+    pi = ProcessItem(123, "blah", "blah")
+    assert rpts.add_process(pi) is None
+    assert rpts.section_body._data == [
+        {
+            'children': [],
+            'command_line': 'blah',
+            'file_count': 0,
+            'network_count': 0,
+            'process_name': 'blah',
+            'process_pid': 123,
+            'registry_count': 0,
+            'safelisted': False,
+            'signatures': {}
+        },
+    ]
+
+
+def test_resulttablesection_init():
+    rts = ResultTableSection("title_text_as_str")
+
+    assert rts.body_format == BODY_FORMAT.TABLE
+    assert rts.section_body._data == []
+
+
+def test_resulttablesection_add_row():
+    rts = ResultTableSection("title_text_as_str")
+
+    # Empty row
+    tr = TableRow()
+    assert rts.add_row(tr) is None
+    assert rts.section_body._data == []
+    assert rts.body_config == {}
+
+    # Row with data
+    tr = TableRow(a="b")
+    assert rts.add_row(tr) is None
+    assert rts.section_body._data == [{"a": "b"}]
+    assert rts.body_config == {"column_order": ["a"]}
+
+    # Overwrite column_order
+    tr = TableRow(b="c", d="e")
+    assert rts.add_row(tr) is None
+    assert rts.section_body._data == [{"a": "b"}, {"b": "c", "d": "e"}]
+    assert rts.body_config == {"column_order": ["b", "d"]}
+
+
+def test_resulttablesection_set_column_order():
+    rts = ResultTableSection("title_text_as_str")
+
+    # Empty order
+    assert rts.set_column_order([]) is None
+    assert rts.body_config == {}
+
+    # Some order
+    assert rts.set_column_order(["a"]) is None
+    assert rts.body_config == {"column_order": ["a"]}
+
+
+def test_resultimagesection_init(service_request):
+    ris = ResultImageSection(service_request, "title_text_as_str")
+
+    assert ris.body_format == BODY_FORMAT.IMAGE
+    assert ris.section_body._data == []
+    assert ris.section_body._request == service_request
+
+
+def test_resultimagesection_add_image(service_request):
+    ris = ResultImageSection(service_request, "title_text_as_str")
+
+    image_path = "./test/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e"
+
+    # Basic
+    assert ris.add_image(image_path, "image_name", "description of image") is None
+    assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+
+    ris = ResultImageSection(service_request, "title_text_as_str")
+
+    # Classification, OCR heuristic, OCR_IO, image with no password, auto_add_ocr_section is True
+    ocr_heuristic_id = 1
+    _, path = tempfile.mkstemp()
+    ocr_io = open(path, "w")
+    assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io) is None
+    assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+
+
+    ris = ResultImageSection(service_request, "title_text_as_str")
+
+    # Classification, OCR heuristic, OCR_IO, image with no password, auto_add_ocr_section is False
+    ocr_heuristic_id = 1
+    _, path = tempfile.mkstemp()
+    ocr_io = open(path, "w")
+    assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io, auto_add_ocr_section=False).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL."]}'
+    assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+
+
+def test_resulttimelinesection_init():
+    rts = ResultTimelineSection("title_text_as_str")
+
+    assert rts.body_format == BODY_FORMAT.TIMELINE
+    assert rts.section_body._data == []
+
+
+def test_resulttimelinesection_add_node():
+    rts = ResultTimelineSection("title_text_as_str")
+
+    rts.add_node("title", "content", "opposite_content")
+    assert rts.body_format == BODY_FORMAT.TIMELINE
+    assert rts.section_body._data == [{'title': 'title', 'content': 'content', 'opposite_content': 'opposite_content', 'icon': None, 'signatures': [], 'score': 0}]
+
+
+def test_resultmultisection_init():
+    rms = ResultMultiSection("title_text_as_str")
+
+    assert rms.body_format == BODY_FORMAT.MULTI
+    assert rms.section_body._data == []
+
+
+def test_resultmultisection_add_section_part():
+    rms = ResultMultiSection("title_text_as_str")
+
+    rms.add_section_part(TextSectionBody("blah"))
+    rms.add_section_part(GraphSectionBody())
+
+    assert len(rms.section_body._data) == 2
+    assert rms.section_body._data == [(BODY_FORMAT.TEXT, "blah", {}), (BODY_FORMAT.GRAPH_DATA, None, {})]
+
+
+def test_result_init():
+    # No sections
+    r = Result()
+    assert r._flattened_sections == []
+    assert r._score == 0
+    assert r.sections == []
+
+    # Sections
+    rs = ResultSection("blah")
+    r = Result([rs])
+    assert r._flattened_sections == []
+    assert r._score == 0
+    assert r.sections == [rs]
+
+
+def test_result_append_section():
+    r = Result()
+    rs = ResultSection("blah")
+    rs.set_heuristic(1)
+    rs.set_tags({"blah.blah": ["blah"]})
+    assert r._append_section(rs) is None
+    assert r._flattened_sections == [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}, 'tags': {"blah": {"blah": ["blah"]}}, 'title_text': 'blah', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]
+
+
+def test_result_flatten_sections():
+    r = Result()
+    rs = ResultSection("blah1")
+
+    # root is True
+    # Note, we have a single result section
+    assert r._flatten_sections(rs) is None
+    assert r._flattened_sections == [
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah1', 'zeroize_on_tag_safe': False, 'auto_collapse': False}
+    ]
+
+    r._flattened_sections.clear()
+
+    # Flatten ResultSection with subsection
+    # Note, we have two result sections, the first is the parent, then second is the subsection
+    ss1 = ResultSection("blah2")
+    rs.add_subsection(ss1)
+    assert r._flatten_sections(rs) is None
+    assert r._flattened_sections == [
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah1', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah2', 'zeroize_on_tag_safe': False, 'auto_collapse': False}
+    ]
+
+    # Flatten another ResultSection as not root. Because of this, we expect some weird behaviour
+    # Note, we have four result sections. The first two are the same as above, expected. The next two
+    # are the first subsection and the second subsection. This is because since "root=False", the
+    # main result section is not added, only the subsections are.
+    ss2 = ResultSection("blah3")
+    rs.add_subsection(ss2)
+    assert r._flatten_sections(rs, root=False) is None
+    assert r._flattened_sections == [
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah1', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah2', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah2', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
+        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah3', 'zeroize_on_tag_safe': False, 'auto_collapse': False}
+    ]
+
+
+def test_result_add_section():
+    r = Result()
+
+    # Add section
+    rs1 = ResultSection("section")
+    assert r.add_section(rs1) is None
+    assert r.sections == [rs1]
+
+    # Add section to bottom
+    rs2 = ResultSection("section")
+    assert r.add_section(rs2) is None
+    assert r.sections == [rs1, rs2]
+
+    # Add section to top
+    rs3 = ResultSection("section")
+    assert r.add_section(rs3, on_top=True) is None
+    assert r.sections == [rs3, rs1, rs2]
+
+
+def test_result_finalize():
+    r = Result()
+
+    # Default
+    assert r.finalize() == {'score': 0, 'sections': []}
+
+    # One section
+    rs1 = ResultSection("section")
+    r.add_section(rs1)
+    assert r.sections == [rs1]
+    assert r.finalize() == {'score': 0, 'sections': [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]}
+    assert r.sections == [rs1]
+
+    rs1._finalized = False
+
+    # Add a bad section
+    rs2 = ResultSection("")
+    r.add_section(rs2)
+    assert r.sections == [rs1, rs2]
+
+    # Note that the bad section is returned here, but does not exist in the sections param
+    assert r.finalize() == {'score': 0, 'sections': [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}, {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]}
+    assert r.sections == [rs1]
+
+    rs1._finalized = False
+    r.sections.clear()
+    r._flattened_sections.clear()
+    r.add_section(rs1)
+
+    # Add a section with a heuristic
+    rs3 = ResultSection("section", heuristic=Heuristic(1))
+    r.add_section(rs3)
+    assert r.sections == [rs1, rs3]
+    # Note that the bad section is returned here, but does not exist in the sections param
+    assert r.finalize() == {'score': 250, 'sections': [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}, {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]}
+    assert r.sections == [rs1, rs3]

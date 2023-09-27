@@ -449,6 +449,8 @@ class MultiSectionBody(SectionBody):
     def __init__(self) -> None:
         super().__init__(BODY_FORMAT.MULTI, body=[])
 
+    # Note that this method is named differently than the method to
+    # add a section body to the ResultMultiSection (add_section_part)
     def add_section_body(self, section_body: SectionBody) -> None:
         self._data.append((section_body.format, section_body._data, section_body._config))
 
@@ -612,12 +614,13 @@ class ResultSection:
             log.error("Failed to finalize section, title is empty...")
             return False
 
+        # Catch body values that are not None, but are not "valid" such as empty strings/lists/dicts/etc
         if not self.body and self.body is not None:
             self._body = None
 
         self._finalized = True
 
-        tmp_subs = []
+        tmp_subs: List[ResultSection] = []
         self.depth = depth
         for subsection in self._subsections:
             if subsection.finalize(depth=depth+1):
@@ -626,7 +629,7 @@ class ResultSection:
 
         return True
 
-    def set_body(self, body: Union[str, SectionBody], body_format=None) -> None:
+    def set_body(self, body: Union[str, SectionBody], body_format: str = None) -> None:
         if isinstance(body, SectionBody):
             self._body = body.body
             self._body_format = body._format
@@ -661,7 +664,10 @@ class ResultSection:
         else:
             self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
 
-    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]):
+    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]) -> None:
+        if not tags and not tags == {}:
+            return
+
         self._tags = tags
 
 
@@ -683,13 +689,13 @@ class TypeSpecificResultSection(ResultSection):
         return self.section_body.config
 
     def add_line(self, text: Union[str, List]) -> None:
-        raise InvalidFunctionException("Do not use default add_line method in a type specific section.")
+        raise InvalidFunctionException("Do not use default add_line method in a type-specific section.")
 
     def add_lines(self, line_list: List[str]) -> None:
-        raise InvalidFunctionException("Do not use default add_lines method in a type specific section.")
+        raise InvalidFunctionException("Do not use default add_lines method in a type-specific section.")
 
     def set_body(self, body: Union[str, SectionBody], body_format=BODY_FORMAT.TEXT) -> None:
-        raise InvalidFunctionException("Do not use default set_body method in a type specific section.")
+        raise InvalidFunctionException("Do not use default set_body method in a type-specific section.")
 
 
 class ResultTextSection(ResultSection):
@@ -820,6 +826,8 @@ class ResultMultiSection(TypeSpecificResultSection):
         self.section_body: MultiSectionBody
         super().__init__(title_text,  MultiSectionBody(), **kwargs)
 
+    # Note that this method is named differently than the method to
+    # add a section body to the MultiSectionBody (add_section_body)
     def add_section_part(self, section_part: SectionBody) -> None:
         self.section_body.add_section_body(section_part)
 
