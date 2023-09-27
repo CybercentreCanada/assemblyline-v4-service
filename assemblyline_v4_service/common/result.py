@@ -439,10 +439,10 @@ class ImageSectionBody(SectionBody):
                   classification: Optional[Classification] = None,
                   ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> Optional[ResultSection]:
         res = self._request.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
-        sections = res.pop('ocr_section', None)
+        ocr_section = res.pop('ocr_section', None)
         self._data.append(res)
 
-        return sections
+        return ocr_section
 
 
 class MultiSectionBody(SectionBody):
@@ -552,7 +552,7 @@ class ResultSection:
     def tags(self):
         return self._tags
 
-    def add_line(self, text: Union[str, List]) -> None:
+    def add_line(self, text: Union[str, List[str]]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):
@@ -589,8 +589,14 @@ class ResultSection:
         subsection.parent = self
 
     def add_tag(self, tag_type: str, value: Union[str, bytes]) -> None:
+        if not tag_type:
+            return
+
         if isinstance(value, bytes):
             value = value.decode()
+
+        if value == "":
+            return
 
         if tag_type not in self._tags:
             self._tags[tag_type] = []

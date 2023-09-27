@@ -1,5 +1,11 @@
+import tempfile
+
 import pytest
+from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.result import *
+from assemblyline_v4_service.common.task import Task
+
+from assemblyline.odm.messages.task import Task as ServiceTask
 
 
 @pytest.fixture
@@ -10,6 +16,29 @@ def heuristic():
 @pytest.fixture
 def sectionbody():
     return SectionBody("blah")
+
+
+@pytest.fixture
+def service_request():
+    st = ServiceTask({
+        "service_config": {},
+        "metadata": {},
+        "min_classification": "",
+        "fileinfo": {
+            "magic": "blah",
+            "md5": "d41d8cd98f00b204e9800998ecf8427e",
+            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+            "size": 0,
+            "type": "text/plain",
+        },
+        "filename": "blah",
+        "service_name": "blah",
+        "max_files": 0,
+    })
+    t = Task(st)
+    service_request = ServiceRequest(t)
+    return service_request
 
 
 def test_get_heuristic_primitives(heuristic):
@@ -540,3 +569,263 @@ def test_tablesectionbody_set_column_order():
     # Some order
     assert tsb.set_column_order(["a"]) is None
     assert tsb._config == {"column_order": ["a"]}
+
+
+def test_imagesectionbody_init(service_request):
+    isb = ImageSectionBody(service_request)
+
+    assert isb._request == service_request
+    assert isb._format == BODY_FORMAT.IMAGE
+    assert isb._data == []
+
+
+def test_imagesectionbody_add_image(service_request):
+    isb = ImageSectionBody(service_request)
+    image_path = "./test/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e"
+
+    # Basic
+    assert isb.add_image(image_path, "image_name", "description of image") is None
+    assert isb._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+
+    isb._data.clear()
+
+    # Classification, OCR heuristic, OCR_IO, image with no password
+    ocr_heuristic_id = 1
+    _, path = tempfile.mkstemp()
+    ocr_io = open(path, "w")
+    assert isb.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL."]}'
+    assert isb._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+
+
+def test_multisectionbody_init():
+    msb = MultiSectionBody()
+
+    assert msb._format == BODY_FORMAT.MULTI
+    assert msb._data == []
+
+
+def test_multisectionbody_add_section_body():
+    msb = MultiSectionBody()
+
+    msb.add_section_body(TextSectionBody("blah"))
+    msb.add_section_body(GraphSectionBody())
+
+    assert len(msb._data) == 2
+    assert msb._data == [(BODY_FORMAT.TEXT, "blah", {}), (BODY_FORMAT.GRAPH_DATA, None, {})]
+
+
+def test_dividersectionbody_init():
+    dsb = DividerSectionBody()
+
+    assert dsb._format == BODY_FORMAT.DIVIDER
+    assert dsb._data is None
+
+
+def test_timelinesectionbody_init():
+    tsb = TimelineSectionBody()
+
+    assert tsb._format == BODY_FORMAT.TIMELINE
+    assert tsb._data == []
+
+
+def test_timelinesectionbody_add_node():
+    tsb = TimelineSectionBody()
+
+    tsb.add_node("title", "content", "opposite_content")
+    assert tsb._format == BODY_FORMAT.TIMELINE
+    assert tsb._data == [{'title': 'title', 'content': 'content', 'opposite_content': 'opposite_content', 'icon': None, 'signatures': [], 'score': 0}]
+
+
+def test_resultsection_init():
+    # Default
+    rs = ResultSection("title_text_as_str")
+    assert rs._finalized is False
+    assert rs.parent is None
+    assert rs._section is None
+    assert rs._subsections == []
+    assert rs._body_format == BODY_FORMAT.TEXT
+    assert rs._body is None
+    assert rs._body_config == {}
+    assert rs.classification == 'TLP:C'
+    assert rs.depth == 0
+    assert rs._tags == {}
+    assert rs._heuristic is None
+    assert rs.zeroize_on_tag_safe is False
+    assert rs.auto_collapse is False
+    assert rs.zeroize_on_sig_safe is True
+    assert rs.title_text == 'title_text_as_str'
+
+    # Title text as a list
+    rs = ResultSection(["title", "text", "as", "list"])
+    assert rs.title_text == "titletextaslist"
+
+    # Body as a string
+    rs = ResultSection("title_text_as_str", body="blah")
+    assert rs._body_format == BODY_FORMAT.TEXT
+    assert rs._body_config == {}
+    assert rs._body == "blah"
+
+    # Body as a SectionBody
+    tsb = TableSectionBody()
+    tr = TableRow(a="b")
+    tsb.add_row(tr)
+    rs = ResultSection("title_text_as_str", body=tsb)
+    assert rs._body_format == BODY_FORMAT.TABLE
+    assert rs._body_config == {'column_order': ['a']}
+    assert rs._body == '[{"a": "b"}]'
+
+    # Non-defaults
+    heur = Heuristic(1)
+    rs = ResultSection(
+        "title_text_as_str",
+        classification="TLP:AMBER",
+        body_format=BODY_FORMAT.GRAPH_DATA,
+        heuristic=heur,
+        tags={"a": "b"},
+        zeroize_on_tag_safe=True,
+        auto_collapse=True,
+        zeroize_on_sig_safe=False
+    )
+
+    assert rs._body_format == BODY_FORMAT.GRAPH_DATA
+    assert rs._body_config == {}
+    assert rs.classification == 'TLP:AMBER'
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
+    assert rs._tags == {"a": "b"}
+    assert rs.zeroize_on_tag_safe is True
+    assert rs.auto_collapse is True
+    assert rs.zeroize_on_sig_safe is False
+
+    # Set parent as ResultSection
+    parent = ResultSection("parent")
+    rs = ResultSection("title_text_as_str", parent=parent)
+    assert rs.parent == parent
+    assert len(parent.subsections) == 1
+    assert parent.subsections[0] == rs
+
+    # Set parent as Result
+    parent = Result()
+    rs = ResultSection("title_text_as_str", parent=parent)
+    assert rs.parent == parent
+    assert len(parent.sections) == 1
+    assert parent.sections[0] == rs
+
+    # Invalid heuristic
+    rs = ResultSection("title_text_as_str", heuristic="blah")
+    assert rs._heuristic is None
+
+
+def test_resultsection_body():
+    rs = ResultSection("title_text_as_str")
+    assert rs.body is None
+
+
+def test_resultsection_body_format():
+    rs = ResultSection("title_text_as_str")
+    assert rs.body_format == BODY_FORMAT.TEXT
+
+
+def test_resultsection_body_config():
+    rs = ResultSection("title_text_as_str")
+    assert rs.body_config == {}
+
+
+def test_resultsection_heuristic():
+    rs = ResultSection("title_text_as_str")
+    assert rs.heuristic is None
+
+
+def test_resultsection_subsections():
+    rs = ResultSection("title_text_as_str")
+    assert rs.subsections == []
+
+
+def test_resultsection_tags():
+    rs = ResultSection("title_text_as_str")
+    assert rs.tags == {}
+
+
+def test_resultsection_add_line():
+    rs = ResultSection("title_text_as_str")
+
+    # Add line as string
+    assert rs.add_line("blah") is None
+    assert rs._body == "blah"
+
+    # Add another line as string
+    assert rs.add_line("blah") is None
+    assert rs._body == "blah\nblah"
+
+    # Add a list of strings
+    assert rs.add_line(["a", "b"]) is None
+    assert rs._body == "blah\nblah\nab"
+
+
+def test_resultsection_add_lines():
+    rs = ResultSection("title_text_as_str")
+
+    # Add non-list
+    assert rs.add_lines("blah") is None
+    assert rs._body is None
+
+    # Add list
+    assert rs.add_lines(["blah"]) is None
+    assert rs._body == "blah"
+
+    # Add another list
+    assert rs.add_lines(["blah", "blah"]) is None
+    assert rs._body == "blah\nblah\nblah"
+
+
+def test_resultsection_add_subsection():
+    rs = ResultSection("title_text_as_str")
+
+    # Add subsection
+    ss1 = ResultSection("subsection")
+    assert rs.add_subsection(ss1) is None
+    assert rs.subsections == [ss1]
+    assert ss1.parent == rs
+
+    # Add subsection to bottom
+    ss2 = ResultSection("subsection")
+    assert rs.add_subsection(ss2) is None
+    assert rs.subsections == [ss1, ss2]
+    assert ss2.parent == rs
+
+    # Add subsection to top
+    ss3 = ResultSection("subsection")
+    assert rs.add_subsection(ss3, on_top=True) is None
+    assert rs.subsections == [ss3, ss1, ss2]
+    assert ss3.parent == rs
+
+
+def test_resultsection_add_tag():
+    rs = ResultSection("title_text_as_str")
+
+    # No tag type
+    assert rs.add_tag("", "") is None
+    assert rs._tags == {}
+
+    # No empty string values allowed
+    assert rs.add_tag("blah", "") is None
+    assert rs._tags == {}
+
+    # Standard
+    assert rs.add_tag("blah", "blah") is None
+    assert rs._tags == {"blah": ["blah"]}
+
+    # Add the same value as before
+    assert rs.add_tag("blah", "blah") is None
+    assert rs._tags == {"blah": ["blah"]}
+
+    # Add a different value
+    assert rs.add_tag("blah", "blah1") is None
+    assert rs._tags == {"blah": ["blah", "blah1"]}
+
+    # Add an empty bytes value
+    assert rs.add_tag("blah", b"") is None
+    assert rs._tags == {"blah": ["blah", "blah1"]}
+
+    # Add a bytes value
+    assert rs.add_tag("blah", b"blah2") is None
+    assert rs._tags == {"blah": ["blah", "blah1", "blah2"]}
