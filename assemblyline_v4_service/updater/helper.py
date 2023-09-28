@@ -1,26 +1,42 @@
-import certifi
 import os
-import psutil
-import regex as re
-import requests
 import shutil
 import tempfile
 import time
-
-from git import Repo
-from typing import List, Dict, Any, Tuple
-from urllib.parse import urlparse
+import traceback
+from io import StringIO
 from shutil import make_archive
+from typing import Any, Dict, List, Tuple
+from urllib.parse import urlparse
 
-from assemblyline.common.isotime import iso_to_epoch
+import certifi
+import psutil
+import regex as re
+import requests
+from git import Repo
+
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
-
+from assemblyline.common.isotime import iso_to_epoch
 
 BLOCK_SIZE = 64 * 1024
 GIT_ALLOW_UNSAFE_PROTOCOLS = os.environ.get('GIT_ALLOW_UNSAFE_PROTOCOLS', 'false').lower() == 'true'
 
-identify = Identify()
+
+DEVELOPMENT_MODE = False
+
+with StringIO() as stack_trace:
+    # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the stack trace to determine if we're running the service in a development mode
+    traceback.print_stack(file=stack_trace)
+    stack_trace.seek(0)
+    read_stack_trace = stack_trace.read()
+    # print(read_stack_trace)
+    if any(msg in read_stack_trace for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
+        DEVELOPMENT_MODE = True
+
+if DEVELOPMENT_MODE:
+    identify = Identify(use_cache=False)
+else:
+    identify = Identify()
 
 
 class SkipSource(RuntimeError):
