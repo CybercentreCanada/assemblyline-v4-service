@@ -1,4 +1,5 @@
 import pytest
+
 from assemblyline_v4_service.common.result import _pack_tags, _unpack_tags
 
 
@@ -6,6 +7,8 @@ from assemblyline_v4_service.common.result import _pack_tags, _unpack_tags
     "tags",
     [
         {"file.string.blacklisted": ["pear", "apple", "banana"]},
+        {"file.string.blacklisted": ["first", "second"]},
+        {"file.string.blacklisted": ["second", "first"]},
     ],
 )
 def test_pack_unpack_identity(tags):
