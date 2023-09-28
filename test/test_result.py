@@ -934,9 +934,8 @@ def test_resultsection_set_heuristic():
     rs._heuristic = None
 
     # Set the int heuristic with attack ID and signature
-    # TODO: There may be an issue here with the default attack ID being overwritten
     assert rs.set_heuristic(1, attack_id="T1001", signature="blah") is None
-    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1001'], 'signatures': {"blah": 1}, 'frequency': 0, 'score_map': {}}
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005', 'T1001'], 'signatures': {"blah": 1}, 'frequency': 1, 'score_map': {}}
 
 
 def test_resultsection_set_tags():

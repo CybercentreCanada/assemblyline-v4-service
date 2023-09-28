@@ -656,13 +656,17 @@ class ResultSection:
             raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
                                             f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
         elif isinstance(heur, Heuristic):
-            if attack_id:
-                heur.add_attack_id(attack_id)
-            if signature:
-                heur.add_signature_id(signature)
             self._heuristic = heur
+        # at this point, heur is an integer representing a heuristic ID
         else:
-            self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
+            self._heuristic = Heuristic(heur)
+
+        # Only get here if a new heuristic is set
+        if self._heuristic:
+            if attack_id:
+                self._heuristic.add_attack_id(attack_id)
+            if signature:
+                self._heuristic.add_signature_id(signature)
 
     def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]) -> None:
         if not tags and not tags == {}:

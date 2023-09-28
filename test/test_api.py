@@ -33,10 +33,12 @@ def test_serviceapi_init():
     assert sa.log is None
     assert sa.service_api_host == DEFAULT_SERVICE_SERVER
     assert isinstance(sa.session, Session)
+    # This value could change with different versions of Python requests
+    sa.session.headers.pop("user-agent")
     assert sa.session.headers.__dict__ == {
         '_store': OrderedDict(
             [
-                ('user-agent', ('User-Agent', 'python-requests/2.31.0')),
+                # ('user-agent', ('User-Agent', 'python-requests/2.31.0')),
                 ('accept-encoding', ('Accept-Encoding', 'gzip, deflate')),
                 ('accept', ('Accept', '*/*')),
                 ('connection', ('Connection', 'keep-alive')),
