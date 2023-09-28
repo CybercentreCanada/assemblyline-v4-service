@@ -1,4 +1,4 @@
-from test import setup_module, teardown_module
+from test.test_common import setup_module, teardown_module
 
 import pytest
 from assemblyline_v4_service.common.helper import *

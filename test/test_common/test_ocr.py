@@ -1,10 +1,10 @@
-from test import setup_module
+from test.test_common import setup_module
 
 from assemblyline_v4_service.common.ocr import *
 
 
 def test_ocr_detections():
-    assert ocr_detections("./test/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e") == {
+    assert ocr_detections("./test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e") == {
         'ransomware': [
             "YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON'T BE ABLE TO "
             'DECRYPT THEM.',
