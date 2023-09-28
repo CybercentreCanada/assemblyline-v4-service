@@ -511,7 +511,7 @@ class ResultSection:
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.depth: int = 0
         self._tags: dict[str, list[str]] = {}
-        self._tag_sets = {tag_type: set(tag_list) for tag_type, tag_list in tags.items()} if tags else {}
+        self._tag_sets = _pack_tags(tags)
         self._heuristic = None
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
@@ -557,7 +557,7 @@ class ResultSection:
     def tags(self) -> dict[str, list[str]]:
         if self._tags:
             return self._tags
-        return {tag_type: list(tag_set) for tag_type, tag_set in self._tag_sets.items()}
+        return _unpack_tags(self._tag_sets)
 
     def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
@@ -600,10 +600,10 @@ class ResultSection:
             value = value.decode()
 
         if tag_type not in self._tag_sets:
-            self._tag_sets[tag_type] = set()
+            self._tag_sets[tag_type] = {}
 
-        if value not in self._tag_sets[tag_type]:
-            self._tag_sets[tag_type].add(value)
+        # Add value to the ordered set
+        self._tag_sets[tag_type][value] = None
 
     def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
@@ -616,7 +616,7 @@ class ResultSection:
         if not self.body and self.body is not None:
             self._body = None
 
-        self._tags = {tag_type: list(tag_set) for tag_type, tag_set in self._tag_sets.items()}
+        self._tags = _unpack_tags(self._tag_sets)
 
         self._finalized = True
 
@@ -667,7 +667,7 @@ class ResultSection:
             self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
 
     def set_tags(self, tags: Dict[str, Iterable[str]]):
-        self._tag_sets = {tag_type: set(tag_list) for tag_type, tag_list in tags.items()}
+        self._tag_sets = _pack_tags(tags)
 
 
 class TypeSpecificResultSection(ResultSection):
@@ -913,3 +913,14 @@ class Result:
         )
 
         return result
+
+
+# dict[str, None] is being used as a set-like datastructure that preserves insertion order
+def _pack_tags(tags: dict[str, Iterable[str]] | None) -> dict[str, dict[str, None]]:
+    """Convert tags structure from list to ordered set for deduplication"""
+    return {key: {tag: None for tag in tags[key]} for key in tags} if tags else {}
+
+
+def _unpack_tags(tags: dict[str, dict[str, None]] | None) -> dict[str, list[str]]:
+    """Convert tags structure from ordered set to list for json"""
+    return {key: list(values) for key, values in tags.items()} if tags else {}
