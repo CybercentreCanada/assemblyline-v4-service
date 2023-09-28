@@ -27,17 +27,11 @@ def test_get_service_attributes():
 def test_get_service_manifest():
     service_manifest = get_service_manifest()
     assert service_manifest == {
-        'config': {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []}},
+        'name': 'Sample', 'version': '4.4.0.dev0',
         'docker_config': {'image': 'sample'},
-        'heuristics': [{'attack_id': 'T1005',
-                        'description': 'blah',
-                        'filetype': '*',
-                        'heur_id': 1,
-                        'name': 'blah',
-                        'score': 250,
-                        'max_score': 1200}],
-        'name': 'Sample',
-        'version': '4.4.0.dev0',
+        'heuristics': [{'heur_id': 1, 'name': 'blah', 'description': 'blah', 'filetype': '*', 'score': 250, 'attack_id': 'T1005', 'max_score': 1200}],
+        'config': {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
+        'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}]}
     }
 
     teardown_module()

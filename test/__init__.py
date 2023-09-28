@@ -23,6 +23,11 @@ def setup_module():
         "    banned: [donotscanme]",
         "    macros: []",
         "    ransomware: []",
+        "  submission_params:",
+        "    - default: blah",
+        "      value: blah",
+        "      name: thing",
+        "      type: str",
     ]))
     open_manifest.close()
 

@@ -79,7 +79,10 @@ def test_servicebase_init():
     # No config
     sb = ServiceBase()
     assert isinstance(sb.service_attributes, Service)
-    assert sb.config == {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []}}
+    assert sb.config == {
+        'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
+        'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}]
+    }
     assert sb.name == "sample"
     assert isinstance(sb.log, Logger)
     assert sb._task is None
@@ -98,8 +101,9 @@ def test_servicebase_init():
     # With config
     sb = ServiceBase({"blah": "blah"})
     assert sb.config == {
-        "blah": "blah",
-        'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []}
+        'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
+        'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}],
+        'blah': 'blah'
     }
 
 
