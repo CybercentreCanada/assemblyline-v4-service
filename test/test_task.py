@@ -1,8 +1,11 @@
+import json
+import os
 import tempfile
 from logging import Logger
 
 import pytest
 from assemblyline_v4_service.common import helper
+from assemblyline_v4_service.common.result import ResultSection
 from assemblyline_v4_service.common.task import *
 
 from assemblyline.odm.messages.task import DataItem, TagItem
@@ -12,22 +15,24 @@ from assemblyline.odm.models.config import ServiceSafelist
 
 @pytest.fixture
 def servicetask():
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
     return st
 
 
@@ -45,7 +50,7 @@ def test_task_init(servicetask):
     assert t.drop_file is False
     assert t.error_message is None
     assert t.error_status is None
-    assert t.error_type == 'EXCEPTION'
+    assert t.error_type == "EXCEPTION"
     assert t.extracted == []
     assert t.file_name == "blah"
     assert t.file_type == "text/plain"
@@ -74,59 +79,63 @@ def test_task_init(servicetask):
     assert t.type == "text/plain"
 
     # Tags with no score, temp_submission_data
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-        # No tag score
-        "tags": [
-            TagItem({"type": "blah.blah", "value": "blah1", "short_type": "blah"}),
-            TagItem({"type": "blah.blah", "value": "blah2", "short_type": "blah"}),
-        ],
-        "temporary_submission_data": [
-            DataItem({"name": "a", "value": "b"}),
-            DataItem({"name": "c", "value": "d"}),
-        ]
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+            # No tag score
+            "tags": [
+                TagItem({"type": "blah.blah", "value": "blah1", "short_type": "blah"}),
+                TagItem({"type": "blah.blah", "value": "blah2", "short_type": "blah"}),
+            ],
+            "temporary_submission_data": [
+                DataItem({"name": "a", "value": "b"}),
+                DataItem({"name": "c", "value": "d"}),
+            ],
+        }
+    )
     t = Task(st)
-    assert t.tags == {'blah.blah': ['blah1', 'blah2']}
-    assert t.temp_submission_data == {'a': 'b', 'c': 'd'}
+    assert t.tags == {"blah.blah": ["blah1", "blah2"]}
+    assert t.temp_submission_data == {"a": "b", "c": "d"}
 
     # Tags with score
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-        # No tag score
-        "tags": [
-            TagItem({"type": "blah.blah", "value": "blah1", "short_type": "blah", "score": 123}),
-            TagItem({"type": "blah.blah", "value": "blah2", "short_type": "blah", "score": 321}),
-        ],
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+            # No tag score
+            "tags": [
+                TagItem({"type": "blah.blah", "value": "blah1", "short_type": "blah", "score": 123}),
+                TagItem({"type": "blah.blah", "value": "blah2", "short_type": "blah", "score": 321}),
+            ],
+        }
+    )
     t = Task(st)
-    assert t.tags == {'blah.blah': [('blah1', 123), ('blah2', 321)]}
+    assert t.tags == {"blah.blah": [("blah1", 123), ("blah2", 321)]}
 
 
 def test_task_add_file(servicetask):
@@ -140,13 +149,30 @@ def test_task_add_file(servicetask):
         f.write("test")
 
     # File is not empty
-    assert t._add_file(path, "name", "description") == {'name': 'name', 'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'description': 'description', 'classification': 'TLP:C', 'path': path, 'is_section_image': False, 'allow_dynamic_recursion': False, 'parent_relation': 'EXTRACTED'}
+    assert t._add_file(path, "name", "description") == {
+        "name": "name",
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "description": "description",
+        "classification": "TLP:C",
+        "path": path,
+        "is_section_image": False,
+        "allow_dynamic_recursion": False,
+        "parent_relation": "EXTRACTED",
+    }
 
     # Non-defaults
     assert t._add_file(
-        path, "name", "description", classification="TLP:AMBER",
-        allow_dynamic_recursion=True, parent_relation="DYNAMIC"
-    ) == {'name': 'name', 'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'description': 'description', 'classification': 'TLP:C', 'path': path, 'is_section_image': False, 'allow_dynamic_recursion': True, 'parent_relation': 'DYNAMIC'}
+        path, "name", "description", classification="TLP:AMBER", allow_dynamic_recursion=True, parent_relation="DYNAMIC"
+    ) == {
+        "name": "name",
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "description": "description",
+        "classification": "TLP:C",
+        "path": path,
+        "is_section_image": False,
+        "allow_dynamic_recursion": True,
+        "parent_relation": "DYNAMIC",
+    }
 
 
 def test_task_add_extracted(servicetask, mocker):
@@ -187,7 +213,18 @@ def test_task_add_extracted(servicetask, mocker):
 
     # A valid extracted file!
     assert t.add_extracted(path, "name", "description") is True
-    assert t.extracted == [{'name': 'name', 'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'description': 'description', 'classification': 'TLP:C', 'path': path, 'is_section_image': False, 'allow_dynamic_recursion': False, 'parent_relation': 'EXTRACTED'}]
+    assert t.extracted == [
+        {
+            "name": "name",
+            "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "description": "description",
+            "classification": "TLP:C",
+            "path": path,
+            "is_section_image": False,
+            "allow_dynamic_recursion": False,
+            "parent_relation": "EXTRACTED",
+        }
+    ]
 
 
 def test_task_add_supplementary(servicetask):
@@ -212,8 +249,28 @@ def test_task_add_supplementary(servicetask):
     with open(path, "w") as f:
         f.write("test")
 
-    assert t.add_supplementary(path, "name", "description") == {'name': 'name', 'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'description': 'description', 'classification': 'TLP:C', 'path': path, 'is_section_image': False, 'allow_dynamic_recursion': False, 'parent_relation': 'EXTRACTED'}
-    assert t.supplementary == [{'name': 'name', 'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08', 'description': 'description', 'classification': 'TLP:C', 'path': path, 'is_section_image': False, 'allow_dynamic_recursion': False, 'parent_relation': 'EXTRACTED'}]
+    assert t.add_supplementary(path, "name", "description") == {
+        "name": "name",
+        "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+        "description": "description",
+        "classification": "TLP:C",
+        "path": path,
+        "is_section_image": False,
+        "allow_dynamic_recursion": False,
+        "parent_relation": "EXTRACTED",
+    }
+    assert t.supplementary == [
+        {
+            "name": "name",
+            "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+            "description": "description",
+            "classification": "TLP:C",
+            "path": path,
+            "is_section_image": False,
+            "allow_dynamic_recursion": False,
+            "parent_relation": "EXTRACTED",
+        }
+    ]
 
 
 def test_task_clear_extracted(servicetask):
@@ -254,11 +311,264 @@ def test_task_get_param(servicetask):
         t.get_param("blah")
 
     # Submission parameter exists
-    t.service_config = {"blah":"blah"}
+    t.service_config = {"blah": "blah"}
     assert t.get_param("blah") == "blah"
 
     # Submission parameter does not exist in service_config but
     # it does in the service_manifest on disk
     t.service_config = {}
-    print(get_service_manifest().get('config', {}).get('submission_params', []))
     assert t.get_param("thing") == "blah"
+
+
+def test_task_get_service_error(servicetask):
+    t = Task(servicetask)
+    # Default
+    assert t.get_service_error() == {
+        "response": {
+            "message": None,
+            "service_name": "blah",
+            "service_version": None,
+            "service_tool_version": None,
+            "status": None,
+        },
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "EXCEPTION",
+    }
+
+    # Not default
+    t.error_message = "error_message"
+    t.service_version = "service_version"
+    t.service_tool_version = "service_tool_version"
+    t.error_status = "error_status"
+    assert t.get_service_error() == {
+        "response": {
+            "message": "error_message",
+            "service_name": "blah",
+            "service_version": "service_version",
+            "service_tool_version": "service_tool_version",
+            "status": "error_status",
+        },
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "EXCEPTION",
+    }
+
+
+def test_task_get_service_result(servicetask):
+    t = Task(servicetask)
+    t.result = Result()
+
+    # Empty result
+    assert t.get_service_result() == {
+        "classification": "TLP:C",
+        "response": {
+            "milestones": {"service_started": None, "service_completed": None},
+            "service_version": None,
+            "service_name": "blah",
+            "service_tool_version": None,
+            "supplementary": [],
+            "extracted": [],
+            "service_context": None,
+            "service_debug_info": None,
+        },
+        "result": {"score": 0, "sections": []},
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "text/plain",
+        "size": 0,
+        "drop_file": False,
+        "temp_submission_data": {},
+    }
+
+    # Result with sections and extracted files that have differing classifications
+    # Note that the max_classification method defaults to TLP:C in tests
+    t.result.add_section(ResultSection("blah", classification="TLP:GREEN"))
+    _, path = tempfile.mkstemp()
+    with open(path, "w") as f:
+        f.write("test")
+    t.add_extracted(path, "name", "description", classification="TLP:AMBER")
+    assert t.get_service_result() == {
+        "classification": "TLP:C",
+        "response": {
+            "milestones": {"service_started": None, "service_completed": None},
+            "service_version": None,
+            "service_name": "blah",
+            "service_tool_version": None,
+            "supplementary": [],
+            "extracted": [
+                {
+                    "allow_dynamic_recursion": False,
+                    "classification": "TLP:C",
+                    "description": "description",
+                    "is_section_image": False,
+                    "name": "name",
+                    "parent_relation": "EXTRACTED",
+                    "path": path,
+                    "sha256": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08",
+                }
+            ],
+            "service_context": None,
+            "service_debug_info": None,
+        },
+        "result": {
+            "score": 0,
+            "sections": [
+                {
+                    "auto_collapse": False,
+                    "body": None,
+                    "body_config": {},
+                    "body_format": "TEXT",
+                    "classification": "TLP:GREEN",
+                    "depth": 0,
+                    "heuristic": None,
+                    "tags": {},
+                    "title_text": "blah",
+                    "zeroize_on_tag_safe": False,
+                }
+            ],
+        },
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "text/plain",
+        "size": 0,
+        "drop_file": False,
+        "temp_submission_data": {},
+    }
+
+
+def test_task_save_error(servicetask):
+    t = Task(servicetask)
+    # Recoverable
+    assert t.save_error("stack_info", True) is None
+    assert t.error_status == "FAIL_RECOVERABLE"
+    assert os.path.exists(f"/tmp/{t.sid}_{t.sha256}_error.json") is True
+    assert json.loads(open(f"/tmp/{t.sid}_{t.sha256}_error.json", "r").read()) == {
+        "response": {
+            "message": "stack_info",
+            "service_name": "blah",
+            "service_version": None,
+            "service_tool_version": None,
+            "status": "FAIL_RECOVERABLE",
+        },
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "EXCEPTION",
+    }
+
+    # Nonrecoverable
+    assert t.save_error("stack_info", False) is None
+    assert t.error_status == "FAIL_NONRECOVERABLE"
+    assert os.path.exists(f"/tmp/{t.sid}_{t.sha256}_error.json") is True
+    assert json.loads(open(f"/tmp/{t.sid}_{t.sha256}_error.json", "r").read()) == {
+        "response": {
+            "message": "stack_info",
+            "service_name": "blah",
+            "service_version": None,
+            "service_tool_version": None,
+            "status": "FAIL_NONRECOVERABLE",
+        },
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "EXCEPTION",
+    }
+
+    os.remove(f"/tmp/{t.sid}_{t.sha256}_error.json")
+
+
+def test_task_save_result(servicetask):
+    t = Task(servicetask)
+    t.result = Result()
+    assert t.save_result() is None
+    assert os.path.exists(f"/tmp/{t.sid}_{t.sha256}_result.json") is True
+    assert json.loads(open(f"/tmp/{t.sid}_{t.sha256}_result.json", "r").read()) == {
+        "classification": "TLP:C",
+        "response": {
+            "milestones": {"service_started": None, "service_completed": None},
+            "service_version": None,
+            "service_name": "blah",
+            "service_tool_version": None,
+            "supplementary": [],
+            "extracted": [],
+            "service_context": None,
+            "service_debug_info": None,
+        },
+        "result": {"score": 0, "sections": []},
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "type": "text/plain",
+        "size": 0,
+        "drop_file": False,
+        "temp_submission_data": {},
+    }
+
+    os.remove(f"/tmp/{t.sid}_{t.sha256}_result.json")
+
+
+def test_task_set_service_context(servicetask):
+    t = Task(servicetask)
+    assert t.set_service_context("blah") is None
+    assert t.service_context == "blah"
+
+
+def test_task_start(servicetask):
+    t = Task(servicetask)
+    _, path = tempfile.mkstemp()
+    with open(path, "w") as f:
+        f.write("test")
+    t.add_extracted(path, "name", "description", classification="TLP:AMBER")
+    t.add_supplementary(path, "name", "description")
+    assert len(t.extracted) == 1
+    assert len(t.supplementary) == 1
+
+    assert t.start("TLP:C", "service_version", "service_tool_version") is None
+    assert t.service_version == "service_version"
+    assert t.service_tool_version == "service_tool_version"
+    assert t.service_default_result_classification == "TLP:C"
+    assert isinstance(t._service_started, str)
+    assert len(t.extracted) == 0
+    assert len(t.supplementary) == 0
+
+
+def test_task_success(servicetask):
+    t = Task(servicetask)
+    t.result = Result()
+    assert t.success() is None
+    assert isinstance(t._service_completed, str)
+    assert os.path.exists(f"/tmp/{t.sid}_{t.sha256}_result.json") is True
+    os.remove(f"/tmp/{t.sid}_{t.sha256}_result.json")
+
+
+def test_task_validate_file(servicetask):
+    t = Task(servicetask)
+
+    # File does not exist
+    with pytest.raises(Exception):
+        t.validate_file()
+
+    # File does exist but sha256 is mismatched
+    path = f"/tmp/{t.sha256}"
+    with open(path, "w") as f:
+        f.write("test")
+
+    with pytest.raises(Exception):
+        t.validate_file()
+
+    os.remove(path)
+
+    # File exists and sha256 is a match
+    t.sha256 = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+    path = f"/tmp/{t.sha256}"
+    with open(path, "w") as f:
+        f.write("test")
+
+    assert t.validate_file() == path
+
+    os.remove(path)
+
+
+def test_task_working_directory(servicetask):
+    t = Task(servicetask)
+    assert t._working_directory is None
+    # Initial call, _working_directory is None
+    twd = t.working_directory
+    assert os.path.exists(twd)
+    assert os.path.isdir(twd)
+    assert t._working_directory == twd
+
+    # Subsequent call after _working_directory is set. values stay the same
+    new_twd = t.working_directory
+    assert new_twd == twd
