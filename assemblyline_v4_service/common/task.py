@@ -27,6 +27,10 @@ class Task:
 
         tags = {}
         uses_tag_score = False
+
+        # Option for data integrity assurance rather than performance
+        # if task.tags and all(isinstance(tag.score, int) for tag in task.tags):
+        
         if task.tags and isinstance(task.tags[0].score, int):
             uses_tag_score = True
 
