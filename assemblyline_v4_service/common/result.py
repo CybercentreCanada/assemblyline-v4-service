@@ -43,6 +43,11 @@ BODY_FORMAT = StringTable(
     ],
 )
 
+PROMOTE_TO = StringTable('PROMOTE_TO', [
+    ('SCREENSHOT', 0),
+    ('ENTROPY', 1)
+])
+
 
 class InvalidHeuristicException(Exception):
     pass
@@ -227,7 +232,7 @@ class SectionBody:
         if not self._data:
             return None
         elif not isinstance(self._data, str):
-            return json.dumps(self._data)
+            return json.dumps(self._data, allow_nan=False)
         else:
             return self._data
 
@@ -417,7 +422,6 @@ class TableSectionBody(SectionBody):
     def set_column_order(self, order: List[str]):
         self._config = {"column_order": order}
 
-
 class ImageSectionBody(SectionBody):
     def __init__(self, request: ServiceRequest) -> None:
         self._request = request
@@ -516,6 +520,7 @@ class ResultSection:
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
         self.zeroize_on_sig_safe = zeroize_on_sig_safe
+        self._promote_to = None
 
         if isinstance(title_text, list):
             title_text = "".join(title_text)
@@ -548,6 +553,10 @@ class ResultSection:
     @property
     def heuristic(self):
         return self._heuristic
+
+    @property
+    def promote_to(self):
+        return self._promote_to
 
     @property
     def subsections(self):
@@ -719,6 +728,9 @@ class ResultGraphSection(TypeSpecificResultSection):
     def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
         self.section_body.set_colormap(cmap_min, cmap_max, values)
 
+    def promote_as_entropy(self):
+        self._promote_to = PROMOTE_TO.ENTROPY
+
 
 class ResultURLSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
@@ -805,6 +817,9 @@ class ResultImageSection(TypeSpecificResultSection):
             return None
 
         return ocr_section
+
+    def promote_as_screenshot(self):
+        self._promote_to = PROMOTE_TO.SCREENSHOT
 
 
 class ResultTimelineSection(TypeSpecificResultSection):

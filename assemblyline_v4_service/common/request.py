@@ -1,6 +1,6 @@
 import logging
 import tempfile
-from typing import Any, Dict, Optional, TextIO, Union
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
@@ -24,17 +24,7 @@ class ServiceRequest:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._working_directory = task.working_directory
-        self.deep_scan = task.deep_scan
-        self.extracted = task.extracted
-        self.file_name = task.file_name
-        self.file_type = task.file_type
-        self.file_size = task.file_size
         self._file_path = None
-        self.max_extracted = task.max_extracted
-        self.md5 = task.md5
-        self.sha1 = task.sha1
-        self.sha256 = task.sha256
-        self.sid = task.sid
         self.task = task
 
     def add_extracted(self, path: str, name: str, description: str,
@@ -238,3 +228,43 @@ class ServiceRequest:
         :param data: Temporary submission data
         """
         self.task.temp_submission_data = data
+
+    @property
+    def deep_scan(self) -> bool:
+        return self.task.deep_scan
+
+    @property
+    def extracted(self) -> List[Dict[str, str]]:
+        return self.task.extracted
+
+    @property
+    def file_name(self) -> str:
+        return self.task.file_name
+
+    @property
+    def file_type(self) -> str:
+        return self.task.fileinfo.type
+
+    @property
+    def file_size(self) -> int:
+        return self.task.fileinfo.size
+
+    @property
+    def max_extracted(self) -> int:
+        return self.task.max_extracted
+
+    @property
+    def md5(self) -> str:
+        return self.task.fileinfo.md5
+
+    @property
+    def sha1(self) -> str:
+        return self.task.fileinfo.sha1
+
+    @property
+    def sha256(self) -> str:
+        return self.task.fileinfo.sha256
+
+    @property
+    def sid(self) -> str:
+        return self.task.sid

@@ -49,14 +49,11 @@ class Task:
         self.error_type: str = 'EXCEPTION'
         self.extracted: List[Dict[str, str]] = []
         self.file_name = task.filename
-        self.file_type = task.fileinfo.type
-        self.file_size = task.fileinfo.size
+        self.fileinfo = task.fileinfo
         self.ignore_filtering = task.ignore_filtering
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.metadata = task.metadata
-        self.md5: str = task.fileinfo.md5
-        self.mime: str = task.fileinfo.mime or None
         self.result: Optional[Result] = None
         self.safelist_config: Dict[str, Any] = task.safelist_config
         self.service_config: Dict[str, Any] = dict(task.service_config)
@@ -66,15 +63,12 @@ class Task:
         self.service_name: str = task.service_name
         self.service_tool_version: Optional[str] = None
         self.service_version: Optional[str] = None
-        self.sha1: str = task.fileinfo.sha1
-        self.sha256: str = task.fileinfo.sha256
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
         self.tags = tags
         self.temp_submission_data: Dict[str, Any] = {
             row.name: row.value for row in task.temporary_submission_data
         }
-        self.type: str = task.fileinfo.type
 
     def _add_file(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
@@ -303,3 +297,32 @@ class Task:
         if self._working_directory is None:
             self._working_directory = tempfile.mkdtemp(dir=temp_dir)
         return self._working_directory
+
+    @property
+    def file_type(self) -> str:
+        return self.fileinfo.type
+
+    @property
+    def file_size(self) -> int:
+        return self.fileinfo.size
+
+    @property
+    def md5(self) -> str:
+        return self.fileinfo.md5
+
+    @property
+    def mime(self) -> str:
+        return self.fileinfo.mime or None
+
+    @property
+    def sha1(self) -> str:
+        return self.fileinfo.sha1
+
+    @property
+    def sha256(self) -> str:
+        return self.fileinfo.sha256
+
+    # Duplicate of file_type for backward compatibility
+    @property
+    def type(self) -> str:
+        return self.fileinfo.type
