@@ -16,9 +16,8 @@ COPY setup.py dist* dist/
 RUN pip install --no-cache-dir -f dist --user \
   assemblyline-core==$version \
   assemblyline-service-client==$version \
-  assemblyline-v4-service==$version \
+  assemblyline-v4-service==$version[updater] \
   assemblyline-client \
-  gunicorn[gevent] flask gitpython git-remote-codecommit psutil \
   && rm -rf ~/.cache/pip
 
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
