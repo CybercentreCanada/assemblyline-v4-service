@@ -10,11 +10,12 @@ INDEX_ZIP = "/tmp/blah/index.zip"
 INDEX_ZIP_TEXT = "/tmp/blah/index/test.txt"
 INDEX_ZIP_EXTRACT_PATH = "/tmp/blah/index"
 DIRECTORY = "/tmp/blah"
+TAR = os.path.join(os.getcwd(), "blah.tar")
 
 
 @pytest.fixture(autouse=True)
 def setup_and_teardown_test():
-    files_or_dirs_to_clean = [INDEX, INDEX_ZIP, INDEX_ZIP_TEXT, INDEX_ZIP_EXTRACT_PATH, DIRECTORY]
+    files_or_dirs_to_clean = [INDEX, INDEX_ZIP, INDEX_ZIP_TEXT, INDEX_ZIP_EXTRACT_PATH, DIRECTORY, TAR]
     while any(os.path.exists(item) for item in files_or_dirs_to_clean):
         for item in files_or_dirs_to_clean:
             try:
