@@ -23,6 +23,7 @@ jobs:
         inputs:
           versionSpec: "$(python.version)"
       - script: |
+          set -x # echo on
           [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
 
           sudo mkdir -p /etc/assemblyline/
@@ -37,5 +38,5 @@ jobs:
         displayName: Setup environment
       - script: |
           [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
-          python -m pytest -rsx -vv
+          python -m pytest -p no:cacheprovider --durations=10 -rsx -svvv --disable-warnings
         displayName: Test
