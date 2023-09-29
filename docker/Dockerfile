@@ -16,7 +16,7 @@ COPY setup.py dist* dist/
 RUN pip install --no-cache-dir -f dist --user \
   assemblyline-core==$version \
   assemblyline-service-client==$version \
-  assemblyline-v4-service==$version[updater] \
+  assemblyline-v4-service[updater]==$version \
   assemblyline-client \
   && rm -rf ~/.cache/pip
 
