@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TextIO, Union
+from typing import TYPE_CHECKING, Any, Dict, Iterable, List, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
 from assemblyline.common.classification import Classification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
+
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_attributes
 
 if TYPE_CHECKING:  # Avoid circular dependency
@@ -17,27 +18,30 @@ if TYPE_CHECKING:  # Avoid circular dependency
 # Type of values in KV sections
 KV_VALUE_TYPE = Union[str, bool, int]
 
-al_log.init_logging('service.result')
-log = logging.getLogger('assemblyline.service.result')
+al_log.init_logging("service.result")
+log = logging.getLogger("assemblyline.service.result")
 
 SERVICE_ATTRIBUTES = None
 HEUR_LIST = None
 
-BODY_FORMAT = StringTable('BODY_FORMAT', [
-    ('TEXT', 0),
-    ('MEMORY_DUMP', 1),
-    ('GRAPH_DATA', 2),
-    ('URL', 3),
-    ('JSON', 4),
-    ('KEY_VALUE', 5),
-    ('PROCESS_TREE', 6),
-    ('TABLE', 7),
-    ('IMAGE', 8),
-    ('MULTI', 9),
-    ('DIVIDER', 10),  # This is not a real result section and can only be use inside a multi section
-    ('ORDERED_KEY_VALUE', 11),
-    ('TIMELINE', 12)
-])
+BODY_FORMAT = StringTable(
+    "BODY_FORMAT",
+    [
+        ("TEXT", 0),
+        ("MEMORY_DUMP", 1),
+        ("GRAPH_DATA", 2),
+        ("URL", 3),
+        ("JSON", 4),
+        ("KEY_VALUE", 5),
+        ("PROCESS_TREE", 6),
+        ("TABLE", 7),
+        ("IMAGE", 8),
+        ("MULTI", 9),
+        ("DIVIDER", 10),  # This is not a real result section and can only be use inside a multi section
+        ("ORDERED_KEY_VALUE", 11),
+        ("TIMELINE", 12),
+    ],
+)
 
 
 class InvalidHeuristicException(Exception):
@@ -62,19 +66,21 @@ def get_heuristic_primitives(heur: Heuristic):
         attack_ids=heur.attack_ids,
         signatures=heur.signatures,
         frequency=heur.frequency,
-        score_map=heur.score_map
+        score_map=heur.score_map,
     )
 
 
 class Heuristic:
-    def __init__(self, heur_id: int,
-                 attack_id: Optional[str] = None,
-                 signature: Optional[str] = None,
-                 attack_ids: Optional[List[str]] = None,
-                 signatures: Optional[Dict[str, int]] = None,
-                 frequency: int = 1,
-                 score_map: Optional[Dict[str, int]] = None):
-
+    def __init__(
+        self,
+        heur_id: int,
+        attack_id: Optional[str] = None,
+        signature: Optional[str] = None,
+        attack_ids: Optional[List[str]] = None,
+        signatures: Optional[Dict[str, int]] = None,
+        frequency: int = 1,
+        score_map: Optional[Dict[str, int]] = None,
+    ):
         # Lazy load heuristics
         global HEUR_LIST
         if not HEUR_LIST:
@@ -82,8 +88,10 @@ class Heuristic:
 
         # Validate heuristic
         if heur_id not in HEUR_LIST:
-            raise InvalidHeuristicException(f"Invalid heuristic. A heuristic with ID: {heur_id}, must be added to "
-                                            f"the service manifest before using it.")
+            raise InvalidHeuristicException(
+                f"Invalid heuristic. A heuristic with ID: {heur_id}, must be added to "
+                f"the service manifest before using it."
+            )
 
         # Set default values
         self._definition = HEUR_LIST[heur_id]
@@ -156,9 +164,9 @@ class Heuristic:
                 #   1. Heuristic's signature score map
                 #   2. Live service submitted score map
                 #   3. Heuristic's default signature
-                sig_score = self._definition.signature_score_map.get(sig_name,
-                                                                     self._score_map.get(sig_name,
-                                                                                         self._definition.score))
+                sig_score = self._definition.signature_score_map.get(
+                    sig_name, self._score_map.get(sig_name, self._definition.score)
+                )
                 temp_score += sig_score * freq
         else:
             # There are no signatures associated to the heuristic, compute the new score based of that new frequency
@@ -239,7 +247,7 @@ class TextSectionBody(SectionBody):
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):
-            text = ''.join(text)
+            text = "".join(text)
         textstr = safe_str(text)
         if self._data:
             self._data = f"{self._data}\n{textstr}"
@@ -248,7 +256,7 @@ class TextSectionBody(SectionBody):
         return self._data
 
     def add_lines(self, line_list: List[str]) -> None:
-        segment = safe_str('\n'.join(line_list))
+        segment = safe_str("\n".join(line_list))
         if self._data is None:
             self._data = segment
         else:
@@ -266,9 +274,9 @@ class URLSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.URL, body=[])
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
-        url_data = {'url': url}
+        url_data = {"url": url}
         if name:
-            url_data['name'] = name
+            url_data["name"] = name
         self._data.append(url_data)
 
 
@@ -277,11 +285,7 @@ class GraphSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.GRAPH_DATA)
 
     def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
-        cmap = {'type': 'colormap',
-                'data': {
-                    'domain': [cmap_min, cmap_max],
-                    'values': values
-                }}
+        cmap = {"type": "colormap", "data": {"domain": [cmap_min, cmap_max], "values": values}}
         self._data = cmap
 
 
@@ -319,10 +323,17 @@ class JSONSectionBody(SectionBody):
 
 class ProcessItem:
     def __init__(
-            self, pid: int, name: str, cmd: str, signatures: Optional[Dict[str, int]] = None,
-            children: Optional[List[ProcessItem]] = None, network_count: int = 0, file_count: int = 0,
-            registry_count: int = 0, safelisted: bool = False):
-
+        self,
+        pid: int,
+        name: str,
+        cmd: str,
+        signatures: Optional[Dict[str, int]] = None,
+        children: Optional[List[ProcessItem]] = None,
+        network_count: int = 0,
+        file_count: int = 0,
+        registry_count: int = 0,
+        safelisted: bool = False,
+    ):
         self.pid = pid
         self.name = name
         self.cmd = cmd
@@ -404,8 +415,7 @@ class TableSectionBody(SectionBody):
         self.set_column_order(list(row.keys()))
 
     def set_column_order(self, order: List[str]):
-        self._config = {'column_order': order}
-
+        self._config = {"column_order": order}
 
 
 class ImageSectionBody(SectionBody):
@@ -413,11 +423,17 @@ class ImageSectionBody(SectionBody):
         self._request = request
         super().__init__(BODY_FORMAT.IMAGE, body=[])
 
-    def add_image(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None,
-                  ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> Optional[ResultSection]:
+    def add_image(
+        self,
+        path: str,
+        name: str,
+        description: str,
+        classification: Optional[Classification] = None,
+        ocr_heuristic_id: Optional[int] = None,
+        ocr_io: Optional[TextIO] = None,
+    ) -> Optional[ResultSection]:
         res = self._request.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
-        sections = res.pop('ocr_section', None)
+        sections = res.pop("ocr_section", None)
         self._data.append(res)
 
         return sections
@@ -440,25 +456,40 @@ class TimelineSectionBody(SectionBody):
     def __init__(self):
         super().__init__(BODY_FORMAT.TIMELINE, body=[])
 
-    def add_node(self, title: str, content: str, opposite_content: str,
-                 icon: str = None, signatures: List[str] = [], score: int = 0) -> None:
-        self._data.append(dict(title=title, content=content, opposite_content=opposite_content,
-                          icon=icon, signatures=signatures, score=score))
+    def add_node(
+        self,
+        title: str,
+        content: str,
+        opposite_content: str,
+        icon: str = None,
+        signatures: List[str] = [],
+        score: int = 0,
+    ) -> None:
+        self._data.append(
+            dict(
+                title=title,
+                content=content,
+                opposite_content=opposite_content,
+                icon=icon,
+                signatures=signatures,
+                score=score,
+            )
+        )
 
 
 class ResultSection:
     def __init__(
-            self,
-            title_text: Union[str, List],
-            body: Optional[Union[str, SectionBody]] = None,
-            classification: Optional[Classification] = None,
-            body_format=BODY_FORMAT.TEXT,
-            heuristic: Optional[Heuristic] = None,
-            tags: Optional[Dict[str, List[str]]] = None,
-            parent: Optional[Union[ResultSection, Result]] = None,
-            zeroize_on_tag_safe: bool = False,
-            auto_collapse: bool = False,
-            zeroize_on_sig_safe: bool = True,
+        self,
+        title_text: Union[str, List],
+        body: Optional[Union[str, SectionBody]] = None,
+        classification: Optional[Classification] = None,
+        body_format=BODY_FORMAT.TEXT,
+        heuristic: Optional[Heuristic] = None,
+        tags: Optional[Dict[str, Iterable[str]]] = None,
+        parent: Optional[Union[ResultSection, Result]] = None,
+        zeroize_on_tag_safe: bool = False,
+        auto_collapse: bool = False,
+        zeroize_on_sig_safe: bool = True,
     ):
         # Lazy load service attributes
         global SERVICE_ATTRIBUTES
@@ -479,14 +510,15 @@ class ResultSection:
             self._body_config = {}
         self.classification: Classification = classification or SERVICE_ATTRIBUTES.default_result_classification
         self.depth: int = 0
-        self._tags = tags or {}
+        self._tags: dict[str, list[str]] = {}
+        self._tag_sets = _pack_tags(tags)
         self._heuristic = None
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
         self.zeroize_on_sig_safe = zeroize_on_sig_safe
 
         if isinstance(title_text, list):
-            title_text = ''.join(title_text)
+            title_text = "".join(title_text)
         self.title_text = safe_str(title_text)
 
         if heuristic:
@@ -522,17 +554,19 @@ class ResultSection:
         return self._subsections
 
     @property
-    def tags(self):
-        return self._tags
+    def tags(self) -> dict[str, list[str]]:
+        if self._tags:
+            return self._tags
+        return _unpack_tags(self._tag_sets)
 
     def add_line(self, text: Union[str, List]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
         if isinstance(text, list):
-            text = ''.join(text)
+            text = "".join(text)
         textstr = safe_str(text)
         if self._body:
-            textstr = '\n' + textstr
+            textstr = "\n" + textstr
             self._body = self._body + textstr
         else:
             self._body = textstr
@@ -542,11 +576,11 @@ class ResultSection:
             log.warning(f"add_lines called with invalid type: {type(line_list)}. ignoring")
             return
 
-        segment = '\n'.join(line_list)
+        segment = "\n".join(line_list)
         if self._body is None:
             self._body = segment
         else:
-            self._body = self._body + '\n' + segment
+            self._body = self._body + "\n" + segment
 
     def add_subsection(self, subsection: ResultSection, on_top: bool = False) -> None:
         """
@@ -565,11 +599,11 @@ class ResultSection:
         if isinstance(value, bytes):
             value = value.decode()
 
-        if tag_type not in self._tags:
-            self._tags[tag_type] = []
+        if tag_type not in self._tag_sets:
+            self._tag_sets[tag_type] = {}
 
-        if value not in self._tags[tag_type]:
-            self._tags[tag_type].append(value)
+        # Add value to the ordered set
+        self._tag_sets[tag_type][value] = None
 
     def finalize(self, depth: int = 0) -> bool:
         if self._finalized:
@@ -582,12 +616,14 @@ class ResultSection:
         if not self.body and self.body is not None:
             self._body = None
 
+        self._tags = _unpack_tags(self._tag_sets)
+
         self._finalized = True
 
         tmp_subs = []
         self.depth = depth
         for subsection in self._subsections:
-            if subsection.finalize(depth=depth+1):
+            if subsection.finalize(depth=depth + 1):
                 tmp_subs.append(subsection)
         self._subsections = tmp_subs
 
@@ -603,8 +639,8 @@ class ResultSection:
                 self._body_format = body_format
 
     def set_heuristic(
-            self, heur: Union[int, Heuristic, None],
-            attack_id: Optional[str] = None, signature: Optional[str] = None) -> None:
+        self, heur: Union[int, Heuristic, None], attack_id: Optional[str] = None, signature: Optional[str] = None
+    ) -> None:
         """
         Set a heuristic for a result section/subsection.
         A heuristic is required to assign a score to a result section/subsection.
@@ -617,8 +653,10 @@ class ResultSection:
             self._heuristic = None
         elif self._heuristic:
             heur_id = heur.heur_id if isinstance(heur, Heuristic) else heur
-            raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
-                                            f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
+            raise InvalidHeuristicException(
+                f"The service is trying to set the heuristic twice, this is not allowed. "
+                f"[Current: {self.heuristic.heur_id}, New: {heur_id}]"
+            )
         elif isinstance(heur, Heuristic):
             if attack_id:
                 heur.add_attack_id(attack_id)
@@ -628,15 +666,15 @@ class ResultSection:
         else:
             self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
 
-    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]):
-        self._tags = tags
+    def set_tags(self, tags: Dict[str, Iterable[str]]):
+        self._tag_sets = _pack_tags(tags)
 
 
 class TypeSpecificResultSection(ResultSection):
     def __init__(self, title_text: Union[str, List], section_body: SectionBody, **kwargs):
         # Not allowed to specified body_format since it will come from the section body
-        kwargs.pop('body_format', None)
-        kwargs.pop('body', None)
+        kwargs.pop("body_format", None)
+        kwargs.pop("body", None)
 
         self.section_body = section_body
         super().__init__(title_text, body_format=self.section_body.format, **kwargs)
@@ -662,19 +700,19 @@ class TypeSpecificResultSection(ResultSection):
 class ResultTextSection(ResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         # Not allowed to specified body_format since locked to TEXT
-        kwargs.pop('body_format', None)
+        kwargs.pop("body_format", None)
         super().__init__(title_text, body_format=BODY_FORMAT.TEXT, **kwargs)
 
 
 class ResultMemoryDumpSection(ResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         # Not allowed to specified body_format since locked to MEMORY_DUMP
-        kwargs.pop('body_format', None)
+        kwargs.pop("body_format", None)
         super().__init__(title_text, body_format=BODY_FORMAT.MEMORY_DUMP, **kwargs)
 
 
 class ResultGraphSection(TypeSpecificResultSection):
-    def __init__(self, title_text: Union[str, List],  **kwargs):
+    def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: GraphSectionBody
         super().__init__(title_text, GraphSectionBody(), **kwargs)
 
@@ -751,12 +789,16 @@ class ResultImageSection(TypeSpecificResultSection):
         self.section_body: ImageSectionBody
         super().__init__(title_text, ImageSectionBody(request), **kwargs)
 
-    def add_image(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None,
-                  ocr_heuristic_id: Optional[int] = None,
-                  ocr_io: Optional[TextIO] = None,
-                  auto_add_ocr_section: bool = True) -> Optional[ResultSection]:
-
+    def add_image(
+        self,
+        path: str,
+        name: str,
+        description: str,
+        classification: Optional[Classification] = None,
+        ocr_heuristic_id: Optional[int] = None,
+        ocr_io: Optional[TextIO] = None,
+        auto_add_ocr_section: bool = True,
+    ) -> Optional[ResultSection]:
         ocr_section = self.section_body.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
         if ocr_section and auto_add_ocr_section:
             self.add_subsection(ocr_section)
@@ -768,18 +810,31 @@ class ResultImageSection(TypeSpecificResultSection):
 class ResultTimelineSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: TimelineSectionBody
-        super().__init__(title_text,  TimelineSectionBody(), **kwargs)
+        super().__init__(title_text, TimelineSectionBody(), **kwargs)
 
-    def add_node(self, title: str, content: str, opposite_content: str, icon: str = None, signatures: List[str] = [],
-                 score: int = 0) -> None:
-        self.section_body.add_node(title=title, content=content, opposite_content=opposite_content,
-                                   icon=icon, signatures=signatures, score=score)
+    def add_node(
+        self,
+        title: str,
+        content: str,
+        opposite_content: str,
+        icon: str = None,
+        signatures: List[str] = [],
+        score: int = 0,
+    ) -> None:
+        self.section_body.add_node(
+            title=title,
+            content=content,
+            opposite_content=opposite_content,
+            icon=icon,
+            signatures=signatures,
+            score=score,
+        )
 
 
 class ResultMultiSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: MultiSectionBody
-        super().__init__(title_text,  MultiSectionBody(), **kwargs)
+        super().__init__(title_text, MultiSectionBody(), **kwargs)
 
     def add_section_part(self, section_part: SectionBody) -> None:
         self.section_body.add_section_body(section_part)
@@ -792,18 +847,20 @@ class Result:
         self.sections: List[ResultSection] = sections or []
 
     def _append_section(self, section: ResultSection) -> None:
-        self._flattened_sections.append(dict(
-            body=section.body,
-            classification=section.classification,
-            body_format=section.body_format,
-            body_config=section.body_config,
-            depth=section.depth,
-            heuristic=get_heuristic_primitives(section.heuristic),
-            tags=unflatten(section.tags),
-            title_text=section.title_text,
-            zeroize_on_tag_safe=section.zeroize_on_tag_safe,
-            auto_collapse=section.auto_collapse
-        ))
+        self._flattened_sections.append(
+            dict(
+                body=section.body,
+                classification=section.classification,
+                body_format=section.body_format,
+                body_config=section.body_config,
+                depth=section.depth,
+                heuristic=get_heuristic_primitives(section.heuristic),
+                tags=unflatten(section.tags),
+                title_text=section.title_text,
+                zeroize_on_tag_safe=section.zeroize_on_tag_safe,
+                auto_collapse=section.auto_collapse,
+            )
+        )
 
     def _flatten_sections(self, section: ResultSection, root: bool = True) -> None:
         if len(section.subsections) > 0:
@@ -846,9 +903,9 @@ class Result:
             self._flatten_sections(section)
 
         for flattened_section in self._flattened_sections:
-            heuristic = flattened_section.get('heuristic')
+            heuristic = flattened_section.get("heuristic")
             if heuristic:
-                self._score += heuristic['score']
+                self._score += heuristic["score"]
 
         result = dict(
             score=self._score,
@@ -856,3 +913,14 @@ class Result:
         )
 
         return result
+
+
+# dict[str, None] is being used as a set-like datastructure that preserves insertion order
+def _pack_tags(tags: dict[str, Iterable[str]] | None) -> dict[str, dict[str, None]]:
+    """Convert tags structure from list to ordered set for deduplication"""
+    return {key: {tag: None for tag in tags[key]} for key in tags} if tags else {}
+
+
+def _unpack_tags(tags: dict[str, dict[str, None]] | None) -> dict[str, list[str]]:
+    """Convert tags structure from ordered set to list for json"""
+    return {key: list(values) for key, values in tags.items()} if tags else {}
