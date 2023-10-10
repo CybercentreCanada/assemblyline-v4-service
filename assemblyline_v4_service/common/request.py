@@ -1,9 +1,11 @@
 import logging
+import hashlib
 import tempfile
-from typing import Any, Dict, Optional, TextIO, Union
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.file import make_uri_file
 from assemblyline.common.classification import Classification
 from PIL import Image
 
@@ -24,17 +26,7 @@ class ServiceRequest:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._working_directory = task.working_directory
-        self.deep_scan = task.deep_scan
-        self.extracted = task.extracted
-        self.file_name = task.file_name
-        self.file_type = task.file_type
-        self.file_size = task.file_size
         self._file_path = None
-        self.max_extracted = task.max_extracted
-        self.md5 = task.md5
-        self.sha1 = task.sha1
-        self.sha256 = task.sha256
-        self.sid = task.sid
         self.task = task
 
     def add_extracted(self, path: str, name: str, description: str,
@@ -61,6 +53,14 @@ class ServiceRequest:
             return r
         except MaxExtractedExceeded:
             raise
+
+    def add_extracted_uri(self, description: str, directory: str, uri: str, params=None,
+                          classification: Optional[Classification] = None,
+                          allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
+        self.set_uri_metadata(uri, params)
+        filepath = make_uri_file(directory, uri, params)
+        return self.add_extracted(filepath, uri, description, classfication=classification,
+                                  allow_dynamic_recursion=allow_dynamic_recursion, parent_relation=parent_relation)
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
@@ -221,6 +221,14 @@ class ServiceRequest:
         """
         self.task.set_service_context(context)
 
+    def set_uri_metadata(self, uri, params=None):
+        md5hash = hashlib.md5(uri).hexdigest()
+        self.temp_submission_data[f"uri_metadata_{md5hash}"] = params
+
+    def get_uri_metadata(self, uri):
+        md5hash = hashlib.md5(uri).hexdigest()
+        return self.temp_submission_data.get(f"uri_metadata_{md5hash}", None)
+
     @property
     def temp_submission_data(self) -> Dict[str, Any]:
         """
@@ -238,3 +246,43 @@ class ServiceRequest:
         :param data: Temporary submission data
         """
         self.task.temp_submission_data = data
+
+    @property
+    def deep_scan(self) -> bool:
+        return self.task.deep_scan
+
+    @property
+    def extracted(self) -> List[Dict[str, str]]:
+        return self.task.extracted
+
+    @property
+    def file_name(self) -> str:
+        return self.task.file_name
+
+    @property
+    def file_type(self) -> str:
+        return self.task.fileinfo.type
+
+    @property
+    def file_size(self) -> int:
+        return self.task.fileinfo.size
+
+    @property
+    def max_extracted(self) -> int:
+        return self.task.max_extracted
+
+    @property
+    def md5(self) -> str:
+        return self.task.fileinfo.md5
+
+    @property
+    def sha1(self) -> str:
+        return self.task.fileinfo.sha1
+
+    @property
+    def sha256(self) -> str:
+        return self.task.fileinfo.sha256
+
+    @property
+    def sid(self) -> str:
+        return self.task.sid
