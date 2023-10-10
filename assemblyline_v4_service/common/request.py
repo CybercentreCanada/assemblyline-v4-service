@@ -1,9 +1,11 @@
 import logging
+import hashlib
 import tempfile
 from typing import Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.file import make_uri_file
 from assemblyline.common.classification import Classification
 from PIL import Image
 
@@ -51,6 +53,14 @@ class ServiceRequest:
             return r
         except MaxExtractedExceeded:
             raise
+
+    def add_extracted_uri(self, description: str, directory: str, uri: str, params=None,
+                          classification: Optional[Classification] = None,
+                          allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
+        self.set_uri_metadata(uri, params)
+        filepath = make_uri_file(directory, uri, params)
+        return self.add_extracted(filepath, uri, description, classfication=classification,
+                                  allow_dynamic_recursion=allow_dynamic_recursion, parent_relation=parent_relation)
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
@@ -210,6 +220,14 @@ class ServiceRequest:
         :param context: Context of the service
         """
         self.task.set_service_context(context)
+
+    def set_uri_metadata(self, uri, params=None):
+        md5hash = hashlib.md5(uri).hexdigest()
+        self.temp_submission_data[f"uri_metadata_{md5hash}"] = params
+
+    def get_uri_metadata(self, uri):
+        md5hash = hashlib.md5(uri).hexdigest()
+        return self.temp_submission_data.get(f"uri_metadata_{md5hash}", None)
 
     @property
     def temp_submission_data(self) -> Dict[str, Any]:
