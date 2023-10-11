@@ -54,11 +54,11 @@ class ServiceRequest:
         except MaxExtractedExceeded:
             raise
 
-    def add_extracted_uri(self, description: str, directory: str, uri: str, params=None,
-                          classification: Optional[Classification] = None,
-                          allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
+    def add_extracted_uri(self, description: str, uri: str, params=None,
+                          classification: Optional[Classification] = None, allow_dynamic_recursion: bool = False,
+                          parent_relation: str = 'EXTRACTED') -> bool:
         self.set_uri_metadata(uri, params)
-        filepath = make_uri_file(directory, uri, params)
+        filepath = make_uri_file(self._working_directory, uri, params)
         return self.add_extracted(filepath, uri, description, classfication=classification,
                                   allow_dynamic_recursion=allow_dynamic_recursion, parent_relation=parent_relation)
 
