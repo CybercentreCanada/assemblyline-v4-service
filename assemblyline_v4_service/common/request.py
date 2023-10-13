@@ -59,7 +59,9 @@ class ServiceRequest:
                           parent_relation: str = 'EXTRACTED') -> bool:
         self.set_uri_metadata(uri, params)
         filepath = make_uri_file(self._working_directory, uri, params)
-        return self.add_extracted(filepath, uri, description, classfication=classification,
+        with open(filepath, "rb") as f:
+            sha256hash = hashlib.sha256(f.read()).hexdigest()
+        return self.add_extracted(filepath, sha256hash, description, classification=classification,
                                   allow_dynamic_recursion=allow_dynamic_recursion, parent_relation=parent_relation)
 
     def add_image(self, path: str, name: str, description: str,
@@ -221,12 +223,12 @@ class ServiceRequest:
         """
         self.task.set_service_context(context)
 
-    def set_uri_metadata(self, uri, params=None):
-        md5hash = hashlib.md5(uri).hexdigest()
+    def set_uri_metadata(self, uri: str, params: Dict[str, Any] = None):
+        md5hash = hashlib.md5(uri.encode()).hexdigest()
         self.temp_submission_data[f"uri_metadata_{md5hash}"] = params
 
-    def get_uri_metadata(self, uri):
-        md5hash = hashlib.md5(uri).hexdigest()
+    def get_uri_metadata(self, uri: str) -> Dict[str, Any]:
+        md5hash = hashlib.md5(uri.encode()).hexdigest()
         return self.temp_submission_data.get(f"uri_metadata_{md5hash}", None)
 
     @property
