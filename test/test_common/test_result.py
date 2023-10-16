@@ -271,6 +271,10 @@ def test_urlsectionbody_init():
 def test_urlsectionbody_add_url():
     usb = URLSectionBody()
 
+    # No url
+    with pytest.raises(ValueError):
+        usb.add_url("")
+
     # No name
     assert usb.add_url("blah") is None
     assert usb._data == [{"url": "blah"}]

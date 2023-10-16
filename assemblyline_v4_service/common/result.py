@@ -281,7 +281,7 @@ class URLSectionBody(SectionBody):
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
         if not url:
-            return
+            raise ValueError("A valid URL is required. An empty URL was passed.")
 
         url_data = {'url': url}
         if name:
