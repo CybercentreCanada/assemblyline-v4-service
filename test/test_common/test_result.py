@@ -223,14 +223,18 @@ def test_textsectionbody_init():
 def test_textsectionbody_add_line():
     tsb = TextSectionBody()
 
-    # No line to add
-    assert tsb.add_line(None) is None
-
     # Line to add
     assert tsb.add_line("blah") == "blah"
 
     # Line as list to add
     assert tsb.add_line(["blah", "blah"]) == "blah\nblahblah"
+
+    # Attempt to add a None-value
+    with pytest.raises(ValueError):
+        tsb.add_line(None)
+
+    # Add an empty string value
+    assert tsb.add_line("") == "blah\nblahblah\n"
 
 
 def test_textsectionbody_add_lines():
@@ -763,6 +767,14 @@ def test_resultsection_add_line():
     # Add a list of strings
     assert rs.add_line(["a", "b"]) is None
     assert rs._body == "blah\nblah\nab"
+
+    # Attempt to add a None-value
+    with pytest.raises(ValueError):
+        rs.add_line(None)
+
+    # Add an empty string value
+    assert rs.add_line("") is None
+    assert rs._body == "blah\nblah\nab\n"
 
 
 def test_resultsection_add_lines():

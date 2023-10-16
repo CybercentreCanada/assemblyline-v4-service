@@ -243,8 +243,8 @@ class TextSectionBody(SectionBody):
     def add_line(self, text: Union[str, List]) -> Optional[str]:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
-        if not text:
-            return self._data
+        if text is None:
+            raise ValueError("Expected text to add to a line must be a string or a list, not None.")
 
         if isinstance(text, list):
             text = ''.join(text)
@@ -557,6 +557,9 @@ class ResultSection:
     def add_line(self, text: Union[str, List[str]]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
+        if text is None:
+            raise ValueError("Expected text to add to a line must be a string or a list, not None.")
+
         if isinstance(text, list):
             text = ''.join(text)
         textstr = safe_str(text)
