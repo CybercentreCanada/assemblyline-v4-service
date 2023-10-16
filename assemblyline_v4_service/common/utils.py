@@ -4,6 +4,8 @@ import ctypes
 import re
 import signal
 import sys
+import traceback
+from io import StringIO
 
 libc = ctypes.CDLL("libc.so.6")
 
@@ -109,3 +111,21 @@ def extract_passwords(text: str) -> set[str]:
 
     passwords.discard("")
     return passwords
+
+
+def _is_dev_mode() -> bool:
+    with StringIO() as stack_trace:
+        # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the
+        # stack trace to determine if we're running the service in a development mode
+        traceback.print_stack(file=stack_trace)
+        stack_trace.seek(0)
+        read_stack_trace = stack_trace.read()
+
+        if any(msg in read_stack_trace for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
+            return True
+
+    return False
+
+
+# Setting this global on module initialization
+DEVELOPMENT_MODE = _is_dev_mode()

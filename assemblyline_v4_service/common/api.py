@@ -1,23 +1,12 @@
 import os
 import time
-import traceback
-from io import StringIO
 
 import requests
 from assemblyline_core.safelist_client import SafelistClient
+from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
-DEVELOPMENT_MODE = False
-
-with StringIO() as stack_trace:
-    # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the stack trace to determine if we're running the service in a development mode
-    traceback.print_stack(file=stack_trace)
-    stack_trace.seek(0)
-    read_stack_trace = stack_trace.read()
-
-    if any(msg in read_stack_trace for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
-        DEVELOPMENT_MODE = True
 
 
 class ServiceAPIError(Exception):
