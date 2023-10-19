@@ -53,7 +53,8 @@ SOURCE_STATUS_KEY = 'status'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
-UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
+UPDATER_API_ROLES = ['badlist_manage', 'signature_import', 'signature_download',
+                     'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
 STATUS_FILE = '/tmp/status'
 
 classification = forge.get_classification()
@@ -393,7 +394,9 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, datastore=self.datastore)
+                al_client = get_client(
+                    UI_SERVER, apikey=(username, api_key),
+                    verify=self.verify, datastore=self.datastore)
                 self.log.info("Connected!")
 
                 # Parse updater configuration
@@ -564,7 +567,7 @@ class ServiceUpdater(ThreadedCoreBase):
             signature_map = {
                 source.name: {'classification': source['default_classification'].value}
                 for source in self._service.update_config.sources
-             }
+            }
         open(os.path.join(new_directory, SIGNATURES_META_FILENAME), 'w').write(json.dumps(signature_map, indent=2))
 
         try:
