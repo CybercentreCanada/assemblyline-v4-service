@@ -4,6 +4,7 @@ import traceback
 from io import StringIO
 
 import requests
+from assemblyline_core.badlist_client import BadlistClient
 from assemblyline_core.safelist_client import SafelistClient
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
@@ -69,6 +70,30 @@ class ServiceAPI:
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
 
+    def get_badlist(self, tag_list=None):
+        if DEVELOPMENT_MODE:
+            return {}
+
+        if tag_list:
+            if not isinstance(tag_list, list):
+                raise ValueError("Parameter tag_list should be a list of strings.")
+            url = f"{self.service_api_host}/api/v1/badlist/?tag_types={','.join(tag_list)}"
+        else:
+            url = f"{self.service_api_host}/api/v1/badlist/"
+
+        return self._with_retries(self.session.get, url)
+
+    def lookup_badlist(self, qhash):
+        if DEVELOPMENT_MODE:
+            return None
+        try:
+            return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/badlist/{qhash}/")
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return None
+            else:
+                raise
+
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
             return {}
@@ -97,7 +122,23 @@ class ServiceAPI:
 class PrivilegedServiceAPI:
     def __init__(self, logger):
         self.log = logger
+        self.badlist_client = BadlistClient()
         self.safelist_client = SafelistClient()
+
+    def get_badlist(self, tag_list=None):
+        if DEVELOPMENT_MODE:
+            return {}
+        tag_types = None
+
+        if tag_list and not isinstance(tag_list, list):
+            raise ValueError("Parameter tag_list should be a list of strings.")
+
+        return self.badlist_client.get_badlisted_tags(tag_types)
+
+    def lookup_badlist(self, qhash):
+        if DEVELOPMENT_MODE:
+            return None
+        return self.badlist_client.exists(qhash)
 
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
