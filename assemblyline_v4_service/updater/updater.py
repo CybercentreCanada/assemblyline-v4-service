@@ -12,8 +12,8 @@ import random
 import tarfile
 import threading
 import subprocess
+import hashlib
 from contextlib import contextmanager
-from hashlib import sha256
 from passlib.hash import bcrypt
 from zipfile import ZipFile, BadZipFile
 
@@ -188,7 +188,7 @@ class ServiceUpdater(ThreadedCoreBase):
         return 0
 
     def get_local_update_hash(self) -> str:
-        return sha256(open(self._update_tar, "rb").read()).hexdigest()
+        return hashlib.sha256(open(self._update_tar, "rb").read()).hexdigest()
 
     def status(self):
         return {
@@ -553,7 +553,8 @@ class ServiceUpdater(ThreadedCoreBase):
         new_tar = ''
 
         # Before serving directory, let's maintain a map of the different signatures and their current deployment state
-        # This map allows the service to be more responsive to changes made locally to the system such as classification changes
+        # This map allows the service to be more responsive to changes made locally to the system such as
+        # classification changes.
         # This also avoids the need to have to insert this kind of metadata into the signature itself
         if self._service.update_config.generates_signatures:
             # Pull signature metadata from the API
