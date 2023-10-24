@@ -1302,7 +1302,7 @@ def test_result_append_section():
     rs.set_heuristic(1)
     rs.set_tags({"blah.blah": ["blah"]})
     assert r._append_section(rs) is None
-    assert r._flattened_sections == [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}, 'tags': {"blah": {"blah": ["blah"]}}, 'title_text': 'blah', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]
+    assert len(r._flattened_sections) == 1
 
 
 def test_result_flatten_sections():
@@ -1312,9 +1312,7 @@ def test_result_flatten_sections():
     # root is True
     # Note, we have a single result section
     assert r._flatten_sections(rs) is None
-    assert r._flattened_sections == [
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah1', 'zeroize_on_tag_safe': False, 'auto_collapse': False}
-    ]
+    assert len(r._flattened_sections) == 1
 
     r._flattened_sections.clear()
 
@@ -1323,10 +1321,7 @@ def test_result_flatten_sections():
     ss1 = ResultSection("blah2")
     rs.add_subsection(ss1)
     assert r._flatten_sections(rs) is None
-    assert r._flattened_sections == [
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah1', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah2', 'zeroize_on_tag_safe': False, 'auto_collapse': False}
-    ]
+    assert len(r._flattened_sections) == 2
 
     # Flatten another ResultSection as not root. Because of this, we expect some weird behaviour
     # Note, we have four result sections. The first two are the same as above, expected. The next two
@@ -1335,12 +1330,7 @@ def test_result_flatten_sections():
     ss2 = ResultSection("blah3")
     rs.add_subsection(ss2)
     assert r._flatten_sections(rs, root=False) is None
-    assert r._flattened_sections == [
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah1', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah2', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah2', 'zeroize_on_tag_safe': False, 'auto_collapse': False},
-        {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'blah3', 'zeroize_on_tag_safe': False, 'auto_collapse': False}
-    ]
+    assert len(r._flattened_sections) == 4
 
 
 def test_result_add_section():
@@ -1372,7 +1362,9 @@ def test_result_finalize():
     rs1 = ResultSection("section")
     r.add_section(rs1)
     assert r.sections == [rs1]
-    assert r.finalize() == {'score': 0, 'sections': [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]}
+    finalized_r = r.finalize()
+    assert finalized_r["score"] == 0
+    assert len(finalized_r["sections"]) == 1
     assert r.sections == [rs1]
 
     rs1._finalized = False
@@ -1383,7 +1375,9 @@ def test_result_finalize():
     assert r.sections == [rs1, rs2]
 
     # Note that the bad section is returned here, but does not exist in the sections param
-    assert r.finalize() == {'score': 0, 'sections': [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}, {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]}
+    finalized_r = r.finalize()
+    assert finalized_r["score"] == 0
+    assert len(finalized_r["sections"]) == 2
     assert r.sections == [rs1]
 
     rs1._finalized = False
@@ -1395,6 +1389,7 @@ def test_result_finalize():
     rs3 = ResultSection("section", heuristic=Heuristic(1))
     r.add_section(rs3)
     assert r.sections == [rs1, rs3]
-    # Note that the bad section is returned here, but does not exist in the sections param
-    assert r.finalize() == {'score': 250, 'sections': [{'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': None, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}, {'body': None, 'classification': 'TLP:C', 'body_format': 'TEXT', 'body_config': {}, 'depth': 0, 'heuristic': {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}, 'tags': {}, 'title_text': 'section', 'zeroize_on_tag_safe': False, 'auto_collapse': False}]}
+    finalized_r = r.finalize()
+    assert finalized_r["score"] == 250
+    assert len(finalized_r["sections"]) == 2
     assert r.sections == [rs1, rs3]

@@ -23,19 +23,8 @@ def setup_and_teardown_test():
                     os.rmdir(item)
                 elif os.path.isfile(item):
                     os.remove(item)
-            except Exception:
-                pass
-
-    yield
-
-    while any(os.path.exists(item) for item in files_or_dirs_to_clean):
-        for item in files_or_dirs_to_clean:
-            try:
-                if os.path.isdir(item):
-                    os.rmdir(item)
-                elif os.path.isfile(item):
-                    os.remove(item)
-            except Exception:
+            except Exception as e:
+                print(e)
                 pass
 
 

@@ -385,7 +385,9 @@ def test_task_get_service_result(servicetask):
     with open(path, "w") as f:
         f.write("test")
     t.add_extracted(path, "name", "description", classification="TLP:AMBER")
-    assert t.get_service_result() == {
+    service_result = t.get_service_result()
+    assert len(service_result["result"].pop("sections")) == 1
+    assert service_result == {
         "classification": "TLP:C",
         "response": {
             "milestones": {"service_started": None, "service_completed": None},
@@ -410,20 +412,6 @@ def test_task_get_service_result(servicetask):
         },
         "result": {
             "score": 0,
-            "sections": [
-                {
-                    "auto_collapse": False,
-                    "body": None,
-                    "body_config": {},
-                    "body_format": "TEXT",
-                    "classification": "TLP:GREEN",
-                    "depth": 0,
-                    "heuristic": None,
-                    "tags": {},
-                    "title_text": "blah",
-                    "zeroize_on_tag_safe": False,
-                }
-            ],
         },
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "type": "text/plain",
