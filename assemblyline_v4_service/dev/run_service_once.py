@@ -216,7 +216,7 @@ class RunService:
             if service_manifest_data:
                 service_config = service_manifest_data.get('config', {})
 
-            self.submission_params = {x['name']: x['default']
+            self.submission_params = {x['name']: x['value']
                                       for x in service_manifest_data.get('submission_params', [])}
 
             self.service = self.service_class(config=service_config)
