@@ -1,3 +1,4 @@
+import os
 import tempfile
 
 import pytest
@@ -589,7 +590,10 @@ def test_imagesectionbody_init(service_request):
 
 def test_imagesectionbody_add_image(service_request):
     isb = ImageSectionBody(service_request)
-    image_path = "./test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e"
+    if os.getcwd().endswith("/test"):
+        image_path = os.path.join(os.getcwd(), "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    else:
+        image_path = os.path.join(os.getcwd(), "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert isb.add_image(image_path, "image_name", "description of image") is None
@@ -1223,7 +1227,10 @@ def test_resultimagesection_init(service_request):
 def test_resultimagesection_add_image(service_request):
     ris = ResultImageSection(service_request, "title_text_as_str")
 
-    image_path = "./test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e"
+    if os.getcwd().endswith("/test"):
+        image_path = os.path.join(os.getcwd(), "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    else:
+        image_path = os.path.join(os.getcwd(), "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert ris.add_image(image_path, "image_name", "description of image") is None

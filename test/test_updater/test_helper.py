@@ -10,7 +10,10 @@ INDEX_ZIP = "/tmp/blah/index.zip"
 INDEX_ZIP_TEXT = "/tmp/blah/index/test.txt"
 INDEX_ZIP_EXTRACT_PATH = "/tmp/blah/index"
 DIRECTORY = "/tmp/blah"
-TAR = os.path.join(os.getcwd(), "blah.tar")
+if os.getcwd().endswith("/test"):
+    TAR = os.path.join(DIRECTORY, "blah.tar")
+else:
+    TAR = os.path.join(os.getcwd(), "blah.tar")
 
 
 @pytest.fixture(autouse=True)
@@ -95,7 +98,11 @@ def test_url_download():
 
         # zip file
         m.head("http://www.google.com/index.zip", text="blah")
-        m.get("http://www.google.com/index.zip", content=open("./test/test_updater/test.zip", "rb").read())
+        if os.getcwd().endswith("/test"):
+            fake_zip_path = os.path.join(os.getcwd(), "test_updater/test.zip")
+        else:
+            fake_zip_path = os.path.join(os.getcwd(), "test/test_updater/test.zip")
+        m.get("http://www.google.com/index.zip", content=open(fake_zip_path, "rb").read())
         assert url_download({"name": "index", "uri": "http://www.google.com/index.zip"}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
 
 

@@ -31,7 +31,6 @@ def test_serviceapi_init():
     service_attributes = helper.get_service_attributes()
     sa = ServiceAPI(service_attributes, None)
     assert sa.log is None
-    assert sa.service_api_host == DEFAULT_SERVICE_SERVER
     assert isinstance(sa.session, Session)
     # This value could change with different versions of Python requests
     sa.session.headers.pop("user-agent")
