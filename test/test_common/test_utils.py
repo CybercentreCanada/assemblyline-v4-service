@@ -1,15 +1,23 @@
-from assemblyline_v4_service.common.utils import extract_passwords
 import pytest
+from assemblyline_v4_service.common.utils import extract_passwords
 
 
 def test_extract_passwords():
     # Make sure an empty string doesn't cause any problem
     text = ""
     res = extract_passwords(text)
+    assert res == set()
 
     # Make sure an empty string doesn't cause any problem
     text = "\n"
     res = extract_passwords(text)
+    assert res == set()
+
+    # Make sure a string that only contains the text "password:" does not
+    # give us an empty password
+    text = "Password:"
+    res = extract_passwords(text)
+    assert res == {"Password", "Password:"}
 
     text = "Invoice Password: A"
     wanted_password = ["A"]

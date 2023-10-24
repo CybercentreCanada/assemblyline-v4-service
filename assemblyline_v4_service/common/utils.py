@@ -4,6 +4,8 @@ import ctypes
 import re
 import signal
 import sys
+import traceback
+from io import StringIO
 
 libc = ctypes.CDLL("libc.so.6")
 
@@ -84,8 +86,12 @@ def __extract_passwords_from_lines(texts, password_word, password_regex):
                 special_char = line[index - 1]
                 if special_char in BRACKET_PAIRS:
                     special_char = BRACKET_PAIRS[special_char]
-                for password in list(new_passwords):
+                for password in new_passwords:
                     new_passwords.extend([password[:i] for i, ltr in enumerate(password) if ltr == special_char])
+
+                new_passwords = set(new_passwords)
+                new_passwords.discard("")
+
             all_passwords.update(new_passwords)
     return all_passwords
 
@@ -102,4 +108,24 @@ def extract_passwords(text: str) -> set[str]:
         p = p.strip()
         # We can assume that at least one of the strip_char won't be there, to have the simple space stripping option
         passwords.update([p.strip(strip_char) for strip_char in PASSWORD_STRIP])
+
+    passwords.discard("")
     return passwords
+
+
+def _is_dev_mode() -> bool:
+    with StringIO() as stack_trace:
+        # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the
+        # stack trace to determine if we're running the service in a development mode
+        traceback.print_stack(file=stack_trace)
+        stack_trace.seek(0)
+        read_stack_trace = stack_trace.read()
+
+        if any(msg in read_stack_trace for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
+            return True
+
+    return False
+
+
+# Setting this global on module initialization
+DEVELOPMENT_MODE = _is_dev_mode()

@@ -6,19 +6,18 @@ ARG branch
 
 USER root
 RUN apt-get update \
-  && apt-get install -yy build-essential libfuzzy-dev \
-  && rm -rf /var/lib/apt/lists/*
+    && apt-get install -yy build-essential libfuzzy-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 # install pip packages, as assemblyline so they go into our .local with the ones already there
 USER assemblyline
 RUN touch /tmp/before-pip
 COPY setup.py dist* dist/
 RUN pip install --no-cache-dir -f dist --user \
-  assemblyline-core==$version \
-  assemblyline-service-client==$version \
-  assemblyline-v4-service[updater]==$version \
-  assemblyline-client \
-  && rm -rf ~/.cache/pip
+    assemblyline-core==$version \
+    assemblyline-service-client==$version \
+    assemblyline-v4-service[updater]==$version \
+    && rm -rf ~/.cache/pip
 
 # If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
 RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline-client; fi
