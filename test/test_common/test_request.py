@@ -104,7 +104,10 @@ def test_add_extracted(service_request):
 
 
 def test_add_image(service_request):
-    image_path = "./test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e"
+    if os.getcwd().endswith("/test"):
+        image_path = os.path.join(os.getcwd(), "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    else:
+        image_path = os.path.join(os.getcwd(), "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert service_request.add_image(image_path, "image_name", "description of image") == {
@@ -192,7 +195,10 @@ def test_add_image(service_request):
     service_request.task.supplementary.clear()
 
     # Classification, OCR heuristic, OCR_IO, image with password
-    image_path = "./test/test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf"
+    if os.getcwd().endswith("/test"):
+        image_path = os.path.join(os.getcwd(), "test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
+    else:
+        image_path = os.path.join(os.getcwd(), "test/test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
     data = service_request.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io)
