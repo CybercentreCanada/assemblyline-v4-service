@@ -35,11 +35,13 @@ def test_serviceapi_init():
     assert isinstance(sa.session, Session)
     # This value could change with different versions of Python requests
     sa.session.headers.pop("user-agent")
+    # This changes relative to the data model
+    sa.session.headers.pop("accept-encoding")
     assert sa.session.headers.__dict__ == {
         '_store': OrderedDict(
             [
                 # ('user-agent', ('User-Agent', 'python-requests/2.31.0')),
-                ('accept-encoding', ('Accept-Encoding', 'gzip, deflate')),
+                # ('accept-encoding', ('Accept-Encoding', 'gzip, deflate')),
                 ('accept', ('Accept', '*/*')),
                 ('connection', ('Connection', 'keep-alive')),
                 ('x_apikey', ('X_APIKEY', DEFAULT_AUTH_KEY)),
