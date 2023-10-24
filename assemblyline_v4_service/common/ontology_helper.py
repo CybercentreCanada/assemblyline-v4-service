@@ -1,7 +1,9 @@
 import json
 import os
 from collections import defaultdict
-from typing import Dict
+from typing import Dict, Optional
+
+from assemblyline_v4_service.common import helper
 
 from assemblyline.common import forge
 from assemblyline.common.dict_utils import flatten, get_dict_fingerprint_hash, unflatten
@@ -10,7 +12,6 @@ from assemblyline.odm.models.ontology import ODM_VERSION
 from assemblyline.odm.models.ontology.filetypes import PE
 from assemblyline.odm.models.ontology.results import NetworkConnection
 from assemblyline.odm.models.tagging import Tagging
-from assemblyline_v4_service.common import helper
 
 ONTOLOGY_FILETYPE_MODELS = [PE]
 ONTOLOGY_CLASS_TO_FIELD = {
@@ -59,6 +60,9 @@ class OntologyHelper:
         data['objectid']['ontology_id'] = oid
         data['objectid']['service_name'] = self.service
 
+        if not hasattr(model, "objectid"):
+            data.pop("objectid")
+
         try:
             self._result_parts[oid] = model(data)
         except Exception as e:
@@ -80,7 +84,7 @@ class OntologyHelper:
 
         ontology['results'].update(self.results)
 
-    def _attach_ontology(self, request, working_dir) -> str:
+    def _attach_ontology(self, request, working_dir) -> Optional[str]:
         # Get heuristics of service
         heuristics = helper.get_heuristics()
 

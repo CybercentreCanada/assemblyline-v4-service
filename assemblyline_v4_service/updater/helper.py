@@ -1,26 +1,33 @@
-import certifi
 import os
-import psutil
-import regex as re
-import requests
 import shutil
 import tempfile
 import time
-
-from git import Repo
-from typing import List, Dict, Any, Tuple
-from urllib.parse import urlparse
+import traceback
+from io import StringIO
+from logging import Logger
 from shutil import make_archive
+from typing import Any, Dict, List, Optional, Tuple
+from urllib.parse import urlparse
 
-from assemblyline.common.isotime import iso_to_epoch
+import certifi
+import psutil
+import regex as re
+import requests
+from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
+from git import Repo
+
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
-
+from assemblyline.common.isotime import iso_to_epoch
 
 BLOCK_SIZE = 64 * 1024
 GIT_ALLOW_UNSAFE_PROTOCOLS = os.environ.get('GIT_ALLOW_UNSAFE_PROTOCOLS', 'false').lower() == 'true'
 
-identify = Identify()
+
+if DEVELOPMENT_MODE:
+    identify = Identify(use_cache=False)
+else:
+    identify = Identify()
 
 
 class SkipSource(RuntimeError):
@@ -66,15 +73,14 @@ def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[s
     return f_files
 
 
-def url_download(source: Dict[str, Any], previous_update: int = None, logger=None, output_dir: str = None) -> str:
-    """
-
-    :param source:
-    :param previous_update:
-    :return:
-    """
+def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, output_dir: str) -> Optional[str]:
     name = source['name']
     uri = source['uri']
+
+    # A file_name in the path is expected and required
+    if not os.path.basename(urlparse(uri).path):
+        raise ValueError(f"Provided source uri does not end with a file name: '{uri}'")
+
     username = source.get('username', None)
     password = source.get('password', None)
     ca_cert = source.get('ca_cert', None)
@@ -156,7 +162,7 @@ def url_download(source: Dict[str, Any], previous_update: int = None, logger=Non
                 return file_path
         else:
             logger.warning(f"Download not successful: {response.content}")
-            return []
+            return None
 
     except SkipSource:
         # Raise to calling function for handling
