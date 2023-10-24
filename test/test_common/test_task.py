@@ -538,7 +538,12 @@ def test_task_validate_file(servicetask):
     os.remove(path)
 
     # File exists and sha256 is a match
-    t.sha256 = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+    # Backwards compatibility check with service base
+    if hasattr(t, "fileinfo"):
+        t.fileinfo.sha256 = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+    else:
+        t.sha256 = "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+
     path = f"/tmp/{t.sha256}"
     with open(path, "w") as f:
         f.write("test")
