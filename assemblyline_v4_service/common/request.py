@@ -57,11 +57,10 @@ class ServiceRequest:
     def add_extracted_uri(self, description: str, uri: str, params=None,
                           classification: Optional[Classification] = None, allow_dynamic_recursion: bool = False,
                           parent_relation: str = 'EXTRACTED') -> bool:
-        self.set_uri_metadata(uri, params)
+        if params:
+            self.set_uri_metadata(uri, params)
         filepath = make_uri_file(self._working_directory, uri, params)
-        with open(filepath, "rb") as f:
-            sha256hash = hashlib.sha256(f.read()).hexdigest()
-        return self.add_extracted(filepath, sha256hash, description, classification=classification,
+        return self.add_extracted(filepath, uri, description, classification=classification,
                                   allow_dynamic_recursion=allow_dynamic_recursion, parent_relation=parent_relation)
 
     def add_image(self, path: str, name: str, description: str,
