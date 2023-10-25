@@ -41,7 +41,8 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
 
 PROMOTE_TO = StringTable('PROMOTE_TO', [
     ('SCREENSHOT', 0),
-    ('ENTROPY', 1)
+    ('ENTROPY', 1),
+    ('URI_PARAMS', 2)
 ])
 
 
@@ -720,7 +721,7 @@ class ResultMemoryDumpSection(ResultSection):
 
 
 class ResultGraphSection(TypeSpecificResultSection):
-    def __init__(self, title_text: Union[str, List],  **kwargs):
+    def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: GraphSectionBody
         super().__init__(title_text, GraphSectionBody(), **kwargs)
 
@@ -751,6 +752,9 @@ class ResultKeyValueSection(TypeSpecificResultSection):
     def update_items(self, new_dict):
         self.section_body.update_items(new_dict)
 
+    def promote_as_uri_params(self):
+        self._promote_to = PROMOTE_TO.URI_PARAMS
+
 
 class ResultOrderedKeyValueSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
@@ -759,6 +763,9 @@ class ResultOrderedKeyValueSection(TypeSpecificResultSection):
 
     def add_item(self, key: str, value: Union[str, bool, int]) -> None:
         self.section_body.add_item(key, value)
+
+    def promote_as_uri_params(self):
+        self._promote_to = PROMOTE_TO.URI_PARAMS
 
 
 class ResultJSONSection(TypeSpecificResultSection):
@@ -820,7 +827,7 @@ class ResultImageSection(TypeSpecificResultSection):
 class ResultTimelineSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: TimelineSectionBody
-        super().__init__(title_text,  TimelineSectionBody(), **kwargs)
+        super().__init__(title_text, TimelineSectionBody(), **kwargs)
 
     def add_node(self, title: str, content: str, opposite_content: str, icon: str = None, signatures: List[str] = [],
                  score: int = 0) -> None:
@@ -831,7 +838,7 @@ class ResultTimelineSection(TypeSpecificResultSection):
 class ResultMultiSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: MultiSectionBody
-        super().__init__(title_text,  MultiSectionBody(), **kwargs)
+        super().__init__(title_text, MultiSectionBody(), **kwargs)
 
     # Note that this method is named differently than the method to
     # add a section body to the MultiSectionBody (add_section_body)
