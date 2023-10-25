@@ -33,9 +33,11 @@ def test_serviceapi_init():
     assert sa.log is None
     assert isinstance(sa.session, Session)
     # This value could change with different versions of Python requests
-    sa.session.headers.pop("user-agent")
+    assert sa.session.headers.pop("user-agent")
     # This changes relative to the data model
-    sa.session.headers.pop("accept-encoding")
+    assert sa.session.headers.pop("accept-encoding")
+    # This changes when run from a container
+    assert sa.session.headers.pop("container_id")
     assert sa.session.headers.__dict__ == {
         '_store': OrderedDict(
             [
@@ -44,7 +46,7 @@ def test_serviceapi_init():
                 ('accept', ('Accept', '*/*')),
                 ('connection', ('Connection', 'keep-alive')),
                 ('x_apikey', ('X_APIKEY', DEFAULT_AUTH_KEY)),
-                ('container_id', ('container_id', 'dev-service')),
+                # ('container_id', ('container_id', 'dev-service')),
                 ('service_name', ('service_name', 'Sample')),
                 ('service_version', ('service_version', '4.4.0.dev0'))
             ]

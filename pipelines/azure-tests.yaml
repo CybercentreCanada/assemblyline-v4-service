@@ -41,7 +41,7 @@ jobs:
           [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
 
           sudo apt-get update
-          sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev git
+          sudo apt-get install -y build-essential libffi-dev libfuzzy-dev python3-dev git tesseract-ocr
           sudo mkdir -p /etc/assemblyline/
           sudo mkdir -p /var/cache/assemblyline/
           sudo cp pipelines/config.yml /etc/assemblyline
@@ -95,16 +95,13 @@ jobs:
           set -x # echo on
           [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
 
-          sudo apt-get update
-          sudo apt-get install -y tesseract-ocr
           sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .[updater]
           [ -f $(pwd)/test/requirements.txt ] && sudo env "PATH=$PATH" python -m pip install --no-cache-dir -r $(pwd)/test/requirements.txt
         workingDirectory: $(Pipeline.Workspace)/s/assemblyline-v4-service
         displayName: Setup environment for service base
       - script: |
           set -x # echo on
-          [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
-
           python -m pytest -p no:cacheprovider --durations=10 -rsx -svvv --disable-warnings
         displayName: Test
-        workingDirectory: $(Pipeline.Workspace)/s/assemblyline-v4-service
+        # Run tests from /test directory because that is how the release pipeline runs them
+        workingDirectory: $(Pipeline.Workspace)/s/assemblyline-v4-service/test
