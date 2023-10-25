@@ -673,7 +673,7 @@ class ResultSection:
                 self._heuristic.add_signature_id(signature)
 
     def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]) -> None:
-        if not tags and not tags == {}:
+        if not isinstance(tags, dict):
             return
 
         self._tags = tags

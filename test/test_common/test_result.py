@@ -1,5 +1,6 @@
 import os
 import tempfile
+from test.test_common import TESSERACT_LIST
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -588,6 +589,7 @@ def test_imagesectionbody_init(service_request):
     assert isb._data == []
 
 
+@pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_imagesectionbody_add_image(service_request):
     isb = ImageSectionBody(service_request)
     if os.getcwd().endswith("/test"):
@@ -1224,6 +1226,7 @@ def test_resultimagesection_init(service_request):
     assert ris.section_body._request == service_request
 
 
+@pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_resultimagesection_add_image(service_request):
     ris = ResultImageSection(service_request, "title_text_as_str")
 
