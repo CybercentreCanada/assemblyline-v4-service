@@ -12,7 +12,8 @@ DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
 DEVELOPMENT_MODE = False
 
 with StringIO() as stack_trace:
-    # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the stack trace to determine if we're running the service in a development mode
+    # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the stack trace to
+    # determine if we're running the service in a development mode
     traceback.print_stack(file=stack_trace)
     stack_trace.seek(0)
     read_stack_trace = stack_trace.read()
@@ -70,18 +71,15 @@ class ServiceAPI:
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
 
-    def get_badlist(self, tag_list=None):
+    def lookup_badlist_tags(self, tag_map: dict):
         if DEVELOPMENT_MODE:
-            return {}
+            return []
 
-        if tag_list:
-            if not isinstance(tag_list, list):
-                raise ValueError("Parameter tag_list should be a list of strings.")
-            url = f"{self.service_api_host}/api/v1/badlist/?tag_types={','.join(tag_list)}"
-        else:
-            url = f"{self.service_api_host}/api/v1/badlist/"
+        if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
+            raise ValueError("Parameter tag_list should be a dictionary tag_type mapping to a list of tag_values.")
+        url = f"{self.service_api_host}/api/v1/badlist/tags/"
 
-        return self._with_retries(self.session.get, url)
+        return self._with_retries(self.session.post, url, data=tag_map)
 
     def lookup_badlist(self, qhash):
         if DEVELOPMENT_MODE:
@@ -125,15 +123,14 @@ class PrivilegedServiceAPI:
         self.badlist_client = BadlistClient()
         self.safelist_client = SafelistClient()
 
-    def get_badlist(self, tag_list=None):
+    def lookup_badlist_tags(self, tag_map):
         if DEVELOPMENT_MODE:
-            return {}
-        tag_types = None
+            return []
 
-        if tag_list and not isinstance(tag_list, list):
-            raise ValueError("Parameter tag_list should be a list of strings.")
+        if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
+            raise ValueError("Parameter tag_list should be a dictionary tag_type mapping to a list of tag_values.")
 
-        return self.badlist_client.get_badlisted_tags(tag_types)
+        return self.badlist_client.exists_tags(tag_map)
 
     def lookup_badlist(self, qhash):
         if DEVELOPMENT_MODE:
