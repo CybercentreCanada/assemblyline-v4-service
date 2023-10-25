@@ -1,7 +1,11 @@
 import os
+import subprocess
 
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
+
+ret = subprocess.run("dpkg -l | grep ^ii | awk '{print $2}' | grep -i 'tesseract'", capture_output=True, shell=True)
+TESSERACT_LIST = list(filter(None, ret.stdout.decode().split('\n')))
 
 def setup_module():
     open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
