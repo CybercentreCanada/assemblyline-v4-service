@@ -1,19 +1,19 @@
-import logging
 import hashlib
+import logging
 import tempfile
 from typing import Any, Dict, List, Optional, TextIO, Union
-
-from assemblyline.common import forge
-from assemblyline.common import log as al_log
-from assemblyline.common.file import make_uri_file
-from assemblyline.common.classification import Classification
-from PIL import Image
 
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
-from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
+from assemblyline_v4_service.common.task import PARENT_RELATION, MaxExtractedExceeded, Task
 from assemblyline_v4_service.common.utils import extract_passwords
+from PIL import Image
+
+from assemblyline.common import forge
+from assemblyline.common import log as al_log
+from assemblyline.common.classification import Classification
+from assemblyline.common.file import make_uri_file
 
 CLASSIFICATION = forge.get_classification()
 WEBP_MAX_SIZE = 16383
@@ -32,7 +32,7 @@ class ServiceRequest:
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
                       safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
-                      allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
+                      allow_dynamic_recursion: bool = False, parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
         """
         Add an extracted file for additional processing.
 
@@ -56,7 +56,7 @@ class ServiceRequest:
 
     def add_extracted_uri(self, description: str, uri: str, params=None,
                           classification: Optional[Classification] = None, allow_dynamic_recursion: bool = False,
-                          parent_relation: str = 'EXTRACTED') -> bool:
+                          parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
         if params:
             self.set_uri_metadata(uri, params)
         filepath = make_uri_file(self._working_directory, uri, params)
@@ -146,8 +146,8 @@ class ServiceRequest:
 
     def add_supplementary(
             self, path: str, name: str, description: str,
-            classification: Optional[Classification] = None, 
-            parent_relation: str = "INFORMATION"
+            classification: Optional[Classification] = None,
+            parent_relation: str = PARENT_RELATION.INFORMATION
         ) -> bool:
         """
         Add a supplementary file.
