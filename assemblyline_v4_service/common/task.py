@@ -142,9 +142,12 @@ class Task:
         self.extracted.append(file)
         return True
 
-    def add_supplementary(self, path: str, name: str, description: str,
-                          classification: Optional[Classification] = None,
-                          is_section_image: bool = False) -> Optional[dict]:
+    def add_supplementary(
+        self, path: str, name: str, description: str,
+        classification: Optional[Classification] = None,
+        is_section_image: bool = False, 
+        parent_relation: str = "INFORMATION"
+    ) -> Optional[dict]:
         if not path:
             raise ValueError("Path cannot be empty")
 
@@ -154,7 +157,9 @@ class Task:
         if not description:
             raise ValueError("Description cannot be empty")
 
-        file = self._add_file(path, name, description, classification, is_section_image)
+        file = self._add_file(
+            path, name, description, classification, is_section_image, parent_relation=parent_relation
+        )
 
         if not file:
             return None

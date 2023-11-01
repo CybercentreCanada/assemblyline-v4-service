@@ -144,8 +144,11 @@ class ServiceRequest:
 
         return data
 
-    def add_supplementary(self, path: str, name: str, description: str,
-                          classification: Optional[Classification] = None) -> bool:
+    def add_supplementary(
+            self, path: str, name: str, description: str,
+            classification: Optional[Classification] = None, 
+            parent_relation: str = "INFORMATION"
+        ) -> bool:
         """
         Add a supplementary file.
 
@@ -153,10 +156,13 @@ class ServiceRequest:
         :param name: Display name of the supplementary file
         :param description: Descriptive text about the supplementary file
         :param classification: Classification of the supplementary file (default: service classification)
+        :param parent_relation: File relation to parent, if any.
         :return: None
         """
 
-        return self.task.add_supplementary(path, name, description, classification)
+        return self.task.add_supplementary(
+            path, name, description, classification, parent_relation=parent_relation
+        )
 
     def drop(self) -> None:
         """

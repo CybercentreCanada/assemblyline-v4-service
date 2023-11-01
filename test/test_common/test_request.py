@@ -133,7 +133,7 @@ def test_add_image(service_request):
             'description': 'description of image',
             'is_section_image': True,
             'name': 'image_name',
-            'parent_relation': 'EXTRACTED',
+            'parent_relation': 'INFORMATION',
             'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329'
         },
         {
@@ -142,7 +142,7 @@ def test_add_image(service_request):
             'description': 'description of image (thumbnail)',
             'is_section_image': True,
             'name': 'image_name.thumb',
-            'parent_relation': 'EXTRACTED',
+            'parent_relation': 'INFORMATION',
             'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901'
         },
     ]
@@ -244,7 +244,7 @@ def test_add_supplementary(service_request):
             'description': 'description',
             'is_section_image': False,
             'name': 'name',
-            'parent_relation': 'EXTRACTED',
+            'parent_relation': 'INFORMATION',
             'path': path,
             'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
          },

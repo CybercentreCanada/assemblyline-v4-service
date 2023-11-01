@@ -257,7 +257,7 @@ def test_task_add_supplementary(servicetask):
         "path": path,
         "is_section_image": False,
         "allow_dynamic_recursion": False,
-        "parent_relation": "EXTRACTED",
+        "parent_relation": "INFORMATION",
     }
     assert t.supplementary == [
         {
@@ -268,7 +268,7 @@ def test_task_add_supplementary(servicetask):
             "path": path,
             "is_section_image": False,
             "allow_dynamic_recursion": False,
-            "parent_relation": "EXTRACTED",
+            "parent_relation": "INFORMATION",
         }
     ]
 
