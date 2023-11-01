@@ -81,11 +81,11 @@ def get_paths():
         path = status['_directory']
         tar = status['_tar']
         if path is None or not os.path.isdir(path):
-            raise ValueError()
+            raise ValueError("_directory is None or is not directory")
         if tar is None or not os.path.isfile(tar):
-            raise ValueError()
-    except Exception:
-        raise ServiceUnavailable("No update ready")
+            raise ValueError("_tar is None or is not file")
+    except Exception as e:
+        raise ServiceUnavailable(f"No update ready due to '{e}'")
     return path, tar
 
 
