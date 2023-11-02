@@ -80,6 +80,30 @@ class ServiceAPI:
             else:
                 raise
 
+    def lookup_badlist_ssdeep(self, ssdeep):
+        if DEVELOPMENT_MODE:
+            return []
+        try:
+            data = {"ssdeep": ssdeep}
+            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/ssdeep/", data=data)
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return None
+            else:
+                raise
+
+    def lookup_badlist_tlsh(self, tlsh):
+        if DEVELOPMENT_MODE:
+            return []
+        try:
+            data = {"tlsh": tlsh}
+            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/tlsh/", data=data)
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return None
+            else:
+                raise
+
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
             return {}
@@ -124,6 +148,16 @@ class PrivilegedServiceAPI:
         if DEVELOPMENT_MODE:
             return None
         return self.badlist_client.exists(qhash)
+
+    def lookup_badlist_ssdeep(self, ssdeep):
+        if DEVELOPMENT_MODE:
+            return []
+        return self.badlist_client.find_similar_ssdeep(ssdeep)
+
+    def lookup_badlist_tlsh(self, tlsh):
+        if DEVELOPMENT_MODE:
+            return []
+        return self.badlist_client.find_similar_tlsh(tlsh)
 
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
