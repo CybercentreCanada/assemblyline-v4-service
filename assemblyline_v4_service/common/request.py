@@ -287,3 +287,11 @@ class ServiceRequest:
     @property
     def sid(self) -> str:
         return self.task.sid
+
+    @property
+    def ssdeep(self) -> str:
+        return self.task.fileinfo.ssdeep
+
+    @property
+    def tlsh(self) -> str:
+        return self.task.fileinfo.tlsh
