@@ -47,6 +47,7 @@ setup(
         'assemblyline-core',
         'cart',
         'fuzzywuzzy',
+        'multidecoder',
         'pefile',
         'pillow==10.0.1',
         'python-Levenshtein',
