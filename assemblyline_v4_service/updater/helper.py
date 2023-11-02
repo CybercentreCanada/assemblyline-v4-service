@@ -2,8 +2,6 @@ import os
 import shutil
 import tempfile
 import time
-import traceback
-from io import StringIO
 from logging import Logger
 from shutil import make_archive
 from typing import Any, Dict, List, Optional, Tuple
@@ -48,7 +46,8 @@ def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[s
 
     f_files = []
     if not pattern:
-        # Regex will either match on the filename, directory, or filepath, either with default or given pattern for source
+        # Regex will either match on the filename, directory, or filepath,
+        # either with default or given pattern for source
         pattern = default_pattern
 
     if os.path.isfile(output_path):
