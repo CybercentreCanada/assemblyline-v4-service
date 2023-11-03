@@ -17,9 +17,12 @@ from assemblyline.common.str_utils import StringTable
 from assemblyline.odm.messages.task import Task as ServiceTask
 
 PARENT_RELATION = StringTable('PARENT_RELATION', [
-    ('EXTRACTED', 0),
-    ('INFORMATION', 1),
-    ('DYNAMIC', 2),
+    ('ROOT', 0),
+    ('EXTRACTED', 1),
+    ('INFORMATION', 2),
+    ('DYNAMIC', 3),
+    ('MEMDUMP', 4),
+    ('DOWNLOADED', 5),
 ])
 
 
@@ -91,6 +94,12 @@ class Task:
         if os.path.getsize(path) == 0:
             self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
                           f"Empty file ({name}) was ignored.")
+            return
+
+        if parent_relation not in PARENT_RELATION.keys():
+            self.log.info(
+                f"An invalid 'parent_relation' was provided: '{parent_relation}'. Possible values are: '{PARENT_RELATION.keys()}'"
+            )
             return
 
         # If file classification not provided, then use the default result classification
