@@ -148,6 +148,9 @@ def test_task_add_file(servicetask):
     with open(path, "w") as f:
         f.write("test")
 
+    # Incorrect parent_relation
+    assert t._add_file(path, "name", "description", parent_relation="BLAHBLAHBLAH") is None
+
     # File is not empty
     assert t._add_file(path, "name", "description") == {
         "name": "name",
