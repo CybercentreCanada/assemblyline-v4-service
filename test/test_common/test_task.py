@@ -149,7 +149,8 @@ def test_task_add_file(servicetask):
         f.write("test")
 
     # Incorrect parent_relation
-    assert t._add_file(path, "name", "description", parent_relation="BLAHBLAHBLAH") is None
+    with pytest.raises(ValueError):
+        t._add_file(path, "name", "description", parent_relation="BLAHBLAHBLAH") is None
 
     # File is not empty
     assert t._add_file(path, "name", "description") == {

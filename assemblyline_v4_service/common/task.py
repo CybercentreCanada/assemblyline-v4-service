@@ -97,10 +97,9 @@ class Task:
             return
 
         if parent_relation not in PARENT_RELATION.keys():
-            self.log.info(
+            raise ValueError(
                 f"An invalid 'parent_relation' was provided: '{parent_relation}'. Possible values are: '{PARENT_RELATION.keys()}'"
             )
-            return
 
         # If file classification not provided, then use the default result classification
         if not classification:
