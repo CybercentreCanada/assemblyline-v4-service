@@ -23,6 +23,9 @@ log = logging.getLogger('assemblyline.service.result')
 SERVICE_ATTRIBUTES = None
 HEUR_LIST = None
 
+# This is a StringTable representation of the BODY_FORMAT set of keys in
+# assemblyline-base/assemblyline/odm/models/result.py.
+# Any updates here need to go in that set of keys also.
 BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TEXT', 0),
     ('MEMORY_DUMP', 1),
@@ -39,6 +42,9 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TIMELINE', 12)
 ])
 
+# This is a StringTable representation of the PROMOTE_TO set of keys in
+# assemblyline-base/assemblyline/odm/models/result.py.
+# Any updates here need to go in that set of keys also.
 PROMOTE_TO = StringTable('PROMOTE_TO', [
     ('SCREENSHOT', 0),
     ('ENTROPY', 1),
