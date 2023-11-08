@@ -60,7 +60,7 @@ class ServiceAPI:
                 time.sleep(min(2, 2 ** (retries - 7)))
 
     def lookup_badlist_tags(self, tag_map: dict):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or not tag_map:
             return []
 
         if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
@@ -70,7 +70,7 @@ class ServiceAPI:
         return self._with_retries(self.session.post, url, json=tag_map)
 
     def lookup_badlist(self, qhash):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or qhash is None:
             return None
         try:
             return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/badlist/{qhash}/")
@@ -81,26 +81,26 @@ class ServiceAPI:
                 raise
 
     def lookup_badlist_ssdeep(self, ssdeep):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or ssdeep is None:
             return []
         try:
             data = {"ssdeep": ssdeep}
             return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/ssdeep/", json=data)
         except ServiceAPIError as e:
             if e.status_code == 404:
-                return None
+                return []
             else:
                 raise
 
     def lookup_badlist_tlsh(self, tlsh):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or tlsh is None:
             return []
         try:
             data = {"tlsh": tlsh}
             return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/tlsh/", json=data)
         except ServiceAPIError as e:
             if e.status_code == 404:
-                return None
+                return []
             else:
                 raise
 
@@ -136,7 +136,7 @@ class PrivilegedServiceAPI:
         self.safelist_client = SafelistClient()
 
     def lookup_badlist_tags(self, tag_map):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or not tag_map:
             return []
 
         if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
@@ -145,17 +145,17 @@ class PrivilegedServiceAPI:
         return self.badlist_client.exists_tags(tag_map)
 
     def lookup_badlist(self, qhash):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or qhash is None:
             return None
         return self.badlist_client.exists(qhash)
 
     def lookup_badlist_ssdeep(self, ssdeep):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or ssdeep is None:
             return []
         return self.badlist_client.find_similar_ssdeep(ssdeep)
 
     def lookup_badlist_tlsh(self, tlsh):
-        if DEVELOPMENT_MODE:
+        if DEVELOPMENT_MODE or tlsh is None:
             return []
         return self.badlist_client.find_similar_tlsh(tlsh)
 
