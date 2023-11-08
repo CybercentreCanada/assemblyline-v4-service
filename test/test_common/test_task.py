@@ -148,6 +148,10 @@ def test_task_add_file(servicetask):
     with open(path, "w") as f:
         f.write("test")
 
+    # Incorrect parent_relation
+    with pytest.raises(ValueError):
+        t._add_file(path, "name", "description", parent_relation="BLAHBLAHBLAH") is None
+
     # File is not empty
     assert t._add_file(path, "name", "description") == {
         "name": "name",
@@ -257,7 +261,7 @@ def test_task_add_supplementary(servicetask):
         "path": path,
         "is_section_image": False,
         "allow_dynamic_recursion": False,
-        "parent_relation": "EXTRACTED",
+        "parent_relation": "INFORMATION",
     }
     assert t.supplementary == [
         {
@@ -268,7 +272,7 @@ def test_task_add_supplementary(servicetask):
             "path": path,
             "is_section_image": False,
             "allow_dynamic_recursion": False,
-            "parent_relation": "EXTRACTED",
+            "parent_relation": "INFORMATION",
         }
     ]
 

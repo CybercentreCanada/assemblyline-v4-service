@@ -4,15 +4,26 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional, Union
 
+from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
+from assemblyline_v4_service.common.helper import get_service_manifest
+from assemblyline_v4_service.common.result import Result
+
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
 from assemblyline.common.digests import get_digests_for_file, get_sha256_for_file
 from assemblyline.common.isotime import now_as_iso
+from assemblyline.common.str_utils import StringTable
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
-from assemblyline_v4_service.common.helper import get_service_manifest
-from assemblyline_v4_service.common.result import Result
+
+PARENT_RELATION = StringTable('PARENT_RELATION', [
+    ('ROOT', 0),
+    ('EXTRACTED', 1),
+    ('INFORMATION', 2),
+    ('DYNAMIC', 3),
+    ('MEMDUMP', 4),
+    ('DOWNLOADED', 5),
+])
 
 
 class MaxExtractedExceeded(Exception):
@@ -78,12 +89,17 @@ class Task:
                   classification: Optional[Classification] = None,
                   is_section_image: bool = False,
                   allow_dynamic_recursion: bool = False,
-                  parent_relation: str = "EXTRACTED") -> Optional[Dict[str, str]]:
+                  parent_relation: str = PARENT_RELATION.EXTRACTED) -> Optional[Dict[str, str]]:
         # Reject empty files
         if os.path.getsize(path) == 0:
             self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
                           f"Empty file ({name}) was ignored.")
             return
+
+        if parent_relation not in PARENT_RELATION.keys():
+            raise ValueError(
+                f"An invalid 'parent_relation' was provided: '{parent_relation}'. Possible values are: '{PARENT_RELATION.keys()}'"
+            )
 
         # If file classification not provided, then use the default result classification
         if not classification:
@@ -105,7 +121,7 @@ class Task:
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
                       safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
-                      allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
+                      allow_dynamic_recursion: bool = False, parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
 
         # Service-based safelisting of files has to be configured at the global configuration
         # Allows the administrator to be selective about the types of hashes to lookup in the safelist
@@ -142,9 +158,12 @@ class Task:
         self.extracted.append(file)
         return True
 
-    def add_supplementary(self, path: str, name: str, description: str,
-                          classification: Optional[Classification] = None,
-                          is_section_image: bool = False) -> Optional[dict]:
+    def add_supplementary(
+        self, path: str, name: str, description: str,
+        classification: Optional[Classification] = None,
+        is_section_image: bool = False,
+        parent_relation: str = PARENT_RELATION.INFORMATION
+    ) -> Optional[dict]:
         if not path:
             raise ValueError("Path cannot be empty")
 
@@ -154,7 +173,9 @@ class Task:
         if not description:
             raise ValueError("Description cannot be empty")
 
-        file = self._add_file(path, name, description, classification, is_section_image)
+        file = self._add_file(
+            path, name, description, classification, is_section_image, parent_relation=parent_relation
+        )
 
         if not file:
             return None
