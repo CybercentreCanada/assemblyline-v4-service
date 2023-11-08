@@ -32,11 +32,11 @@ class ServiceAPI:
         if self.service_api_host.startswith('https'):
             self.session.verify = os.environ.get('SERVICE_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/al_root-ca.crt')
 
-    def _with_retries(self, func, url):
+    def _with_retries(self, func, url, **kwargs):
         retries = 0
         while True:
             try:
-                resp = func(url)
+                resp = func(url, **kwargs)
                 if resp.ok:
                     return resp.json()['api_response']
                 else:
@@ -67,7 +67,7 @@ class ServiceAPI:
             raise ValueError("Parameter tag_list should be a dictionary tag_type mapping to a list of tag_values.")
         url = f"{self.service_api_host}/api/v1/badlist/tags/"
 
-        return self._with_retries(self.session.post, url, data=tag_map)
+        return self._with_retries(self.session.post, url, json=tag_map)
 
     def lookup_badlist(self, qhash):
         if DEVELOPMENT_MODE:
@@ -85,7 +85,7 @@ class ServiceAPI:
             return []
         try:
             data = {"ssdeep": ssdeep}
-            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/ssdeep/", data=data)
+            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/ssdeep/", json=data)
         except ServiceAPIError as e:
             if e.status_code == 404:
                 return None
@@ -97,7 +97,7 @@ class ServiceAPI:
             return []
         try:
             data = {"tlsh": tlsh}
-            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/tlsh/", data=data)
+            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/tlsh/", json=data)
         except ServiceAPIError as e:
             if e.status_code == 404:
                 return None
