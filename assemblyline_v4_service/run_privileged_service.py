@@ -67,8 +67,6 @@ class RunPrivilegedService(ServerBase):
                                             register_only=REGISTER_ONLY)
         self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
 
-        self.filestore = forge.get_filestore()
-
         self.service = None
         self.service_config = {}
         self.service_name = None
@@ -186,7 +184,7 @@ class RunPrivilegedService(ServerBase):
                 received_file_sha256 = None
                 self.log.info(f"[{service_task.sid}] Downloading file: {service_task.fileinfo.sha256}")
                 try:
-                    self.filestore.download(service_task.fileinfo.sha256, file_path)
+                    self.tasking_client.filestore.download(service_task.fileinfo.sha256, file_path)
                     received_file_sha256 = get_sha256_for_file(file_path)
                 except FileStoreException:
                     self.status = STATUSES.FILE_NOT_FOUND
