@@ -29,6 +29,12 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "enable macro",
         "enable content",
         "enable editing",
+        # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/office_macro.py
+        "bank account",
+        "tools > macro",
+        "macros must be enabled",
+        # Other
+        "protected documents",
     ],
     'banned': [],
     'password': PASSWORD_WORDS
