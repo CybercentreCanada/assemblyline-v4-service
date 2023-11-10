@@ -23,8 +23,8 @@ def test_ocr_detections():
             'YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.',
             'PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO '
             'ADDRESSES, THEN SEND US EMAIL WITH PAYMENT',
-            "CONFIRMATION AND YOU'LL GET THE DECRYPTION SOFTWARE IN "
-            'EMAIL.'
+            "CONFIRMATION AND YOU'LL GET THE DECRYPTION SOFTWARE IN EMAIL.",
+            "BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s",
         ],
     }
 

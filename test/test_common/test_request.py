@@ -180,8 +180,8 @@ def test_add_image(service_request):
                 'YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.',
                 'PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO '
                 'ADDRESSES, THEN SEND US EMAIL WITH PAYMENT',
-                "CONFIRMATION AND YOU'LL GET THE DECRYPTION SOFTWARE "
-                'IN EMAIL.'
+                "CONFIRMATION AND YOU'LL GET THE DECRYPTION SOFTWARE IN EMAIL.",
+                "BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s",
             ]
         },
         '_format': 'KEY_VALUE'
@@ -189,7 +189,7 @@ def test_add_image(service_request):
 
     heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
-    assert heur_dict == {'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'], 'signatures': {'ransomware_strings': 7}, 'frequency': 0, 'score_map': {}}
+    assert heur_dict == {'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'], 'signatures': {'ransomware_strings': 8}, 'frequency': 0, 'score_map': {}}
 
     assert service_request.temp_submission_data == {}
 
