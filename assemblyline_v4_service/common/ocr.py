@@ -22,7 +22,17 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "AES 128", "AES 256", "AES-128", "AES-256", "RSA1024", "RSA2048",
         "RSA4096", "RSA 1024", "RSA 2048", "RSA 4096", "RSA-1024", "RSA-2048",
         "RSA-4096", "private key", "personal key", "your code", "private code",
-        "personal code", "enter code", "your key", "unique key"
+        "personal code", "enter code", "your key", "unique key",
+        # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/office_macro.py
+        "bank account",
+        # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/ransomware_message.py
+        "Attention!", "BTC", "HardwareID", "bit coin", "decrypter", "decryptor",
+        "device ID", "encrypted", "encryption ID", "ethereum", "get back my",
+        "get back your", "localbitcoins", "military grade encryption", "personal ID",
+        "personal identification code", "personal identifier",
+        "recover datarecover the files", "recover my", "restore system",
+        "restore the system", "unique ID", "wallet address", "what happend",
+        "what happened", "your database", "your network",
     ],
     'macros': [
         # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/modules/signatures/windows/office_enablecontent_ocr.py
@@ -30,14 +40,25 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "enable content",
         "enable editing",
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/office_macro.py
-        "bank account",
         "tools > macro",
         "macros must be enabled",
         # Other
         "protected documents",
     ],
     'banned': [],
-    'password': PASSWORD_WORDS
+    'password': PASSWORD_WORDS,
+    'phishing': [
+        # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/js_phish.py
+        "debug malware error",
+        "contact microsoft certified",
+        "non bootable situation",
+        "windows system alert",
+        "your browser has been infected",
+        "your paypal id or password was entered incorrectly",
+        "your customer number is made up of your date of birth",
+        'Invalid Card Number',
+        'Invalid Card Verification Number',
+    ]
 }
 
 
