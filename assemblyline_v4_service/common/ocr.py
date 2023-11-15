@@ -33,6 +33,8 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "recover datarecover the files", "recover my", "restore system",
         "restore the system", "unique ID", "wallet address", "what happend",
         "what happened", "your database", "your network",
+        # Other
+        "ether", "litecoin", "coin",
     ],
     'macros': [
         # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/modules/signatures/windows/office_enablecontent_ocr.py
@@ -58,6 +60,10 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "your customer number is made up of your date of birth",
         'Invalid Card Number',
         'Invalid Card Verification Number',
+        # Other
+        "online banking", "security challenge", "forgot password", "card number", "mobile banking", "paypal account",
+        "forgot email", "banking security", "remember password", "verify your identity", "secure login",
+        "enter security", "create account", "confirm your", "enter document", "document security",
     ]
 }
 
