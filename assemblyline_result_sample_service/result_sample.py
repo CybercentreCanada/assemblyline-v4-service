@@ -159,6 +159,7 @@ class ResultSample(ServiceBase):
             # Since urls are very important features we can tag those features in the system so they are easy to find
             #   Tags are defined by a type and a value
             url_section.add_tag("network.static.domain", random_host)
+            url_section.add_tag("network.static.uri", f"https://{random_host}/")
 
             # You may also want to provide a list of url!
             #   Also, No need to provide a name, the url link will be displayed
@@ -172,6 +173,7 @@ class ResultSample(ServiceBase):
             for host in hosts:
                 url_sub_section.add_url(f"https://{host}/")
                 url_sub_section.add_tag("network.static.domain", host)
+                url_sub_section.add_tag("network.static.uri", f"https://{host}/")
 
             # You can keep nesting sections if you really need to
             ips = [get_random_ip() for _ in range(3)]
@@ -179,6 +181,7 @@ class ResultSample(ServiceBase):
             for ip in ips:
                 url_sub_sub_section.add_url(f"https://{ip}/")
                 url_sub_sub_section.add_tag("network.static.ip", ip)
+                url_sub_sub_section.add_tag("network.static.uri", f"https://{ip}/")
 
             # Since url_sub_sub_section is a sub-section of url_sub_section
             # we will add it as a sub-section of url_sub_section not to the main result itself
