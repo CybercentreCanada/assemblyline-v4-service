@@ -69,7 +69,7 @@ class ServiceBase:
 
         self._working_directory = None
 
-        # Initialize interface for interacting with system safelist
+        # Initialize interface for interacting with system badlist and safelist
         self._api_interface = None
 
         self.dependencies = self._get_dependencies_info()
@@ -261,7 +261,8 @@ class ServiceBase:
             resp = requests.get(url_base + 'status', verify=verify)
             resp.raise_for_status()
             status = resp.json()
-            if self.update_time is not None and self.update_time >= status['local_update_time'] and self.update_hash == status['local_update_hash']:
+            if self.update_time is not None and self.update_time >= status['local_update_time'] and \
+                    self.update_hash == status['local_update_hash']:
                 self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
                 return
             if status['download_available']:

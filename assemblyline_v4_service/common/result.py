@@ -430,7 +430,7 @@ class TableSectionBody(SectionBody):
         self._data.append(row)
         self.set_column_order(list(row.keys()))
 
-    def set_column_order(self, order: List[str])-> None:
+    def set_column_order(self, order: List[str]) -> None:
         if not order:
             return
 
