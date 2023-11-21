@@ -23,12 +23,12 @@ class ServiceAPI:
         self.log = logger
         self.service_api_host = os.environ.get("SERVICE_API_HOST", DEFAULT_SERVICE_SERVER)
         self.session = requests.Session()
-        self.session.headers.update(dict(
-            X_APIKEY=os.environ.get("SERVICE_API_KEY", DEFAULT_AUTH_KEY),
-            container_id=os.environ.get('HOSTNAME', 'dev-service'),
-            service_name=service_attributes.name,
-            service_version=service_attributes.version
-        ))
+        self.session.headers.update({
+            "X-APIKey": os.environ.get("SERVICE_API_KEY", DEFAULT_AUTH_KEY),
+            "Container-ID": os.environ.get('HOSTNAME', 'dev-service'),
+            "Service-Name": service_attributes.name,
+            "Service-Version": service_attributes.version
+        })
         if self.service_api_host.startswith('https'):
             self.session.verify = os.environ.get('SERVICE_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/al_root-ca.crt')
 
