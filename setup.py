@@ -67,5 +67,6 @@ setup(
             "*.xml",
             "VERSION",
         ],
+        "assemblyline_v4_service": ["py.typed"],
     },
 )
