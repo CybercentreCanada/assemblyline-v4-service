@@ -7,6 +7,7 @@ import pytest
 from assemblyline_v4_service.common.ontology_helper import *
 from assemblyline_v4_service.common.result import ResultSection
 
+from assemblyline.odm.models.ontology.ontology import ODM_VERSION
 from assemblyline.odm.models.ontology.filetypes import PE
 from assemblyline.odm.models.ontology.results import Antivirus
 
@@ -218,7 +219,7 @@ def test_attach_ontology(dummy_request_class):
                 'size': 123,
                 'type': None},
         'odm_type': 'Assemblyline Result Ontology',
-        'odm_version': '1.5',
+        'odm_version': ODM_VERSION,
         'results': {'heuristics': [],
                     'tags': {'network.static.domain': ['blah.com']}},
         'service': {'name': 'blah',
