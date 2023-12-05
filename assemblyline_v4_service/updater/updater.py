@@ -332,7 +332,11 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
             al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, datastore=self.datastore)
 
-            _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
+            # Create a temporary file for the time keeper
+            time_keeper = tempfile.NamedTemporaryFile(prefix="time_keeper_", dir=UPDATER_DIR, delete=False)
+            time_keeper.close()
+            time_keeper = time_keeper.name
+
             if self._service.update_config.generates_signatures:
                 output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
 
@@ -573,7 +577,10 @@ class ServiceUpdater(ThreadedCoreBase):
 
         try:
             # Tar update directory
-            _, new_tar = tempfile.mkstemp(prefix="signatures_", dir=UPDATER_DIR, suffix='.tar.bz2')
+            new_tar = tempfile.NamedTemporaryFile(prefix="signatures_", dir=UPDATER_DIR, suffix='.tar.bz2',
+                                                  delete=False)
+            new_tar.close()
+            new_tar = new_tar.name
             tar_handle = tarfile.open(new_tar, 'w:bz2')
             tar_handle.add(new_directory, '/')
             tar_handle.close()
