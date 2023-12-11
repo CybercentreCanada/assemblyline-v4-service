@@ -69,8 +69,6 @@ class Task:
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.metadata = task.metadata
-        self.md5: str = task.fileinfo.md5
-        self.mime: str = task.fileinfo.mime or None
         self.partial_result: bool = False
         self.result: Result = Result()
         self.safelist_config: Dict[str, Any] = task.safelist_config
