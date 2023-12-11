@@ -83,21 +83,16 @@ class RunService:
                 k, v = kv.split("=", 1)
                 self.submission_params[k] = v
 
+        file_info.pop("ascii", None)
+        file_info.pop("hex", None)
+        file_info.pop("entropy", None)
         # Create service processing task
         service_task = ServiceTask(dict(
             sid=get_random_id(),
             metadata={},
             service_name=SERVICE_NAME,
             service_config=self.submission_params,
-            fileinfo=dict(
-                magic=file_info['magic'],
-                md5=file_info['md5'],
-                mime=file_info['mime'],
-                sha1=file_info['sha1'],
-                sha256=file_info['sha256'],
-                size=file_info['size'],
-                type=file_info['type'],
-            ),
+            fileinfo=file_info,
             filename=file_name,
             min_classification=forge.get_classification().UNRESTRICTED,
             max_files=501,  # TODO: get the actual value
@@ -216,7 +211,7 @@ class RunService:
             if service_manifest_data:
                 service_config = service_manifest_data.get('config', {})
 
-            self.submission_params = {x['name']: x['default']
+            self.submission_params = {x['name']: x['value']
                                       for x in service_manifest_data.get('submission_params', [])}
 
             self.service = self.service_class(config=service_config)

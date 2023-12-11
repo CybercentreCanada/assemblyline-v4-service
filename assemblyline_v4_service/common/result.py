@@ -23,6 +23,9 @@ log = logging.getLogger('assemblyline.service.result')
 SERVICE_ATTRIBUTES = None
 HEUR_LIST = None
 
+# This is a StringTable representation of the BODY_FORMAT set of keys in
+# assemblyline-base/assemblyline/odm/models/result.py.
+# Any updates here need to go in that set of keys also.
 BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TEXT', 0),
     ('MEMORY_DUMP', 1),
@@ -39,6 +42,15 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('TIMELINE', 12)
 ])
 
+# This is a StringTable representation of the PROMOTE_TO set of keys in
+# assemblyline-base/assemblyline/odm/models/result.py.
+# Any updates here need to go in that set of keys also.
+PROMOTE_TO = StringTable('PROMOTE_TO', [
+    ('SCREENSHOT', 0),
+    ('ENTROPY', 1),
+    ('URI_PARAMS', 2)
+])
+
 
 class InvalidHeuristicException(Exception):
     pass
@@ -52,7 +64,7 @@ class ResultAggregationException(Exception):
     pass
 
 
-def get_heuristic_primitives(heur: Heuristic):
+def get_heuristic_primitives(heur: Optional[Heuristic]) -> Optional[Dict[str, Union[int, List[str], Dict[str, int]]]]:
     if heur is None:
         return None
 
@@ -219,7 +231,7 @@ class SectionBody:
         if not self._data:
             return None
         elif not isinstance(self._data, str):
-            return json.dumps(self._data)
+            return json.dumps(self._data, allow_nan=False)
         else:
             return self._data
 
@@ -235,9 +247,12 @@ class TextSectionBody(SectionBody):
     def __init__(self, body=None) -> None:
         super().__init__(BODY_FORMAT.TEXT, body=body)
 
-    def add_line(self, text: Union[str, List]) -> None:
+    def add_line(self, text: Union[str, List]) -> Optional[str]:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
+        if text is None:
+            raise ValueError("Expected text to add to a line must be a string or a list, not None.")
+
         if isinstance(text, list):
             text = ''.join(text)
         textstr = safe_str(text)
@@ -247,7 +262,13 @@ class TextSectionBody(SectionBody):
             self._data = textstr
         return self._data
 
-    def add_lines(self, line_list: List[str]) -> None:
+    def add_lines(self, line_list: List[str]) -> Optional[str]:
+        if not line_list:
+            return self._data
+
+        if not isinstance(line_list, list):
+            return self._data
+
         segment = safe_str('\n'.join(line_list))
         if self._data is None:
             self._data = segment
@@ -266,6 +287,9 @@ class URLSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.URL, body=[])
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
+        if not url:
+            raise ValueError("A valid URL is required. An empty URL was passed.")
+
         url_data = {'url': url}
         if name:
             url_data['name'] = name
@@ -293,7 +317,7 @@ class KVSectionBody(SectionBody):
     def set_item(self, key: str, value: KV_VALUE_TYPE) -> None:
         self._data[str(key)] = value
 
-    def update_items(self, new_dict: dict[str, KV_VALUE_TYPE]):
+    def update_items(self, new_dict: dict[str, KV_VALUE_TYPE]) -> None:
         self._data.update({str(k): v for k, v in new_dict.items()})
 
 
@@ -400,12 +424,17 @@ class TableSectionBody(SectionBody):
         super().__init__(BODY_FORMAT.TABLE, body=[])
 
     def add_row(self, row: TableRow) -> None:
+        if row == {}:
+            return
+
         self._data.append(row)
         self.set_column_order(list(row.keys()))
 
-    def set_column_order(self, order: List[str]):
-        self._config = {'column_order': order}
+    def set_column_order(self, order: List[str]) -> None:
+        if not order:
+            return
 
+        self._config = {'column_order': order}
 
 
 class ImageSectionBody(SectionBody):
@@ -417,16 +446,18 @@ class ImageSectionBody(SectionBody):
                   classification: Optional[Classification] = None,
                   ocr_heuristic_id: Optional[int] = None, ocr_io: Optional[TextIO] = None) -> Optional[ResultSection]:
         res = self._request.add_image(path, name, description, classification, ocr_heuristic_id, ocr_io)
-        sections = res.pop('ocr_section', None)
+        ocr_section = res.pop('ocr_section', None)
         self._data.append(res)
 
-        return sections
+        return ocr_section
 
 
 class MultiSectionBody(SectionBody):
     def __init__(self) -> None:
         super().__init__(BODY_FORMAT.MULTI, body=[])
 
+    # Note that this method is named differently than the method to
+    # add a section body to the ResultMultiSection (add_section_part)
     def add_section_body(self, section_body: SectionBody) -> None:
         self._data.append((section_body.format, section_body._data, section_body._config))
 
@@ -484,6 +515,7 @@ class ResultSection:
         self.zeroize_on_tag_safe = zeroize_on_tag_safe
         self.auto_collapse = auto_collapse
         self.zeroize_on_sig_safe = zeroize_on_sig_safe
+        self._promote_to = None
 
         if isinstance(title_text, list):
             title_text = ''.join(title_text)
@@ -518,6 +550,10 @@ class ResultSection:
         return self._heuristic
 
     @property
+    def promote_to(self):
+        return self._promote_to
+
+    @property
     def subsections(self):
         return self._subsections
 
@@ -525,9 +561,12 @@ class ResultSection:
     def tags(self):
         return self._tags
 
-    def add_line(self, text: Union[str, List]) -> None:
+    def add_line(self, text: Union[str, List[str]]) -> None:
         # add_line with a list should join without newline seperator.
         # use add_lines if list should be split one element per line.
+        if text is None:
+            raise ValueError("Expected text to add to a line must be a string or a list, not None.")
+
         if isinstance(text, list):
             text = ''.join(text)
         textstr = safe_str(text)
@@ -562,8 +601,14 @@ class ResultSection:
         subsection.parent = self
 
     def add_tag(self, tag_type: str, value: Union[str, bytes]) -> None:
+        if not tag_type:
+            return
+
         if isinstance(value, bytes):
             value = value.decode()
+
+        if value == "":
+            return
 
         if tag_type not in self._tags:
             self._tags[tag_type] = []
@@ -579,12 +624,13 @@ class ResultSection:
             log.error("Failed to finalize section, title is empty...")
             return False
 
+        # Catch body values that are not None, but are not "valid" such as empty strings/lists/dicts/etc
         if not self.body and self.body is not None:
             self._body = None
 
         self._finalized = True
 
-        tmp_subs = []
+        tmp_subs: List[ResultSection] = []
         self.depth = depth
         for subsection in self._subsections:
             if subsection.finalize(depth=depth+1):
@@ -593,7 +639,7 @@ class ResultSection:
 
         return True
 
-    def set_body(self, body: Union[str, SectionBody], body_format=None) -> None:
+    def set_body(self, body: Union[str, SectionBody], body_format: str = None) -> None:
         if isinstance(body, SectionBody):
             self._body = body.body
             self._body_format = body._format
@@ -620,15 +666,22 @@ class ResultSection:
             raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
                                             f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
         elif isinstance(heur, Heuristic):
-            if attack_id:
-                heur.add_attack_id(attack_id)
-            if signature:
-                heur.add_signature_id(signature)
             self._heuristic = heur
+        # at this point, heur is an integer representing a heuristic ID
         else:
-            self._heuristic = Heuristic(heur, attack_id=attack_id, signature=signature)
+            self._heuristic = Heuristic(heur)
 
-    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]):
+        # Only get here if a new heuristic is set
+        if self._heuristic:
+            if attack_id:
+                self._heuristic.add_attack_id(attack_id)
+            if signature:
+                self._heuristic.add_signature_id(signature)
+
+    def set_tags(self, tags: Dict[str, List[Union[str, bytes]]]) -> None:
+        if not isinstance(tags, dict):
+            return
+
         self._tags = tags
 
 
@@ -650,13 +703,13 @@ class TypeSpecificResultSection(ResultSection):
         return self.section_body.config
 
     def add_line(self, text: Union[str, List]) -> None:
-        raise InvalidFunctionException("Do not use default add_line method in a type specific section.")
+        raise InvalidFunctionException("Do not use default add_line method in a type-specific section.")
 
     def add_lines(self, line_list: List[str]) -> None:
-        raise InvalidFunctionException("Do not use default add_lines method in a type specific section.")
+        raise InvalidFunctionException("Do not use default add_lines method in a type-specific section.")
 
     def set_body(self, body: Union[str, SectionBody], body_format=BODY_FORMAT.TEXT) -> None:
-        raise InvalidFunctionException("Do not use default set_body method in a type specific section.")
+        raise InvalidFunctionException("Do not use default set_body method in a type-specific section.")
 
 
 class ResultTextSection(ResultSection):
@@ -674,12 +727,15 @@ class ResultMemoryDumpSection(ResultSection):
 
 
 class ResultGraphSection(TypeSpecificResultSection):
-    def __init__(self, title_text: Union[str, List],  **kwargs):
+    def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: GraphSectionBody
         super().__init__(title_text, GraphSectionBody(), **kwargs)
 
     def set_colormap(self, cmap_min: int, cmap_max: int, values: List[int]) -> None:
         self.section_body.set_colormap(cmap_min, cmap_max, values)
+
+    def promote_as_entropy(self):
+        self._promote_to = PROMOTE_TO.ENTROPY
 
 
 class ResultURLSection(TypeSpecificResultSection):
@@ -702,6 +758,9 @@ class ResultKeyValueSection(TypeSpecificResultSection):
     def update_items(self, new_dict):
         self.section_body.update_items(new_dict)
 
+    def promote_as_uri_params(self):
+        self._promote_to = PROMOTE_TO.URI_PARAMS
+
 
 class ResultOrderedKeyValueSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], body: dict[str, KV_VALUE_TYPE] | None = None, **kwargs):
@@ -710,6 +769,9 @@ class ResultOrderedKeyValueSection(TypeSpecificResultSection):
 
     def add_item(self, key: str, value: Union[str, bool, int]) -> None:
         self.section_body.add_item(key, value)
+
+    def promote_as_uri_params(self):
+        self._promote_to = PROMOTE_TO.URI_PARAMS
 
 
 class ResultJSONSection(TypeSpecificResultSection):
@@ -764,11 +826,14 @@ class ResultImageSection(TypeSpecificResultSection):
 
         return ocr_section
 
+    def promote_as_screenshot(self):
+        self._promote_to = PROMOTE_TO.SCREENSHOT
+
 
 class ResultTimelineSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: TimelineSectionBody
-        super().__init__(title_text,  TimelineSectionBody(), **kwargs)
+        super().__init__(title_text, TimelineSectionBody(), **kwargs)
 
     def add_node(self, title: str, content: str, opposite_content: str, icon: str = None, signatures: List[str] = [],
                  score: int = 0) -> None:
@@ -779,8 +844,10 @@ class ResultTimelineSection(TypeSpecificResultSection):
 class ResultMultiSection(TypeSpecificResultSection):
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: MultiSectionBody
-        super().__init__(title_text,  MultiSectionBody(), **kwargs)
+        super().__init__(title_text, MultiSectionBody(), **kwargs)
 
+    # Note that this method is named differently than the method to
+    # add a section body to the MultiSectionBody (add_section_body)
     def add_section_part(self, section_part: SectionBody) -> None:
         self.section_body.add_section_body(section_part)
 
@@ -802,7 +869,8 @@ class Result:
             tags=unflatten(section.tags),
             title_text=section.title_text,
             zeroize_on_tag_safe=section.zeroize_on_tag_safe,
-            auto_collapse=section.auto_collapse
+            auto_collapse=section.auto_collapse,
+            promote_to=section.promote_to
         ))
 
     def _flatten_sections(self, section: ResultSection, root: bool = True) -> None:

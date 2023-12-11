@@ -12,8 +12,8 @@ import random
 import tarfile
 import threading
 import subprocess
+import hashlib
 from contextlib import contextmanager
-from hashlib import sha256
 from passlib.hash import bcrypt
 from zipfile import ZipFile, BadZipFile
 
@@ -53,7 +53,8 @@ SOURCE_STATUS_KEY = 'status'
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
-UPDATER_API_ROLES = ['signature_import', 'signature_download', 'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
+UPDATER_API_ROLES = ['badlist_manage', 'signature_import', 'signature_download',
+                     'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
 STATUS_FILE = '/tmp/status'
 
 classification = forge.get_classification()
@@ -187,7 +188,7 @@ class ServiceUpdater(ThreadedCoreBase):
         return 0
 
     def get_local_update_hash(self) -> str:
-        return sha256(open(self._update_tar, "rb").read()).hexdigest()
+        return hashlib.sha256(open(self._update_tar, "rb").read()).hexdigest()
 
     def status(self):
         return {
@@ -331,7 +332,11 @@ class ServiceUpdater(ThreadedCoreBase):
             self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
             al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, datastore=self.datastore)
 
-            _, time_keeper = tempfile.mkstemp(prefix="time_keeper_", dir=UPDATER_DIR)
+            # Create a temporary file for the time keeper
+            time_keeper = tempfile.NamedTemporaryFile(prefix="time_keeper_", dir=UPDATER_DIR, delete=False)
+            time_keeper.close()
+            time_keeper = time_keeper.name
+
             if self._service.update_config.generates_signatures:
                 output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
 
@@ -393,7 +398,9 @@ class ServiceUpdater(ThreadedCoreBase):
         username = self.ensure_service_account()
         with temporary_api_key(self.datastore, username) as api_key:
             with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, datastore=self.datastore)
+                al_client = get_client(
+                    UI_SERVER, apikey=(username, api_key),
+                    verify=self.verify, datastore=self.datastore)
                 self.log.info("Connected!")
 
                 # Parse updater configuration
@@ -550,7 +557,8 @@ class ServiceUpdater(ThreadedCoreBase):
         new_tar = ''
 
         # Before serving directory, let's maintain a map of the different signatures and their current deployment state
-        # This map allows the service to be more responsive to changes made locally to the system such as classification changes
+        # This map allows the service to be more responsive to changes made locally to the system such as
+        # classification changes.
         # This also avoids the need to have to insert this kind of metadata into the signature itself
         if self._service.update_config.generates_signatures:
             # Pull signature metadata from the API
@@ -564,12 +572,15 @@ class ServiceUpdater(ThreadedCoreBase):
             signature_map = {
                 source.name: {'classification': source['default_classification'].value}
                 for source in self._service.update_config.sources
-             }
+            }
         open(os.path.join(new_directory, SIGNATURES_META_FILENAME), 'w').write(json.dumps(signature_map, indent=2))
 
         try:
             # Tar update directory
-            _, new_tar = tempfile.mkstemp(prefix="signatures_", dir=UPDATER_DIR, suffix='.tar.bz2')
+            new_tar = tempfile.NamedTemporaryFile(prefix="signatures_", dir=UPDATER_DIR, suffix='.tar.bz2',
+                                                  delete=False)
+            new_tar.close()
+            new_tar = new_tar.name
             tar_handle = tarfile.open(new_tar, 'w:bz2')
             tar_handle.add(new_directory, '/')
             tar_handle.close()

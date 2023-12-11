@@ -145,6 +145,7 @@ class ResultSample(ServiceBase):
             section_color_map = ResultGraphSection(
                 "Example of colormap result section", classification=cl_engine.RESTRICTED)
             section_color_map.set_colormap(cmap_min, cmap_max, cmap_values)
+            section_color_map.promote_as_entropy()
             result.add_section(section_color_map)
 
             # ==================================================================
@@ -158,6 +159,7 @@ class ResultSample(ServiceBase):
             # Since urls are very important features we can tag those features in the system so they are easy to find
             #   Tags are defined by a type and a value
             url_section.add_tag("network.static.domain", random_host)
+            url_section.add_tag("network.static.uri", f"https://{random_host}/")
 
             # You may also want to provide a list of url!
             #   Also, No need to provide a name, the url link will be displayed
@@ -171,6 +173,7 @@ class ResultSample(ServiceBase):
             for host in hosts:
                 url_sub_section.add_url(f"https://{host}/")
                 url_sub_section.add_tag("network.static.domain", host)
+                url_sub_section.add_tag("network.static.uri", f"https://{host}/")
 
             # You can keep nesting sections if you really need to
             ips = [get_random_ip() for _ in range(3)]
@@ -178,6 +181,7 @@ class ResultSample(ServiceBase):
             for ip in ips:
                 url_sub_sub_section.add_url(f"https://{ip}/")
                 url_sub_sub_section.add_tag("network.static.ip", ip)
+                url_sub_sub_section.add_tag("network.static.uri", f"https://{ip}/")
 
             # Since url_sub_sub_section is a sub-section of url_sub_section
             # we will add it as a sub-section of url_sub_section not to the main result itself
@@ -345,7 +349,8 @@ class ResultSample(ServiceBase):
                 }}))
             # Optional: Set custom column ordering for table.
             # Column order is automatically inferred/updated on `ResultTableSection.add_row()`.
-            # Passing an empty list ([]) to `ResultTableSection.set_column_order()` will display the columns in alphabetical order
+            # Passing an empty list ([]) to `ResultTableSection.set_column_order()`
+            # will display the columns in alphabetical order
             table_section.set_column_order(['a_str', 'a_bool', 'an_int', 'extra_column_there', 'nested_key_value_pair'])
             result.add_section(table_section)
 
@@ -408,11 +413,11 @@ class ResultSample(ServiceBase):
             # Image Section
             #     This type of section allows the service writer to display images to the user
             image_section = ResultImageSection(request, 'Example of Image section')
-            for x in range(6):
-                image_section.add_image(
-                    os.path.join(os.path.dirname(__file__),
-                                 'data', f'000{x+1}.jpg'),
-                    f'000{x+1}.jpg', f'ResultSample screenshot 000{x+1}', ocr_heuristic_id=6)
+            img_dir = os.path.join(os.path.dirname(__file__), 'data')
+            for fname in sorted(os.listdir(img_dir)):
+                image_section.add_image(os.path.join(img_dir, fname), fname,
+                                        f'ResultSample screenshot {fname.split(".")[0]}', ocr_heuristic_id=6)
+            image_section.promote_as_screenshot()
             result.add_section(image_section)
 
             # ==================================================================

@@ -1,23 +1,13 @@
 import os
 import time
-import traceback
-from io import StringIO
 
 import requests
+from assemblyline_core.badlist_client import BadlistClient
 from assemblyline_core.safelist_client import SafelistClient
+from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
-DEVELOPMENT_MODE = False
-
-with StringIO() as stack_trace:
-    # Check if run_service_once, pytest or assemblyline_v4_service.testing.helper is in the stack trace to determine if we're running the service in a development mode
-    traceback.print_stack(file=stack_trace)
-    stack_trace.seek(0)
-    read_stack_trace = stack_trace.read()
-
-    if any(msg in read_stack_trace for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
-        DEVELOPMENT_MODE = True
 
 
 class ServiceAPIError(Exception):
@@ -42,11 +32,11 @@ class ServiceAPI:
         if self.service_api_host.startswith('https'):
             self.session.verify = os.environ.get('SERVICE_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/al_root-ca.crt')
 
-    def _with_retries(self, func, url):
+    def _with_retries(self, func, url, **kwargs):
         retries = 0
         while True:
             try:
-                resp = func(url)
+                resp = func(url, **kwargs)
                 if resp.ok:
                     return resp.json()['api_response']
                 else:
@@ -68,6 +58,51 @@ class ServiceAPI:
                                      "Is there something wrong with it?")
                 retries += 1
                 time.sleep(min(2, 2 ** (retries - 7)))
+
+    def lookup_badlist_tags(self, tag_map: dict):
+        if DEVELOPMENT_MODE or not tag_map:
+            return []
+
+        if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
+            raise ValueError("Parameter tag_list should be a dictionary tag_type mapping to a list of tag_values.")
+        url = f"{self.service_api_host}/api/v1/badlist/tags/"
+
+        return self._with_retries(self.session.post, url, json=tag_map)
+
+    def lookup_badlist(self, qhash):
+        if DEVELOPMENT_MODE or qhash is None:
+            return None
+        try:
+            return self._with_retries(self.session.get, f"{self.service_api_host}/api/v1/badlist/{qhash}/")
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return None
+            else:
+                raise
+
+    def lookup_badlist_ssdeep(self, ssdeep):
+        if DEVELOPMENT_MODE or ssdeep is None:
+            return []
+        try:
+            data = {"ssdeep": ssdeep}
+            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/ssdeep/", json=data)
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return []
+            else:
+                raise
+
+    def lookup_badlist_tlsh(self, tlsh):
+        if DEVELOPMENT_MODE or tlsh is None:
+            return []
+        try:
+            data = {"tlsh": tlsh}
+            return self._with_retries(self.session.post, f"{self.service_api_host}/api/v1/badlist/tlsh/", json=data)
+        except ServiceAPIError as e:
+            if e.status_code == 404:
+                return []
+            else:
+                raise
 
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
@@ -97,7 +132,32 @@ class ServiceAPI:
 class PrivilegedServiceAPI:
     def __init__(self, logger):
         self.log = logger
+        self.badlist_client = BadlistClient()
         self.safelist_client = SafelistClient()
+
+    def lookup_badlist_tags(self, tag_map):
+        if DEVELOPMENT_MODE or not tag_map:
+            return []
+
+        if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
+            raise ValueError("Parameter tag_list should be a dictionary tag_type mapping to a list of tag_values.")
+
+        return self.badlist_client.exists_tags(tag_map)
+
+    def lookup_badlist(self, qhash):
+        if DEVELOPMENT_MODE or qhash is None:
+            return None
+        return self.badlist_client.exists(qhash)
+
+    def lookup_badlist_ssdeep(self, ssdeep):
+        if DEVELOPMENT_MODE or ssdeep is None:
+            return []
+        return self.badlist_client.find_similar_ssdeep(ssdeep)
+
+    def lookup_badlist_tlsh(self, tlsh):
+        if DEVELOPMENT_MODE or tlsh is None:
+            return []
+        return self.badlist_client.find_similar_tlsh(tlsh)
 
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:

@@ -1,6 +1,6 @@
 import os
 
-from setuptools import setup, find_packages
+from setuptools import find_packages, setup
 
 # Try to load the version from a datafile in the package
 package_version = "4.0.0.dev0"
@@ -48,14 +48,17 @@ setup(
         'cart',
         'fuzzywuzzy',
         'pefile',
-        'pillow==10.0.0',
+        'pillow==10.0.1',
         'python-Levenshtein',
         'regex',
     ],
-    extra_requires={
+    extras_require={
         'updater': [
-            'gevent',
+            'assemblyline-client',
+            'gunicorn[gevent]',
             'flask',
+            'gitpython',
+            'git-remote-codecommit',
             'psutil',
         ]
     },

@@ -1,17 +1,19 @@
+import hashlib
 import logging
 import tempfile
-from typing import Any, Dict, Optional, TextIO, Union
-
-from assemblyline.common import forge
-from assemblyline.common import log as al_log
-from assemblyline.common.classification import Classification
-from PIL import Image
+from typing import Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
-from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
+from assemblyline_v4_service.common.task import PARENT_RELATION, MaxExtractedExceeded, Task
 from assemblyline_v4_service.common.utils import extract_passwords
+from PIL import Image
+
+from assemblyline.common import forge
+from assemblyline.common import log as al_log
+from assemblyline.common.classification import Classification
+from assemblyline.common.file import make_uri_file
 
 CLASSIFICATION = forge.get_classification()
 WEBP_MAX_SIZE = 16383
@@ -24,23 +26,13 @@ class ServiceRequest:
         self.log = logging.getLogger(f'assemblyline.service.{task.service_name.lower()}')
 
         self._working_directory = task.working_directory
-        self.deep_scan = task.deep_scan
-        self.extracted = task.extracted
-        self.file_name = task.file_name
-        self.file_type = task.file_type
-        self.file_size = task.file_size
         self._file_path = None
-        self.max_extracted = task.max_extracted
-        self.md5 = task.md5
-        self.sha1 = task.sha1
-        self.sha256 = task.sha256
-        self.sid = task.sid
         self.task = task
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
                       safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
-                      allow_dynamic_recursion: bool = False, parent_relation: str = 'EXTRACTED') -> bool:
+                      allow_dynamic_recursion: bool = False, parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
         """
         Add an extracted file for additional processing.
 
@@ -61,6 +53,15 @@ class ServiceRequest:
             return r
         except MaxExtractedExceeded:
             raise
+
+    def add_extracted_uri(self, description: str, uri: str, params=None,
+                          classification: Optional[Classification] = None, allow_dynamic_recursion: bool = False,
+                          parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
+        if params:
+            self.set_uri_metadata(uri, params)
+        filepath = make_uri_file(self._working_directory, uri, params)
+        return self.add_extracted(filepath, uri, description, classification=classification,
+                                  allow_dynamic_recursion=allow_dynamic_recursion, parent_relation=parent_relation)
 
     def add_image(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
@@ -131,7 +132,7 @@ class ServiceRequest:
                 if detections.get('password'):
                     pw_list = set(self.temp_submission_data.get('passwords', []))
                     [pw_list.update(extract_passwords(pw_string)) for pw_string in detections['password']]
-                    self.temp_submission_data['passwords'] = list(pw_list)
+                    self.temp_submission_data['passwords'] = sorted(pw_list)
 
                 heuristic = Heuristic(ocr_heuristic_id, signatures={
                     f'{k}_strings': len(v) for k, v in detections.items()})
@@ -143,8 +144,11 @@ class ServiceRequest:
 
         return data
 
-    def add_supplementary(self, path: str, name: str, description: str,
-                          classification: Optional[Classification] = None) -> bool:
+    def add_supplementary(
+            self, path: str, name: str, description: str,
+            classification: Optional[Classification] = None,
+            parent_relation: str = PARENT_RELATION.INFORMATION
+        ) -> bool:
         """
         Add a supplementary file.
 
@@ -152,10 +156,13 @@ class ServiceRequest:
         :param name: Display name of the supplementary file
         :param description: Descriptive text about the supplementary file
         :param classification: Classification of the supplementary file (default: service classification)
+        :param parent_relation: File relation to parent, if any.
         :return: None
         """
 
-        return self.task.add_supplementary(path, name, description, classification)
+        return self.task.add_supplementary(
+            path, name, description, classification, parent_relation=parent_relation
+        )
 
     def drop(self) -> None:
         """
@@ -224,6 +231,14 @@ class ServiceRequest:
         """
         self.task.set_service_context(context)
 
+    def set_uri_metadata(self, uri: str, params: Dict[str, Any] = None):
+        md5hash = hashlib.md5(uri.encode()).hexdigest()
+        self.temp_submission_data[f"uri_metadata_{md5hash}"] = params
+
+    def get_uri_metadata(self, uri: str) -> Dict[str, Any]:
+        md5hash = hashlib.md5(uri.encode()).hexdigest()
+        return self.temp_submission_data.get(f"uri_metadata_{md5hash}", None)
+
     @property
     def temp_submission_data(self) -> Dict[str, Any]:
         """
@@ -241,3 +256,51 @@ class ServiceRequest:
         :param data: Temporary submission data
         """
         self.task.temp_submission_data = data
+
+    @property
+    def deep_scan(self) -> bool:
+        return self.task.deep_scan
+
+    @property
+    def extracted(self) -> List[Dict[str, str]]:
+        return self.task.extracted
+
+    @property
+    def file_name(self) -> str:
+        return self.task.file_name
+
+    @property
+    def file_type(self) -> str:
+        return self.task.fileinfo.type
+
+    @property
+    def file_size(self) -> int:
+        return self.task.fileinfo.size
+
+    @property
+    def max_extracted(self) -> int:
+        return self.task.max_extracted
+
+    @property
+    def md5(self) -> str:
+        return self.task.fileinfo.md5
+
+    @property
+    def sha1(self) -> str:
+        return self.task.fileinfo.sha1
+
+    @property
+    def sha256(self) -> str:
+        return self.task.fileinfo.sha256
+
+    @property
+    def sid(self) -> str:
+        return self.task.sid
+
+    @property
+    def ssdeep(self) -> str:
+        return self.task.fileinfo.ssdeep
+
+    @property
+    def tlsh(self) -> str:
+        return self.task.fileinfo.tlsh
