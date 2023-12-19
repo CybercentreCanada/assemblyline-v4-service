@@ -1,42 +1,112 @@
 from __future__ import annotations
 
-from typing import TextIO
+from typing import Dict, List, TextIO
 
-import regex
 from assemblyline_v4_service.common.helper import get_service_manifest
 from assemblyline_v4_service.common.utils import PASSWORD_WORDS
 
 # TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
-OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
-    'ransomware': [
+OCR_INDICATORS_TERMS: Dict[str, List[str]] = {
+    "ransomware": [
         # https://github.com/cuckoosandbox/community/blob/master/modules/signatures/windows/ransomware_message.py
-        "your files", "your data", "your documents", "restore files",
-        "restore data", "restore the files", "restore the data", "recover files",
-        "recover data", "recover the files", "recover the data", "has been locked",
-        "pay fine", "pay a fine", "pay the fine", "decrypt", "encrypt",
-        "recover files", "recover data", "recover them", "recover your",
-        "recover personal", "bitcoin", "secret server", "secret internet server",
-        "install tor", "download tor", "tor browser", "tor gateway",
-        "tor-browser", "tor-gateway", "torbrowser", "torgateway", "torproject.org",
-        "ransom", "bootkit", "rootkit", "payment", "victim", "AES128", "AES256",
-        "AES 128", "AES 256", "AES-128", "AES-256", "RSA1024", "RSA2048",
-        "RSA4096", "RSA 1024", "RSA 2048", "RSA 4096", "RSA-1024", "RSA-2048",
-        "RSA-4096", "private key", "personal key", "your code", "private code",
-        "personal code", "enter code", "your key", "unique key",
+        "your files",
+        "your data",
+        "your documents",
+        "restore files",
+        "restore data",
+        "restore the files",
+        "restore the data",
+        "recover files",
+        "recover data",
+        "recover the files",
+        "recover the data",
+        "has been locked",
+        "pay fine",
+        "pay a fine",
+        "pay the fine",
+        "decrypt",
+        "encrypt",
+        "recover files",
+        "recover data",
+        "recover them",
+        "recover your",
+        "recover personal",
+        "bitcoin",
+        "secret server",
+        "secret internet server",
+        "install tor",
+        "download tor",
+        "tor browser",
+        "tor gateway",
+        "tor-browser",
+        "tor-gateway",
+        "torbrowser",
+        "torgateway",
+        "torproject.org",
+        "ransom",
+        "bootkit",
+        "rootkit",
+        "payment",
+        "victim",
+        "AES128",
+        "AES256",
+        "AES 128",
+        "AES 256",
+        "AES-128",
+        "AES-256",
+        "RSA1024",
+        "RSA2048",
+        "RSA4096",
+        "RSA 1024",
+        "RSA 2048",
+        "RSA 4096",
+        "RSA-1024",
+        "RSA-2048",
+        "RSA-4096",
+        "private key",
+        "personal key",
+        "your code",
+        "private code",
+        "personal code",
+        "enter code",
+        "your key",
+        "unique key",
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/office_macro.py
         "bank account",
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/ransomware_message.py
-        "Attention!", "BTC", "HardwareID", "bit coin", "decrypter", "decryptor",
-        "device ID", "encrypted", "encryption ID", "ethereum", "get back my",
-        "get back your", "localbitcoins", "military grade encryption", "personal ID",
-        "personal identification code", "personal identifier",
-        "recover datarecover the files", "recover my", "restore system",
-        "restore the system", "unique ID", "wallet address", "what happend",
-        "what happened", "your database", "your network",
+        "Attention!",
+        "BTC",
+        "HardwareID",
+        "bit coin",
+        "decrypter",
+        "decryptor",
+        "device ID",
+        "encrypted",
+        "encryption ID",
+        "ethereum",
+        "get back my",
+        "get back your",
+        "localbitcoins",
+        "military grade encryption",
+        "personal ID",
+        "personal identification code",
+        "personal identifier",
+        "recover datarecover the files",
+        "recover my",
+        "restore system",
+        "restore the system",
+        "unique ID",
+        "wallet address",
+        "what happend",
+        "what happened",
+        "your database",
+        "your network",
         # Other
-        "ether", "litecoin", "coin",
+        "ether",
+        "litecoin",
+        "coin",
     ],
-    'macros': [
+    "macros": [
         # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/modules/signatures/windows/office_enablecontent_ocr.py
         "enable macro",
         "enable content",
@@ -47,9 +117,9 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         # Other
         "protected documents",
     ],
-    'banned': [],
-    'password': PASSWORD_WORDS,
-    'phishing': [
+    "banned": [],
+    "password": PASSWORD_WORDS,
+    "phishing": [
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/js_phish.py
         "debug malware error",
         "contact microsoft certified",
@@ -58,25 +128,67 @@ OCR_INDICATORS_MAPPING: dict[str, list[str]] = {
         "your browser has been infected",
         "your paypal id or password was entered incorrectly",
         "your customer number is made up of your date of birth",
-        'Invalid Card Number',
-        'Invalid Card Verification Number',
+        "Invalid Card Number",
+        "Invalid Card Verification Number",
         # Other
-        "online banking", "security challenge", "forgot password", "card number", "mobile banking", "paypal account",
-        "forgot email", "banking security", "remember password", "verify your identity", "secure login",
-        "enter security", "create account", "confirm your", "enter document", "document security",
-    ]
+        "online banking",
+        "security challenge",
+        "forgot password",
+        "card number",
+        "mobile banking",
+        "paypal account",
+        "forgot email",
+        "banking security",
+        "remember password",
+        "verify your identity",
+        "secure login",
+        "enter security",
+        "create account",
+        "confirm your",
+        "enter document",
+        "document security",
+    ],
 }
 
+# The minimum number of indicator hits to avoid FP detections
+OCR_INDICATORS_THRESHOLD: Dict[str, int] = {"ransomware": 2, "macros": 2, "banned": 1, "password": 1}
 
-def ocr_detections(image_path: str, ocr_io: TextIO = None) -> dict[str, list[str]]:
+try:
+    # Retrieve service-configured OCR settings on module load
+    ocr_config: Dict = get_service_manifest().get("config", {}).get("ocr", {})
+    indicators = set(list(OCR_INDICATORS_TERMS.keys()) + list(ocr_config.keys()))
+    for i in indicators:
+        # Backwards compatibility: Check how the OCR configuration is formatted
+        indicator_config = ocr_config.get(i)
+        indicator_terms = []
+        indicator_threshold = 1
+        if not indicator_config:
+            # Empty block/no override provided by service
+            pass
+        elif isinstance(indicator_config, list):
+            # Legacy support (before configurable indicator thresholds)
+            indicator_terms = indicator_config
+            pass
+        elif isinstance(indicator_config, dict):
+            # Set indicator threshold before variable overwrite with terms list
+            indicator_terms = indicator_config.get('terms', [])
+            indicator_threshold = indicator_config.get('threshold', 1)
+        OCR_INDICATORS_TERMS[i] = indicator_terms or OCR_INDICATORS_TERMS.get(i, [])
+        OCR_INDICATORS_THRESHOLD[i] = indicator_threshold or OCR_INDICATORS_THRESHOLD.get(i, 1)
+
+except Exception:
+    pass
+
+
+def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str]]:
     try:
         import pytesseract
         from PIL import Image
     except ImportError as exc:
         raise ImportError(
-            'In order to use this method to scan for OCR detections, '
-            'ensure you have the following installed in your service:\n'
-            'tesseract-ocr, pytesseract, and Pillow.\n'
+            "In order to use this method to scan for OCR detections, "
+            "ensure you have the following installed in your service:\n"
+            "tesseract-ocr, pytesseract, and Pillow.\n"
             'You can do this via "apt-get install -y tesseract-ocr" and "pip install Pillow pytesseract"'
         ) from exc
 
@@ -84,7 +196,9 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> dict[str, list[str
     ocr_output = ""
 
     try:
-        ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=15)  # Stop OCR after 15 seconds
+        ocr_output = pytesseract.image_to_string(
+            Image.open(image_path), timeout=15
+        )  # Stop OCR after 15 seconds
     except (TypeError, RuntimeError):
         # Image given isn't supported therefore no OCR output can be given with tesseract
         return {}
@@ -97,37 +211,25 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> dict[str, list[str
     return detections(ocr_output)
 
 
-def detections(ocr_output: str) -> dict[str, list[str]]:
-    detection_output: dict[str, list[str]] = {}
-    ocr_config: dict[str, list[str]] = {}
-    try:
-        # If running an AL service, grab OCR configuration from service manifest
-        ocr_config = get_service_manifest().get('config', {}).get('ocr', {})
-    except Exception:
-        pass
-    indicators = set(list(OCR_INDICATORS_MAPPING.keys()) + list(ocr_config.keys()))
+def detections(ocr_output: str) -> Dict[str, List[str]]:
+    detection_output: Dict[str, List[str]] = {}
     # Iterate over the different indicators and include lines of detection in response
-    for indicator in indicators:
-        list_of_terms = ocr_config.get(indicator, []) or OCR_INDICATORS_MAPPING.get(indicator, [])
-        if not list_of_terms:
-            # If no terms specified, move onto next indicator
+    for indicator, terms in OCR_INDICATORS_TERMS.items():
+        # Perform a pre-check to see if the terms even exist in the OCR text
+        if not any([t.lower() in ocr_output.lower() for t in terms]):
             continue
-        indicator_hits: set[str | None] = set()
-        regex_exp = regex.compile(f"({')|('.join(list_of_terms).lower()})")
-        list_of_strings: list[str] = []
-        for line in ocr_output.split('\n'):
-            search = regex_exp.search(line.lower())
-            if search:
-                indicator_hits = indicator_hits.union(set(search.groups()))
-                list_of_strings.append(line)
-        if None in indicator_hits:
-            indicator_hits.remove(None)
 
-        if list_of_strings:
-            if len(indicator_hits) >= 2:
-                # We consider the detection to be credible if there's more than a single indicator hit
-                detection_output[indicator] = list_of_strings
-            if indicator in ['banned', 'password']:
-                # Except if we're dealing with banned/password, one hit is more than enough
-                detection_output[indicator] = list_of_strings
+        # Keep a track of the hits and the lines corresponding with term hits
+        indicator_hits: int = 0
+        list_of_strings: List[str] = []
+        for line in ocr_output.split("\n"):
+            for t in terms:
+                term_count = line.lower().count(t.lower())
+                if term_count:
+                    indicator_hits += term_count
+                    list_of_strings.append(line)
+
+        if list_of_strings and indicator_hits >= OCR_INDICATORS_THRESHOLD[indicator]:
+            # If we were to find hits and those hits are above the required threshold, then add them to output
+            detection_output[indicator] = list_of_strings
     return detection_output
