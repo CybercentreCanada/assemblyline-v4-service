@@ -20,26 +20,18 @@ from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
 from assemblyline_v4_service.common.helper import get_heuristics
+from assemblyline_v4_service.common.base import ServiceBase
 
 
 class RunService:
     def __init__(self):
-        self.service = None
-        self.service_class = None
-        self.submission_params = None
+        self.service: ServiceBase
+        self.submission_params = {}
         self.file_dir = None
         self.identify = forge.get_identify(use_cache=False)
 
     def try_run(self):
-        try:
-            self.service_class = load_module_by_path(SERVICE_PATH)
-        except ValueError:
-            raise
-        except Exception:
-            LOG.error("Could not find service in path. Check your environment variables.")
-            raise
-
-        self.load_service_manifest()
+        self.load_service()
 
         if not os.path.isfile(FILE_PATH):
             LOG.info(f"File not found: {FILE_PATH}")
@@ -188,7 +180,15 @@ class RunService:
         self.service.stop_service()
         self.identify.stop()
 
-    def load_service_manifest(self, return_heuristics=False) -> Union[None, Dict]:
+    def load_service(self, return_heuristics=False) -> Union[None, Dict]:
+        try:
+            service_class = load_module_by_path(SERVICE_PATH)
+        except ValueError:
+            raise
+        except Exception:
+            LOG.error("Could not find service in path. Check your environment variables.")
+            raise
+
         service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
 
         if os.path.exists(service_manifest_yml):
@@ -203,7 +203,7 @@ class RunService:
 
             # Validate the service manifest
             try:
-                self.service = Service(service_manifest_data)
+                Service(service_manifest_data)
             except Exception as e:
                 LOG.error(f"Invalid service manifest: {str(e)}")
 
@@ -213,8 +213,17 @@ class RunService:
 
             self.submission_params = {x['name']: x['value']
                                       for x in service_manifest_data.get('submission_params', [])}
+            self.service: ServiceBase = service_class(config=service_config)
 
-            self.service = self.service_class(config=service_config)
+            # Check to see if this service is updater-dependent
+            if service_manifest_data.get('update_config'):
+                # Load bundle used for testing with relative path or environment variable
+                self.service.rules_directory = os.environ.get("UPDATES_DIR", os.path.join(os.getcwd(), 'updates'))
+                if not os.path.exists(self.service.rules_directory):
+                    raise Exception("Can't find directory containing rule files for the service to load..")
+                self.service._gen_rules_hash()
+                self.service._load_rules()
+
             if return_heuristics:
                 return heuristics
         else:
