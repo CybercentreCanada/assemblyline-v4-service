@@ -4,6 +4,7 @@ import time
 import requests
 from assemblyline_core.safelist_client import SafelistClient
 from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
+from assemblyline_v4_service.common.helper import get_service_manifest
 
 DEFAULT_SERVICE_SERVER = "http://localhost:5003"
 DEFAULT_AUTH_KEY = "ThisIsARandomAuthKey...ChangeMe!"
@@ -26,7 +27,8 @@ class ServiceAPI:
             "X-APIKey": os.environ.get("SERVICE_API_KEY", DEFAULT_AUTH_KEY),
             "Container-ID": os.environ.get('HOSTNAME', 'dev-service'),
             "Service-Name": service_attributes.name,
-            "Service-Version": service_attributes.version
+            "Service-Version": service_attributes.version,
+            "Service-Tool-Version": get_service_manifest().get('tool_version', '')
         })
         if self.service_api_host.startswith('https'):
             self.session.verify = os.environ.get('SERVICE_SERVER_ROOT_CA_PATH', '/etc/assemblyline/ssl/al_root-ca.crt')
