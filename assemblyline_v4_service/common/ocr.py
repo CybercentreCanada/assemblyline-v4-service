@@ -69,32 +69,6 @@ OCR_INDICATORS_TERMS: dict[str, list[str]] = {
 # The minimum number of indicator hits to avoid FP detections
 OCR_INDICATORS_THRESHOLD: Dict[str, int] = {"ransomware": 2, "macros": 2, "banned": 1, "password": 1}
 
-try:
-    # Retrieve service-configured OCR settings on module load
-    ocr_config: Dict = get_service_manifest().get("config", {}).get("ocr", {})
-    indicators = set(list(OCR_INDICATORS_TERMS.keys()) + list(ocr_config.keys()))
-    for i in indicators:
-        # Backwards compatibility: Check how the OCR configuration is formatted
-        indicator_config = ocr_config.get(i)
-        indicator_terms = []
-        indicator_threshold = 1
-        if not indicator_config:
-            # Empty block/no override provided by service
-            pass
-        elif isinstance(indicator_config, list):
-            # Legacy support (before configurable indicator thresholds)
-            indicator_terms = indicator_config
-            pass
-        elif isinstance(indicator_config, dict):
-            # Set indicator threshold before variable overwrite with terms list
-            indicator_terms = indicator_config.get('terms', [])
-            indicator_threshold = indicator_config.get('threshold', 1)
-        OCR_INDICATORS_TERMS[i] = indicator_terms or OCR_INDICATORS_TERMS.get(i, [])
-        OCR_INDICATORS_THRESHOLD[i] = indicator_threshold or OCR_INDICATORS_THRESHOLD.get(i, 1)
-
-except Exception:
-    pass
-
 
 def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str]]:
     try:
@@ -128,29 +102,27 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
 
 
 def detections(ocr_output: str) -> Dict[str, List[str]]:
-    indicators = list(OCR_INDICATORS_TERMS.keys())
-    ocr_config = {}
     try:
         # Retrieve service-configured OCR settings on module load
         ocr_config: Dict = get_service_manifest().get("config", {}).get("ocr", {})
-        indicators = set(list(OCR_INDICATORS_TERMS.keys()) + list(ocr_config.keys()))
     except Exception:
-        pass
+        # Service manifest not found
+        ocr_config = {}
 
+    indicators = set(list(OCR_INDICATORS_TERMS.keys()) + list(ocr_config.keys()))
     detection_output: Dict[str, List[str]] = {}
     # Iterate over the different indicators and include lines of detection in response
     for indicator in indicators:
-        # Backwards compatibility: Check how the OCR configuration is formatted
         indicator_config = ocr_config.get(indicator)
         terms = OCR_INDICATORS_TERMS.get(indicator, [])
         hit_threshold = OCR_INDICATORS_THRESHOLD.get(indicator, 1)
+        # Backwards compatibility: Check how the OCR configuration is formatted
         if not indicator_config:
             # Empty block/no override provided by service
             pass
         elif isinstance(indicator_config, list):
             # Legacy support (before configurable indicator thresholds)
             terms = indicator_config
-            pass
         elif isinstance(indicator_config, dict):
             # Set indicator threshold before variable overwrite with terms list
             terms = indicator_config.get('terms', [])
