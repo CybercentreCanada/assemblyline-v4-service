@@ -15,6 +15,7 @@ import subprocess
 import hashlib
 from contextlib import contextmanager
 from passlib.hash import bcrypt
+from queue import Queue
 from zipfile import ZipFile, BadZipFile
 
 from assemblyline.common import forge, log as al_log
@@ -50,6 +51,8 @@ SOURCE_UPDATE_TIME_KEY = 'update_time'
 LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 SOURCE_STATUS_KEY = 'status'
+SOURCE_UPDATE_ATTEMPT_DELAY_BASE = int(os.environ.get("SOURCE_UPDATE_ATTEMPT_DELAY_BASE", "5"))
+SOURCE_UPDATE_ATTEMPT_MAX_RETRY = int(os.environ.get("SOURCE_UPDATE_ATTEMPT_MAX_RETRY", "3"))
 UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
 UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
@@ -83,6 +86,24 @@ def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R
             ds.user.save(user_name, user)
 
 
+class SetQueue(Queue):
+    # Initialize the queue representation
+    def _init(self, maxsize):
+        self.queue = set()
+
+    def _qsize(self):
+        return len(self.queue)
+
+    # Put a new item in the queue
+    def _put(self, item):
+        self.queue.add(item)
+
+    # Get an item from the queue
+    def _get(self):
+        if self.queue:
+            return self.queue.pop()
+
+
 class ServiceUpdater(ThreadedCoreBase):
     def __init__(self, logger: logging.Logger = None,
                  shutdown_timeout: float = None, config: Config = None,
@@ -101,7 +122,13 @@ class ServiceUpdater(ThreadedCoreBase):
                          config=config, datastore=datastore, redis=redis,
                          redis_persist=redis_persist)
 
+        self.update_queue = SetQueue()
         self.update_data_hash = Hash(f'service-updates-{SERVICE_NAME}', self.redis_persist)
+        # Queue up any sources that were tasked from a previous run or that has failed
+        [self.update_queue.put(k.rsplit(".", 1)[0])
+         for k, v in self.update_data_hash.items().items()
+         if k.endswith(".status") and v.get("state") in ["UPDATING", "ERROR"]]
+
         self._update_dir = None
         self._update_tar = None
         self._time_keeper = None
@@ -200,6 +227,10 @@ class ServiceUpdater(ThreadedCoreBase):
         }
 
     def stop(self):
+        current_source_state = self.update_data_hash.get(f"{self._current_source}.{SOURCE_STATUS_KEY}") or {}
+        if current_source_state.get("state") == "UPDATING":
+            # Declare the update has failed and will retry again on next boot
+            self.push_status("ERROR", "Update interrupted by server shutdown")
         super().stop()
         self.signature_change_watcher.stop()
         self.service_change_watcher.stop()
@@ -237,11 +268,9 @@ class ServiceUpdater(ThreadedCoreBase):
     def _handle_source_update_event(self, data: Optional[list[str]]):
         if data is not None:
             # Received an event regarding a change to source
-            self.log.info(f'Triggered to update the following: {data}')
-            self.do_source_update(self._service, specific_sources=data)
-            self.local_update_flag.set()
-        else:
-            self.source_update_flag.set()
+            self.log.info(f'Queued to update the following: {data}')
+            [self.update_queue.put(d) for d in data]
+        self.trigger_update()
 
     def _handle_signature_change_event(self, data: Optional[SignatureChange]):
         if data and data.signature_id == "*":
@@ -311,11 +340,14 @@ class ServiceUpdater(ThreadedCoreBase):
             if not missing_sources:
                 break
 
-        if missing_sources:
+        if missing_sources and not self.source_update_flag.is_set():
             # If sources are missing, then clear caching from Redis and trigger source updates
             for source in missing_sources:
-                self._current_source = source
-                self.set_source_update_time(0)
+                source_status = self.update_data_hash.get(f"{source}.{SOURCE_STATUS_KEY}")
+                if source_status and source_status["state"] != "ERROR":
+                    # Re-task missing sources that aren't known to have a critical error
+                    self.update_data_hash.set(f"{source}.{SOURCE_UPDATE_TIME_KEY}", 0)
+                    self.update_queue.put(source)
             self.trigger_update()
 
         return check_passed
@@ -392,7 +424,7 @@ class ServiceUpdater(ThreadedCoreBase):
                 output_directory = self.prepare_output_directory()
                 self.serve_directory(output_directory, time_keeper, al_client)
 
-    def do_source_update(self, service: Service, specific_sources: list[str] = []) -> None:
+    def do_source_update(self, service: Service) -> None:
         self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
         run_time = time.time()
         username = self.ensure_service_account()
@@ -411,84 +443,89 @@ class ServiceUpdater(ThreadedCoreBase):
                 # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
                 seen_fetches = dict()
 
-                # Go through each source and download file
-                for source_name, source_obj in sources.items():
-                    # Set current source for pushing state to UI
-                    self._current_source = source_name
-                    old_update_time = self.get_source_update_time()
-                    if specific_sources and source_name not in specific_sources:
-                        # Parameter is used to determine if you want to update a specific source only
-                        # Otherwise, assume we want to update all sources
-                        continue
+                # Go through each source queued and download file
+                while self.update_queue.qsize():
+                    update_attempt = -1
+                    source_name = self.update_queue.get()
+                    while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
+                        # Introduce an exponential delay between each attempt
+                        time.sleep(SOURCE_UPDATE_ATTEMPT_DELAY_BASE**update_attempt)
+                        update_attempt += 1
 
-                    self.push_status("UPDATING", "Starting..")
-                    source = source_obj.as_primitives()
-                    uri: str = source['uri']
-                    default_classification = source.get('default_classification', classification.UNRESTRICTED)
-                    # Enable signature syncing if the source specifies it
-                    al_client.signature.sync = source.get('sync', False)
+                        # Set current source for pushing state to UI
+                        self._current_source = source_name
+                        source_obj = sources[source_name]
+                        old_update_time = self.get_source_update_time()
 
-                    try:
-                        self.push_status("UPDATING", "Pulling..")
-                        output = None
-                        if uri in seen_fetches:
-                            if seen_fetches[uri] == 'skipped':
+                        self.push_status("UPDATING", "Starting..")
+                        source = source_obj.as_primitives()
+                        uri: str = source['uri']
+                        default_classification = source.get('default_classification', classification.UNRESTRICTED)
+                        # Enable signature syncing if the source specifies it
+                        al_client.signature.sync = source.get('sync', False)
+
+                        try:
+                            self.push_status("UPDATING", "Pulling..")
+                            output = None
+                            seen_fetch = seen_fetches.get(uri)
+                            if seen_fetch == 'skipped':
                                 # Skip source if another source says nothing has changed
                                 raise SkipSource
+                            elif seen_fetch and os.path.exists(seen_fetch):
+                                # We've already fetched something from the same URI, re-use downloaded path
+                                self.log.info(f'Already visited {uri} in this run. Using cached download path..')
+                                output = seen_fetches[uri]
+                            else:
+                                # Pull sources from external locations (method depends on the URL)
+                                try:
+                                    # First we'll attempt by performing a Git clone
+                                    # (since not all services hint at being a repository in their URL),
+                                    output = git_clone_repo(source, old_update_time, self.log, update_dir)
+                                except SkipSource:
+                                    raise
+                                except Exception as git_ex:
+                                    # Should that fail, we'll attempt a direct-download using Python Requests
+                                    if not uri.endswith('.git'):
+                                        # Proceed with direct download, raise exception as required if necessary
+                                        output = url_download(source, old_update_time, self.log, update_dir)
+                                    else:
+                                        # Raise Git Exception
+                                        raise git_ex
+                                # Add output path to the list of seen fetches in this run
+                                seen_fetches[uri] = output
 
-                            # We've already fetched something from the same URI, re-use downloaded path
-                            self.log.info(f'Already visited {uri} in this run. Using cached download path..')
-                            output = seen_fetches[uri]
-                        else:
-                            # Pull sources from external locations (method depends on the URL)
-                            try:
-                                # First we'll attempt by performing a Git clone
-                                # (since not all services hint at being a repository in their URL),
-                                output = git_clone_repo(source, old_update_time, self.log, update_dir)
-                            except SkipSource:
-                                raise
-                            except Exception as git_ex:
-                                # Should that fail, we'll attempt a direct-download using Python Requests
-                                if not uri.endswith('.git'):
-                                    # Proceed with direct download, raise exception as required if necessary
-                                    output = url_download(source, old_update_time, self.log, update_dir)
-                                else:
-                                    # Raise Git Exception
-                                    raise git_ex
-                            # Add output path to the list of seen fetches in this run
-                            seen_fetches[uri] = output
+                            files = filter_downloads(output, source['pattern'], self.default_pattern)
 
-                        files = filter_downloads(output, source['pattern'], self.default_pattern)
+                            # Add to collection of sources for caching purposes
+                            self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
+                            validated_files = list()
+                            for file, sha256 in files:
+                                files_sha256.setdefault(source_name, {})
+                                if previous_hashes.get(source_name, {}).get(file, None) != sha256 and self.is_valid(file):
+                                    files_sha256[source_name][file] = sha256
+                                    validated_files.append((file, sha256))
 
-                        # Add to collection of sources for caching purposes
-                        self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
-                        validated_files = list()
-                        for file, sha256 in files:
-                            files_sha256.setdefault(source_name, {})
-                            if previous_hashes.get(source_name, {}).get(file, None) != sha256 and self.is_valid(file):
-                                files_sha256[source_name][file] = sha256
-                                validated_files.append((file, sha256))
+                            self.push_status("UPDATING", "Importing..")
+                            # Import into Assemblyline
+                            self.import_update(validated_files, al_client, source_name, default_classification)
+                            self.push_status("DONE", "Signature(s) Imported.")
+                        except SkipSource:
+                            # This source hasn't changed, no need to re-import into Assemblyline
+                            self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
+                            if source_name in previous_hashes:
+                                files_sha256[source_name] = previous_hashes[source_name]
+                            seen_fetches[uri] = "skipped"
+                            self.push_status("DONE", "Skipped.")
+                            break
+                        except Exception as e:
+                            # There was an issue with this source, report and continue to the next
+                            self.log.error(f"Problem with {source['name']}: {e}")
+                            self.push_status("ERROR", str(e))
+                            continue
 
-                        self.push_status("UPDATING", "Importing..")
-                        # Import into Assemblyline
-                        self.import_update(validated_files, al_client, source_name, default_classification)
-                        self.push_status("DONE", "Signature(s) Imported.")
-
-                    except SkipSource:
-                        # This source hasn't changed, no need to re-import into Assemblyline
-                        self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
-                        if source_name in previous_hashes:
-                            files_sha256[source_name] = previous_hashes[source_name]
-                        seen_fetches[uri] = "skipped"
-                        self.push_status("DONE", "Skipped.")
-                    except Exception as e:
-                        # There was an issue with this source, report and continue to the next
-                        self.log.error(f"Problem with {source['name']}: {e}")
-                        self.push_status("ERROR", str(e))
-                        continue
-
-                    self.set_source_update_time(run_time)
-                    self.set_source_extra(files_sha256)
+                        self.set_source_update_time(run_time)
+                        self.set_source_extra(files_sha256)
+                        break
         self.set_active_config_hash(self.config_hash(service))
         self.local_update_flag.set()
 
@@ -544,6 +581,10 @@ class ServiceUpdater(ThreadedCoreBase):
             # Run update function
             # noinspection PyBroadException
             try:
+                # Check to see if we have anything queued up for this run
+                if not self.update_queue.qsize():
+                    # Queue all sources to update
+                    [self.update_queue.put(source.name) for source in self._service.update_config.sources]
                 self.do_source_update(service=service)
                 self.set_scheduled_update_time(update_time=time.time())
             except Exception:
