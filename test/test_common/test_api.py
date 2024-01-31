@@ -37,7 +37,7 @@ def test_serviceapi_init():
     # This changes relative to the data model
     assert sa.session.headers.pop("accept-encoding")
     # This changes when run from a container
-    assert sa.session.headers.pop("container_id")
+    assert sa.session.headers.pop("container-id")
     assert sa.session.headers.__dict__ == {
         '_store': OrderedDict(
             [
@@ -45,10 +45,11 @@ def test_serviceapi_init():
                 # ('accept-encoding', ('Accept-Encoding', 'gzip, deflate')),
                 ('accept', ('Accept', '*/*')),
                 ('connection', ('Connection', 'keep-alive')),
-                ('x_apikey', ('X_APIKEY', DEFAULT_AUTH_KEY)),
-                # ('container_id', ('container_id', 'dev-service')),
-                ('service_name', ('service_name', 'Sample')),
-                ('service_version', ('service_version', '4.4.0.dev0'))
+                ('x-apikey', ('X-APIKey', DEFAULT_AUTH_KEY)),
+                # ('Container-ID', ('Container-ID', 'dev-service')),
+                ('service-name', ('Service-Name', 'Sample')),
+                ('service-version', ('Service-Version', '4.4.0.dev0')),
+                ('service-tool-version', ('Service-Tool-Version', ''))
             ]
         )
     }
