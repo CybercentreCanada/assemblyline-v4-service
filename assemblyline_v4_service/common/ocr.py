@@ -62,7 +62,7 @@ OCR_INDICATORS_TERMS: dict[str, list[str]] = {
         # Other
         "online banking", "security challenge", "forgot password", "card number", "mobile banking", "paypal account",
         "forgot email", "banking security", "remember password", "verify your identity", "secure login",
-        "enter security", "create account", "confirm your", "enter document", "document security",
+        "enter security", "create account", "confirm your", "enter document", "document security", "click here to view",
     ]
 }
 
