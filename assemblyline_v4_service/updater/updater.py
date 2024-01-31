@@ -86,22 +86,12 @@ def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R
             ds.user.save(user_name, user)
 
 
-class SetQueue(Queue):
-    # Initialize the queue representation
-    def _init(self, maxsize):
-        self.queue = set()
-
-    def _qsize(self):
-        return len(self.queue)
-
+# A Queue derivative that respects uniqueness of items as well as order
+class UniqueQueue(Queue):
     # Put a new item in the queue
     def _put(self, item):
-        self.queue.add(item)
-
-    # Get an item from the queue
-    def _get(self):
-        if self.queue:
-            return self.queue.pop()
+        if item not in self.queue:
+            self.queue.append(item)
 
 
 class ServiceUpdater(ThreadedCoreBase):
@@ -122,12 +112,13 @@ class ServiceUpdater(ThreadedCoreBase):
                          config=config, datastore=datastore, redis=redis,
                          redis_persist=redis_persist)
 
-        self.update_queue = SetQueue()
+        self.update_queue = UniqueQueue()
         self.update_data_hash = Hash(f'service-updates-{SERVICE_NAME}', self.redis_persist)
+
         # Queue up any sources that were tasked from a previous run or that has failed
-        [self.update_queue.put(k.rsplit(".", 1)[0])
-         for k, v in self.update_data_hash.items().items()
-         if k.endswith(".status") and v.get("state") in ["UPDATING", "ERROR"]]
+        for k, v in self.update_data_hash.items().items():
+            if k.endswith(".status") and v.get("state") in ["UPDATING", "ERROR"]:
+                self.update_queue.put(k.rsplit(".", 1)[0])
 
         self._update_dir = None
         self._update_tar = None
@@ -269,7 +260,8 @@ class ServiceUpdater(ThreadedCoreBase):
         if data is not None:
             # Received an event regarding a change to source
             self.log.info(f'Queued to update the following: {data}')
-            [self.update_queue.put(d) for d in data]
+            for d in data:
+                self.update_queue.put(d)
         self.trigger_update()
 
     def _handle_signature_change_event(self, data: Optional[SignatureChange]):
@@ -584,7 +576,8 @@ class ServiceUpdater(ThreadedCoreBase):
                 # Check to see if we have anything queued up for this run
                 if not self.update_queue.qsize():
                     # Queue all sources to update
-                    [self.update_queue.put(source.name) for source in self._service.update_config.sources]
+                    for source in self._service.update_config.sources:
+                        self.update_queue.put(source.name)
                 self.do_source_update(service=service)
                 self.set_scheduled_update_time(update_time=time.time())
             except Exception:

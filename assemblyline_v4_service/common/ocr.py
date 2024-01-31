@@ -7,63 +7,148 @@ from assemblyline_v4_service.common.utils import PASSWORD_WORDS
 
 # TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
 OCR_INDICATORS_TERMS: dict[str, list[str]] = {
-    'ransomware': [
+    "ransomware": [
         # https://github.com/cuckoosandbox/community/blob/master/modules/signatures/windows/ransomware_message.py
-        "your files", "your data", "your documents", "restore files",
-        "restore data", "restore the files", "restore the data", "recover files",
-        "recover data", "recover the files", "recover the data", "has been locked",
-        "pay fine", "pay a fine", "pay the fine", "decrypt", "encrypt",
-        "recover files", "recover data", "recover them", "recover your",
-        "recover personal", "bitcoin", "secret server", "secret internet server",
-        "install tor", "download tor", "tor browser", "tor gateway",
-        "tor-browser", "tor-gateway", "torbrowser", "torgateway", "torproject.org",
-        "ransom", "bootkit", "rootkit", "payment", "victim", "AES128", "AES256",
-        "AES 128", "AES 256", "AES-128", "AES-256", "RSA1024", "RSA2048",
-        "RSA4096", "RSA 1024", "RSA 2048", "RSA 4096", "RSA-1024", "RSA-2048",
-        "RSA-4096", "private key", "personal key", "your code", "private code",
-        "personal code", "enter code", "your key", "unique key",
+        "AES 128",
+        "AES 256",
+        "AES-128",
+        "AES-256",
+        "AES128",
+        "AES256",
+        "RSA 1024",
+        "RSA 2048",
+        "RSA 4096",
+        "RSA-1024",
+        "RSA-2048",
+        "RSA-4096",
+        "RSA1024",
+        "RSA2048",
+        "RSA4096",
+        "bitcoin",
+        "bootkit",
+        "decrypt",
+        "download tor",
+        "encrypt",
+        "enter code",
+        "has been locked",
+        "install tor",
+        "pay a fine",
+        "pay fine",
+        "pay the fine",
+        "payment",
+        "personal code",
+        "personal key",
+        "private code",
+        "private key",
+        "ransom",
+        "recover data",
+        "recover data",
+        "recover files",
+        "recover files",
+        "recover personal",
+        "recover the data",
+        "recover the files",
+        "recover them",
+        "recover your",
+        "restore data",
+        "restore files",
+        "restore the data",
+        "restore the files",
+        "rootkit",
+        "secret internet server",
+        "secret server",
+        "tor browser",
+        "tor gateway",
+        "tor-browser",
+        "tor-gateway",
+        "torbrowser",
+        "torgateway",
+        "torproject.org",
+        "unique key",
+        "victim",
+        "your code",
+        "your data",
+        "your documents",
+        "your files",
+        "your key",
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/office_macro.py
         "bank account",
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/ransomware_message.py
-        "Attention!", "BTC", "HardwareID", "bit coin", "decrypter", "decryptor",
-        "device ID", "encrypted", "encryption ID", "ethereum", "get back my",
-        "get back your", "localbitcoins", "military grade encryption", "personal ID",
-        "personal identification code", "personal identifier",
-        "recover datarecover the files", "recover my", "restore system",
-        "restore the system", "unique ID", "wallet address", "what happend",
-        "what happened", "your database", "your network",
+        "Attention!",
+        "BTC",
+        "HardwareID",
+        "bit coin",
+        "decrypter",
+        "decryptor",
+        "device ID",
+        "encrypted",
+        "encryption ID",
+        "ethereum",
+        "get back my",
+        "get back your",
+        "localbitcoins",
+        "military grade encryption",
+        "personal ID",
+        "personal identification code",
+        "personal identifier",
+        "recover datarecover the files",
+        "recover my",
+        "restore system",
+        "restore the system",
+        "unique ID",
+        "wallet address",
+        "what happend",
+        "what happened",
+        "your database",
+        "your network",
         # Other
-        "ether", "litecoin", "coin",
+        "coin",
+        "ether",
+        "litecoin",
     ],
-    'macros': [
+    "macros": [
         # https://github.com/cuckoosandbox/community/blob/17d57d46ccbca0327a8299cb93abba8604b74df7/modules/signatures/windows/office_enablecontent_ocr.py
-        "enable macro",
         "enable content",
         "enable editing",
+        "enable macro",
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/office_macro.py
-        "tools > macro",
         "macros must be enabled",
+        "tools > macro",
         # Other
         "protected documents",
     ],
-    'banned': [],
-    'password': PASSWORD_WORDS,
-    'phishing': [
+    "banned": [],
+    "password": PASSWORD_WORDS,
+    "phishing": [
         # https://github.com/CAPESandbox/community/blob/815e21980f4b234cf84e78749447f262af2beef9/modules/signatures/js_phish.py
-        "debug malware error",
+        "Invalid Card Number",
+        "Invalid Card Verification Number",
         "contact microsoft certified",
+        "debug malware error",
         "non bootable situation",
         "windows system alert",
         "your browser has been infected",
-        "your paypal id or password was entered incorrectly",
         "your customer number is made up of your date of birth",
-        'Invalid Card Number',
-        'Invalid Card Verification Number',
+        "your paypal id or password was entered incorrectly",
         # Other
-        "online banking", "security challenge", "forgot password", "card number", "mobile banking", "paypal account",
-        "forgot email", "banking security", "remember password", "verify your identity", "secure login",
-        "enter security", "create account", "confirm your", "enter document", "document security",
-    ]
+        "banking security",
+        "card number",
+        "click here to view",
+        "confirm your",
+        "create account",
+        "document security",
+        "enter document",
+        "enter security",
+        "forgot email",
+        "forgot password",
+        "mobile banking",
+        "online banking",
+        "paypal account",
+        "remember password",
+        "secure login",
+        "security challenge",
+        "verify your identity",
+    ],
 }
 
 # The minimum number of indicator hits to avoid FP detections
@@ -86,9 +171,7 @@ def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str
     ocr_output = ""
 
     try:
-        ocr_output = pytesseract.image_to_string(
-            Image.open(image_path), timeout=15
-        )  # Stop OCR after 15 seconds
+        ocr_output = pytesseract.image_to_string(Image.open(image_path), timeout=15)  # Stop OCR after 15 seconds
     except (TypeError, RuntimeError):
         # Image given isn't supported therefore no OCR output can be given with tesseract
         return {}
@@ -125,8 +208,8 @@ def detections(ocr_output: str) -> Dict[str, List[str]]:
             terms = indicator_config
         elif isinstance(indicator_config, dict):
             # Set indicator threshold before variable overwrite with terms list
-            terms = indicator_config.get('terms', [])
-            hit_threshold = indicator_config.get('threshold', 1)
+            terms = indicator_config.get("terms", [])
+            hit_threshold = indicator_config.get("threshold", 1)
 
         # Perform a pre-check to see if the terms even exist in the OCR text
         if not any([t.lower() in ocr_output.lower() for t in terms]):
