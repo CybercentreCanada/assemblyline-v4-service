@@ -160,6 +160,7 @@ def test_task_add_file(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
+        'is_supplementary': False,
         "allow_dynamic_recursion": False,
         "parent_relation": "EXTRACTED",
     }
@@ -174,6 +175,7 @@ def test_task_add_file(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
+        'is_supplementary': False,
         "allow_dynamic_recursion": True,
         "parent_relation": "DYNAMIC",
     }
@@ -225,6 +227,7 @@ def test_task_add_extracted(servicetask, mocker):
             "classification": "TLP:C",
             "path": path,
             "is_section_image": False,
+            'is_supplementary': False,
             "allow_dynamic_recursion": False,
             "parent_relation": "EXTRACTED",
         }
@@ -260,6 +263,7 @@ def test_task_add_supplementary(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
+        'is_supplementary': True,
         "allow_dynamic_recursion": False,
         "parent_relation": "INFORMATION",
     }
@@ -271,6 +275,7 @@ def test_task_add_supplementary(servicetask):
             "classification": "TLP:C",
             "path": path,
             "is_section_image": False,
+            'is_supplementary': True,
             "allow_dynamic_recursion": False,
             "parent_relation": "INFORMATION",
         }
