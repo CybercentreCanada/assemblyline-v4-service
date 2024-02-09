@@ -74,53 +74,55 @@ class RunService(ServerBase):
         self.load_service_attributes()
         self.service.start_service()
 
-        while self.running:
-            try:
-                read_ready, _, _ = select.select([self.task_fifo], [], [], 1)
-                if not read_ready:
-                    continue
-            except ValueError:
-                self.log.info('Task fifo is closed. Cleaning up...')
-                return
+        try:
+            while self.running:
+                try:
+                    read_ready, _, _ = select.select([self.task_fifo], [], [], 1)
+                    if not read_ready:
+                        continue
+                except ValueError:
+                    self.log.info('Task fifo is closed. Cleaning up...')
+                    return
 
-            task_json_path = self.task_fifo.readline().strip()
-            if not task_json_path:
-                self.log.info('Received an empty message for Task fifo. Cleaning up...')
-                return
+                task_json_path = self.task_fifo.readline().strip()
+                if not task_json_path:
+                    self.log.info('Received an empty message for Task fifo. Cleaning up...')
+                    return
 
-            self.log.info(f"Task found in: {task_json_path}")
-            with open(task_json_path, 'r') as f:
-                task = ServiceTask(json.load(f))
-            self.service.handle_task(task)
+                self.log.info(f"Task found in: {task_json_path}")
+                with open(task_json_path, 'r') as f:
+                    task = ServiceTask(json.load(f))
+                self.service.handle_task(task)
 
-            # Notify task handler that processing is done
-            result_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
-            error_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
-            if os.path.exists(result_json):
-                msg = f"{json.dumps([result_json, SUCCESS])}\n"
-            elif os.path.exists(error_json):
-                msg = f"{json.dumps([error_json, ERROR])}\n"
-            else:
-                msg = f"{json.dumps([None, ERROR])}\n"
+                # Notify task handler that processing is done
+                result_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
+                error_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
+                if os.path.exists(result_json):
+                    msg = f"{json.dumps([result_json, SUCCESS])}\n"
+                elif os.path.exists(error_json):
+                    msg = f"{json.dumps([error_json, ERROR])}\n"
+                else:
+                    msg = f"{json.dumps([None, ERROR])}\n"
 
-            try:
-                self.done_fifo.write(msg)
-                self.done_fifo.flush()
-            except BrokenPipeError:
-                self.log.info("Done fifo is closed. Cleaning up...")
-                return
+                try:
+                    self.done_fifo.write(msg)
+                    self.done_fifo.flush()
+                except BrokenPipeError:
+                    self.log.info("Done fifo is closed. Cleaning up...")
+                    return
+        finally:
+            # This needs to be part of the finally so we can finish our current task.
+            # It is most important to close the done_fifo to tell the task_handler that
+            # we are done and it can proceed with the result of the current task before
+            # cleaning up the container
+            self.log.info("Closing named pipes...")
+            if self.done_fifo is not None:
+                self.done_fifo.close()
+            if self.task_fifo is not None:
+                self.task_fifo.close()
 
-    def stop(self):
-        self.log.info("Closing named pipes...")
-        if self.done_fifo is not None:
-            self.done_fifo.close()
-        if self.task_fifo is not None:
-            self.task_fifo.close()
-
-        if self.service:
-            self.service.stop_service()
-
-        super().stop()
+            if self.service:
+                self.service.stop_service()
 
     def load_service_attributes(self) -> None:
         service_manifest_data = helper.get_service_manifest()
