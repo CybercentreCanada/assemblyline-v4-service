@@ -14,13 +14,13 @@ import threading
 import subprocess
 import hashlib
 from contextlib import contextmanager
-from passlib.hash import bcrypt
 from queue import Queue
 from zipfile import ZipFile, BadZipFile
 
 from assemblyline.common import forge, log as al_log
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
 from assemblyline.common.identify import zip_ident
+from assemblyline.common.security import get_password_hash
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
@@ -71,7 +71,7 @@ def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R
         random_pass = get_random_password(length=48)
         user = ds.user.get(user_name)
         user.apikeys[name] = {
-            "password": bcrypt.hash(random_pass),
+            "password": get_password_hash(random_pass),
             "acl": permissions,
             "roles": UPDATER_API_ROLES
         }
@@ -493,7 +493,9 @@ class ServiceUpdater(ThreadedCoreBase):
                             validated_files = list()
                             for file, sha256 in files:
                                 files_sha256.setdefault(source_name, {})
-                                if previous_hashes.get(source_name, {}).get(file, None) != sha256 and self.is_valid(file):
+                                if previous_hashes.get(
+                                        source_name, {}).get(
+                                        file, None) != sha256 and self.is_valid(file):
                                     files_sha256[source_name][file] = sha256
                                     validated_files.append((file, sha256))
 
