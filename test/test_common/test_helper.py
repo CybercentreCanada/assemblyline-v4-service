@@ -28,7 +28,7 @@ def test_get_service_attributes():
 def test_get_service_manifest():
     service_manifest = get_service_manifest()
     assert service_manifest == {
-        'name': 'Sample', 'version': f'{SYSTEM_VERSION}.{FRAMEWORK_VERSION}.0.dev0',
+        'name': 'Sample', 'version': f'{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0',
         'docker_config': {'image': 'sample'},
         'heuristics': [{'heur_id': 1, 'name': 'blah', 'description': 'blah', 'filetype': '*', 'score': 250, 'attack_id': 'T1005', 'max_score': 1200}],
         'config': {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
@@ -40,7 +40,7 @@ def test_get_service_manifest():
     with open("/tmp/service_manifest.yml", "w") as f:
         f.write("\n".join([
             "name: Sample",
-            f"version: {SYSTEM_VERSION}.{FRAMEWORK_VERSION}.0.stable123",
+            f"version: {FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.stable123",
             "docker_config:",
             "    image: sample",
             "heuristics:",
@@ -61,7 +61,7 @@ def test_get_service_manifest():
                         'name': 'blah',
                         'score': 250}],
         'name': 'Sample',
-        'version': f'{SYSTEM_VERSION}.{FRAMEWORK_VERSION}.0.123',
+        'version': f'{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.123',
     }
 
     # No service manifest
