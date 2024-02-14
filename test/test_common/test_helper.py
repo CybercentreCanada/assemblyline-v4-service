@@ -4,6 +4,7 @@ import pytest
 from assemblyline_v4_service.common.helper import *
 
 from assemblyline.common.classification import InvalidDefinition
+from assemblyline.common.version import SYSTEM_VERSION, FRAMEWORK_VERSION
 
 
 def test_get_classification():
@@ -27,11 +28,11 @@ def test_get_service_attributes():
 def test_get_service_manifest():
     service_manifest = get_service_manifest()
     assert service_manifest == {
-        'name': 'Sample', 'version': '4.4.0.dev0',
+        'name': 'Sample', 'version': f'{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0',
         'docker_config': {'image': 'sample'},
         'heuristics': [{'heur_id': 1, 'name': 'blah', 'description': 'blah', 'filetype': '*', 'score': 250, 'attack_id': 'T1005', 'max_score': 1200}],
         'config': {'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
-        'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}]}
+                   'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}]}
     }
 
     teardown_module()
@@ -39,7 +40,7 @@ def test_get_service_manifest():
     with open("/tmp/service_manifest.yml", "w") as f:
         f.write("\n".join([
             "name: Sample",
-            "version: 4.4.0.stable123",
+            f"version: {FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.stable123",
             "docker_config:",
             "    image: sample",
             "heuristics:",
@@ -60,7 +61,7 @@ def test_get_service_manifest():
                         'name': 'blah',
                         'score': 250}],
         'name': 'Sample',
-        'version': '4.4.0.123',
+        'version': f'{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.123',
     }
 
     # No service manifest

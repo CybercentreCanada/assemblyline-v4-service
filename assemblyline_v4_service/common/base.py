@@ -154,6 +154,11 @@ class ServiceBase:
         if self.service_attributes.version.startswith(fw_version):
             return self.service_attributes.version
         else:
+            # We only want the last two parts of the version in the manifest, if it exists
+            if self.service_attributes.version.count('.') > 1:
+                # Splice the last two parts of the original version and add it with the version of the system
+                return f"{fw_version}{'.'.join(self.service_attributes.version.split('.')[-2:])}"
+            # Otherwise just tack on the version with the system version
             return f"{fw_version}{self.service_attributes.version}"
 
     # noinspection PyMethodMayBeStatic
