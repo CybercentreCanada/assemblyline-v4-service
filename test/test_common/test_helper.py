@@ -40,7 +40,7 @@ def test_get_service_manifest():
     with open("/tmp/service_manifest.yml", "w") as f:
         f.write("\n".join([
             "name: Sample",
-            "version: 4.5.0.stable123",
+            f"version: {SYSTEM_VERSION}.{FRAMEWORK_VERSION}.0.stable123",
             "docker_config:",
             "    image: sample",
             "heuristics:",
@@ -61,7 +61,7 @@ def test_get_service_manifest():
                         'name': 'blah',
                         'score': 250}],
         'name': 'Sample',
-        'version': '4.5.0.123',
+        'version': f'{SYSTEM_VERSION}.{FRAMEWORK_VERSION}.0.123',
     }
 
     # No service manifest
