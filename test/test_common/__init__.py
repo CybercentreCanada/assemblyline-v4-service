@@ -1,17 +1,20 @@
 import os
 import subprocess
 
+from assemblyline.common.version import SYSTEM_VERSION, FRAMEWORK_VERSION
+
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
 
 ret = subprocess.run("dpkg -l | grep ^ii | awk '{print $2}' | grep -i 'tesseract'", capture_output=True, shell=True)
 TESSERACT_LIST = list(filter(None, ret.stdout.decode().split('\n')))
 
+
 def setup_module():
     open_manifest = open(TEMP_SERVICE_CONFIG_PATH, "w")
     open_manifest.write("\n".join([
         "name: Sample",
-        "version: 4.4.0.dev0",
+        f"version: {FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0",
         "docker_config:",
         "    image: sample",
         "heuristics:",

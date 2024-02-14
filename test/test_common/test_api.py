@@ -4,6 +4,7 @@ from multiprocessing import Process
 
 import pytest
 import requests_mock
+from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import *
 from requests import ConnectionError, Session, Timeout
@@ -48,7 +49,7 @@ def test_serviceapi_init():
                 ('x_apikey', ('X_APIKEY', DEFAULT_AUTH_KEY)),
                 # ('container_id', ('container_id', 'dev-service')),
                 ('service_name', ('service_name', 'Sample')),
-                ('service_version', ('service_version', '4.4.0.dev0'))
+                ('service_version', ('service_version', f'{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0'))
             ]
         )
     }
@@ -63,7 +64,8 @@ def test_serviceapi_with_retries():
 
         # ConnectionError
         m.get(url, exc=ConnectionError)
-        p1 = Process(target=sa._with_retries, args=(sa.session.get, url), name="_with_retries with exception ConnectionError")
+        p1 = Process(target=sa._with_retries, args=(sa.session.get, url),
+                     name="_with_retries with exception ConnectionError")
         p1.start()
         p1.join(timeout=2)
         p1.terminate()
@@ -71,7 +73,8 @@ def test_serviceapi_with_retries():
 
         # Timeout
         m.get(url, exc=Timeout)
-        p1 = Process(target=sa._with_retries, args=(sa.session.get, url), name="_with_retries with exception ConnectionError")
+        p1 = Process(target=sa._with_retries, args=(sa.session.get, url),
+                     name="_with_retries with exception ConnectionError")
         p1.start()
         p1.join(timeout=2)
         p1.terminate()
@@ -87,7 +90,8 @@ def test_serviceapi_with_retries():
             sa._with_retries(sa.session.get, url)
 
         # Status code of 400 and the required keys
-        m.get(url, status_code=400, json={"api_error_message": "blah", "api_server_version": "blah", "api_response": "blah"})
+        m.get(url, status_code=400, json={"api_error_message": "blah",
+              "api_server_version": "blah", "api_response": "blah"})
         with pytest.raises(ServiceAPIError):
             sa._with_retries(sa.session.get, url)
 
