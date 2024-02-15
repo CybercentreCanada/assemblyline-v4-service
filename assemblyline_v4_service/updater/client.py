@@ -11,8 +11,6 @@ from assemblyline_client.v4_client.module.signature import Signature as Signatur
 
 from typing import Any, Dict, List, Union
 
-config = forge.get_config()
-
 SIGNATURE_UPDATE_BATCH = int(os.environ.get('SIGNATURE_UPDATE_BATCH', '1000'))
 
 
@@ -91,8 +89,8 @@ class Signature(SignatureAPI):
             # Find the signature IDs that don't exist at this source anymore and disable them
             for missing_signature_id in (existing_signature_ids - current_signature_ids):
                 missing_signature = self.datastore.signature.get(missing_signature_id)
-                if missing_signature.state_change_user in [
-                        'update_service_account', None] and missing_signature.status != 'DISABLED':
+                if missing_signature.state_change_user in ['update_service_account', None] and \
+                        missing_signature.status != 'DISABLED':
                     # Only disable signature if it doesn't seem to be in use/altered by a (real) user
                     self.datastore.signature.update(missing_signature_id,
                                                     [(self.datastore.signature.UPDATE_SET, 'status', 'DISABLED'),
