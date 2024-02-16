@@ -11,6 +11,7 @@ import tarfile
 import threading
 import subprocess
 import hashlib
+from io import BytesIO
 from queue import Queue
 from zipfile import ZipFile
 
@@ -328,7 +329,7 @@ class ServiceUpdater(ThreadedCoreBase):
 
                 self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
 
-                with ZipFile(self.client.signature.download(self.signatures_query), 'r') as zip_f:
+                with ZipFile(BytesIO(self.client.signature.download(self.signatures_query)), 'r') as zip_f:
                     zip_f.extractall(output_directory)
                     self.log.info("New ruleset successfully downloaded and ready to use")
                     self.serve_directory(output_directory, time_keeper)
@@ -517,7 +518,8 @@ class ServiceUpdater(ThreadedCoreBase):
             signature_map = {
                 item['signature_id']: item
                 for item in self.datastore.signature.stream_search(query=self.signatures_query,
-                                                                   fl="classification,source,status,signature_id,name")
+                                                                   fl="classification,source,status,signature_id,name",
+                                                                   as_obj=False)
             }
         else:
             # Pull source metadata from synced service configuration
