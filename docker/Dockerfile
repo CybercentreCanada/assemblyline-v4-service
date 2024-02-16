@@ -19,9 +19,6 @@ RUN pip install --no-cache-dir -f dist --user \
     assemblyline-v4-service[updater]==$version \
     && rm -rf ~/.cache/pip
 
-# If this is a latest rather than stable build, try to push for unstable packages of assemblyline dependencies
-RUN if [ "${branch}" = "latest" ]; then pip install --user --upgrade --pre assemblyline-client; fi
-
 # Remove files that existed before the pip install so that our copy command below doesn't take a snapshot of
 # files that already exist in the base image
 RUN find /var/lib/assemblyline/.local -type f ! -newer /tmp/before-pip -delete
