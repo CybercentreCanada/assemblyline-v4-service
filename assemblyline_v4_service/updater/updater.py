@@ -418,7 +418,7 @@ class ServiceUpdater(ThreadedCoreBase):
 
                         self.push_status("UPDATING", "Importing..")
                         # Import into Assemblyline
-                        self.import_update(validated_files, self.client, source_name, default_classification)
+                        self.import_update(validated_files, source_name, default_classification)
                         self.push_status("DONE", "Signature(s) Imported.")
                     except SkipSource:
                         # This source hasn't changed, no need to re-import into Assemblyline
