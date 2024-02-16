@@ -445,8 +445,7 @@ class ServiceUpdater(ThreadedCoreBase):
         return True
 
     # Define how your source update gets imported into Assemblyline
-    def import_update(self, files_sha256: List[Tuple[str, str]], client: UpdaterClient, source_name: str,
-                      default_classification=None):
+    def import_update(self, files_sha256: List[Tuple[str, str]], source_name: str, default_classification=None):
         raise NotImplementedError()
 
     # Define how to prepare the output directory before being served, must return the path of the directory to serve.
