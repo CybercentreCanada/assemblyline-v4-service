@@ -4,7 +4,7 @@ import pytest
 from assemblyline_v4_service.common.helper import *
 
 from assemblyline.common.classification import InvalidDefinition
-from assemblyline.common.version import SYSTEM_VERSION, FRAMEWORK_VERSION
+from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 
 
 def test_get_classification():
