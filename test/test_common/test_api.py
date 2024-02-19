@@ -49,7 +49,7 @@ def test_serviceapi_init():
                 ('x-apikey', ('X-APIKey', DEFAULT_AUTH_KEY)),
                 # ('Container-ID', ('Container-ID', 'dev-service')),
                 ('service-name', ('Service-Name', 'Sample')),
-                ('service-version', ('Service-Version', '4.4.0.dev0')),
+                ('service-version', ('Service-Version', f'{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0')),
                 ('service-tool-version', ('Service-Tool-Version', ''))
             ]
         )
