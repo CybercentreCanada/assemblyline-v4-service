@@ -1,24 +1,22 @@
 import os
 
-from assemblyline.common import forge
 from assemblyline.odm.models.signature import Signature as SignatureModel
-from assemblyline_client import Client4, get_client as get_AL_client
-from assemblyline_client.v4_client.module.signature import Signature as SignatureAPI
+from assemblyline_core.badlist_client import BadlistClient
+from assemblyline_core.safelist_client import SafelistClient
+from assemblyline_core.signature_client import SignatureClient
 
 from typing import Any, Dict, List, Union
 
 SIGNATURE_UPDATE_BATCH = int(os.environ.get('SIGNATURE_UPDATE_BATCH', '1000'))
 
 
-class Signature(SignatureAPI):
-    def __init__(self, connection, datastore=None):
-        super().__init__(connection)
-        self.datastore = datastore
-        if not datastore:
-            self.datastore = forge.get_datastore()
+class SyncableSignature(SignatureClient):
+    def __init__(self, datastore, config=None):
+        super().__init__(datastore, config)
         self.sync = False
 
-    def add_update_many(self, source: str, sig_type: str, data: List[Union[dict, SignatureModel]], dedup_name: bool = True) -> Dict[str, Any]:
+    def add_update_many(self, source: str, sig_type: str, data: List[Union[dict, SignatureModel]],
+                        dedup_name: bool = True) -> Dict[str, Any]:
         # This version of the API allows to sync signatures with the system by making direct changes to the datastore
         # Signatures that no longer exist at the source will be DISABLED to maintain active synchronicity,
         # but users can always re-deploy signatures if desired
@@ -51,18 +49,19 @@ class Signature(SignatureAPI):
             # Get the list of signatures that currently existing in the system for the source
             existing_signature_ids = set([
                 i.id for i in self.datastore.signature.stream_search(f"source:{source} AND type:{sig_type}", fl='id')
-                ])
+            ])
 
             # Find the signature IDs that don't exist at this source anymore and disable them
             for missing_signature_id in (existing_signature_ids - current_signature_ids):
                 missing_signature = self.datastore.signature.get(missing_signature_id)
-                if missing_signature.state_change_user in ['update_service_account', None] and missing_signature.status != 'DISABLED':
+                if missing_signature.state_change_user in ['update_service_account', None] and \
+                        missing_signature.status != 'DISABLED':
                     # Only disable signature if it doesn't seem to be in use/altered by a (real) user
                     self.datastore.signature.update(missing_signature_id,
                                                     [(self.datastore.signature.UPDATE_SET, 'status', 'DISABLED'),
                                                      (self.datastore.signature.UPDATE_SET, 'last_modified', 'NOW')])
 
-        # Proceed with adding/updating signatures via the API server
+        # Proceed with adding/updating signatures
         if len(data) < SIGNATURE_UPDATE_BATCH:
             # Update all of them in a single batch
             return super().add_update_many(source, sig_type, data, dedup_name)
@@ -81,23 +80,19 @@ class Signature(SignatureAPI):
 
             # Split up data into batches to avoid server timeouts handling requests
             batch_num = 0
-            start = batch_num*SIGNATURE_UPDATE_BATCH
+            start = batch_num * SIGNATURE_UPDATE_BATCH
             while start < len(data):
-                end = (batch_num+1)*SIGNATURE_UPDATE_BATCH
+                end = (batch_num + 1) * SIGNATURE_UPDATE_BATCH
                 update_response(super().add_update_many(source, sig_type, data[start:end], dedup_name))
                 batch_num += 1
-                start = batch_num*SIGNATURE_UPDATE_BATCH
+                start = batch_num * SIGNATURE_UPDATE_BATCH
 
             return response
 
 
-def get_client(server, auth=None, cert=None, debug=lambda x: None, headers=None, retries=0,
-               silence_requests_warnings=True, apikey=None, verify=True, timeout=None, oauth=None,
-               datastore=None) -> Client4:
-
-    client = get_AL_client(server, auth, cert, debug, headers,
-                           retries, silence_requests_warnings,
-                           apikey, verify, timeout, oauth)
-    # Override Signature module with custom implementation
-    client.signature = Signature(client._connection, datastore=datastore)
-    return client
+class UpdaterClient(object):
+    def __init__(self, datastore) -> None:
+        self.datastore = datastore
+        self.badlist = BadlistClient(datastore)
+        self.safelist = SafelistClient(datastore)
+        self.signature = SyncableSignature(datastore)

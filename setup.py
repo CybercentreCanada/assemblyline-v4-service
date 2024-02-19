@@ -54,7 +54,6 @@ setup(
     ],
     extras_require={
         "updater": [
-            "assemblyline-client",
             "gunicorn[gevent]",
             "flask",
             "gitpython",
