@@ -1,7 +1,7 @@
 import os
 import subprocess
 
-from assemblyline.common.version import SYSTEM_VERSION, FRAMEWORK_VERSION
+from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 
 SERVICE_CONFIG_NAME = "service_manifest.yml"
 TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
