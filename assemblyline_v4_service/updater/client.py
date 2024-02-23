@@ -1,5 +1,6 @@
 import os
 
+from assemblyline.datastore.collection import ESCollection
 from assemblyline.odm.models.badlist import Badlist as BadlistModel
 from assemblyline.odm.models.safelist import Safelist as SafelistModel
 from assemblyline.odm.models.signature import Signature as SignatureModel
@@ -18,85 +19,7 @@ class SyncableBadlistClient(BadlistClient):
         self.sync = False
 
     def add_update_many(self, data: List[Union[dict, BadlistModel]]) -> Dict[str, Any]:
-        # This version of the API allows to sync badlist items with the system by making direct changes to the datastore
-        # Items that no longer exist at the source will be removed from `sources` to maintain active synchronicity
-        # amongst multiple sources.
-        # If there are no more sources actively blocking the item, then the item will be DISABLED but users can always
-        # re-deploy item if desired
-
-        current_ids = set()
-        source = None
-
-        # Iterate over the list of signatures given
-        for i, d in enumerate(data):
-            if isinstance(d, BadlistModel):
-                d = d.as_primitives()
-
-            if not source:
-                # Set the source name
-                source = data["sources"][0]["name"]
-
-            if self.sync:
-                # Compute the expected badlist ID and add it to the list
-                current_ids.add(self._preprocess_object(d))
-
-            # Update with JSON-friendly version of data to be sent to API
-            data[i] = d
-
-        if self.sync:
-            # Get the list of items that currently existing in the system for the source
-            existing_ids = set(
-                [
-                    i["id"]
-                    for i in self.datastore.badlist.stream_search(
-                        f"sources.name:{source}", fl="id", as_obj=False
-                    )
-                ]
-            )
-
-            # Find the IDs that don't exist at this source anymore and remove the source from the source list
-            for missing_id in existing_ids - current_ids:
-                missing_item: BadlistModel = self.datastore.badlist.get(missing_id)
-                original_sources = missing_item.sources
-                missing_item.sources = [
-                    s
-                    for s in missing_item.sources
-                    if not (s.type == "external" and s.name == source)
-                ]
-
-                # If there are no more sources to back this item, then disable it but leave at least one source
-                if not missing_item.sources:
-                    missing_item.enabled = False
-                    missing_item.sources = original_sources[:1]
-
-                # Update the last updated time
-                missing_item.updated = "NOW"
-
-                # Update missing item with latest changes
-                self.datastore.badlist.save(missing_id, missing_item)
-
-        # Proceed with adding/updating items
-        if len(data) < SIGNATURE_UPDATE_BATCH:
-            # Update all of them in a single batch
-            return super().add_update_many(data)
-        else:
-            response = {"success": 0, "errors": []}
-
-            def update_response(r: Dict[str, Any]):
-                # Response has to be in the same format, but show the accumulation of batches
-                response["success"]: int = response["success"] + r["success"]
-                response["errors"]: List[str] = response["errors"] + r["errors"]
-
-            # Split up data into batches to avoid server timeouts handling requests
-            batch_num = 0
-            start = batch_num * SIGNATURE_UPDATE_BATCH
-            while start < len(data):
-                end = (batch_num + 1) * SIGNATURE_UPDATE_BATCH
-                update_response(super().add_update_many(data[start:end]))
-                batch_num += 1
-                start = batch_num * SIGNATURE_UPDATE_BATCH
-
-            return response
+        return hashlist_add_update_many(self, self.datastore.badlist, data)
 
 
 class SyncableSafelistClient(SafelistClient):
@@ -105,85 +28,93 @@ class SyncableSafelistClient(SafelistClient):
         self.sync = False
 
     def add_update_many(self, data: List[Union[dict, SafelistModel]]) -> Dict[str, Any]:
-        # This version of the API allows to sync safelist items with the system by making direct changes to the datastore
-        # Items that no longer exist at the source will be removed from `sources` to maintain active synchronicity
-        # amongst multiple sources.
-        # If there are no more sources actively safelisting the item, then the item will be DISABLED but users can always
-        # re-deploy item if desired
+        return hashlist_add_update_many(self, self.datastore.safelist, data)
 
-        current_ids = set()
-        source = None
 
-        # Iterate over the list of signatures given
-        for i, d in enumerate(data):
-            if isinstance(d, SafelistModel):
-                d = d.as_primitives()
+def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafelistClient],
+                             collection: ESCollection,
+                             data: List[Union[dict, BadlistModel, SafelistModel]]):
+    # This generic function allows to sync hashlist items with the system by making direct changes to the datastore
+    # Items that no longer exist at the source will be removed from `sources` to maintain active synchronicity
+    # amongst multiple sources.
+    # If there are no more sources actively blocking the item, then the item will be DISABLED but users can always
+    # re-deploy item if desired
 
-            if not source:
-                # Set the source name
-                source = data["sources"][0]["name"]
+    if not data:
+        return {"success": 0, "errors": False}
 
-            if self.sync:
-                # Compute the expected safelist ID and add it to the list
-                current_ids.add(self._preprocess_object(d))
+    current_ids = set()
+    source = None
 
-            # Update with JSON-friendly version of data to be sent to API
-            data[i] = d
+    # Iterate over the list of signatures given
+    for i, d in enumerate(data):
+        if isinstance(d, collection.model_class):
+            d = d.as_primitives()
 
-        if self.sync:
-            # Get the list of items that currently existing in the system for the source
-            existing_ids = set(
-                [
-                    i["id"]
-                    for i in self.datastore.safelist.stream_search(
-                        f"sources.name:{source}", fl="id", as_obj=False
-                    )
-                ]
-            )
+        if not source:
+            # Set the source name
+            source = d["sources"][0]["name"]
 
-            # Find the IDs that don't exist at this source anymore and remove the source from the source list
-            for missing_id in existing_ids - current_ids:
-                missing_item: SafelistModel = self.datastore.safelist.get(missing_id)
-                original_sources = missing_item.sources
-                missing_item.sources = [
-                    s
-                    for s in missing_item.sources
-                    if not (s.type == "external" and s.name == source)
-                ]
+        if client.sync:
+            # Compute the expected ID and add it to the list
+            current_ids.add(client._preprocess_object(d))
+        # Update with JSON-friendly version of data to be sent to API
+        data[i] = d
 
-                # If there are no more sources to back this item, then disable it but leave at least one source
-                if not missing_item.sources:
-                    missing_item.enabled = False
-                    missing_item.sources = original_sources[:1]
+    if client.sync:
+        # Get the list of items that currently existing in the system for the source
+        existing_ids = set(
+            [
+                i["id"]
+                for i in collection.stream_search(
+                    f"sources.name:{source}", fl="id", as_obj=False
+                )
+            ]
+        )
 
-                # Update the last updated time
-                missing_item.updated = "NOW"
+        # Find the IDs that don't exist at this source anymore and remove the source from the source list
+        for missing_id in existing_ids - current_ids:
+            missing_item = collection.get(missing_id)
+            original_sources = missing_item.sources
+            missing_item.sources = [
+                s
+                for s in missing_item.sources
+                if not (s.type == "external" and s.name == source)
+            ]
 
-                # Update missing item with latest changes
-                self.datastore.safelist.save(missing_id, missing_item)
+            # If there are no more sources to back this item, then disable it but leave at least one source
+            if not missing_item.sources:
+                missing_item.enabled = False
+                missing_item.sources = original_sources[:1]
 
-        # Proceed with adding/updating items
-        if len(data) < SIGNATURE_UPDATE_BATCH:
-            # Update all of them in a single batch
-            return super().add_update_many(data)
-        else:
-            response = {"success": 0, "errors": []}
+            # Update the last updated time
+            missing_item.updated = "NOW"
 
-            def update_response(r: Dict[str, Any]):
-                # Response has to be in the same format, but show the accumulation of batches
-                response["success"]: int = response["success"] + r["success"]
-                response["errors"]: List[str] = response["errors"] + r["errors"]
+            # Update missing item with latest changes
+            collection.save(missing_id, missing_item)
 
-            # Split up data into batches to avoid server timeouts handling requests
-            batch_num = 0
+    # Proceed with adding/updating items
+    if len(data) < SIGNATURE_UPDATE_BATCH:
+        # Update all of them in a single batch
+        return super(client.__class__, client).add_update_many(data)
+    else:
+        response = {"success": 0, "errors": False}
+
+        def update_response(r: Dict[str, Any]):
+            # Response has to be in the same format, but show the accumulation of batches
+            response["success"]: int = response["success"] + r["success"]
+            response["errors"]: bool = response["errors"] and r["errors"]
+
+        # Split up data into batches to avoid server timeouts handling requests
+        batch_num = 0
+        start = batch_num * SIGNATURE_UPDATE_BATCH
+        while start < len(data):
+            end = (batch_num + 1) * SIGNATURE_UPDATE_BATCH
+            update_response(super(client.__class__, client).add_update_many(data[start:end]))
+            batch_num += 1
             start = batch_num * SIGNATURE_UPDATE_BATCH
-            while start < len(data):
-                end = (batch_num + 1) * SIGNATURE_UPDATE_BATCH
-                update_response(super().add_update_many(data[start:end]))
-                batch_num += 1
-                start = batch_num * SIGNATURE_UPDATE_BATCH
 
-            return response
+        return response
 
 
 class SyncableSignatureClient(SignatureClient):
