@@ -259,6 +259,16 @@ class SyncableSignatureClient(SignatureClient):
 class UpdaterClient(object):
     def __init__(self, datastore) -> None:
         self.datastore = datastore
+        self._sync = False
         self.badlist = SyncableBadlistClient(datastore)
         self.safelist = SyncableSafelistClient(datastore)
         self.signature = SyncableSignatureClient(datastore)
+
+    @property
+    def sync(self):
+        return self._sync
+
+    @sync.setter
+    def sync(self, value: bool):
+        # Set sync state across clients
+        self.badlist.sync = self.safelist.sync = self.signature.sync = self._sync = value
