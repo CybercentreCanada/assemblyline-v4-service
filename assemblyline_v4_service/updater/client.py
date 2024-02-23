@@ -57,15 +57,20 @@ class SyncableBadlistClient(BadlistClient):
             # Find the IDs that don't exist at this source anymore and remove the source from the source list
             for missing_id in existing_ids - current_ids:
                 missing_item: BadlistModel = self.datastore.badlist.get(missing_id)
+                original_sources = missing_item.sources
                 missing_item.sources = [
                     s
                     for s in missing_item.sources
                     if not (s.type == "external" and s.name == source)
                 ]
 
-                # If there are no more sources to back this item, then disable it
+                # If there are no more sources to back this item, then disable it but leave at least one source
                 if not missing_item.sources:
                     missing_item.enabled = False
+                    missing_item.sources = original_sources[:1]
+
+                # Update the last updated time
+                missing_item.updated = "NOW"
 
                 # Update missing item with latest changes
                 self.datastore.badlist.save(missing_id, missing_item)
@@ -139,15 +144,20 @@ class SyncableSafelistClient(SafelistClient):
             # Find the IDs that don't exist at this source anymore and remove the source from the source list
             for missing_id in existing_ids - current_ids:
                 missing_item: SafelistModel = self.datastore.safelist.get(missing_id)
+                original_sources = missing_item.sources
                 missing_item.sources = [
                     s
                     for s in missing_item.sources
                     if not (s.type == "external" and s.name == source)
                 ]
 
-                # If there are no more sources to back this item, then disable it
+                # If there are no more sources to back this item, then disable it but leave at least one source
                 if not missing_item.sources:
                     missing_item.enabled = False
+                    missing_item.sources = original_sources[:1]
+
+                # Update the last updated time
+                missing_item.updated = "NOW"
 
                 # Update missing item with latest changes
                 self.datastore.safelist.save(missing_id, missing_item)
