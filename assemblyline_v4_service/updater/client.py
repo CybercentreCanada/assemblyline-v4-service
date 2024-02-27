@@ -104,7 +104,7 @@ def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafeli
         def update_response(r: Dict[str, Any]):
             # Response has to be in the same format, but show the accumulation of batches
             response["success"]: int = response["success"] + r["success"]
-            response["errors"]: bool = response["errors"] and r["errors"]
+            response["errors"]: bool = response["errors"] or r["errors"]
 
         # Split up data into batches to avoid server timeouts handling requests
         batch_num = 0
