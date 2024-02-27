@@ -206,9 +206,7 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 2. From a terminal, run the `run_service_once` script, where `<service path>` is the path to the service module and `<file path>` is the path of the file to be processed
 
    ```shell
-   python3.9 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
-   ```
-   python3.7 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
+   python3.11 -m assemblyline_v4_service.dev.run_service_once <service path> <file path>
    ```
 
 
@@ -225,10 +223,7 @@ To test an Assemblyline service in standalone mode, the [run_service_once.py](ht
 2. From a terminal, run the `run_service_once` script
 
    ```shell
-   python3.9 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
+   python3.11 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
    ```
-   python3.7 -m assemblyline_v4_service.dev.run_service_once assemblyline_result_sample_service.result_sample.ResultSample /home/ubuntu/testfile.doc
-   ```
-
 
 3. The `results.json` and any extracted/supplementary files will be outputted to `/home/ubuntu/testfile_resultsample`

@@ -371,8 +371,8 @@ class ServiceUpdater(ThreadedCoreBase):
                     source = source_obj.as_primitives()
                     uri: str = source['uri']
                     default_classification = source.get('default_classification', classification.UNRESTRICTED)
-                    # Enable signature syncing if the source specifies it
-                    self.client.signature.sync = source.get('sync', False)
+                    # Enable syncing if the source specifies it
+                    self.client.sync = source.get('sync', False)
 
                     try:
                         self.push_status("UPDATING", "Pulling..")

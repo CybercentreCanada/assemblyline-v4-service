@@ -11,6 +11,15 @@ variables:
   BRANCH_NAME: $[coalesce(variables['System.PullRequest.SourceBranch'], variables['System.PullRequest.TargetBranch'], replace(variables['Build.SourceBranch'], 'refs/heads/', ''))]
 
 resources:
+  containers:
+    - container: elasticsearch
+      image: cccs/elasticsearch:8.10.2
+      env:
+        ES_JAVA_OPTS: "-Xms512m -Xmx512m"
+        DISCOVERY_TYPE: "single-node"
+        ELASTIC_PASSWORD: "devpass"
+      ports:
+        - 9200:9200
   repositories:
     - repository: assemblyline-base
       type: github
@@ -34,6 +43,8 @@ jobs:
         Python3_12:
           python.version: "3.12"
     timeoutInMinutes: 10
+    services:
+      elasticsearch: elasticsearch
 
     steps:
       - task: UsePythonVersion@0
