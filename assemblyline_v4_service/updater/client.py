@@ -8,7 +8,7 @@ from assemblyline_core.badlist_client import BadlistClient
 from assemblyline_core.safelist_client import SafelistClient
 from assemblyline_core.signature_client import SignatureClient
 
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Optional, Set, Union
 
 SIGNATURE_UPDATE_BATCH = int(os.environ.get('SIGNATURE_UPDATE_BATCH', '1000'))
 
@@ -43,8 +43,8 @@ def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafeli
     if not data:
         return {"success": 0, "errors": False}
 
-    current_ids = set()
-    source = None
+    current_ids: Set[str] = set()
+    source: Optional[str] = None
 
     # Iterate over the list of signatures given
     for i, d in enumerate(data):
@@ -62,7 +62,7 @@ def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafeli
         data[i] = d
 
     if client.sync:
-        # Get the list of items that currently existing in the system for the source
+        # Get the list of items that currently exists in the system for the source
         existing_ids = set(
             [
                 i["id"]
@@ -73,7 +73,8 @@ def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafeli
         )
 
         # Find the IDs that don't exist at this source anymore and remove the source from the source list
-        for missing_id in existing_ids - current_ids:
+        missing_ids = existing_ids - current_ids
+        for missing_id in missing_ids:
             missing_item = collection.get(missing_id)
             original_sources = missing_item.sources
             missing_item.sources = [
@@ -103,7 +104,7 @@ def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafeli
         def update_response(r: Dict[str, Any]):
             # Response has to be in the same format, but show the accumulation of batches
             response["success"]: int = response["success"] + r["success"]
-            response["errors"]: bool = response["errors"] and r["errors"]
+            response["errors"]: bool = response["errors"] or r["errors"]
 
         # Split up data into batches to avoid server timeouts handling requests
         batch_num = 0
@@ -212,4 +213,7 @@ class UpdaterClient(object):
     @sync.setter
     def sync(self, value: bool):
         # Set sync state across clients
-        self.badlist.sync = self.safelist.sync = self.signature.sync = self._sync = value
+        self.badlist.sync = value
+        self.safelist.sync = value
+        self.signature.sync = value
+        self._sync = value
