@@ -51,7 +51,7 @@ setup(
         "cart",
         "fuzzywuzzy",
         "pefile",
-        "pillow==10.2.0",
+        "pillow!=10.1.0,!=10.2.0",
         "python-Levenshtein",
         "regex",
     ],
