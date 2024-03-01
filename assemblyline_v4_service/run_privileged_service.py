@@ -261,6 +261,7 @@ class RunPrivilegedService(ServerBase):
                     file_info['classification'],
                     task.ttl,
                     file_info.get('is_section_image', False),
+                    file_info.get('is_supplementary', False),
                     expected_sha256=file_info['sha256']
                 )
 
