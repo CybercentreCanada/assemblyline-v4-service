@@ -209,7 +209,7 @@ def detections(ocr_output: str) -> Dict[str, List[str]]:
         elif isinstance(indicator_config, dict):
             # Either you're exclusively overwriting the terms list or you're selectively including/excluding terms
             if indicator_config.get("terms"):
-                # Set indicator threshold before variable overwrite with terms list
+                # Overwrite terms list with service configuration
                 terms = indicator_config["terms"]
             else:
                 included_terms = set(indicator_config.get("include", []))
@@ -217,6 +217,7 @@ def detections(ocr_output: str) -> Dict[str, List[str]]:
                 # Compute the new terms list for indicator type
                 terms = list(set(terms).union(included_terms) - excluded_terms)
 
+            # Set the indicator hit threshold
             hit_threshold = indicator_config.get("threshold", 1)
 
         # Perform a pre-check to see if the terms even exist in the OCR text
