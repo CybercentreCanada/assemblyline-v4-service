@@ -35,6 +35,9 @@ class SkipSource(RuntimeError):
 def add_cacert(cert: str) -> None:
     # Add certificate to requests
     cafile = certifi.where()
+    with open(cafile, 'r') as ca_reader:
+        if cert in ca_reader.read():
+            return
     with open(cafile, 'a') as ca_editor:
         ca_editor.write(f"\n{cert}")
 
