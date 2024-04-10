@@ -5,7 +5,7 @@ from typing import Dict, List, TextIO
 from assemblyline_v4_service.common.helper import get_service_manifest
 from assemblyline_v4_service.common.utils import PASSWORD_WORDS
 
-# TODO: Would prefer this mapping to be dynamic from trusted sources (ie. import from library), but will copy-paste for now
+# The terms related to each indicator category
 OCR_INDICATORS_TERMS: dict[str, list[str]] = {
     "ransomware": [
         # https://github.com/cuckoosandbox/community/blob/master/modules/signatures/windows/ransomware_message.py
@@ -155,6 +155,7 @@ OCR_INDICATORS_TERMS: dict[str, list[str]] = {
 OCR_INDICATORS_THRESHOLD: Dict[str, int] = {"ransomware": 2, "macros": 2, "banned": 1, "password": 1}
 
 
+
 def ocr_detections(image_path: str, ocr_io: TextIO = None) -> Dict[str, List[str]]:
     try:
         import pytesseract
@@ -225,17 +226,17 @@ def detections(ocr_output: str) -> Dict[str, List[str]]:
             continue
 
         # Keep a track of the hits and the lines corresponding with term hits
-        indicator_hits: int = 0
+        indicator_hits: set = {}
         list_of_strings: List[str] = []
         for line in ocr_output.split("\n"):
             for t in terms:
                 term_count = line.lower().count(t.lower())
                 if term_count:
-                    indicator_hits += term_count
+                    indicator_hits.add(t)
                     if line not in list_of_strings:
                         list_of_strings.append(line)
 
-        if list_of_strings and indicator_hits >= hit_threshold:
+        if list_of_strings and len(indicator_hits) >= hit_threshold:
             # If we were to find hits and those hits are above the required threshold, then add them to output
             detection_output[indicator] = list_of_strings
     return detection_output
