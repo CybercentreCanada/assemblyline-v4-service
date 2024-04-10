@@ -1,15 +1,12 @@
 import os
-from test.test_common import TESSERACT_LIST, setup_module
+from test.test_common import TESSERACT_LIST
 
 import pytest
 
-# Ensure service manifest is instantiated before importing from OCR submodule
-setup_module()
 from assemblyline_v4_service.common.ocr import ocr_detections, detections
 
 @pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_ocr_detections():
-
     file_path = os.path.join(os.path.dirname(__file__), "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
     assert ocr_detections(file_path) == {
         'ransomware': [
@@ -30,7 +27,6 @@ def test_ocr_detections():
 
 
 def test_detections():
-    setup_module()
     # No detection
     assert detections("blah") == {}
 

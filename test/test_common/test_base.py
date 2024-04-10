@@ -3,6 +3,12 @@ import os
 import time
 from logging import Logger
 
+
+from test.test_common import setup_module
+
+# Ensure service manifest is instantiated before loading assemblyline_v4_service module
+setup_module()
+
 import pytest
 import requests_mock
 from assemblyline_v4_service.common.base import *
