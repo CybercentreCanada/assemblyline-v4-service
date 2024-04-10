@@ -226,7 +226,7 @@ def detections(ocr_output: str) -> Dict[str, List[str]]:
             continue
 
         # Keep a track of the hits and the lines corresponding with term hits
-        indicator_hits: set = {}
+        indicator_hits: set = set()
         list_of_strings: List[str] = []
         for line in ocr_output.split("\n"):
             for t in terms:
