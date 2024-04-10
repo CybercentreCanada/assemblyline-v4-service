@@ -1,6 +1,10 @@
 import os
 import tempfile
-from test.test_common import TESSERACT_LIST
+from test.test_common import TESSERACT_LIST, setup_module
+
+# Ensure service manifest is instantiated before importing from OCR submodule
+setup_module()
+
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -8,7 +12,6 @@ from assemblyline_v4_service.common.result import *
 from assemblyline_v4_service.common.task import Task
 
 from assemblyline.odm.messages.task import Task as ServiceTask
-
 
 @pytest.fixture
 def heuristic():
@@ -592,10 +595,7 @@ def test_imagesectionbody_init(service_request):
 @pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_imagesectionbody_add_image(service_request):
     isb = ImageSectionBody(service_request)
-    if os.getcwd().endswith("/test"):
-        image_path = os.path.join(os.getcwd(), "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
-    else:
-        image_path = os.path.join(os.getcwd(), "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    image_path = os.path.join(os.path.dirname(__file__), "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert isb.add_image(image_path, "image_name", "description of image") is None
@@ -1230,10 +1230,8 @@ def test_resultimagesection_init(service_request):
 def test_resultimagesection_add_image(service_request):
     ris = ResultImageSection(service_request, "title_text_as_str")
 
-    if os.getcwd().endswith("/test"):
-        image_path = os.path.join(os.getcwd(), "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
-    else:
-        image_path = os.path.join(os.getcwd(), "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    image_path = os.path.join(os.path.dirname(__file__),
+                              "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert ris.add_image(image_path, "image_name", "description of image") is None

@@ -99,10 +99,7 @@ def test_url_download():
 
         # zip file
         m.head("http://www.google.com/index.zip", text="blah")
-        if os.getcwd().endswith("/test"):
-            fake_zip_path = os.path.join(os.getcwd(), "test_updater/test.zip")
-        else:
-            fake_zip_path = os.path.join(os.getcwd(), "test/test_updater/test.zip")
+        fake_zip_path = os.path.join(os.path.dirname(__file__), "test.zip")
         m.get("http://www.google.com/index.zip", content=open(fake_zip_path, "rb").read())
         assert url_download({"name": "index", "uri": "http://www.google.com/index.zip"}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
 
