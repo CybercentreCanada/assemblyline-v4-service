@@ -3,8 +3,7 @@ import subprocess
 
 from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 
-SERVICE_CONFIG_NAME = "service_manifest.yml"
-TEMP_SERVICE_CONFIG_PATH = os.path.join("/tmp", SERVICE_CONFIG_NAME)
+TEMP_SERVICE_CONFIG_PATH ="/tmp/service_manifest.yml"
 
 ret = subprocess.run("dpkg -l | grep ^ii | awk '{print $2}' | grep -i 'tesseract'", capture_output=True, shell=True)
 TESSERACT_LIST = list(filter(None, ret.stdout.decode().split('\n')))
