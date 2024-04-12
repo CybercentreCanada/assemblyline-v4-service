@@ -19,6 +19,7 @@ from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.ontology_helper import OntologyHelper
+from assemblyline_v4_service.common.ocr import update_ocr_config
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
@@ -83,6 +84,10 @@ class ServiceBase:
         self.update_check_time: float = 0.0
         self.rules_hash: str = None
         self.signatures_meta: dict = {}
+
+        # OCR-related
+        if self.config.get('ocr'):
+            update_ocr_config(self.config['ocr'])
 
     @property
     def api_interface(self):
