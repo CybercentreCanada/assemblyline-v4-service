@@ -78,17 +78,17 @@ class ServiceRequest:
         :return: None
         """
 
-        outtmp = tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False)
+        # Load Image
+        img = Image.open(path)
+
+        # Force image format switch to prevent exploit to cross-over
+        img_format = 'WEBP'
+        if img.format == img_format:
+            img_format = 'PNG'
+
+        outtmp = tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False, suffix=f".{img_format}")
         data = {}
-        with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False) as thumbtmp:
-            # Load Image
-            img = Image.open(path)
-
-            # Force image format switch to prevent exploit to cross-over
-            img_format = 'WEBP'
-            if img.format == img_format:
-                img_format = 'PNG'
-
+        with tempfile.NamedTemporaryFile(dir=self._working_directory, delete=False, suffix=".thumb") as thumbtmp:
             if img_format == "WEBP" and (img.height > WEBP_MAX_SIZE or img.width > WEBP_MAX_SIZE):
                 # Maintain aspect ratio
                 img.thumbnail((WEBP_MAX_SIZE, WEBP_MAX_SIZE), Image.LANCZOS)
