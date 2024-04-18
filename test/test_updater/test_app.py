@@ -117,7 +117,7 @@ def test_get_paths():
 
 def test_list_files(client):
     # No STATUS_FILE
-    response = client.get("/files", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # STATUS_FILE exists, but no path
@@ -130,26 +130,26 @@ def test_list_files(client):
             '_tar': TAR,
         }))
 
-    response = client.get("/files", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # Directory exists now, but still no tar file
     os.makedirs(DIRECTORY, exist_ok=True)
-    response = client.get("/files", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # Tar file exists now
     with open(TAR, 'w') as f:
         f.write("test")
 
-    response = client.get("/files", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 200
     assert response.json == {'files': ['/tmp/blah/blah.tar']}
 
 
 def test_get_file(client):
     # No STATUS_FILE
-    response = client.get("/files/blah.tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files/blah.tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # STATUS_FILE exists, but no path
@@ -162,26 +162,26 @@ def test_get_file(client):
             '_tar': TAR,
         }))
 
-    response = client.get("/files/blah.tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files/blah.tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # Directory exists now, but still no tar file
     os.makedirs(DIRECTORY, exist_ok=True)
-    response = client.get("/files/blah.tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files/blah.tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # Tar file exists now
     with open(TAR, 'w') as f:
         f.write("test")
 
-    response = client.get("/files/blah.tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/files/blah.tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 200
     assert response.data == b"test"
 
 
 def test_get_all_files(client):
     # No STATUS_FILE
-    response = client.get("/tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # STATUS_FILE exists, but no path
@@ -194,18 +194,18 @@ def test_get_all_files(client):
             '_tar': TAR,
         }))
 
-    response = client.get("/tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # Directory exists now, but still no tar file
     os.makedirs(DIRECTORY, exist_ok=True)
-    response = client.get("/tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 503
 
     # Tar file exists now
     with open(TAR, 'w') as f:
         f.write("test")
 
-    response = client.get("/tar", headers={"X_APIKEY": AUTH_KEY})
+    response = client.get("/tar", headers={"x-apikey": AUTH_KEY})
     assert response.status_code == 200
     assert response.data == b"test"
