@@ -262,7 +262,7 @@ class ServiceBase:
             scheme, verify = 'https', UPDATES_CA
         url_base = f"{scheme}://{self.dependencies['updates']['host']}:{self.dependencies['updates']['port']}/"
         headers = {
-            'X_APIKEY': self.dependencies['updates']['key']
+            'x-apikey': self.dependencies['updates']['key']
         }
 
         # Check if there are new signatures
