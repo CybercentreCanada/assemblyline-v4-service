@@ -13,9 +13,6 @@ from assemblyline.odm.messages.task import Task as ServiceTask
 # Ensure service manifest is instantiated before importing from OCR submodule
 setup_module()
 
-# Ensure service manifest is instantiated before importing from OCR submodule
-setup_module()
-
 
 @pytest.fixture
 def service_request():
