@@ -7,34 +7,25 @@ import logging
 import time
 import json
 import tempfile
-import string
-import random
 import tarfile
 import threading
 import subprocess
 import hashlib
-from contextlib import contextmanager
-from passlib.hash import bcrypt
+from io import BytesIO
 from queue import Queue
-from zipfile import ZipFile, BadZipFile
+from zipfile import ZipFile
 
 from assemblyline.common import forge, log as al_log
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
-from assemblyline.common.identify import zip_ident
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 
 from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
 from assemblyline.odm.models.service import Service, UpdateSource
 from assemblyline.remote.datatypes.hash import Hash
-from assemblyline.common.security import get_random_password, get_password_hash
-from assemblyline.remote.datatypes.lock import Lock
-from assemblyline.odm.models.user import User
-from assemblyline.odm.models.user_settings import UserSettings
 
-from assemblyline_client import Client4
 from assemblyline_v4_service.common.base import SIGNATURES_META_FILENAME
-from assemblyline_v4_service.updater.client import get_client
+from assemblyline_v4_service.updater.client import UpdaterClient
 from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
 
 if typing.TYPE_CHECKING:
@@ -53,37 +44,12 @@ SOURCE_EXTRA_KEY = 'source_extra'
 SOURCE_STATUS_KEY = 'status'
 SOURCE_UPDATE_ATTEMPT_DELAY_BASE = int(os.environ.get("SOURCE_UPDATE_ATTEMPT_DELAY_BASE", "5"))
 SOURCE_UPDATE_ATTEMPT_MAX_RETRY = int(os.environ.get("SOURCE_UPDATE_ATTEMPT_MAX_RETRY", "3"))
-UI_SERVER = os.getenv('UI_SERVER', 'https://nginx')
-UI_SERVER_ROOT_CA = os.environ.get('UI_SERVER_ROOT_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
 UPDATER_API_ROLES = ['badlist_manage', 'signature_import', 'signature_download',
                      'signature_view', 'safelist_manage', 'apikey_access', 'signature_manage']
 STATUS_FILE = '/tmp/status'
 
 classification = forge.get_classification()
-
-
-@contextmanager
-def temporary_api_key(ds: AssemblylineDatastore, user_name: str, permissions=('R', 'W')):
-    """Creates a context where a temporary API key is available."""
-    with Lock(f'user-{user_name}', timeout=10):
-        name = ''.join(random.choices(string.ascii_lowercase, k=20))
-        random_pass = get_random_password(length=48)
-        user = ds.user.get(user_name)
-        user.apikeys[name] = {
-            "password": bcrypt.hash(random_pass),
-            "acl": permissions,
-            "roles": UPDATER_API_ROLES
-        }
-        ds.user.save(user_name, user)
-
-    try:
-        yield f"{name}:{random_pass}"
-    finally:
-        with Lock(f'user-{user_name}', timeout=10):
-            user = ds.user.get(user_name)
-            user.apikeys.pop(name)
-            ds.user.save(user_name, user)
 
 
 # A Queue derivative that respects uniqueness of items as well as order
@@ -127,6 +93,7 @@ class ServiceUpdater(ThreadedCoreBase):
         self.event_sender = EventSender('changes.services',
                                         host=self.config.core.redis.nonpersistent.host,
                                         port=self.config.core.redis.nonpersistent.port)
+        self.client = UpdaterClient(self.datastore)
 
         self.service_change_watcher = EventWatcher(self.redis, deserializer=ServiceChange.deserialize)
         self.service_change_watcher.register(f'changes.services.{SERVICE_NAME}', self._handle_service_change_event)
@@ -163,9 +130,6 @@ class ServiceUpdater(ThreadedCoreBase):
         self.statuses = downloadable_signature_statuses
         status_query = ' OR '.join([f'status:{s}' for s in self.statuses])
         self.signatures_query = f"type:{self.updater_type} AND ({status_query})"
-
-        # SSL configuration to UI_SERVER
-        self.verify = None if not os.path.exists(UI_SERVER_ROOT_CA) else UI_SERVER_ROOT_CA
 
     def trigger_update(self):
         self.source_update_flag.set()
@@ -349,175 +313,131 @@ class ServiceUpdater(ThreadedCoreBase):
         if not os.path.exists(UPDATER_DIR):
             os.makedirs(UPDATER_DIR)
 
-        self.log.info("Setup service account.")
-        username = self.ensure_service_account()
-        self.log.info("Create temporary API key.")
-        with temporary_api_key(self.datastore, username) as api_key:
-            self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}")
-            al_client = get_client(UI_SERVER, apikey=(username, api_key), verify=self.verify, datastore=self.datastore)
+        # Create a temporary file for the time keeper
+        time_keeper = tempfile.NamedTemporaryFile(prefix="time_keeper_", dir=UPDATER_DIR, delete=False)
+        time_keeper.close()
+        time_keeper = time_keeper.name
 
-            # Create a temporary file for the time keeper
-            time_keeper = tempfile.NamedTemporaryFile(prefix="time_keeper_", dir=UPDATER_DIR, delete=False)
-            time_keeper.close()
-            time_keeper = time_keeper.name
+        if self._service.update_config.generates_signatures:
+            output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
 
-            if self._service.update_config.generates_signatures:
-                output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
+            # Check if new signatures have been added
+            self.log.info("Check for new signatures.")
+            if self.client.signature.update_available(since=epoch_to_iso(old_update_time) or None,
+                                                      sig_type=self.updater_type):
+                self.log.info("An update is available for download from the datastore")
 
-                # Check if new signatures have been added
-                self.log.info("Check for new signatures.")
-                if al_client.signature.update_available(
-                        since=epoch_to_iso(old_update_time) or '', sig_type=self.updater_type)['update_available']:
-                    self.log.info("An update is available for download from the datastore")
+                self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
 
-                    self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
-
-                    extracted_zip = False
-                    attempt = 0
-
-                    # Sometimes a zip file isn't always returned, will affect
-                    # service's use of signature source. Patience..
-                    while not extracted_zip and attempt < 5:
-                        temp_zip_file = os.path.join(output_directory, 'temp.zip')
-                        al_client.signature.download(output=temp_zip_file, query=self.signatures_query)
-                        self.log.debug(f"Downloading update to {temp_zip_file}")
-                        if os.path.exists(temp_zip_file) and os.path.getsize(temp_zip_file) > 0:
-                            self.log.debug(
-                                f"File type ({os.path.getsize(temp_zip_file)}B): {zip_ident(temp_zip_file, 'unknown')}")
-                            try:
-                                with ZipFile(temp_zip_file, 'r') as zip_f:
-                                    zip_f.extractall(output_directory)
-                                    extracted_zip = True
-                                    self.log.info("Zip extracted.")
-                            except BadZipFile:
-                                attempt += 1
-                                self.log.warning(f"[{attempt}/5] Bad zip. Trying again after 30s...")
-                                time.sleep(30)
-                            except Exception as e:
-                                self.log.error(f'Problem while extracting signatures to disk: {e}')
-                                break
-
-                            os.remove(temp_zip_file)
-
-                    if extracted_zip:
-                        self.log.info("New ruleset successfully downloaded and ready to use")
-                        self.serve_directory(output_directory, time_keeper, al_client)
-                    else:
-                        self.log.error("Signatures aren't saved to disk.")
-                        shutil.rmtree(output_directory, ignore_errors=True)
-                        if os.path.exists(time_keeper):
-                            os.unlink(time_keeper)
-                else:
-                    self.log.info("No signature updates available.")
-                    shutil.rmtree(output_directory, ignore_errors=True)
-                    if os.path.exists(time_keeper):
-                        os.unlink(time_keeper)
+                with ZipFile(BytesIO(self.client.signature.download(self.signatures_query)), 'r') as zip_f:
+                    zip_f.extractall(output_directory)
+                    self.log.info("New ruleset successfully downloaded and ready to use")
+                    self.serve_directory(output_directory, time_keeper)
             else:
-                output_directory = self.prepare_output_directory()
-                self.serve_directory(output_directory, time_keeper, al_client)
+                self.log.info("No signature updates available.")
+                shutil.rmtree(output_directory, ignore_errors=True)
+                if os.path.exists(time_keeper):
+                    os.unlink(time_keeper)
+        else:
+            output_directory = self.prepare_output_directory()
+            self.serve_directory(output_directory, time_keeper)
 
     def do_source_update(self, service: Service) -> None:
-        self.log.info(f"Connecting to Assemblyline API: {UI_SERVER}...")
         run_time = time.time()
-        username = self.ensure_service_account()
-        with temporary_api_key(self.datastore, username) as api_key:
-            with tempfile.TemporaryDirectory() as update_dir:
-                al_client = get_client(
-                    UI_SERVER, apikey=(username, api_key),
-                    verify=self.verify, datastore=self.datastore)
-                self.log.info("Connected!")
+        with tempfile.TemporaryDirectory() as update_dir:
+            # Parse updater configuration
+            previous_hashes: dict[str, dict[str, str]] = self.get_source_extra()
+            sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
+            files_sha256: dict[str, dict[str, str]] = {}
 
-                # Parse updater configuration
-                previous_hashes: dict[str, dict[str, str]] = self.get_source_extra()
-                sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
-                files_sha256: dict[str, dict[str, str]] = {}
+            # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
+            seen_fetches = dict()
 
-                # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
-                seen_fetches = dict()
+            # Go through each source queued and download file
+            while self.update_queue.qsize():
+                update_attempt = -1
+                source_name = self.update_queue.get()
+                while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
+                    # Introduce an exponential delay between each attempt
+                    time.sleep(SOURCE_UPDATE_ATTEMPT_DELAY_BASE**update_attempt)
+                    update_attempt += 1
 
-                # Go through each source queued and download file
-                while self.update_queue.qsize():
-                    update_attempt = -1
-                    source_name = self.update_queue.get()
-                    while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
-                        # Introduce an exponential delay between each attempt
-                        time.sleep(SOURCE_UPDATE_ATTEMPT_DELAY_BASE**update_attempt)
-                        update_attempt += 1
+                    # Set current source for pushing state to UI
+                    self._current_source = source_name
+                    source_obj = sources[source_name]
+                    old_update_time = self.get_source_update_time()
 
-                        # Set current source for pushing state to UI
-                        self._current_source = source_name
-                        source_obj = sources[source_name]
-                        old_update_time = self.get_source_update_time()
+                    self.push_status("UPDATING", "Starting..")
+                    source = source_obj.as_primitives()
+                    uri: str = source['uri']
+                    default_classification = source.get('default_classification', classification.UNRESTRICTED)
+                    # Enable syncing if the source specifies it
+                    self.client.sync = source.get('sync', False)
 
-                        self.push_status("UPDATING", "Starting..")
-                        source = source_obj.as_primitives()
-                        uri: str = source['uri']
-                        default_classification = source.get('default_classification', classification.UNRESTRICTED)
-                        # Enable signature syncing if the source specifies it
-                        al_client.signature.sync = source.get('sync', False)
+                    try:
+                        self.push_status("UPDATING", "Pulling..")
+                        output = None
+                        seen_fetch = seen_fetches.get(uri)
+                        if seen_fetch == 'skipped':
+                            # Skip source if another source says nothing has changed
+                            raise SkipSource
+                        elif seen_fetch and os.path.exists(seen_fetch):
+                            # We've already fetched something from the same URI, re-use downloaded path
+                            self.log.info(f'Already visited {uri} in this run. Using cached download path..')
+                            output = seen_fetches[uri]
+                        else:
+                            # Pull sources from external locations (method depends on the URL)
+                            try:
+                                # First we'll attempt by performing a Git clone
+                                # (since not all services hint at being a repository in their URL),
+                                output = git_clone_repo(source, old_update_time, self.log, update_dir)
+                            except SkipSource:
+                                raise
+                            except Exception as git_ex:
+                                # Should that fail, we'll attempt a direct-download using Python Requests
+                                if not uri.endswith('.git'):
+                                    # Proceed with direct download, raise exception as required if necessary
+                                    output = url_download(source, old_update_time, self.log, update_dir)
+                                else:
+                                    # Raise Git Exception
+                                    raise git_ex
+                            # Add output path to the list of seen fetches in this run
+                            seen_fetches[uri] = output
 
-                        try:
-                            self.push_status("UPDATING", "Pulling..")
-                            output = None
-                            seen_fetch = seen_fetches.get(uri)
-                            if seen_fetch == 'skipped':
-                                # Skip source if another source says nothing has changed
-                                raise SkipSource
-                            elif seen_fetch and os.path.exists(seen_fetch):
-                                # We've already fetched something from the same URI, re-use downloaded path
-                                self.log.info(f'Already visited {uri} in this run. Using cached download path..')
-                                output = seen_fetches[uri]
-                            else:
-                                # Pull sources from external locations (method depends on the URL)
-                                try:
-                                    # First we'll attempt by performing a Git clone
-                                    # (since not all services hint at being a repository in their URL),
-                                    output = git_clone_repo(source, old_update_time, self.log, update_dir)
-                                except SkipSource:
-                                    raise
-                                except Exception as git_ex:
-                                    # Should that fail, we'll attempt a direct-download using Python Requests
-                                    if not uri.endswith('.git'):
-                                        # Proceed with direct download, raise exception as required if necessary
-                                        output = url_download(source, old_update_time, self.log, update_dir)
-                                    else:
-                                        # Raise Git Exception
-                                        raise git_ex
-                                # Add output path to the list of seen fetches in this run
-                                seen_fetches[uri] = output
+                        files = filter_downloads(output, source['pattern'], self.default_pattern)
 
-                            files = filter_downloads(output, source['pattern'], self.default_pattern)
+                        # Add to collection of sources for caching purposes
+                        self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
+                        validated_files = list()
+                        for file, sha256 in files:
+                            files_sha256.setdefault(source_name, {})
+                            if previous_hashes.get(
+                                    source_name, {}).get(
+                                    file, None) != sha256 and self.is_valid(file):
+                                files_sha256[source_name][file] = sha256
+                                validated_files.append((file, sha256))
 
-                            # Add to collection of sources for caching purposes
-                            self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
-                            validated_files = list()
-                            for file, sha256 in files:
-                                files_sha256.setdefault(source_name, {})
-                                if previous_hashes.get(source_name, {}).get(file, None) != sha256 and self.is_valid(file):
-                                    files_sha256[source_name][file] = sha256
-                                    validated_files.append((file, sha256))
-
-                            self.push_status("UPDATING", "Importing..")
-                            # Import into Assemblyline
-                            self.import_update(validated_files, al_client, source_name, default_classification)
-                            self.push_status("DONE", "Signature(s) Imported.")
-                        except SkipSource:
-                            # This source hasn't changed, no need to re-import into Assemblyline
-                            self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
-                            if source_name in previous_hashes:
-                                files_sha256[source_name] = previous_hashes[source_name]
-                            seen_fetches[uri] = "skipped"
-                            self.push_status("DONE", "Skipped.")
-                            break
-                        except Exception as e:
-                            # There was an issue with this source, report and continue to the next
-                            self.log.error(f"Problem with {source['name']}: {e}")
-                            self.push_status("ERROR", str(e))
-                            continue
-
-                        self.set_source_update_time(run_time)
-                        self.set_source_extra(files_sha256)
+                        self.push_status("UPDATING", "Importing..")
+                        # Import into Assemblyline
+                        self.import_update(validated_files, source_name, default_classification)
+                        self.push_status("DONE", "Signature(s) Imported.")
+                    except SkipSource:
+                        # This source hasn't changed, no need to re-import into Assemblyline
+                        self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
+                        if source_name in previous_hashes:
+                            files_sha256[source_name] = previous_hashes[source_name]
+                        seen_fetches[uri] = "skipped"
+                        self.push_status("DONE", "Skipped.")
                         break
+                    except Exception as e:
+                        # There was an issue with this source, report and continue to the next
+                        self.log.error(f"Problem with {source['name']}: {e}")
+                        self.push_status("ERROR", str(e))
+                        continue
+
+                    self.set_source_update_time(run_time)
+                    self.set_source_extra(files_sha256)
+                    break
         self.set_active_config_hash(self.config_hash(service))
         self.local_update_flag.set()
 
@@ -526,8 +446,7 @@ class ServiceUpdater(ThreadedCoreBase):
         return True
 
     # Define how your source update gets imported into Assemblyline
-    def import_update(self, files_sha256: List[Tuple[str, str]], client: Client4, source_name: str,
-                      default_classification=None):
+    def import_update(self, files_sha256: List[Tuple[str, str]], source_name: str, default_classification=None):
         raise NotImplementedError()
 
     # Define how to prepare the output directory before being served, must return the path of the directory to serve.
@@ -586,7 +505,7 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.sleep(60)
                 continue
 
-    def serve_directory(self, new_directory: str, new_time: str, client: Client4):
+    def serve_directory(self, new_directory: str, new_time: str):
         self.log.info("Update finished with new data.")
         new_tar = ''
 
@@ -598,8 +517,9 @@ class ServiceUpdater(ThreadedCoreBase):
             # Pull signature metadata from the API
             signature_map = {
                 item['signature_id']: item
-                for item in client.search.stream.signature(query=self.signatures_query,
-                                                           fl="classification,source,status,signature_id,name")
+                for item in self.datastore.signature.stream_search(query=self.signatures_query,
+                                                                   fl="classification,source,status,signature_id,name",
+                                                                   as_obj=False)
             }
         else:
             # Pull source metadata from synced service configuration
@@ -689,32 +609,3 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.local_update_flag.set()
                 self.sleep(60)
                 continue
-
-    def ensure_service_account(self):
-        """Check that the update service account exists, if it doesn't, create it."""
-        uname = 'update_service_account'
-        user_data = self.datastore.user.get_if_exists(uname)
-        if user_data:
-            if user_data.roles and user_data.roles == UPDATER_API_ROLES:
-                # User exists and has the expected roles, we're good to go
-                return uname
-
-            # User exist but has no roles, let's update the user's roles
-            user_data.type = ["custom"]
-            user_data.roles = UPDATER_API_ROLES
-        else:
-            # User does not exist, let's create the user
-            user_data = User({
-                "agrees_with_tos": "NOW",
-                "classification": classification.RESTRICTED,
-                "name": "Update Account",
-                "password": get_password_hash(''.join(random.choices(string.ascii_letters, k=20))),
-                "uname": uname,
-                "type": ["custom"],
-                "roles": UPDATER_API_ROLES
-            })
-
-        self.datastore.user.save(uname, user_data)
-        self.datastore.user_settings.save(uname, UserSettings())
-
-        return uname

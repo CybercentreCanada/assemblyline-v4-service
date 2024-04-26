@@ -19,6 +19,7 @@ from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
 from assemblyline_v4_service.common.ontology_helper import OntologyHelper
+from assemblyline_v4_service.common.ocr import update_ocr_config
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
@@ -83,6 +84,10 @@ class ServiceBase:
         self.update_check_time: float = 0.0
         self.rules_hash: str = None
         self.signatures_meta: dict = {}
+
+        # OCR-related
+        if self.config.get('ocr'):
+            update_ocr_config(self.config['ocr'])
 
     @property
     def api_interface(self):
@@ -154,6 +159,11 @@ class ServiceBase:
         if self.service_attributes.version.startswith(fw_version):
             return self.service_attributes.version
         else:
+            # We only want the last two parts of the version in the manifest, if it exists
+            if self.service_attributes.version.count('.') > 1:
+                # Splice the last two parts of the original version and add it with the version of the system
+                return f"{fw_version}{'.'.join(self.service_attributes.version.split('.')[-2:])}"
+            # Otherwise just tack on the version with the system version
             return f"{fw_version}{self.service_attributes.version}"
 
     # noinspection PyMethodMayBeStatic
@@ -252,7 +262,7 @@ class ServiceBase:
             scheme, verify = 'https', UPDATES_CA
         url_base = f"{scheme}://{self.dependencies['updates']['host']}:{self.dependencies['updates']['port']}/"
         headers = {
-            'X_APIKEY': self.dependencies['updates']['key']
+            'x-apikey': self.dependencies['updates']['key']
         }
 
         # Check if there are new signatures

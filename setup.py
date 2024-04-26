@@ -32,6 +32,9 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
+        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
+        "Programming Language :: Python :: 3.12",
     ],
     keywords="assemblyline automated malware analysis gc canada cse-cst cse cst cyber cccs",
     packages=find_packages(
@@ -48,13 +51,12 @@ setup(
         "cart",
         "fuzzywuzzy",
         "pefile",
-        "pillow==10.2.0",
+        "pillow!=10.1.0,!=10.2.0",
         "python-Levenshtein",
         "regex",
     ],
     extras_require={
         "updater": [
-            "assemblyline-client",
             "gunicorn[gevent]",
             "flask",
             "gitpython",

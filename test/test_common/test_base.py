@@ -3,6 +3,12 @@ import os
 import time
 from logging import Logger
 
+
+from test.test_common import setup_module
+
+# Ensure service manifest is instantiated before loading assemblyline_v4_service module
+setup_module()
+
 import pytest
 import requests_mock
 from assemblyline_v4_service.common.base import *
@@ -11,6 +17,7 @@ from assemblyline_v4_service.common.result import Result
 from assemblyline_v4_service.common.task import Task
 
 from assemblyline.common import exceptions
+from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.service import Service
 
@@ -242,7 +249,7 @@ def test_servicebase_execute():
 
 def test_servicebase_get_service_version():
     sb = ServiceBase()
-    assert sb.get_service_version() == "4.4.0.dev0"
+    assert sb.get_service_version() == f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.0.dev0"
 
 
 def test_servicebase_get_tool_version():
@@ -289,6 +296,7 @@ def test_servicebase_start():
 def test_servicebase_start_service():
     sb = ServiceBase()
     sb.dependencies["updates"] = {"host": "blah.com", "port": 123, "key": "blah"}
+
     # Mocking this method
     def _download_rules():
         pass
@@ -364,7 +372,8 @@ def test_servicebase_download_rules(mocker, dummy_tar_class):
     sb._load_rules = _load_rules
 
     with requests_mock.Mocker() as m:
-        m.get("https://blah.com:123/status", status_code=200, json={"download_available": "blah", "local_update_time": "blah", "local_update_hash": "blah"})
+        m.get("https://blah.com:123/status", status_code=200,
+              json={"download_available": "blah", "local_update_time": "blah", "local_update_hash": "blah"})
         m.get("https://blah.com:123/tar", status_code=200, json={"download_available": "blah"})
         assert sb._download_rules() is None
         assert sb.update_time == "blah"
@@ -388,26 +397,26 @@ def test_servicebase_download_rules(mocker, dummy_tar_class):
 
 
 def test_servicebase_gen_rules_hash():
-        sb = ServiceBase()
-        sb.rules_directory = "/tmp/blah"
-        os.mkdir(sb.rules_directory)
+    sb = ServiceBase()
+    sb.rules_directory = "/tmp/blah"
+    os.mkdir(sb.rules_directory)
 
-        # One signature
-        with open(os.path.join(sb.rules_directory, "blah.txt"), "w") as f:
-            f.write("this is a rule")
-        with open(os.path.join(sb.rules_directory, SIGNATURES_META_FILENAME), "w") as f:
-            f.write(json.dumps({"meta": "this is a signature meta file"}))
-        assert sb._gen_rules_hash() == "22a4f5b"
+    # One signature
+    with open(os.path.join(sb.rules_directory, "blah.txt"), "w") as f:
+        f.write("this is a rule")
+    with open(os.path.join(sb.rules_directory, SIGNATURES_META_FILENAME), "w") as f:
+        f.write(json.dumps({"meta": "this is a signature meta file"}))
+    assert sb._gen_rules_hash() == "22a4f5b"
 
-        # Two signatures
-        with open(os.path.join(sb.rules_directory, "blahblah.txt"), "w") as f:
-            f.write("this is also a rule")
-        assert sb._gen_rules_hash() == "22c1e85"
+    # Two signatures
+    with open(os.path.join(sb.rules_directory, "blahblah.txt"), "w") as f:
+        f.write("this is also a rule")
+    assert sb._gen_rules_hash() == "22c1e85"
 
-        os.remove(os.path.join(sb.rules_directory, SIGNATURES_META_FILENAME))
-        os.remove(os.path.join(sb.rules_directory, "blah.txt"))
-        os.remove(os.path.join(sb.rules_directory, "blahblah.txt"))
-        os.rmdir(sb.rules_directory)
+    os.remove(os.path.join(sb.rules_directory, SIGNATURES_META_FILENAME))
+    os.remove(os.path.join(sb.rules_directory, "blah.txt"))
+    os.remove(os.path.join(sb.rules_directory, "blahblah.txt"))
+    os.rmdir(sb.rules_directory)
 
 
 def test_servicebase_clear_rules():

@@ -3,6 +3,9 @@ import logging
 import os
 import tempfile
 
+from test.test_common import setup_module
+setup_module()
+
 import pytest
 from assemblyline_v4_service.common.ontology_helper import *
 from assemblyline_v4_service.common.result import ResultSection

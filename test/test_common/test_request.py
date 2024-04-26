@@ -1,7 +1,7 @@
 import os
 import tempfile
 from logging import Logger
-from test.test_common import TESSERACT_LIST
+from test.test_common import TESSERACT_LIST, setup_module
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -9,6 +9,12 @@ from assemblyline_v4_service.common.result import get_heuristic_primitives
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
 
 from assemblyline.odm.messages.task import Task as ServiceTask
+
+# Ensure service manifest is instantiated before importing from OCR submodule
+setup_module()
+
+# Ensure service manifest is instantiated before importing from OCR submodule
+setup_module()
 
 
 @pytest.fixture
@@ -107,14 +113,9 @@ def test_add_extracted(service_request):
 
 @pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_add_image(service_request):
-    if os.getcwd().endswith("/test"):
-        image_path = os.path.join(
-            os.getcwd(),
-            "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
-    else:
-        image_path = os.path.join(
-            os.getcwd(),
-            "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    image_path = os.path.join(
+        os.path.dirname(__file__),
+        "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert service_request.add_image(image_path, "image_name", "description of image") == {
@@ -208,14 +209,9 @@ def test_add_image(service_request):
     service_request.task.supplementary.clear()
 
     # Classification, OCR heuristic, OCR_IO, image with password
-    if os.getcwd().endswith("/test"):
-        image_path = os.path.join(
-            os.getcwd(),
-            "test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
-    else:
-        image_path = os.path.join(
-            os.getcwd(),
-            "test/test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
+    image_path = os.path.join(
+        os.path.dirname(__file__),
+        "4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
     data = service_request.add_image(image_path, "image_name", "description of image",
