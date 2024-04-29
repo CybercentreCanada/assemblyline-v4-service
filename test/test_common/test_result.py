@@ -611,6 +611,12 @@ def test_imagesectionbody_add_image(service_request):
     assert isb._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
 
 
+    # Ensure that the image files added are marked as `is_image_section`
+    image_hashes = [img['sha256'] for img in isb._data[0].values()]
+    for file in service_request.task.supplementary:
+        if file['sha256'] in image_hashes:
+            assert(file['is_section_image'])
+
 def test_multisectionbody_init():
     msb = MultiSectionBody()
 
@@ -1255,6 +1261,12 @@ def test_resultimagesection_add_image(service_request):
     ocr_io = open(path, "w")
     assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io, auto_add_ocr_section=False).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL.", "BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
     assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+
+    # Ensure that the image files added are marked as `is_image_section`
+    image_hashes = [img['sha256'] for img in ris.section_body._data[0].values()]
+    for file in service_request.task.supplementary:
+        if file['is_section_image']:
+            assert(file['sha256'] in image_hashes)
 
 
 def test_resulttimelinesection_init():
