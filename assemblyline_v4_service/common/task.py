@@ -89,6 +89,7 @@ class Task:
     def _add_file(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
                   is_section_image: bool = False,
+                  is_supplementary: bool = False,
                   allow_dynamic_recursion: bool = False,
                   parent_relation: str = PARENT_RELATION.EXTRACTED) -> Optional[Dict[str, str]]:
         # Reject empty files
@@ -113,6 +114,7 @@ class Task:
             classification=self._classification.max_classification(self.min_classification, classification),
             path=path,
             is_section_image=is_section_image,
+            is_supplementary=is_supplementary,
             allow_dynamic_recursion=allow_dynamic_recursion,
             parent_relation=parent_relation
         )
@@ -174,9 +176,8 @@ class Task:
         if not description:
             raise ValueError("Description cannot be empty")
 
-        file = self._add_file(
-            path, name, description, classification, is_section_image, parent_relation=parent_relation
-        )
+        file = self._add_file(path, name, description, classification, is_section_image,
+                              is_supplementary=True, parent_relation=parent_relation)
 
         if not file:
             return None
