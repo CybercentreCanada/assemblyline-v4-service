@@ -1,3 +1,15 @@
+from assemblyline.odm.messages.task import Task as ServiceTask
+from assemblyline_v4_service.common.task import Task
+from assemblyline_v4_service.common.result import (
+    BODY_FORMAT, DividerSectionBody, GraphSectionBody, Heuristic, ImageSectionBody, InvalidFunctionException,
+    InvalidHeuristicException, JSONSectionBody, KVSectionBody, MemorydumpSectionBody, MultiSectionBody,
+    OrderedKVSectionBody, ProcessItem, ProcessTreeSectionBody, Result, ResultAggregationException, ResultGraphSection,
+    ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, ResultMultiSection,
+    ResultOrderedKeyValueSection, ResultProcessTreeSection, ResultSection, ResultTableSection, ResultTextSection,
+    ResultTimelineSection, ResultURLSection, SectionBody, TableRow, TableSectionBody, TextSectionBody,
+    TimelineSectionBody, TypeSpecificResultSection, URLSectionBody, get_heuristic_primitives)
+from assemblyline_v4_service.common.request import ServiceRequest
+import pytest
 import os
 import tempfile
 from test.test_common import TESSERACT_LIST, setup_module
@@ -5,13 +17,6 @@ from test.test_common import TESSERACT_LIST, setup_module
 # Ensure service manifest is instantiated before importing from OCR submodule
 setup_module()
 
-
-import pytest
-from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import *
-from assemblyline_v4_service.common.task import Task
-
-from assemblyline.odm.messages.task import Task as ServiceTask
 
 @pytest.fixture
 def heuristic():
@@ -595,11 +600,21 @@ def test_imagesectionbody_init(service_request):
 @pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_imagesectionbody_add_image(service_request):
     isb = ImageSectionBody(service_request)
-    image_path = os.path.join(os.path.dirname(__file__), "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    image_path = os.path.join(
+        os.path.dirname(__file__),
+        "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert isb.add_image(image_path, "image_name", "description of image") is None
-    assert isb._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+    assert isb._data == [
+        {'img': {
+            'name': 'image_name',
+            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+            'description': 'description of image'},
+         'thumb': {
+             'name': 'image_name.thumb',
+             'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+             'description': 'description of image (thumbnail)'}}]
 
     isb._data.clear()
 
@@ -607,8 +622,25 @@ def test_imagesectionbody_add_image(service_request):
     ocr_heuristic_id = 1
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
-    assert isb.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL.", "BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
-    assert isb._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+    assert isb.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id,
+                         ocr_io).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO ' \
+                                         'DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE ' \
+                                         'WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR ' \
+                                         'COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN ' \
+                                         'BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF ' \
+                                         'TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, ' \
+                                         'TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", ' \
+                                         '"CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL.", ' \
+                                         '"BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
+    assert isb._data == [
+        {'img': {
+            'name': 'image_name',
+            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+            'description': 'description of image'},
+         'thumb': {
+            'name': 'image_name.thumb',
+            'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+            'description': 'description of image (thumbnail)'}}]
 
 
     # Ensure that the image files added are marked as `is_image_section`
@@ -653,7 +685,8 @@ def test_timelinesectionbody_add_node():
 
     tsb.add_node("title", "content", "opposite_content")
     assert tsb._format == BODY_FORMAT.TIMELINE
-    assert tsb._data == [{'title': 'title', 'content': 'content', 'opposite_content': 'opposite_content', 'icon': None, 'signatures': [], 'score': 0}]
+    assert tsb._data == [{'title': 'title', 'content': 'content',
+                          'opposite_content': 'opposite_content', 'icon': None, 'signatures': [], 'score': 0}]
 
 
 def test_resultsection_init():
@@ -710,7 +743,8 @@ def test_resultsection_init():
     assert rs._body_format == BODY_FORMAT.GRAPH_DATA
     assert rs._body_config == {}
     assert rs.classification == 'TLP:AMBER'
-    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': [
+        'T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
     assert rs._tags == {"a": "b"}
     assert rs.zeroize_on_tag_safe is True
     assert rs.auto_collapse is True
@@ -939,14 +973,16 @@ def test_resultsection_set_heuristic():
 
     # Pass int heuristic
     assert rs.set_heuristic(1) is None
-    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': [
+        'T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
 
     rs._heuristic = None
 
     # Pass Heuristic heuristic
     heur = Heuristic(1)
     assert rs.set_heuristic(heur) is None
-    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
+    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': [
+        'T1005'], 'signatures': {}, 'frequency': 1, 'score_map': {}}
 
     # Try adding a heuristic again
     with pytest.raises(InvalidHeuristicException):
@@ -957,13 +993,21 @@ def test_resultsection_set_heuristic():
     # Set the Heuristic heuristic with attack ID and signature
     heur = Heuristic(1)
     assert rs.set_heuristic(heur, attack_id="T1001", signature="blah") is None
-    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005', 'T1001'], 'signatures': {"blah": 1}, 'frequency': 1, 'score_map': {}}
+    assert get_heuristic_primitives(
+        rs._heuristic) == {
+        'heur_id': 1, 'score': 250, 'attack_ids': ['T1005', 'T1001'],
+        'signatures': {"blah": 1},
+        'frequency': 1, 'score_map': {}}
 
     rs._heuristic = None
 
     # Set the int heuristic with attack ID and signature
     assert rs.set_heuristic(1, attack_id="T1001", signature="blah") is None
-    assert get_heuristic_primitives(rs._heuristic) == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005', 'T1001'], 'signatures': {"blah": 1}, 'frequency': 1, 'score_map': {}}
+    assert get_heuristic_primitives(
+        rs._heuristic) == {
+        'heur_id': 1, 'score': 250, 'attack_ids': ['T1005', 'T1001'],
+        'signatures': {"blah": 1},
+        'frequency': 1, 'score_map': {}}
 
 
 def test_resultsection_set_tags():
@@ -1241,7 +1285,15 @@ def test_resultimagesection_add_image(service_request):
 
     # Basic
     assert ris.add_image(image_path, "image_name", "description of image") is None
-    assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+    assert ris.section_body._data == [{
+        'img':
+                                      {'name': 'image_name',
+                                       'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+                                       'description': 'description of image'},
+                                      'thumb':
+                                      {'name': 'image_name.thumb',
+                                       'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+                                       'description': 'description of image (thumbnail)'}}]
 
     ris = ResultImageSection(service_request, "title_text_as_str")
 
@@ -1250,8 +1302,15 @@ def test_resultimagesection_add_image(service_request):
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
     assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io) is None
-    assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
-
+    assert ris.section_body._data == [{
+        'img':
+                                      {'name': 'image_name',
+                                       'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+                                       'description': 'description of image'},
+                                      'thumb':
+                                      {'name': 'image_name.thumb',
+                                       'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+                                       'description': 'description of image (thumbnail)'}}]
 
     ris = ResultImageSection(service_request, "title_text_as_str")
 
@@ -1259,8 +1318,28 @@ def test_resultimagesection_add_image(service_request):
     ocr_heuristic_id = 1
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
-    assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io, auto_add_ocr_section=False).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL.", "BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
-    assert ris.section_body._data == [{'img': {'name': 'image_name', 'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329', 'description': 'description of image'}, 'thumb': {'name': 'image_name.thumb', 'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901', 'description': 'description of image (thumbnail)'}}]
+    assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io,
+                         auto_add_ocr_section=False).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND ' \
+                                                             'YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY ' \
+                                                             'DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW ' \
+                                                             'YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM ' \
+                                                             'YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. ' \
+                                                             'PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, ' \
+                                                             'WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT ' \
+                                                             'HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: ' \
+                                                             'SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND ' \
+                                                             'US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET ' \
+                                                             'THE DECRYPTION SOFTWARE IN EMAIL.", "BTC ADDRESS : ' \
+                                                             'bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
+    assert ris.section_body._data == [{
+        'img': {
+            'name': 'image_name',
+            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+            'description': 'description of image'},
+        'thumb': {
+            'name': 'image_name.thumb',
+            'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+            'description': 'description of image (thumbnail)'}}]
 
     # Ensure that the image files added are marked as `is_image_section`
     image_hashes = [img['sha256'] for img in ris.section_body._data[0].values()]
@@ -1281,7 +1360,9 @@ def test_resulttimelinesection_add_node():
 
     rts.add_node("title", "content", "opposite_content")
     assert rts.body_format == BODY_FORMAT.TIMELINE
-    assert rts.section_body._data == [{'title': 'title', 'content': 'content', 'opposite_content': 'opposite_content', 'icon': None, 'signatures': [], 'score': 0}]
+    assert rts.section_body._data == [
+        {'title': 'title', 'content': 'content',
+         'opposite_content': 'opposite_content', 'icon': None, 'signatures': [], 'score': 0}]
 
 
 def test_resultmultisection_init():
