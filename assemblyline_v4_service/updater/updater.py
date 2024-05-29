@@ -320,11 +320,20 @@ class ServiceUpdater(ThreadedCoreBase):
 
         if self._service.update_config.generates_signatures:
             output_directory = tempfile.mkdtemp(prefix="update_dir_", dir=UPDATER_DIR)
+            sources_removed_locally = False
+            if self._update_dir:
+                current_update_dir = os.path.join(self._update_dir, self.updater_type)
 
-            # Check if new signatures have been added
+                if os.path.exists(current_update_dir):
+                    sources_removed_locally = set(os.listdir(current_update_dir)) - \
+                        set([s.name for s in self._service.update_config.sources])
+
+
+            # Check if new signatures have been added (or it there's been a local change since the last update)
             self.log.info("Check for new signatures.")
-            if self.client.signature.update_available(since=epoch_to_iso(old_update_time) or None,
-                                                      sig_type=self.updater_type):
+            if sources_removed_locally or \
+                self.client.signature.update_available(since=epoch_to_iso(old_update_time) or None,
+                                                       sig_type=self.updater_type):
                 self.log.info("An update is available for download from the datastore")
 
                 self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
