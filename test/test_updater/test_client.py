@@ -97,4 +97,4 @@ def test_signature_update(client):
     # Assert that all signatures that were modified by a user retains their original status
     for signature_id in signature_ids:
         signature = client.datastore.signature.get(signature_id)
-        assert signature.status != "INVALID" and signature.state_change_user not in ['update_service_account', None]
+        assert signature.status != "INVALID" and signature.state_change_user == "test"
