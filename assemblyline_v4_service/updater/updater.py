@@ -249,6 +249,10 @@ class ServiceUpdater(ThreadedCoreBase):
         # Download the service object from datastore
         self._service = self.datastore.get_service_with_delta(SERVICE_NAME)
 
+        # Update signature client with any changes to classification rewrites
+        self.client.signature.classification_replace_map = \
+            self._service.config.get('updater', {}).get('classification_replace', {})
+
         # If the update configuration for the service has changed, trigger an update
         if self.config_hash(self._service) != self.get_active_config_hash():
             self.source_update_flag.set()
