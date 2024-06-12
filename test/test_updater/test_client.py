@@ -77,3 +77,24 @@ def test_signature_sync(client):
 
     # Assert that all signatures that were previously DEPLOYED are now all DISABLED
     assert all([client.datastore.signature.get(id).status == "DISABLED" for id in signature_ids])
+
+def test_signature_update(client):
+    # Get the set of YARA signatures that are currently DEPLOYED in the YAR_SAMPLE source
+    SOURCE_NAME = "YAR_SAMPLE"
+    SIG_TYPE = "yara"
+    signatures = [
+        i
+        for i in client.datastore.signature.search(query=f"source:{SOURCE_NAME} AND type:{SIG_TYPE}", rows=5, fl="id,*")['items']
+    ]
+    signature_ids = [s.id for s in signatures]
+
+    # Simulate if a user changed all the signatures and change the signature status
+    for s in signatures:
+        client.datastore.signature.update(s.id, [(client.datastore.signature.UPDATE_SET, 'state_change_user', 'test')])
+        s.status = "INVALID"
+    client.signature.add_update_many(SOURCE_NAME, SIG_TYPE, data=signatures)
+
+    # Assert that all signatures that were modified by a user retains their original status
+    for signature_id in signature_ids:
+        signature = client.datastore.signature.get(signature_id)
+        assert signature.status != "INVALID" and signature.state_change_user == "test"

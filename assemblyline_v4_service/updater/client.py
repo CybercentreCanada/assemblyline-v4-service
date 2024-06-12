@@ -136,13 +136,19 @@ class SyncableSignatureClient(SignatureClient):
             if isinstance(d, SignatureModel):
                 d = d.as_primitives()
 
+            # Compute the expected signature ID
+            sig_id = f"{sig_type}_{source}_{d['signature_id']}"
+            sig_exists = self.datastore.signature.get_if_exists(sig_id, as_obj=False)
+            if sig_exists and sig_exists['state_change_user'] not in ['update_service_account', None]:
+                # Preserve status set by an actual user
+                d['status'] = sig_exists['status']
+                d['state_change_user'] = sig_exists['state_change_user']
+
             if self.sync:
-                # Compute the expected signature ID and add it to the list
-                sig_id = f"{sig_type}_{source}_{d['signature_id']}"
+                # Add signature ID to the list
                 current_signature_ids.add(sig_id)
 
                 # Check to see if there's any important changes made
-                sig_exists: SignatureModel = self.datastore.signature.get_if_exists(sig_id, as_obj=False)
                 if sig_exists and all(sig_exists[attr] == d[attr] for attr in ['status', 'data', 'classification']):
                     # If no changes, then use the old `last_modified` value
                     d['last_modified'] = sig_exists['last_modified']
