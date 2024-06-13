@@ -239,10 +239,8 @@ class ServiceUpdater(ThreadedCoreBase):
             self._pull_settings()
 
     def _sync_settings(self):
-        # Download the service object from datastore
-        self._service = self.datastore.get_service_with_delta(SERVICE_NAME)
-
-        while self.sleep(SERVICE_PULL_INTERVAL):
+        # Pull settings at startup and periodically thereafter
+        while not self._service or self.sleep(SERVICE_PULL_INTERVAL):
             self._pull_settings()
 
     def _pull_settings(self):
