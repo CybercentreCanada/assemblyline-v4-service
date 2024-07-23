@@ -145,8 +145,8 @@ class OntologyHelper:
             heur_tag_map=defaultdict(lambda: {"tags": dict(), "times_raised": int()}),
             tag_map=defaultdict(list))
 
-        if not tag_map and not self._result_parts:
-            # No tagging or ontologies found, therefore informational results
+        if not heur_tag_map and not tag_map and not self._result_parts:
+            # No heuristics, tagging, or ontologies found, therefore informational results
             return
 
         ontology = {
