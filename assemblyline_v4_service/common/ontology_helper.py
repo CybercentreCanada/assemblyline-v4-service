@@ -1,9 +1,10 @@
 import json
 import os
 from collections import defaultdict
-from typing import Dict, Optional
+from typing import Any, Dict, Optional, List, Tuple
 
 from assemblyline_v4_service.common import helper
+from assemblyline_v4_service.common.result import HEUR_LIST, ResultSection
 
 from assemblyline.common import forge
 from assemblyline.common.dict_utils import flatten, get_dict_fingerprint_hash, unflatten
@@ -18,8 +19,29 @@ ONTOLOGY_CLASS_TO_FIELD = {
     NetworkConnection: "netflow"
 }
 
+if not HEUR_LIST:
+    # Get heuristics of service if not already set
+    HEUR_LIST = helper.get_heuristics()
+
 Classification = forge.get_classification()
 
+
+# Cleanup invalid tagging from service results
+def validate_tags(tag_map: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    tag_map, _ = construct_safe(Tagging, unflatten(tag_map))
+    tag_map = flatten(tag_map.as_primitives(strip_null=True))
+    return tag_map
+
+# Merge tags
+def merge_tags(tag_a: Dict[str, List[str]], tag_b: Dict[str, List[str]]) -> Dict[str, List[str]]:
+    if not tag_a:
+        return tag_b
+
+    elif not tag_b:
+        return tag_a
+
+    all_keys = list(tag_a.keys()) + list(tag_b.keys())
+    return {key: list(set(tag_a.get(key, []) + tag_b.get(key, []))) for key in all_keys}
 
 class OntologyHelper:
     def __init__(self, logger, service_name) -> None:
@@ -84,31 +106,11 @@ class OntologyHelper:
 
         ontology['results'].update(self.results)
 
-    def _attach_ontology(self, request, working_dir) -> Optional[str]:
-        # Get heuristics of service
-        heuristics = helper.get_heuristics()
-
-        def preprocess_result_for_dump(sections, current_max, heur_tag_map, tag_map):
+    def _preprocess_result_for_dump(self, sections: List[ResultSection], current_max: str,
+                                    heur_tag_map: Dict[str, Dict[str, Any]], tag_map: Dict[str, List[str]], score: int) -> Tuple[str, Dict[str, Dict[str, Any]], Dict[str, List[str]], int]:
             for section in sections:
                 # Determine max classification of the overall result
                 current_max = Classification.max_classification(section.classification, current_max)
-
-                # Cleanup invalid tagging from service results
-                def validate_tags(tag_map):
-                    tag_map, _ = construct_safe(Tagging, unflatten(tag_map))
-                    tag_map = flatten(tag_map.as_primitives(strip_null=True))
-                    return tag_map
-
-                # Merge tags
-                def merge_tags(tag_a, tag_b):
-                    if not tag_a:
-                        return tag_b
-
-                    elif not tag_b:
-                        return tag_a
-
-                    all_keys = list(tag_a.keys()) + list(tag_b.keys())
-                    return {key: list(set(tag_a.get(key, []) + tag_b.get(key, []))) for key in all_keys}
 
                 # Append tags raised by the service, if any
                 section_tags = validate_tags(section.tags)
@@ -117,8 +119,8 @@ class OntologyHelper:
 
                 # Append tags associated to heuristics raised by the service, if any
                 if section.heuristic:
-                    heur = heuristics[section.heuristic.heur_id]
-                    key = f'{request.task.service_name.upper()}_{heur.heur_id}'
+                    heur = HEUR_LIST[section.heuristic.heur_id]
+                    key = f'{self.service.upper()}_{heur.heur_id}'
                     heur_tag_map[key].update({
                         "heur_id": key,
                         "name": heur.name,
@@ -126,24 +128,27 @@ class OntologyHelper:
                         "score": heur.score,
                         "times_raised": heur_tag_map[key]["times_raised"] + 1
                     })
+                    score += section.heuristic.score
 
                 # Recurse through subsections
                 if section.subsections:
-                    current_max, heur_tag_map, tag_map = preprocess_result_for_dump(
-                        section.subsections, current_max, heur_tag_map, tag_map)
+                    current_max, heur_tag_map, tag_map = self._preprocess_result_for_dump(
+                        section.subsections, current_max, heur_tag_map, tag_map, score)
 
-            return current_max, heur_tag_map, tag_map
+            return current_max, heur_tag_map, tag_map, score
 
+    def _attach_ontology(self, request, working_dir) -> Optional[str]:
         if not request.result or not request.result.sections:
             # No service results, therefore no ontological output
             return
 
-        max_result_classification, heur_tag_map, tag_map = preprocess_result_for_dump(
+        max_result_classification, heur_tag_map, tag_map, score = self._preprocess_result_for_dump(
             sections=request.result.sections,
             current_max=Classification.max_classification(request.task.min_classification,
                                                           request.task.service_default_result_classification),
             heur_tag_map=defaultdict(lambda: {"tags": dict(), "times_raised": int()}),
-            tag_map=defaultdict(list))
+            tag_map=defaultdict(list),
+            score=0)
 
         if not heur_tag_map and not tag_map and not self._result_parts:
             # No heuristics, tagging, or ontologies found, therefore informational results
@@ -168,7 +173,8 @@ class OntologyHelper:
             },
             "results": {
                 "tags": tag_map,
-                "heuristics": list(heur_tag_map.values())
+                "heuristics": list(heur_tag_map.values()),
+                "score": score
             }
         }
 
