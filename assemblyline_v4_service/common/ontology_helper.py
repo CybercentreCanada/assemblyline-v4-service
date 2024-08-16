@@ -132,7 +132,7 @@ class OntologyHelper:
 
                 # Recurse through subsections
                 if section.subsections:
-                    current_max, heur_tag_map, tag_map = self._preprocess_result_for_dump(
+                    current_max, heur_tag_map, tag_map, score = self._preprocess_result_for_dump(
                         section.subsections, current_max, heur_tag_map, tag_map, score)
 
             return current_max, heur_tag_map, tag_map, score
