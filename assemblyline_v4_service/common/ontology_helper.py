@@ -48,6 +48,7 @@ class OntologyHelper:
         self.log = logger
         self._file_info = dict()
         self._result_parts: Dict[str, Model] = dict()
+        self._other: Dict[str, str] = dict()
         self.results = defaultdict(list)
         self.service = service_name
 
@@ -94,6 +95,9 @@ class OntologyHelper:
         finally:
             return oid
 
+    def add_other_part(self, key: str, data: str) -> None:
+        self._other[key] = data
+
     def attach_parts(self, ontology: Dict) -> None:
         ontology['file'].update({k: v.as_primitives(strip_null=True) for k, v in self._file_info.items()})
 
@@ -105,6 +109,9 @@ class OntologyHelper:
                 self.results[field].append(v.as_primitives(strip_null=True))
 
         ontology['results'].update(self.results)
+
+        if self._other:
+            ontology['results']['other'] = self._other
 
     def _preprocess_result_for_dump(self, sections: List[ResultSection], current_max: str,
                                     heur_tag_map: Dict[str, Dict[str, Any]], tag_map: Dict[str, List[str]], score: int) -> Tuple[str, Dict[str, Dict[str, Any]], Dict[str, List[str]], int]:
