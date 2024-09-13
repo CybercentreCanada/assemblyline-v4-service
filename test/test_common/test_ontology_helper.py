@@ -125,7 +125,6 @@ def test_add_result_part():
     assert oh._result_parts[oid_2]["objectid"]["ontology_id"] == "antivirus_7WVybQLECGWqS0DqePtVLp"
     assert oh._result_parts[oid_2]["objectid"]["service_name"] == "blah"
 
-
 def test_attach_parts():
     oh = OntologyHelper(None, "blah")
 
@@ -146,6 +145,7 @@ def test_attach_parts():
     oh._file_info = {"a": Antivirus({"objectid": {"tag": "a", "ontology_id": "b"}, "engine_name": "blah"})}
     ont = {"file": {"blah": "blah"}, "results": {"blah": "blah"}}
     oh.add_result_part(Antivirus, {"engine_name": "blah"})
+    oh.add_other_part("test", "blah")
     oh.attach_parts(ont)
     assert oh.results == {
         'antivirus': [
@@ -179,7 +179,10 @@ def test_attach_parts():
                 },
                 'engine_name': 'blah'
             }
-        ]
+        ],
+        'other': {
+            'test': 'blah'
+        }
     }
 
 
