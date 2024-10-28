@@ -41,14 +41,13 @@ Ce référentiel fournit les fonctionnalités de base des services Assemblyline 
 
 Vous pouvez créer un nouveau service Assemblyline en utilisant ce [template](https://github.com/CybercentreCanada/assemblyline-service-template).
 
-## Variantes d'images et balises
+## Variantes et étiquettes d'image
 
 | **Type d'étiquette** | **Description**                                                                                                  |  **Exemple d'étiquette**   |
 | :------------------: | :--------------------------------------------------------------------------------------------------------------- | :------------------------: |
 |       dernière       | La version la plus récente (peut être instable).                                                                 |          `latest`          |
 |      build_type      | Le type de compilation utilisé. `dev` est la dernière version instable. `stable` est la dernière version stable. |     `stable` or `dev`      |
-|        series        | Détails complets de la construction, y compris la version et le type de construction : `version.buildType`.      | `4.5.stable`, `4.5.1.dev3` |
-
+|        séries        | Le détail de compilation utilisé, incluant la version et le type de compilation : `version.buildType`.           | `4.5.stable`, `4.5.1.dev3` |
 
 ```bash
 apt install jq
