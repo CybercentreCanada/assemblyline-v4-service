@@ -9,6 +9,7 @@ from assemblyline_v4_service.common.helper import get_service_manifest
 from assemblyline_v4_service.common.result import Result
 
 from assemblyline.common import forge
+from assemblyline.common.constants import MAX_INT
 from assemblyline.common import log as al_log
 from assemblyline.common.classification import Classification
 from assemblyline.common.digests import get_digests_for_file, get_sha256_for_file
@@ -89,6 +90,7 @@ class Task:
     def _add_file(self, path: str, name: str, description: str,
                   classification: Optional[Classification] = None,
                   is_section_image: bool = False,
+                  is_supplementary: bool = False,
                   allow_dynamic_recursion: bool = False,
                   parent_relation: str = PARENT_RELATION.EXTRACTED) -> Optional[Dict[str, str]]:
         # Reject empty files
@@ -96,10 +98,17 @@ class Task:
             self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
                           f"Empty file ({name}) was ignored.")
             return
+        elif os.path.getsize(path) > MAX_INT:
+            self.log.error(f"Adding file of size {os.path.getsize(path)} is impossible due to ElasticSearch "
+                           f"limitations. File ({name}) was ignored.")
+            return
 
         if parent_relation not in PARENT_RELATION.keys():
             raise ValueError(
-                f"An invalid 'parent_relation' was provided: '{parent_relation}'. Possible values are: '{PARENT_RELATION.keys()}'"
+                (
+                    f"An invalid 'parent_relation' was provided: '{parent_relation}'. "
+                    f"Possible values are: '{PARENT_RELATION.keys()}'"
+                )
             )
 
         # If file classification not provided, then use the default result classification
@@ -113,6 +122,7 @@ class Task:
             classification=self._classification.max_classification(self.min_classification, classification),
             path=path,
             is_section_image=is_section_image,
+            is_supplementary=is_supplementary,
             allow_dynamic_recursion=allow_dynamic_recursion,
             parent_relation=parent_relation
         )
@@ -128,7 +138,7 @@ class Task:
         # Allows the administrator to be selective about the types of hashes to lookup in the safelist
         if safelist_interface and self.safelist_config.enabled and not (self.deep_scan or self.ignore_filtering):
             # Ignore adding files that are known to the system to be safe
-            digests = get_digests_for_file(path, skip_fuzzy_hashes=True)
+            digests = get_digests_for_file(path, calculate_entropy=False, skip_fuzzy_hashes=True)
             for hash_type in self.safelist_config.hash_types:
                 qhash = digests[hash_type]
                 resp = safelist_interface.lookup_safelist(qhash)
@@ -174,9 +184,8 @@ class Task:
         if not description:
             raise ValueError("Description cannot be empty")
 
-        file = self._add_file(
-            path, name, description, classification, is_section_image, parent_relation=parent_relation
-        )
+        file = self._add_file(path, name, description, classification, is_section_image,
+                              is_supplementary=True, parent_relation=parent_relation)
 
         if not file:
             return None

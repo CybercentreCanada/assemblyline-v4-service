@@ -3,8 +3,11 @@ import logging
 import os
 import tempfile
 
+from test.test_common import setup_module
+setup_module()
+
 import pytest
-from assemblyline_v4_service.common.ontology_helper import *
+from assemblyline_v4_service.common.ontology_helper import OntologyHelper, validate_tags, merge_tags
 from assemblyline_v4_service.common.result import ResultSection
 
 from assemblyline.odm.models.ontology.ontology import ODM_VERSION
@@ -122,7 +125,6 @@ def test_add_result_part():
     assert oh._result_parts[oid_2]["objectid"]["ontology_id"] == "antivirus_7WVybQLECGWqS0DqePtVLp"
     assert oh._result_parts[oid_2]["objectid"]["service_name"] == "blah"
 
-
 def test_attach_parts():
     oh = OntologyHelper(None, "blah")
 
@@ -143,6 +145,7 @@ def test_attach_parts():
     oh._file_info = {"a": Antivirus({"objectid": {"tag": "a", "ontology_id": "b"}, "engine_name": "blah"})}
     ont = {"file": {"blah": "blah"}, "results": {"blah": "blah"}}
     oh.add_result_part(Antivirus, {"engine_name": "blah"})
+    oh.add_other_part("test", "blah")
     oh.attach_parts(ont)
     assert oh.results == {
         'antivirus': [
@@ -176,7 +179,10 @@ def test_attach_parts():
                 },
                 'engine_name': 'blah'
             }
-        ]
+        ],
+        'other': {
+            'test': 'blah'
+        }
     }
 
 
@@ -221,15 +227,75 @@ def test_attach_ontology(dummy_request_class):
         'odm_type': 'Assemblyline Result Ontology',
         'odm_version': ODM_VERSION,
         'results': {'heuristics': [],
-                    'tags': {'network.static.domain': ['blah.com']}},
+                    'tags': {'network.static.domain': ['blah.com']},
+                    'score': 0},
         'service': {'name': 'blah',
                     'tool_version': 'blah',
-                    'version': '4.0.0'},
+                    'version': '4.0.0'}
     }
 
-    # TODO
-    # Test nested methods preprocess_result_for_dump, validate_tags and merge_tags
+    # Assign a heuristic to the section and check to see if the score gets updated correctly
+    req.result.sections[0].set_heuristic(1)
+    req.result.sections.append(req.result.sections[0])
+    req.task.supplementary = []
+    assert oh._attach_ontology(req, working_dir) is None
+    assert oh.results == {}
+    assert req.task.supplementary == [
+        {
+            'classification': 'TLP:C',
+            'description': 'Result Ontology from blah',
+            'name': 'blah_blah.ontology',
+            'path': os.path.join(working_dir, "blah.ontology")
+        }
+    ]
 
+    with open(os.path.join(working_dir, "blah.ontology"), "r") as f:
+        file_contents = json.loads(f.read())
+    # The sum of the overall result should be 500 points since the heuristic was raised twice with a score of 250 per section
+    assert file_contents == {
+        'classification': 'TLP:C',
+        'file': {'md5': 'blah',
+                'names': ['blah'],
+                'sha1': 'blah',
+                'sha256': 'blah',
+                'size': 123,
+                'type': None},
+        'odm_type': 'Assemblyline Result Ontology',
+        'odm_version': ODM_VERSION,
+        'results': {'heuristics': [{'tags': {'network.static.domain': ['blah.com']}, 'times_raised': 2, 'heur_id': 'BLAH_1', 'name': 'blah', 'score': 250}],
+                    'tags': {'network.static.domain': ['blah.com']},
+                    'score': 500},
+        'service': {'name': 'blah',
+                    'tool_version': 'blah',
+                    'version': '4.0.0'}
+    }
+
+
+def test_validate_tags():
+    # Valid tag
+    assert validate_tags({'network.static.domain':['blah.com']})
+
+    # Invalid tag
+    assert not validate_tags({'blah':['blah.com']})
+
+def test_merge_tags():
+    # Merge with null should yield the tag map with value
+    assert merge_tags({'abc':['xyz']}, None) == {'abc':['xyz']}
+    assert merge_tags(None, {'abc':['xyz']}) == {'abc':['xyz']}
+
+    # Merge with mutually exclusive keys
+    assert merge_tags({'abc':['xyz']}, {'def':['xyz']}) == {
+        'abc':['xyz'],
+        'def':['xyz']
+    }
+
+    # Merge with non-mutually exclusive keys
+    merged_tags = merge_tags({'abc':['xyz'], 'def':['tuv']}, {'def':['xyz']})
+    merged_tags['def'] = sorted(merged_tags['def'])
+    merged_tags == {
+        'abc':['xyz'],
+        'def':['tuv', 'xyz']
+    }
 
 def test_reset():
     oh = OntologyHelper(None, "blah")

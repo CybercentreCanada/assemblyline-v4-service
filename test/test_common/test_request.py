@@ -1,7 +1,7 @@
 import os
 import tempfile
 from logging import Logger
-from test.test_common import TESSERACT_LIST
+from test.test_common import TESSERACT_LIST, setup_module
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -9,6 +9,9 @@ from assemblyline_v4_service.common.result import Result, get_heuristic_primitiv
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
 
 from assemblyline.odm.messages.task import Task as ServiceTask
+
+# Ensure service manifest is instantiated before importing from OCR submodule
+setup_module()
 
 
 @pytest.fixture
@@ -69,11 +72,12 @@ def test_add_extracted(service_request):
             'classification': 'TLP:C',
             'description': 'description',
             'is_section_image': False,
+            'is_supplementary': False,
             'name': 'name',
             'parent_relation': 'EXTRACTED',
             'path': path,
             'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
-         },
+        },
     ]
 
     # Raise MaxExtractedExceeded
@@ -95,20 +99,20 @@ def test_add_extracted(service_request):
             'classification': 'TLP:C',
             'description': 'description',
             'is_section_image': False,
+            'is_supplementary': False,
             'name': 'name',
             'parent_relation': 'DYNAMIC',
             'path': path,
             'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
-         },
+        },
     ]
 
 
 @pytest.mark.skipif(len(TESSERACT_LIST) < 1, reason="Requires tesseract-ocr apt package")
 def test_add_image(service_request):
-    if os.getcwd().endswith("/test"):
-        image_path = os.path.join(os.getcwd(), "test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
-    else:
-        image_path = os.path.join(os.getcwd(), "test/test_common/b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+    image_path = os.path.join(
+        os.path.dirname(__file__),
+        "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
 
     # Basic
     assert service_request.add_image(image_path, "image_name", "description of image") == {
@@ -132,6 +136,7 @@ def test_add_image(service_request):
             'classification': 'TLP:C',
             'description': 'description of image',
             'is_section_image': True,
+            'is_supplementary': True,
             'name': 'image_name',
             'parent_relation': 'INFORMATION',
             'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329'
@@ -141,6 +146,7 @@ def test_add_image(service_request):
             'classification': 'TLP:C',
             'description': 'description of image (thumbnail)',
             'is_section_image': True,
+            'is_supplementary': True,
             'name': 'image_name.thumb',
             'parent_relation': 'INFORMATION',
             'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901'
@@ -153,7 +159,8 @@ def test_add_image(service_request):
     ocr_heuristic_id = 1
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
-    data = service_request.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io)
+    data = service_request.add_image(image_path, "image_name", "description of image",
+                                     "TLP:A", ocr_heuristic_id, ocr_io)
     assert data["img"] == {
         'description': 'description of image',
         'name': 'image_name',
@@ -189,20 +196,23 @@ def test_add_image(service_request):
 
     heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
-    assert heur_dict == {'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'], 'signatures': {'ransomware_strings': 8}, 'frequency': 0, 'score_map': {}}
+    assert heur_dict == {
+        'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'],
+        'signatures': {'ransomware_strings': 8},
+        'frequency': 0, 'score_map': {}}
 
     assert service_request.temp_submission_data == {}
 
     service_request.task.supplementary.clear()
 
     # Classification, OCR heuristic, OCR_IO, image with password
-    if os.getcwd().endswith("/test"):
-        image_path = os.path.join(os.getcwd(), "test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
-    else:
-        image_path = os.path.join(os.getcwd(), "test/test_common/4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
+    image_path = os.path.join(
+        os.path.dirname(__file__),
+        "4031ed8786439eee24b87f84901e38038a76b8c55e9d87dd5a7d88df2806c1cf")
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
-    data = service_request.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io)
+    data = service_request.add_image(image_path, "image_name", "description of image",
+                                     "TLP:A", ocr_heuristic_id, ocr_io)
     assert data["img"] == {
         'description': 'description of image',
         'name': 'image_name',
@@ -221,9 +231,12 @@ def test_add_image(service_request):
 
     heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
-    assert heur_dict == {'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'], 'signatures': {'password_strings': 1}, 'frequency': 0, 'score_map': {}}
+    assert heur_dict == {
+        'heur_id': 1, 'score': 250, 'attack_ids': ['T1005'],
+        'signatures': {'password_strings': 1},
+        'frequency': 0, 'score_map': {}}
 
-    assert service_request.temp_submission_data == {'passwords':[' 975', '975', 'DOCUMENT', 'PASSWORD', 'PASSWORD:']}
+    assert service_request.temp_submission_data == {'passwords': [' 975', '975', 'DOCUMENT', 'PASSWORD', 'PASSWORD:']}
 
 
 def test_add_supplementary(service_request):
@@ -243,11 +256,12 @@ def test_add_supplementary(service_request):
             'classification': 'TLP:C',
             'description': 'description',
             'is_section_image': False,
+            'is_supplementary': True,
             'name': 'name',
             'parent_relation': 'INFORMATION',
             'path': path,
             'sha256': '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08'
-         },
+        },
     ]
 
 
@@ -284,7 +298,7 @@ def test_get_param(service_request):
         service_request.get_param("blah")
 
     # Submission parameter exists
-    service_request.task.service_config = {"blah":"blah"}
+    service_request.task.service_config = {"blah": "blah"}
     assert service_request.get_param("blah") == "blah"
 
 

@@ -6,7 +6,7 @@ from logging import Logger
 import pytest
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.result import ResultSection
-from assemblyline_v4_service.common.task import *
+from assemblyline_v4_service.common.task import Task, Classification, MaxExtractedExceeded, ServiceAPI, Result
 
 from assemblyline.odm.messages.task import DataItem, TagItem
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -159,6 +159,7 @@ def test_task_add_file(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
+        'is_supplementary': False,
         "allow_dynamic_recursion": False,
         "parent_relation": "EXTRACTED",
     }
@@ -173,6 +174,7 @@ def test_task_add_file(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
+        'is_supplementary': False,
         "allow_dynamic_recursion": True,
         "parent_relation": "DYNAMIC",
     }
@@ -210,7 +212,7 @@ def test_task_add_extracted(servicetask, mocker):
     # Safelisted file hash
     service_attributes = helper.get_service_attributes()
     sa = ServiceAPI(service_attributes, None)
-    with mocker.patch.object(sa, "lookup_safelist", return_value={"enabled": True, "type": "file"}) as m:
+    with mocker.patch.object(sa, "lookup_safelist", return_value={"enabled": True, "type": "file"}) as _:
         t.safelist_config.enabled = True
         assert t.add_extracted(path, "name", "description", safelist_interface=sa) is False
 
@@ -224,6 +226,7 @@ def test_task_add_extracted(servicetask, mocker):
             "classification": "TLP:C",
             "path": path,
             "is_section_image": False,
+            'is_supplementary': False,
             "allow_dynamic_recursion": False,
             "parent_relation": "EXTRACTED",
         }
@@ -259,6 +262,7 @@ def test_task_add_supplementary(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
+        'is_supplementary': True,
         "allow_dynamic_recursion": False,
         "parent_relation": "INFORMATION",
     }
@@ -270,6 +274,7 @@ def test_task_add_supplementary(servicetask):
             "classification": "TLP:C",
             "path": path,
             "is_section_image": False,
+            'is_supplementary': True,
             "allow_dynamic_recursion": False,
             "parent_relation": "INFORMATION",
         }
@@ -405,6 +410,7 @@ def test_task_get_service_result(servicetask):
                     "classification": "TLP:C",
                     "description": "description",
                     "is_section_image": False,
+                    "is_supplementary": False,
                     "name": "name",
                     "parent_relation": "EXTRACTED",
                     "path": path,
