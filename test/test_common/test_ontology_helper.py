@@ -262,7 +262,7 @@ def test_attach_ontology(dummy_request_class):
                 'type': None},
         'odm_type': 'Assemblyline Result Ontology',
         'odm_version': ODM_VERSION,
-        'results': {'heuristics': [{'tags': {'network.static.domain': ['blah.com']}, 'times_raised': 2, 'heur_id': 'BLAH_1', 'name': 'blah', 'score': 250}],
+        'results': {'heuristics': [{'attack_ids': ['T1005'], 'tags': {'network.static.domain': ['blah.com']}, 'times_raised': 2, 'heur_id': 'BLAH_1', 'name': 'blah', 'score': 250}],
                     'tags': {'network.static.domain': ['blah.com']},
                     'score': 500},
         'service': {'name': 'blah',
