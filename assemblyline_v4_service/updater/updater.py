@@ -378,6 +378,10 @@ class ServiceUpdater(ThreadedCoreBase):
                     source_obj = sources[source_name]
                     old_update_time = self.get_source_update_time()
 
+                    # Are we ignoring the cache for this source?
+                    if source_obj.ignore_cache:
+                        old_update_time = 0
+
                     # If source is not currently enabled/active, skip..
                     if not source_obj.enabled:
                         raise SkipSource
