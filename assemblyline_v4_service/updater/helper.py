@@ -138,7 +138,7 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
             if fetch_method in ['get', 'post']:
                 response = getattr(session, fetch_method)(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
             else:
-                raise Exception(f"Unknown fetch method: {fetch_method}")
+                raise ValueError(f"Unknown fetch method: {fetch_method}")
 
         # Check the response code
         if response.status_code == requests.codes['not_modified']:

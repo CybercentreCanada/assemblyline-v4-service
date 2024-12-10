@@ -381,33 +381,34 @@ class ServiceUpdater(ThreadedCoreBase):
                     # Are we ignoring the cache for this source?
                     if source_obj.ignore_cache:
                         old_update_time = 0
-
-                    # If source is not currently enabled/active, skip..
-                    if not source_obj.enabled:
-                        raise SkipSource
-
-                    # Is it time for this source to run?
-                    elapsed_time = time.time() - old_update_time
-                    if elapsed_time < source.get('update_interval', service.update_config.update_interval_seconds):
-                        # Too early to run the update for this particular source, skip for now
-                        raise SkipSource
-
-
-                    self.push_status("UPDATING", "Starting..")
-                    source = source_obj.as_primitives()
-                    uri: str = source['uri']
-                    fetch_method = source.get('fetch_method', 'GET')
-                    default_classification = source.get('default_classification', classification.UNRESTRICTED)
-
-                    # Configure the client as necessary
-
-                    # Enable syncing if the source specifies it
-                    self.client.sync = source.get('sync', False)
-                    # Override classfication of signatures if specified
-                    self.client.classification_override = default_classification \
-                        if source.get('override_classification', False) else None
-
                     try:
+
+                        source = source_obj.as_primitives()
+                        uri: str = source_obj.uri
+
+                        # If source is not currently enabled/active, skip..
+                        if not source_obj.enabled:
+                            raise SkipSource
+
+                        # Is it time for this source to run?
+                        elapsed_time = time.time() - old_update_time
+                        if elapsed_time < source.get('update_interval', service.update_config.update_interval_seconds):
+                            # Too early to run the update for this particular source, skip for now
+                            raise SkipSource
+
+
+                        self.push_status("UPDATING", "Starting..")
+                        fetch_method = source.get('fetch_method', 'GET')
+                        default_classification = source.get('default_classification', classification.UNRESTRICTED)
+
+                        # Configure the client as necessary
+
+                        # Enable syncing if the source specifies it
+                        self.client.sync = source.get('sync', False)
+                        # Override classfication of signatures if specified
+                        self.client.classification_override = default_classification \
+                            if source.get('override_classification', False) else None
+
                         self.push_status("UPDATING", "Pulling..")
                         output = None
                         seen_fetch = seen_fetches.get(uri)
@@ -423,7 +424,7 @@ class ServiceUpdater(ThreadedCoreBase):
                             # Pull sources from external locations
                             if uri.startswith("file://"):
                                 # Perform an update using a local mount
-                                output = uri.split("file://", 1)
+                                output = uri.split("file://", 1)[1]
                                 if not os.path.exists(output):
                                     raise FileNotFoundError(f"{output} doesn't exist within container.")
                             elif fetch_method == "GIT" or uri.endswith('.git'):

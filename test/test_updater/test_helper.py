@@ -1,9 +1,12 @@
 import os
 from logging import getLogger
-
+from unittest import mock
 import pytest
 import requests_mock
 from assemblyline_v4_service.updater.helper import *
+
+HTML_FILE_REQUEST = "http://www.google.com/index.html"
+ZIP_FILE_REQUEST = "http://www.google.com/index.zip"
 
 INDEX = "/tmp/blah/index.html"
 INDEX_ZIP = "/tmp/blah/index.zip"
@@ -29,7 +32,6 @@ def setup_and_teardown_test():
             except Exception as e:
                 print(e)
                 pass
-
 
 def test_add_cacert():
     fc = open(certifi.where(), "r").read()
@@ -82,26 +84,33 @@ def test_url_download():
 
     with requests_mock.Mocker() as m:
         # Expected
-        m.head("http://www.google.com/index.html", text="blah")
-        m.get("http://www.google.com/index.html", text="blah")
-        assert url_download({"name": "blah", "uri": "http://www.google.com/index.html"}, 0, log, DIRECTORY) == INDEX
+        m.head(HTML_FILE_REQUEST, text="blah")
+        m.get(HTML_FILE_REQUEST, text="blah")
+        m.post(HTML_FILE_REQUEST, text="blah")
+        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY) == INDEX
+        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "get"}, 0, log, DIRECTORY) == INDEX
+        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "post"}, 0, log, DIRECTORY) == INDEX
 
         os.remove(INDEX)
 
+        # UNKNOWN FETCH METHOD
+        with pytest.raises(ValueError, match="Unknown fetch method: test"):
+            url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "test"}, 0, log, DIRECTORY)
+
         # NOT_MODIFIED
-        m.get("http://www.google.com/index.html", status_code=304)
+        m.get(HTML_FILE_REQUEST, status_code=304)
         with pytest.raises(SkipSource):
-            url_download({"name": "blah", "uri": "http://www.google.com/index.html"}, 0, log, DIRECTORY)
+            url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY)
 
         # NOT_FOUND
-        m.get("http://www.google.com/index.html", status_code=404)
-        assert url_download({"name": "blah", "uri": "http://www.google.com/index.html"}, 0, log, DIRECTORY) is None
+        m.get(HTML_FILE_REQUEST, status_code=404)
+        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY) is None
 
         # zip file
-        m.head("http://www.google.com/index.zip", text="blah")
+        m.head(ZIP_FILE_REQUEST, text="blah")
         fake_zip_path = os.path.join(os.path.dirname(__file__), "test.zip")
-        m.get("http://www.google.com/index.zip", content=open(fake_zip_path, "rb").read())
-        assert url_download({"name": "index", "uri": "http://www.google.com/index.zip"}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
+        m.get(ZIP_FILE_REQUEST, content=open(fake_zip_path, "rb").read())
+        assert url_download({"name": "index", "uri": ZIP_FILE_REQUEST}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
 
 
 def test_git_clone_repo():
