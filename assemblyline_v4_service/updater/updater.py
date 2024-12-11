@@ -392,7 +392,8 @@ class ServiceUpdater(ThreadedCoreBase):
 
                         # Is it time for this source to run?
                         elapsed_time = time.time() - old_update_time
-                        if elapsed_time < source.get('update_interval', service.update_config.update_interval_seconds):
+                        update_interval = source.get('update_interval') or service.update_config.update_interval_seconds
+                        if elapsed_time < update_interval:
                             # Too early to run the update for this particular source, skip for now
                             raise SkipSource
 
