@@ -378,14 +378,37 @@ class ServiceUpdater(ThreadedCoreBase):
                     source_obj = sources[source_name]
                     old_update_time = self.get_source_update_time()
 
-                    self.push_status("UPDATING", "Starting..")
-                    source = source_obj.as_primitives()
-                    uri: str = source['uri']
-                    default_classification = source.get('default_classification', classification.UNRESTRICTED)
-                    # Enable syncing if the source specifies it
-                    self.client.sync = source.get('sync', False)
-
+                    # Are we ignoring the cache for this source?
+                    if source_obj.ignore_cache:
+                        old_update_time = 0
                     try:
+
+                        source = source_obj.as_primitives()
+                        uri: str = source_obj.uri
+
+                        # If source is not currently enabled/active, skip..
+                        if not source_obj.enabled:
+                            raise SkipSource
+
+                        # Is it time for this source to run?
+                        elapsed_time = time.time() - old_update_time
+                        if elapsed_time < source.get('update_interval', service.update_config.update_interval_seconds):
+                            # Too early to run the update for this particular source, skip for now
+                            raise SkipSource
+
+
+                        self.push_status("UPDATING", "Starting..")
+                        fetch_method = source.get('fetch_method', 'GET')
+                        default_classification = source.get('default_classification', classification.UNRESTRICTED)
+
+                        # Configure the client as necessary
+
+                        # Enable syncing if the source specifies it
+                        self.client.sync = source.get('sync', False)
+                        # Override classfication of signatures if specified
+                        self.client.classification_override = default_classification \
+                            if source.get('override_classification', False) else None
+
                         self.push_status("UPDATING", "Pulling..")
                         output = None
                         seen_fetch = seen_fetches.get(uri)
@@ -397,21 +420,20 @@ class ServiceUpdater(ThreadedCoreBase):
                             self.log.info(f'Already visited {uri} in this run. Using cached download path..')
                             output = seen_fetches[uri]
                         else:
-                            # Pull sources from external locations (method depends on the URL)
-                            try:
+                            self.log.info(f"Fetching {source_name} using {fetch_method}")
+                            # Pull sources from external locations
+                            if uri.startswith("file://"):
+                                # Perform an update using a local mount
+                                output = uri.split("file://", 1)[1]
+                                if not os.path.exists(output):
+                                    raise FileNotFoundError(f"{output} doesn't exist within container.")
+                            elif fetch_method == "GIT" or uri.endswith('.git'):
                                 # First we'll attempt by performing a Git clone
                                 # (since not all services hint at being a repository in their URL),
                                 output = git_clone_repo(source, old_update_time, self.log, update_dir)
-                            except SkipSource:
-                                raise
-                            except Exception as git_ex:
-                                # Should that fail, we'll attempt a direct-download using Python Requests
-                                if not uri.endswith('.git'):
-                                    # Proceed with direct download, raise exception as required if necessary
-                                    output = url_download(source, old_update_time, self.log, update_dir)
-                                else:
-                                    # Raise Git Exception
-                                    raise git_ex
+                            else:
+                                # Other fetch methods are meant for URL downloads using Requests
+                                output = url_download(source, old_update_time, self.log, update_dir)
                             # Add output path to the list of seen fetches in this run
                             seen_fetches[uri] = output
 
@@ -430,7 +452,8 @@ class ServiceUpdater(ThreadedCoreBase):
 
                         self.push_status("UPDATING", "Importing..")
                         # Import into Assemblyline
-                        self.import_update(validated_files, source_name, default_classification)
+                        self.import_update(validated_files, source_name, default_classification,
+                                           source.get('configuration') or {})
                         self.push_status("DONE", "Signature(s) Imported.")
                     except SkipSource:
                         # This source hasn't changed, no need to re-import into Assemblyline
@@ -457,7 +480,8 @@ class ServiceUpdater(ThreadedCoreBase):
         return True
 
     # Define how your source update gets imported into Assemblyline
-    def import_update(self, files_sha256: List[Tuple[str, str]], source_name: str, default_classification=None):
+    def import_update(self, files_sha256: List[Tuple[str, str]], source_name: str, default_classification=None,
+                      configuration: dict = {}, *args, **kwargs):
         raise NotImplementedError()
 
     # Define how to prepare the output directory before being served, must return the path of the directory to serve.
@@ -486,7 +510,10 @@ class ServiceUpdater(ThreadedCoreBase):
         while self.running:
             # Stringify and hash the the current update configuration
             service = self._service
-            update_interval = service.update_config.update_interval_seconds
+
+            # The update interval (or sleep interval) will be based on the smallest interval across sources
+            update_interval = min([service.update_config.update_interval_seconds] +
+                                  [s.update_interval for s in service.update_config.sources if s.update_interval])
 
             # Is it time to update yet?
             if time.time() - self.get_scheduled_update_time() < update_interval \

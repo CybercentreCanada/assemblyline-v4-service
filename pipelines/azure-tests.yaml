@@ -20,6 +20,12 @@ resources:
         ELASTIC_PASSWORD: "devpass"
       ports:
         - 9200:9200
+    - container: redis
+      image: redis
+      ports:
+        - "6379:6379"
+        - "6380:6379"
+
   repositories:
     - repository: assemblyline-base
       type: github
@@ -45,6 +51,7 @@ jobs:
     timeoutInMinutes: 10
     services:
       elasticsearch: elasticsearch
+      redis: redis
 
     steps:
       - task: UsePythonVersion@0

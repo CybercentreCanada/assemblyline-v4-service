@@ -88,6 +88,7 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
     ca_cert = source.get('ca_cert', None)
     ignore_ssl_errors = source.get('ssl_ignore_errors', False)
     auth = (username, password) if username and password else None
+    fetch_method = source.get('fetch_method', 'GET').lower()
 
     proxy = source.get('proxy', None)
     headers_list = source.get('headers', [])
@@ -134,7 +135,10 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
                 else:
                     headers = {'If-Modified-Since': previous_update}
 
-            response = session.get(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
+            if fetch_method in ['get', 'post']:
+                response = getattr(session, fetch_method)(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
+            else:
+                raise ValueError(f"Unknown fetch method: {fetch_method}")
 
         # Check the response code
         if response.status_code == requests.codes['not_modified']:
