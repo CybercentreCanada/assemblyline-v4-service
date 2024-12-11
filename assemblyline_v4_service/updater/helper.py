@@ -192,7 +192,13 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
     ignore_ssl_errors = source.get("ssl_ignore_errors", False)
     ca_cert = source.get("ca_cert")
     proxy = source.get('proxy', None)
-    auth = f'{username}:{password}@' if username and password else None
+    auth = None
+    if username and password:
+        # Basic authentication scheme
+        auth = f'{username}:{password}@'
+    elif password:
+        # Token-based authentication
+        auth = f'{password}@'
 
     git_env = {}
 
