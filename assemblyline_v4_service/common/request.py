@@ -202,6 +202,9 @@ class ServiceRequest:
         """
         return self.task.get_param(name)
 
+    def partial(self) -> None:
+        self.task.partial()
+
     @property
     def result(self) -> Result:
         """

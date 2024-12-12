@@ -5,7 +5,7 @@ from test.test_common import TESSERACT_LIST, setup_module
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
-from assemblyline_v4_service.common.result import get_heuristic_primitives
+from assemblyline_v4_service.common.result import Result, get_heuristic_primitives
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
 
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -303,7 +303,7 @@ def test_get_param(service_request):
 
 
 def test_result_getter(service_request):
-    assert service_request.result is None
+    assert isinstance(service_request.result, Result)
 
 
 def test_result_setter(service_request):

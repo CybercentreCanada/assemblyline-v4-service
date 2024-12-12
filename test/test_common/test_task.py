@@ -61,7 +61,6 @@ def test_task_init(servicetask):
     assert t.metadata == {}
     assert t.md5 == "d41d8cd98f00b204e9800998ecf8427e"
     assert t.mime is None
-    assert t.result is None
     assert isinstance(t.safelist_config, ServiceSafelist)
     assert t.service_config == {}
     assert t.service_context is None
@@ -380,6 +379,7 @@ def test_task_get_service_result(servicetask):
             "service_debug_info": None,
         },
         "result": {"score": 0, "sections": []},
+        "partial": False,
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "type": "text/plain",
         "size": 0,
@@ -423,6 +423,7 @@ def test_task_get_service_result(servicetask):
         "result": {
             "score": 0,
         },
+        "partial": False,
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "type": "text/plain",
         "size": 0,
@@ -486,6 +487,7 @@ def test_task_save_result(servicetask):
             "service_debug_info": None,
         },
         "result": {"score": 0, "sections": []},
+        "partial": False,
         "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
         "type": "text/plain",
         "size": 0,

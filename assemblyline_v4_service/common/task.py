@@ -70,7 +70,8 @@ class Task:
         self.min_classification = task.min_classification.value
         self.max_extracted = task.max_files
         self.metadata = task.metadata
-        self.result: Optional[Result] = None
+        self.partial_result: bool = False
+        self.result: Result = Result()
         self.safelist_config: Dict[str, Any] = task.safelist_config
         self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
@@ -263,10 +264,14 @@ class Task:
             type=self.file_type,
             size=self.file_size,
             drop_file=self.drop_file,
+            partial=self.partial_result,
             temp_submission_data=self.temp_submission_data,
         )
 
         return result
+
+    def partial(self) -> None:
+        self.partial_result = True
 
     def save_error(self, stack_info: str, recoverable: bool) -> None:
         self.error_message = stack_info
