@@ -240,6 +240,7 @@ class UpdaterClient(object):
     @property
     def classification_override(self):
         return self._classification_override
+
     @classification_override.setter
     def classification_override(self, value: str):
         # Set the classification override

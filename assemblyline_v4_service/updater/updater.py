@@ -407,8 +407,10 @@ class ServiceUpdater(ThreadedCoreBase):
                         # Enable syncing if the source specifies it
                         self.client.sync = source.get('sync', False)
                         # Override classfication of signatures if specified
-                        self.client.classification_override = default_classification \
-                            if source.get('override_classification', False) else None
+                        # Reset client back to original classification state between updates
+                        self.client.classification_override = None
+                        if source.get('override_classification', False):
+                            self.client.classification_override = default_classification
 
                         self.push_status("UPDATING", "Pulling..")
                         output = None
@@ -423,7 +425,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         else:
                             self.log.info(f"Fetching {source_name} using {fetch_method}")
                             # Pull sources from external locations
-                            if uri.startswith("file://"):
+                            if uri.startswith("file:///"):
                                 # Perform an update using a local mount
                                 output = uri.split("file://", 1)[1]
                                 if not os.path.exists(output):
