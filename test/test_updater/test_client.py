@@ -1,6 +1,8 @@
 import random
 import pytest
 
+from assemblyline.odm.models.signature import Signature
+from assemblyline.odm.randomizer import random_model_obj
 from assemblyline.odm.random_data import create_badlists, create_safelists, create_signatures, wipe_badlist, wipe_safelist, wipe_signatures
 from assemblyline_v4_service.updater.client import UpdaterClient
 
@@ -98,3 +100,23 @@ def test_signature_update(client):
     for signature_id in signature_ids:
         signature = client.datastore.signature.get(signature_id)
         assert signature.status != "INVALID" and signature.state_change_user == "test"
+
+def test_classification_override(client):
+    # Override the classfication of all signatures to a custom string
+    SOURCE_NAME = "TESTING"
+
+    signatures = [random_model_obj(Signature, as_json=True) for _ in range(10)]
+
+    # Override the classfication of all signatures to a custom string
+    SOURCE_CLASSIFICATION = "TLP:C//CMR"
+    client.classification_override = SOURCE_CLASSIFICATION
+
+    # Ensure none of the existing signatures have a matching classification
+    assert all([s['classification'] != SOURCE_CLASSIFICATION for s in signatures])
+
+    # Add signatures to the system with the classification override set
+    client.signature.add_update_many(SOURCE_NAME, SOURCE_NAME.lower(), signatures)
+
+    # Ensure signatures were added to system and that the classification matches that of the source
+    for s in client.datastore.signature.stream_search(f"source:{SOURCE_NAME}", as_obj=False):
+        assert s["classification"] == SOURCE_CLASSIFICATION

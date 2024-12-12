@@ -17,6 +17,7 @@ class SyncableBadlistClient(BadlistClient):
     def __init__(self, datastore, config=None):
         super().__init__(datastore, config)
         self.sync = False
+        self.classification_override = None
 
     def add_update_many(self, data: List[Union[dict, BadlistModel]]) -> Dict[str, Any]:
         return hashlist_add_update_many(self, self.datastore.badlist, data)
@@ -26,6 +27,7 @@ class SyncableSafelistClient(SafelistClient):
     def __init__(self, datastore, config=None):
         super().__init__(datastore, config)
         self.sync = False
+        self.classification_override = None
 
     def add_update_many(self, data: List[Union[dict, SafelistModel]]) -> Dict[str, Any]:
         return hashlist_add_update_many(self, self.datastore.safelist, data)
@@ -55,9 +57,14 @@ def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafeli
             # Set the source name
             source = d["sources"][0]["name"]
 
+        if client.classification_override:
+            # Override the classification of the signature based on what's assigned to the client
+            d["sources"][0]["classification"] = client.classification_override
+
         if client.sync:
             # Compute the expected ID and add it to the list
             current_ids.add(client._preprocess_object(d))
+
         # Update with JSON-friendly version of data to be sent to API
         data[i] = d
 
@@ -122,6 +129,7 @@ class SyncableSignatureClient(SignatureClient):
     def __init__(self, datastore, config=None):
         super().__init__(datastore, config)
         self.sync = False
+        self.classification_override = None
 
     def add_update_many(self, source: str, sig_type: str, data: List[Union[dict, SignatureModel]],
                         dedup_name: bool = True) -> Dict[str, Any]:
@@ -143,6 +151,10 @@ class SyncableSignatureClient(SignatureClient):
                 # Preserve status set by an actual user
                 d['status'] = sig_exists['status']
                 d['state_change_user'] = sig_exists['state_change_user']
+
+            if self.classification_override:
+                # Override the classification of the signature based on what's assigned to the client
+                d['classification'] = self.classification_override
 
             if self.sync:
                 # Add signature ID to the list
@@ -208,6 +220,7 @@ class UpdaterClient(object):
     def __init__(self, datastore) -> None:
         self.datastore = datastore
         self._sync = False
+        self._classification_override = None
         self.badlist = SyncableBadlistClient(datastore)
         self.safelist = SyncableSafelistClient(datastore)
         self.signature = SyncableSignatureClient(datastore)
@@ -223,3 +236,15 @@ class UpdaterClient(object):
         self.safelist.sync = value
         self.signature.sync = value
         self._sync = value
+
+    @property
+    def classification_override(self):
+        return self._classification_override
+
+    @classification_override.setter
+    def classification_override(self, value: str):
+        # Set the classification override
+        self.badlist.classification_override = value
+        self.safelist.classification_override = value
+        self.signature.classification_override = value
+        self._classification_override = value
