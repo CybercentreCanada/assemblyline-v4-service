@@ -57,4 +57,4 @@ cruft create https://github.com/CybercentreCanada/assemblyline-service-template.
 
 ## Documentation
 
-Pour plus d'informations sur le développement de services pour Assemblyline, suivez ce [guide](https://cybercentrecanada.github.io/assemblyline4_docs/developer_manual/services/developing_an_assemblyline_service/).
+Pour plus d'informations sur le développement des services pour Assemblyline, suivez ce [guide](https://cybercentrecanada.github.io/assemblyline4_docs/developer_manual/services/developing_an_assemblyline_service/).
