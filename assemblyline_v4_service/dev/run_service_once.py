@@ -19,7 +19,7 @@ from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
-from assemblyline_v4_service.common.helper import get_heuristics
+from assemblyline_v4_service.common.helper import get_heuristics, get_service_manifest
 
 
 class RunService:
@@ -189,36 +189,29 @@ class RunService:
         self.identify.stop()
 
     def load_service_manifest(self, return_heuristics=False) -> Union[None, Dict]:
-        service_manifest_yml = os.path.join(os.getcwd(), 'service_manifest.yml')
+        service_manifest_data = get_service_manifest()
+        heuristics = service_manifest_data.get('heuristics', None)
 
-        if os.path.exists(service_manifest_yml):
-            with open(service_manifest_yml) as yml_fh:
-                service_manifest_data = yaml.safe_load(yml_fh.read())
+        # Pop the 'extra' data from the service manifest
+        for x in ['file_required', 'tool_version', 'heuristics']:
+            service_manifest_data.pop(x, None)
 
-            heuristics = service_manifest_data.get('heuristics', None)
+        # Validate the service manifest
+        try:
+            self.service = Service(service_manifest_data)
+        except Exception as e:
+            LOG.error(f"Invalid service manifest: {str(e)}")
 
-            # Pop the 'extra' data from the service manifest
-            for x in ['file_required', 'tool_version', 'heuristics']:
-                service_manifest_data.pop(x, None)
+        service_config = {}
+        if service_manifest_data:
+            service_config = service_manifest_data.get('config', {})
 
-            # Validate the service manifest
-            try:
-                self.service = Service(service_manifest_data)
-            except Exception as e:
-                LOG.error(f"Invalid service manifest: {str(e)}")
+        self.submission_params = {x['name']: x['value']
+                                    for x in service_manifest_data.get('submission_params', [])}
 
-            service_config = {}
-            if service_manifest_data:
-                service_config = service_manifest_data.get('config', {})
-
-            self.submission_params = {x['name']: x['value']
-                                      for x in service_manifest_data.get('submission_params', [])}
-
-            self.service = self.service_class(config=service_config)
-            if return_heuristics:
-                return heuristics
-        else:
-            raise Exception("Service manifest YAML file not found in root folder of service.")
+        self.service = self.service_class(config=service_config)
+        if return_heuristics:
+            return heuristics
 
 
 if __name__ == '__main__':
