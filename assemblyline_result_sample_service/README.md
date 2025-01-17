@@ -5,9 +5,9 @@
 [![GitHub Issues or Pull Requests by label](https://img.shields.io/github/issues/CybercentreCanada/assemblyline/service-base)](https://github.com/CybercentreCanada/assemblyline/issues?q=is:issue+is:open+label:service-base)
 [![License](https://img.shields.io/github/license/CybercentreCanada/assemblyline-v4-service)](./LICENCE.md)
 
-# Assemblyline 4 - Service Base
+# Assemblyline 4 - Exemple de résultat Service
 
-This repository provides the base service functionality for Assemblyline 4 services.
+Il s'agit d'un exemple de service qui peut produire différents types de résultats pour illustrer la variété des visualisations de données que Assemblyline prend en charge..
 
 ## Image variants and tags
 
@@ -16,16 +16,6 @@ This repository provides the base service functionality for Assemblyline 4 servi
 |    latest    | The most recent build (can be unstable).                                                         |          `latest`          |
 |  build_type  | The type of build used. `dev` is the latest unstable build. `stable` is the latest stable build. |     `stable` or `dev`      |
 |    series    | Complete build details, including version and build type: `version.buildType`.                   | `4.5.stable`, `4.5.1.dev3` |
-
-## Creating a new Assemblyline service
-
-You can create a new Assemblyline service by using this [template](https://github.com/CybercentreCanada/assemblyline-service-template):
-
-```bash
-apt install jq
-pip install git+https://github.com/CybercentreCanada/assemblyline-service-template.git
-cruft create https://github.com/CybercentreCanada/assemblyline-service-template.git
-```
 
 ## Documentation
 
@@ -36,16 +26,6 @@ For more information about service development for Assemblyline, follow this [gu
 # Assemblyline 4 - Service Base
 
 Ce référentiel fournit les fonctionnalités de base des services Assemblyline 4.
-
-## Créer un nouveau service Assemblyline
-
-Vous pouvez créer un nouveau service Assemblyline en utilisant ce [template](https://github.com/CybercentreCanada/assemblyline-service-template).
-
-```bash
-apt install jq
-pip install git+https://github.com/CybercentreCanada/assemblyline-service-template.git
-cruft create https://github.com/CybercentreCanada/assemblyline-service-template.git
-```
 
 ## Variantes et étiquettes d'image
 
