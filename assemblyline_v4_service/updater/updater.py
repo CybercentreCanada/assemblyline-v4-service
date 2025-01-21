@@ -368,6 +368,11 @@ class ServiceUpdater(ThreadedCoreBase):
             while self.update_queue.qsize():
                 update_attempt = -1
                 source_name = self.update_queue.get()
+
+                if source_name not in sources:
+                    # This source has been removed from the service configuration
+                    continue
+
                 while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
                     # Introduce an exponential delay between each attempt
                     time.sleep(SOURCE_UPDATE_ATTEMPT_DELAY_BASE**update_attempt)
