@@ -7,7 +7,6 @@ from subprocess import Popen, TimeoutExpired
 from assemblyline.common import log as al_log
 from assemblyline_v4_service.run_privileged_service import RunPrivilegedService
 
-LOG_LEVEL = logging.getLevelName(environ.get("LOG_LEVEL", "INFO"))
 PRIVILEGED = environ.get('PRIVILEGED', 'false') == 'true'
 
 
@@ -44,7 +43,7 @@ def check_processes(service_process, task_handler_process, log):
 
 
 def run_task_handler():
-    al_log.init_logging("assemblyline.service.process_handler", log_level=LOG_LEVEL)
+    al_log.init_logging("assemblyline.service.process_handler")
 
     log = logging.getLogger("assemblyline.service.process_handler")
 

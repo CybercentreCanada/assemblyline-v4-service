@@ -26,7 +26,6 @@ from assemblyline_v4_service.common.task import Task
 # Ignore all other warnings that a service's libraries can generate
 warnings.filterwarnings("ignore")
 
-LOG_LEVEL = logging.getLevelName(os.environ.get("LOG_LEVEL", "INFO"))
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 UPDATES_CA = os.environ.get('UPDATES_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
@@ -56,7 +55,7 @@ class ServiceBase:
 
         self.name = self.service_attributes.name.lower()
         # Initialize logging for the service
-        log.init_logging(f'{self.service_attributes.name}', log_level=LOG_LEVEL)
+        log.init_logging(f'{self.service_attributes.name}')
         self.log = logging.getLogger(f'assemblyline.service.{self.name}')
 
         # Replace warning/error methods with our own patched version
