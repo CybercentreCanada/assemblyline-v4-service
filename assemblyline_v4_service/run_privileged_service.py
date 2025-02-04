@@ -20,7 +20,7 @@ from assemblyline.odm.messages.service_heartbeat import Metrics
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_core.tasking_client import TaskingClient
 from assemblyline_core.server_base import ServerBase
-from assemblyline_v4_service.common.base import LOG_LEVEL, is_recoverable_runtime_error
+from assemblyline_v4_service.common.base import is_recoverable_runtime_error
 
 SERVICE_PATH = os.environ['SERVICE_PATH']
 SERVICE_TAG = os.environ.get("SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0").encode("utf-8")
@@ -74,9 +74,7 @@ class RunPrivilegedService(ServerBase):
 
         self.status = STATUSES.INITIALIZING
         self.metric_factory = None
-
-        self.log.setLevel(LOG_LEVEL)
-
+        
     def _load_manifest(self):
         bio = BytesIO()
         with open(SERVICE_MANIFEST, "rb") as srv_manifest:
