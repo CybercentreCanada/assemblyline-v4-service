@@ -89,7 +89,8 @@ def test_url_download():
         m.post(HTML_FILE_REQUEST, text="blah")
         assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY) == INDEX
         assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "get"}, 0, log, DIRECTORY) == INDEX
-        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "post"}, 0, log, DIRECTORY) == INDEX
+        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "post",
+                             "post_data": {"api-key": "123456"}}, 0, log, DIRECTORY) == INDEX
 
         os.remove(INDEX)
 
