@@ -20,8 +20,12 @@ class SyncableBadlistClient(BadlistClient):
         self.classification_override = None
 
     def add_update_many(self, data: List[Union[dict, BadlistModel]]) -> Dict[str, Any]:
-        return hashlist_add_update_many(self, self.datastore.badlist, data)
+        response = hashlist_add_update_many(self, self.datastore.badlist, data)
 
+        # Ensure new data is available to query
+        self.datastore.badlist.commit()
+
+        return response
 
 class SyncableSafelistClient(SafelistClient):
     def __init__(self, datastore, config=None):
@@ -30,7 +34,12 @@ class SyncableSafelistClient(SafelistClient):
         self.classification_override = None
 
     def add_update_many(self, data: List[Union[dict, SafelistModel]]) -> Dict[str, Any]:
-        return hashlist_add_update_many(self, self.datastore.safelist, data)
+        response = hashlist_add_update_many(self, self.datastore.safelist, data)
+
+        # Ensure new data is available to query
+        self.datastore.safelist.commit()
+
+        return response
 
 
 def hashlist_add_update_many(client: Union[SyncableBadlistClient, SyncableSafelistClient],
@@ -187,10 +196,11 @@ class SyncableSignatureClient(SignatureClient):
                                                     [(self.datastore.signature.UPDATE_SET, 'status', 'DISABLED'),
                                                      (self.datastore.signature.UPDATE_SET, 'last_modified', 'NOW')])
 
+        response = None
         # Proceed with adding/updating signatures
         if len(data) < SIGNATURE_UPDATE_BATCH:
             # Update all of them in a single batch
-            return super().add_update_many(source, sig_type, data, dedup_name)
+            response = super().add_update_many(source, sig_type, data, dedup_name)
         else:
             response = {
                 'success': 0,
@@ -213,7 +223,10 @@ class SyncableSignatureClient(SignatureClient):
                 batch_num += 1
                 start = batch_num * SIGNATURE_UPDATE_BATCH
 
-            return response
+        # Ensure new data is available to query
+        self.datastore.signature.commit()
+
+        return response
 
 
 class UpdaterClient(object):
