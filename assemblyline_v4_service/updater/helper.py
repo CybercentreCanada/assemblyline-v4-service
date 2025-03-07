@@ -138,8 +138,8 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
             if fetch_method == 'get':
                 response = session.get(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
             elif fetch_method == 'post':
-                json = source.get('post_data') or None
-                response = session.post(uri, auth=auth, headers=headers, proxies=proxies, json=json, stream=True)
+                data = source.get('post_data') or None
+                response = session.post(uri, auth=auth, headers=headers, proxies=proxies, data=data, stream=True)
             else:
                 raise ValueError(f"Unknown fetch method: {fetch_method}")
 
