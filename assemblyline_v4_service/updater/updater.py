@@ -1,37 +1,44 @@
 from __future__ import annotations
-import shutil
-from typing import Optional, Any, Tuple, List
-import typing
-import os
-import logging
-import time
-import json
-import tempfile
-import tarfile
-import threading
-import subprocess
+
 import hashlib
+import json
+import logging
+import os
+import shutil
+import subprocess
+import tarfile
+import tempfile
+import threading
+import time
+import typing
 from io import BytesIO
 from queue import Queue
+from typing import Any, List, Optional, Tuple
 from zipfile import ZipFile
 
-from assemblyline.common import forge, log as al_log
+from assemblyline_core.server_base import ServiceStage, ThreadedCoreBase
+
+from assemblyline.common import forge
+from assemblyline.common import log as al_log
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
-from assemblyline.remote.datatypes.events import EventSender, EventWatcher
-
-from assemblyline_core.server_base import ThreadedCoreBase, ServiceStage
 from assemblyline.odm.models.service import Service, UpdateSource
+from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 from assemblyline.remote.datatypes.hash import Hash
-
 from assemblyline_v4_service.common.base import SIGNATURES_META_FILENAME
 from assemblyline_v4_service.updater.client import UpdaterClient
-from assemblyline_v4_service.updater.helper import url_download, git_clone_repo, SkipSource, filter_downloads
+from assemblyline_v4_service.updater.helper import (
+    SkipSource,
+    filter_downloads,
+    git_clone_repo,
+    url_download,
+)
 
 if typing.TYPE_CHECKING:
     import redis
-    from assemblyline.odm.models.config import Config
+
     from assemblyline.datastore.helper import AssemblylineDatastore
+    from assemblyline.odm.models.config import Config
     RedisType = redis.Redis[typing.Any]
 
 SERVICE_PULL_INTERVAL = 1200
@@ -65,10 +72,10 @@ class ServiceUpdater(ThreadedCoreBase):
                  shutdown_timeout: float = None, config: Config = None,
                  datastore: AssemblylineDatastore = None,
                  redis: RedisType = None, redis_persist: RedisType = None,
-                 default_pattern=".*", downloadable_signature_statuses=['DEPLOYED', 'NOISY']):
+                 downloadable_signature_statuses=['DEPLOYED', 'NOISY']):
 
         self.updater_type = os.environ['SERVICE_PATH'].split('.')[-1].lower()
-        self.default_pattern = default_pattern
+        self.default_pattern = None
 
         if not logger:
             al_log.init_logging(f'updater.{self.updater_type}', log_level=os.environ.get('LOG_LEVEL', "WARNING"))
@@ -246,6 +253,10 @@ class ServiceUpdater(ThreadedCoreBase):
     def _pull_settings(self):
         # Download the service object from datastore
         self._service = self.datastore.get_service_with_delta(SERVICE_NAME)
+
+        # Set default pattern if not already set
+        if not self.default_pattern:
+            self.default_pattern = self._service.update_config.default_pattern
 
         # Update signature client with any changes to classification rewrites
         self.client.signature.classification_replace_map = \
