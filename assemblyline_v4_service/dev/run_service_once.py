@@ -185,7 +185,7 @@ class RunService:
         LOG.info(f"Cleaning up file used for temporary processing: {target_file}")
         os.unlink(target_file)
 
-        if self.service.rules_directory:
+        if self.service.rules_directory and self.service.rules_directory != "/":
             LOG.info("Cleaning up downloaded signatures..")
             shutil.rmtree(self.service.rules_directory)
 
