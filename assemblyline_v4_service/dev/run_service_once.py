@@ -1,6 +1,5 @@
 import argparse
 import cProfile
-import importlib
 import json
 import logging
 import os
@@ -8,8 +7,6 @@ import pprint
 import shutil
 import tempfile
 from typing import Dict, Union
-
-from cart import get_metadata_only, unpack_stream
 
 from assemblyline.common import forge
 from assemblyline.common.heuristics import HeuristicHandler, InvalidHeuristicException
@@ -22,11 +19,12 @@ from assemblyline.odm.models.service import Service
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_manifest
 from assemblyline_v4_service.dev.updater import load_rules
+from cart import get_metadata_only, unpack_stream
 
 
 class RunService:
     def __init__(self):
-        self.service: ServiceBase = None
+        self.service: Union[ServiceBase, None] = None
         self.service_class = None
         self.submission_params = None
         self.file_dir = None
