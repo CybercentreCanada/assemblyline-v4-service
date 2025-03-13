@@ -1,15 +1,12 @@
 import argparse
+import cProfile
 import json
 import logging
 import os
 import pprint
 import shutil
 import tempfile
-import yaml
-import cProfile
-
-from cart import get_metadata_only, unpack_stream
-from typing import Union, Dict
+from typing import Dict, Union
 
 from assemblyline.common import forge
 from assemblyline.common.heuristics import HeuristicHandler, InvalidHeuristicException
@@ -19,12 +16,15 @@ from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
+from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_manifest
+from assemblyline_v4_service.dev.updater import load_rules
+from cart import get_metadata_only, unpack_stream
 
 
 class RunService:
     def __init__(self):
-        self.service = None
+        self.service: Union[ServiceBase, None] = None
         self.service_class = None
         self.submission_params = None
         self.file_dir = None
@@ -40,6 +40,10 @@ class RunService:
             raise
 
         self.load_service_manifest()
+
+        if self.service.service_attributes.update_config:
+            # Download required signatures and process them for the service run
+            load_rules(self.service)
 
         if not os.path.isfile(FILE_PATH):
             LOG.info(f"File not found: {FILE_PATH}")
@@ -178,6 +182,10 @@ class RunService:
 
         LOG.info(f"Cleaning up file used for temporary processing: {target_file}")
         os.unlink(target_file)
+
+        if self.service.rules_directory and self.service.rules_directory != "/":
+            LOG.info("Cleaning up downloaded signatures..")
+            shutil.rmtree(self.service.rules_directory)
 
         LOG.info(f"Moving {result_json} to the working directory: {working_dir}/result.json")
         shutil.move(result_json, os.path.join(working_dir, 'result.json'))
