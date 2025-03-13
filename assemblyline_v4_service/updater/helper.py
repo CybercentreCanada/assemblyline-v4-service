@@ -11,12 +11,12 @@ import certifi
 import psutil
 import regex as re
 import requests
-from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
 from git import Repo
 
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
 from assemblyline.common.isotime import iso_to_epoch
+from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
 
 BLOCK_SIZE = 64 * 1024
 GIT_ALLOW_UNSAFE_PROTOCOLS = os.environ.get('GIT_ALLOW_UNSAFE_PROTOCOLS', 'false').lower() == 'true'
@@ -138,8 +138,7 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
             if fetch_method == 'get':
                 response = session.get(uri, auth=auth, headers=headers, proxies=proxies, stream=True)
             elif fetch_method == 'post':
-                json = source.get('post_data') or None
-                response = session.post(uri, auth=auth, headers=headers, proxies=proxies, json=json, stream=True)
+                response = session.post(uri, auth=auth, headers=headers, proxies=proxies, data=source.get('data'),stream=True)
             else:
                 raise ValueError(f"Unknown fetch method: {fetch_method}")
 
