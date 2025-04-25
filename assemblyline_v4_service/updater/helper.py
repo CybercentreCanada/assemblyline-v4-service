@@ -12,6 +12,7 @@ import psutil
 import regex as re
 import requests
 from git import Repo
+from azure.identity import DefaultAzureCredential
 
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
@@ -187,6 +188,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
     name = source['name']
     url = source['uri']
     key = source.get('private_key', None)
+    use_managed_identity = source.get('use_managed_identity', False)
     username = source.get('username', None)
     password = source.get('password', None)
     branch = source.get('git_branch', None) or None
@@ -195,14 +197,28 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
     ca_cert = source.get("ca_cert")
     proxy = source.get('proxy', None)
     auth = None
-    if username and password:
+    git_env = {}
+
+    if use_managed_identity:
+        # Get Azure managed identity token
+        try:
+            credential = DefaultAzureCredential()
+        except Exception as e:
+            logger.warning(f"No managed identity available: {str(e)}")
+            raise SkipSource()
+        # Get token for Azure DevOps scope
+        token = credential.get_token("499b84ac-1321-427f-aa17-267ca6975798/.default")
+
+        git_env['GIT_CONFIG_COUNT'] = '1'
+        git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
+        git_env['GIT_CONFIG_VALUE_0'] = f'AUTHORIZATION: bearer {token.token}'
+        auth = None
+    elif username and password:
         # Basic authentication scheme
         auth = f'{username}:{password}@'
     elif password:
         # Token-based authentication
         auth = f'{password}@'
-
-    git_env = {}
 
     if ignore_ssl_errors:
         git_env['GIT_SSL_NO_VERIFY'] = '1'
