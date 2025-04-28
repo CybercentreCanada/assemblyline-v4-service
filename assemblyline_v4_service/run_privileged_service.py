@@ -3,23 +3,22 @@ import json
 import os
 import shutil
 import tempfile
-import yaml
-
-from json import JSONDecodeError
 from io import BytesIO
+from json import JSONDecodeError
 
-from assemblyline.common import forge
+import yaml
+from assemblyline_core.server_base import ServerBase
+from assemblyline_core.tasking_client import TaskingClient
+
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.importing import load_module_by_path
 from assemblyline.common.metrics import MetricsFactory
 from assemblyline.common.str_utils import StringTable
-from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION, BUILD_MINOR
+from assemblyline.common.version import BUILD_MINOR, FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.filestore import FileStoreException
-from assemblyline.remote.datatypes import get_client
 from assemblyline.odm.messages.service_heartbeat import Metrics
 from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline_core.tasking_client import TaskingClient
-from assemblyline_core.server_base import ServerBase
+from assemblyline.remote.datatypes import get_client
 from assemblyline_v4_service.common.base import is_recoverable_runtime_error
 
 SERVICE_PATH = os.environ['SERVICE_PATH']
@@ -74,7 +73,7 @@ class RunPrivilegedService(ServerBase):
 
         self.status = STATUSES.INITIALIZING
         self.metric_factory = None
-        
+
     def _load_manifest(self):
         bio = BytesIO()
         with open(SERVICE_MANIFEST, "rb") as srv_manifest:
@@ -126,6 +125,7 @@ class RunPrivilegedService(ServerBase):
 
         # Load on-disk manifest for bootstrap/registration
         service_manifest = self._load_manifest()
+        file_required = service_manifest.get('file_required', True)
 
         # Register the service
         registration = self.tasking_client.register_service(service_manifest)
@@ -146,7 +146,6 @@ class RunPrivilegedService(ServerBase):
         self.service_tool_version = self.service.get_tool_version()
         self.metric_factory = MetricsFactory('service', Metrics, name=self.service_name,
                                              export_zero=False, redis=self.redis)
-        file_required = self.service_config.get('file_required', True)
 
         # Start the service
         self.service.start_service()
