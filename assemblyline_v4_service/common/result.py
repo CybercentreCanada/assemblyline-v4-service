@@ -5,7 +5,12 @@ import logging
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
-from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
+from assemblyline.common.attack_map import (
+    attack_map,
+    group_map,
+    revoke_map,
+    software_map,
+)
 from assemblyline.common.classification import Classification
 from assemblyline.common.dict_utils import unflatten
 from assemblyline.common.str_utils import StringTable, safe_str
@@ -663,8 +668,11 @@ class ResultSection:
             self._heuristic = None
         elif self._heuristic:
             heur_id = heur.heur_id if isinstance(heur, Heuristic) else heur
-            raise InvalidHeuristicException(f"The service is trying to set the heuristic twice, this is not allowed. "
-                                            f"[Current: {self.heuristic.heur_id}, New: {heur_id}]")
+            if self.heuristic and heur_id != self.heuristic.heur_id:
+                raise InvalidHeuristicException(
+                    f"The service is trying to set the heuristic twice, this is not allowed. "
+                    f"[Current: {self.heuristic.heur_id}, New: {heur_id}]"
+                )
         elif isinstance(heur, Heuristic):
             self._heuristic = heur
         # at this point, heur is an integer representing a heuristic ID
