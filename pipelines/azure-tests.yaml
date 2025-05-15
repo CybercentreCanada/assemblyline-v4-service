@@ -72,7 +72,7 @@ jobs:
           sudo mkdir -p /var/cache/assemblyline/
           sudo cp pipelines/config.yml /etc/assemblyline
           sudo chmod a+rw /var/cache/assemblyline/
-          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -U pip cython setuptools wheel
+          sudo env "PATH=$PATH" "PIP_USE_PEP517=true" python -m pip install --no-cache-dir -U pip cython setuptools wheel
         workingDirectory: $(Pipeline.Workspace)/s/assemblyline-v4-service
         displayName: Setup Environment
       - script: |
@@ -81,7 +81,7 @@ jobs:
 
           git checkout -b $BRANCH_NAME -t origin/$BRANCH_NAME || true
           git status
-          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .
+          sudo env "PATH=$PATH" "PIP_USE_PEP517=true" python -m pip install --no-cache-dir -e .
         displayName: Install assemblyline
         workingDirectory: $(Pipeline.Workspace)/s/assemblyline-base
       - script: |
@@ -90,15 +90,15 @@ jobs:
 
           git checkout -b $BRANCH_NAME -t origin/$BRANCH_NAME || true
           git status
-          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .
+          sudo env "PATH=$PATH" "PIP_USE_PEP517=true" python -m pip install --no-cache-dir -e .
         workingDirectory: $(Pipeline.Workspace)/s/assemblyline-core
         displayName: Install assemblyline_core
       - script: |
           set -x # echo on
           [ ! -d "$(pwd)/test" ] && echo "No test found" && exit
 
-          sudo env "PATH=$PATH" python -m pip install --no-cache-dir -e .[updater]
-          [ -f $(pwd)/test/requirements.txt ] && sudo env "PATH=$PATH" python -m pip install --no-cache-dir -r $(pwd)/test/requirements.txt
+          sudo env "PATH=$PATH" "PIP_USE_PEP517=true" python -m pip install --no-cache-dir -e .[updater]
+          [ -f $(pwd)/test/requirements.txt ] && sudo env "PATH=$PATH" "PIP_USE_PEP517=true" python -m pip install --no-cache-dir -r $(pwd)/test/requirements.txt
         workingDirectory: $(Pipeline.Workspace)/s/assemblyline-v4-service
         displayName: Setup environment for service base
       - script: |
