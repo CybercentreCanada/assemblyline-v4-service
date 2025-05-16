@@ -87,7 +87,7 @@ def __extract_passwords_from_lines(texts, password_word, password_regex):
                 if special_char in BRACKET_PAIRS:
                     special_char = BRACKET_PAIRS[special_char]
                 for password in list(new_passwords):
-                    new_passwords.update(set([password[:i] for i, ltr in enumerate(password) if ltr == special_char]))
+                    new_passwords.update([password[:i] for i, ltr in enumerate(password) if ltr == special_char])
 
                 new_passwords = set(new_passwords)
                 new_passwords.discard("")
