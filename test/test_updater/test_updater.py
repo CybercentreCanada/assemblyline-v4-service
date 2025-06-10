@@ -107,7 +107,7 @@ def test_inventory_check(initialized_updater: ServiceUpdater):
         with tempfile.NamedTemporaryFile(dir=dir, suffix=random.choice(initialized_updater._service.update_config.sources).name):
             assert initialized_updater._inventory_check()
 
-@pytest.mark.parametrize("generates_signatures", [True, False])
+@pytest.mark.parametrize("generates_signatures", [True, False], ids=["generates_signatures=True", "generates_signatures=False"])
 def test_do_local_update(initialized_updater, generates_signatures):
     initialized_updater._service.update_config.generates_signatures = generates_signatures
     if generates_signatures:
@@ -119,7 +119,7 @@ def test_do_local_update(initialized_updater, generates_signatures):
         for update in sources:
             sig = random_model_obj(Signature)
             sig.source = update
-            sig.type = SERVICE_NAME
+            sig.type = initialized_updater.updater_type
             sig.status = "DEPLOYED"
             signatures.append(sig)
             initialized_updater.client.signature.add_update_many(update, initialized_updater.updater_type, [sig])
@@ -136,7 +136,7 @@ def test_do_local_update(initialized_updater, generates_signatures):
         #   | <update_source>
         #   | ...
 
-        service_updates = os.path.join(initialized_updater._update_dir, SERVICE_NAME)
+        service_updates = os.path.join(initialized_updater._update_dir, initialized_updater.updater_type)
         assert os.path.exists(service_updates) and \
             all([os.path.exists(os.path.join(service_updates, source)) for source in sources])
 
@@ -144,8 +144,9 @@ def test_do_local_update(initialized_updater, generates_signatures):
         with open(os.path.join(initialized_updater._update_dir, SIGNATURES_META_FILENAME)) as meta_file:
             sig_meta = json.load(meta_file)
 
-            for s in initialized_updater.datastore.signature.stream_search(f"type:{SERVICE_NAME}", fl="signature_id"):
-                assert s.signature_id in sig_meta
+            for s in initialized_updater.datastore.signature.stream_search(initialized_updater.signatures_query,
+                                                                            fl="signature_id", as_obj=False):
+                assert s["signature_id"] in sig_meta
 
 def test_do_source_update(initialized_updater: ServiceUpdater):
     source = initialized_updater._service.update_config.sources[0]
