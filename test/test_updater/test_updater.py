@@ -281,14 +281,12 @@ def test_signature_change(initialized_updater: ServiceUpdater, operation):
 def test_source_change(initialized_updater):
     import string
     # Provide a random list of update sources to task the updater
-    number_of_updates = random.randint(1,5)
-    data = random.choices(string.ascii_letters, k=number_of_updates)
-
+    data = random.choices(string.ascii_letters, k=random.randint(1,5))
     # Task the updater to trigger and update from sources
     initialized_updater._handle_source_update_event(data)
 
     # Expect the length of the queue to match the data input
-    assert initialized_updater.update_queue.qsize() == number_of_updates
+    assert initialized_updater.update_queue.qsize() == len(set(data))
 
     # Expect the source_update_flag to be set
     assert initialized_updater.source_update_flag.is_set()
