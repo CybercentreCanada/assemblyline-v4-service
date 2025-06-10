@@ -12,7 +12,8 @@ from assemblyline_v4_service.updater.updater import (
     ServiceUpdater,
 )
 
-from assemblyline.odm.models.service import Service
+from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
+from assemblyline.odm.models.service import Service, UpdateSource
 from assemblyline.odm.models.service_delta import ServiceDelta
 from assemblyline.odm.models.signature import Signature
 from assemblyline.odm.randomizer import random_model_obj
@@ -26,6 +27,7 @@ class TestUpdater(ServiceUpdater):
 def updater():
     # Instantiate instance of updater
     updater = TestUpdater()
+    datastore = updater.datastore
 
     # Populate datastore with information about the service
     service = random_model_obj(Service)
@@ -33,10 +35,26 @@ def updater():
     service.name = SERVICE_NAME
     service_delta.name = SERVICE_NAME
     service_delta.version = "test"
-    updater.datastore.service.save(f"{SERVICE_NAME}_test", service)
-    updater.datastore.service.commit()
-    updater.datastore.service_delta.save(SERVICE_NAME, service_delta)
-    updater.datastore.service_delta.commit()
+
+    # Populate the system with some signatures related to sources configured for the service
+    service_delta.update_config.sources = [random_model_obj(UpdateSource, as_json=True)
+                                           for _ in range(random.randint(1, 3))]
+
+    # Populate a set of signatures tied to each source
+    for source in service_delta.update_config.sources:
+        for _ in range(random.randint(1, 5)):
+            signature = random_model_obj(Signature)
+            signature.type = updater.updater_type
+            signature.source = source.name
+            datastore.signature.save(signature.signature_id, signature)
+
+    datastore.signature.commit()
+    datastore.service.save(f"{SERVICE_NAME}_test", service)
+    datastore.service.commit()
+    datastore.service_delta.save(SERVICE_NAME, service_delta)
+    datastore.service_delta.commit()
+
+
 
     yield updater
 
@@ -158,3 +176,118 @@ def test_do_source_update(initialized_updater: ServiceUpdater):
         # Otherwise we should be able to fetch from the source immediately
         update_time, update_state = task_source_update("ignore_cache", True)
         assert old_update_time < update_time and update_state["message"] == "Signature(s) Imported."
+
+@pytest.mark.parametrize("operation", [op.value for op in Operation],
+                         ids=[f"op={op.name}" for op in Operation])
+def test_service_change(initialized_updater: ServiceUpdater, operation):
+    # Make a change to service (ie. adding a source to the list)
+    datastore = initialized_updater.datastore
+    source = random_model_obj(UpdateSource).as_primitives()
+    datastore.service_delta.update(SERVICE_NAME, [(datastore.service_delta.UPDATE_APPEND, "update_config.sources", source)])
+
+    # Simulate getting an event from the API notifying that a service change was made
+    initialized_updater._handle_service_change_event(ServiceChange("", operation))
+    new_settings = initialized_updater._service
+
+    if operation == Operation.Modified:
+        # We expect the changes to the service are detected by updater
+        assert source in new_settings.update_config.sources
+
+        # We also expect the source update flag to be set to trigger fetching of the new source added
+        assert initialized_updater.source_update_flag.is_set()
+
+    # Otherwise on changes that result in the service being Added, Removed, or Incompatible
+    # We expect the updater to do nothing as these changes would be more relevant to other parts of the system (ie. Scaler) that are watching the same event stream
+
+@pytest.mark.parametrize("operation", [op.value for op in Operation],
+                         ids=[f"op={op.name}" for op in Operation])
+def test_signature_change(initialized_updater: ServiceUpdater, operation):
+    datastore = initialized_updater.datastore
+    initialized_updater._service.update_config.generates_signatures = True
+    initialized_updater._service.update_config.signature_delimiter = "double_new_line"
+
+    signature = None
+    if operation == Operation.Added:
+        # Add a signature to the collection
+        signature = random_model_obj(Signature).as_primitives()
+        signature["type"] = initialized_updater.updater_type
+        signature["status"] = "DEPLOYED"
+        datastore.signature.save(signature["signature_id"], signature)
+
+    elif operation == Operation.Modified:
+        # Modify an existing signature
+        signature = datastore.signature.search(f"type:{initialized_updater.updater_type}", rows=1,
+                                               fl="source,signature_id", as_obj=False)['items'][0]
+        datastore.signature.update(signature["signature_id"], [(datastore.signature.UPDATE_SET, 'status', "DEPLOYED")])
+
+    elif operation == Operation.Removed:
+        # Remove signature source from the system
+        signature = datastore.signature.search(f"type:{initialized_updater.updater_type}", rows=1,
+                                               fl="signature_id,source", as_obj=False)['items'][0]
+        signature["signature_id"] = "*"
+
+        datastore.signature.delete_by_query(f"type:{initialized_updater.updater_type} AND source:{signature['source']}")
+    else:
+        # Ignore Incompatible operation
+        return
+
+    # Commit changes made to index
+    datastore.signature.commit()
+
+    # Trigger signature event to be registered by updater
+    initialized_updater._handle_signature_change_event(SignatureChange(
+        signature_id=signature["signature_id"],
+        signature_type=initialized_updater.updater_type,
+        source=signature["source"],
+        operation=operation
+    ))
+
+    # Expect do_local_update flag to be set
+    assert initialized_updater.local_update_flag.is_set()
+
+    # Initialize local update and check what happened
+    initialized_updater.do_local_update()
+
+    metadata_file = os.path.join(initialized_updater._update_dir, SIGNATURES_META_FILENAME)
+    source_file = os.path.join(initialized_updater._update_dir, initialized_updater.updater_type, signature["source"])
+
+    # Based on the operation that took place, we'll need to check the updates carefully
+    if operation == Operation.Added:
+        # We expect to find the new signature in the latest update
+        with open(source_file) as file:
+            assert signature["data"] in file.read()
+
+        # We also expect the sigature meta map to include information on this signature
+        with open(metadata_file) as meta_file:
+            assert signature["signature_id"] in json.load(meta_file)
+
+    elif operation == Operation.Modified:
+        # We expect the signature metadata to have changed
+        with open(metadata_file) as meta_file:
+            meta = json.load(meta_file).get(signature["signature_id"])
+
+            # Assert metadata pertaining to the signature exists and the change was recognized
+            assert meta and meta['status'] == "DEPLOYED"
+    elif operation == Operation.Removed:
+        # We expect the signature source to not exist in the new update
+        assert not os.path.exists(source_file)
+
+        # We expect there are no signatures containing metadata related to the source that was deleted
+        with open(metadata_file) as meta_file:
+            meta = json.load(meta_file)
+            assert all(signature["source"] != metadata.get("source") for metadata in meta.values())
+
+def test_source_change(initialized_updater):
+    import string
+    # Provide a random list of update sources to task the updater
+    number_of_updates = random.randint(1,5)
+    data = random.choices(string.ascii_letters, k=number_of_updates)
+
+    # Task the updater to trigger and update from sources
+    initialized_updater._handle_source_update_event(data)
+
+    # Expect the length of the queue to match the data input
+    assert initialized_updater.update_queue.qsize() == number_of_updates
+
+    # Expect the source_update_flag to be set
+    assert initialized_updater.source_update_flag.is_set()
