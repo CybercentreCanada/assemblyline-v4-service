@@ -177,7 +177,8 @@ class ServiceUpdater(ThreadedCoreBase):
         return 0
 
     def get_local_update_hash(self) -> str:
-        return hashlib.sha256(open(self._update_tar, "rb").read()).hexdigest()
+        with open(self._update_tar, "rb") as tar_file:
+            return hashlib.sha256(tar_file.read()).hexdigest()
 
     def status(self):
         return {
@@ -584,7 +585,9 @@ class ServiceUpdater(ThreadedCoreBase):
                 source.name: {'classification': source['default_classification'].value}
                 for source in self._service.update_config.sources
             }
-        open(os.path.join(new_directory, SIGNATURES_META_FILENAME), 'w').write(json.dumps(signature_map, indent=2))
+
+        with open(os.path.join(new_directory, SIGNATURES_META_FILENAME), 'w') as meta_file:
+            meta_file.write(json.dumps(signature_map, indent=2))
 
         try:
             # Tar update directory
