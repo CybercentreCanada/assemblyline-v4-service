@@ -40,4 +40,4 @@ def test_detections():
     assert detections("blah\nrecover them\nblah") == {}
 
     # Containing two ransomware strings
-    assert detections("blah\nrecover them\nblah\nencrypt") == {"ransomware": ["recover them", "encrypt"]}
+    assert detections("blah\nrecover data\nblah\nencrypted data") == {"ransomware": ["recover them", "encrypt"]}
