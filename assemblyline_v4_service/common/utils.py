@@ -122,7 +122,7 @@ def _is_dev_mode() -> bool:
         read_stack_trace = stack_trace.read()
 
         if any(msg in read_stack_trace
-               for msg in ['run_service_once', 'pytest', 'assemblyline_v4_service.testing.helper']):
+               for msg in ['run_service_once', 'pytest', 'assemblyline_service_utilites.testing.helper']):
             return True
 
     return False
