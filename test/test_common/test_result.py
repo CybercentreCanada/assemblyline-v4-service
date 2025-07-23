@@ -1,17 +1,50 @@
-from assemblyline.odm.messages.task import Task as ServiceTask
-from assemblyline_v4_service.common.task import Task
-from assemblyline_v4_service.common.result import (
-    BODY_FORMAT, DividerSectionBody, GraphSectionBody, Heuristic, ImageSectionBody, InvalidFunctionException,
-    InvalidHeuristicException, JSONSectionBody, KVSectionBody, MemorydumpSectionBody, MultiSectionBody,
-    OrderedKVSectionBody, ProcessItem, ProcessTreeSectionBody, Result, ResultAggregationException, ResultGraphSection,
-    ResultImageSection, ResultJSONSection, ResultKeyValueSection, ResultMemoryDumpSection, ResultMultiSection,
-    ResultOrderedKeyValueSection, ResultProcessTreeSection, ResultSection, ResultTableSection, ResultTextSection,
-    ResultTimelineSection, ResultURLSection, SectionBody, TableRow, TableSectionBody, TextSectionBody,
-    TimelineSectionBody, TypeSpecificResultSection, URLSectionBody, get_heuristic_primitives)
-from assemblyline_v4_service.common.request import ServiceRequest
-import pytest
 import os
 import tempfile
+
+import pytest
+from assemblyline_v4_service.common.request import ServiceRequest
+from assemblyline_v4_service.common.result import (
+    BODY_FORMAT,
+    DividerSectionBody,
+    GraphSectionBody,
+    Heuristic,
+    ImageSectionBody,
+    InvalidFunctionException,
+    InvalidHeuristicException,
+    JSONSectionBody,
+    KVSectionBody,
+    MemorydumpSectionBody,
+    MultiSectionBody,
+    OrderedKVSectionBody,
+    ProcessItem,
+    ProcessTreeSectionBody,
+    Result,
+    ResultAggregationException,
+    ResultGraphSection,
+    ResultImageSection,
+    ResultJSONSection,
+    ResultKeyValueSection,
+    ResultMemoryDumpSection,
+    ResultMultiSection,
+    ResultOrderedKeyValueSection,
+    ResultProcessTreeSection,
+    ResultSection,
+    ResultTableSection,
+    ResultTextSection,
+    ResultTimelineSection,
+    ResultURLSection,
+    SectionBody,
+    TableRow,
+    TableSectionBody,
+    TextSectionBody,
+    TimelineSectionBody,
+    TypeSpecificResultSection,
+    URLSectionBody,
+    get_heuristic_primitives,
+)
+from assemblyline_v4_service.common.task import Task
+
+from assemblyline.odm.messages.task import Task as ServiceTask
 from test.test_common import TESSERACT_LIST, setup_module
 
 # Ensure service manifest is instantiated before importing from OCR submodule
@@ -602,18 +635,18 @@ def test_imagesectionbody_add_image(service_request):
     isb = ImageSectionBody(service_request)
     image_path = os.path.join(
         os.path.dirname(__file__),
-        "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+        "094177fc6c4642f12fbf6dce18f272227ace95576ff1765384902d2abebf09bf")
 
     # Basic
     assert isb.add_image(image_path, "image_name", "description of image") is None
     assert isb._data == [
         {'img': {
             'name': 'image_name',
-            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+            'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f',
             'description': 'description of image'},
          'thumb': {
              'name': 'image_name.thumb',
-             'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+             'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
              'description': 'description of image (thumbnail)'}}]
 
     isb._data.clear()
@@ -623,23 +656,15 @@ def test_imagesectionbody_add_image(service_request):
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
     assert isb.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id,
-                         ocr_io).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON\'T BE ABLE TO ' \
-                                         'DECRYPT THEM.", "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE ' \
-                                         'WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM YOUR ' \
-                                         'COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN ' \
-                                         'BITCOIN OR XMR.", "How 00! PAY, WHERE DO | GET BITCOIN OR XMR?", "YOURSELF ' \
-                                         'TO FIND OUT HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: SEND $15, ' \
-                                         'TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND US EMAIL WITH PAYMENT", ' \
-                                         '"CONFIRMATION AND YOU\'LL GET THE DECRYPTION SOFTWARE IN EMAIL.", ' \
-                                         '"BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
+                         ocr_io).body == '{"ransomware": ["YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION KEY IN EMAIL."]}'
     assert isb._data == [
         {'img': {
             'name': 'image_name',
-            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+            'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f',
             'description': 'description of image'},
          'thumb': {
             'name': 'image_name.thumb',
-            'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
             'description': 'description of image (thumbnail)'}}]
 
 
@@ -1281,18 +1306,18 @@ def test_resultimagesection_add_image(service_request):
     ris = ResultImageSection(service_request, "title_text_as_str")
 
     image_path = os.path.join(os.path.dirname(__file__),
-                              "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+                              "094177fc6c4642f12fbf6dce18f272227ace95576ff1765384902d2abebf09bf")
 
     # Basic
     assert ris.add_image(image_path, "image_name", "description of image") is None
     assert ris.section_body._data == [{
         'img':
                                       {'name': 'image_name',
-                                       'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+                                       'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f',
                                        'description': 'description of image'},
                                       'thumb':
                                       {'name': 'image_name.thumb',
-                                       'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+                                       'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
                                        'description': 'description of image (thumbnail)'}}]
 
     ris = ResultImageSection(service_request, "title_text_as_str")
@@ -1305,11 +1330,11 @@ def test_resultimagesection_add_image(service_request):
     assert ris.section_body._data == [{
         'img':
                                       {'name': 'image_name',
-                                       'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+                                       'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f',
                                        'description': 'description of image'},
                                       'thumb':
                                       {'name': 'image_name.thumb',
-                                       'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+                                       'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
                                        'description': 'description of image (thumbnail)'}}]
 
     ris = ResultImageSection(service_request, "title_text_as_str")
@@ -1319,26 +1344,15 @@ def test_resultimagesection_add_image(service_request):
     _, path = tempfile.mkstemp()
     ocr_io = open(path, "w")
     assert ris.add_image(image_path, "image_name", "description of image", "TLP:A", ocr_heuristic_id, ocr_io,
-                         auto_add_ocr_section=False).body == '{"ransomware": ["YOUR FILES HAVE BEEN ENCRYPTED AND ' \
-                                                             'YOU WON\'T BE ABLE TO DECRYPT THEM.", "YOU CAN BUY ' \
-                                                             'DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW ' \
-                                                             'YOU TO RECOVER ALL OF YOUR DATA AND", "RANSOMWARE FROM ' \
-                                                             'YOUR COMPUTER. THE PRICE OF THE SOFTWARE IS $.2..%.. ' \
-                                                             'PAYMENT CAN BE MADE IN BITCOIN OR XMR.", "How 00! PAY, ' \
-                                                             'WHERE DO | GET BITCOIN OR XMR?", "YOURSELF TO FIND OUT ' \
-                                                             'HOW TO BUY BITCOIN OR XMR.", "PAYMENT INFORMATION: ' \
-                                                             'SEND $15, TO ONE OF OUR CRYPTO ADDRESSES, THEN SEND ' \
-                                                             'US EMAIL WITH PAYMENT", "CONFIRMATION AND YOU\'LL GET ' \
-                                                             'THE DECRYPTION SOFTWARE IN EMAIL.", "BTC ADDRESS : ' \
-                                                             'bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s"]}'
+                         auto_add_ocr_section=False).body == '{"ransomware": ["YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND", "CONFIRMATION AND YOU\'LL GET THE DECRYPTION KEY IN EMAIL."]}'
     assert ris.section_body._data == [{
         'img': {
             'name': 'image_name',
-            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329',
+            'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f',
             'description': 'description of image'},
         'thumb': {
             'name': 'image_name.thumb',
-            'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901',
+            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
             'description': 'description of image (thumbnail)'}}]
 
     # Ensure that the image files added are marked as `is_image_section`
