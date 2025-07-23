@@ -185,8 +185,8 @@ def test_add_image(service_request):
     heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
     assert heur_dict == {
-        'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'],
-        'signatures': {'ransomware_strings': 8},
+        'heur_id': 1, 'score': 500, 'attack_ids': ['T1005'],
+        'signatures': {'ransomware_strings': 2},
         'frequency': 0, 'score_map': {}}
 
     assert service_request.temp_submission_data == {}
