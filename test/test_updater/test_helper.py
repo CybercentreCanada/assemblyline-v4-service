@@ -1,12 +1,19 @@
 import os
 from logging import getLogger
 
+import certifi
 import pytest
 import requests_mock
-from assemblyline_v4_service.updater.helper import *
+from assemblyline_v4_service.updater.helper import (
+    SkipSource,
+    add_cacert,
+    filter_downloads,
+    url_download,
+)
 
 HTML_FILE_REQUEST = "http://www.google.com/index.html"
 ZIP_FILE_REQUEST = "http://www.google.com/index.zip"
+TARGZ_FILE_REQUEST = "http://www.google.com/index.tar.gz"
 
 INDEX = "/tmp/blah/index.html"
 INDEX_ZIP = "/tmp/blah/index.zip"
@@ -107,11 +114,18 @@ def test_url_download():
         m.get(HTML_FILE_REQUEST, status_code=404)
         assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY) is None
 
-        # zip file
-        m.head(ZIP_FILE_REQUEST, text="blah")
-        fake_zip_path = os.path.join(os.path.dirname(__file__), "test.zip")
-        m.get(ZIP_FILE_REQUEST, content=open(fake_zip_path, "rb").read())
-        assert url_download({"name": "index", "uri": ZIP_FILE_REQUEST}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
+@pytest.mark.parametrize("uri,filename",
+                         argvalues=[(ZIP_FILE_REQUEST, "test.zip"),(TARGZ_FILE_REQUEST, "test.tar.gz")],
+                         ids=["test.zip","test.tar.gz"])
+
+def test_url_download_unpack(uri, filename):
+    log = getLogger()
+    os.makedirs(DIRECTORY, exist_ok=True)
+    with requests_mock.Mocker() as m:
+        m.head(uri, text="blah")
+        fake_zip_path = os.path.join(os.path.dirname(__file__), filename)
+        m.get(uri, content=open(fake_zip_path, "rb").read())
+        assert url_download({"name": "index", "uri": uri}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
 
 
 def test_git_clone_repo():
