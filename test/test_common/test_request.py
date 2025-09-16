@@ -1,7 +1,6 @@
 import os
 import tempfile
 from logging import Logger
-from test.test_common import TESSERACT_LIST, setup_module
 
 import pytest
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -9,6 +8,7 @@ from assemblyline_v4_service.common.result import Result, get_heuristic_primitiv
 from assemblyline_v4_service.common.task import MaxExtractedExceeded, Task
 
 from assemblyline.odm.messages.task import Task as ServiceTask
+from test.test_common import TESSERACT_LIST, setup_module
 
 # Ensure service manifest is instantiated before importing from OCR submodule
 setup_module()
@@ -112,19 +112,19 @@ def test_add_extracted(service_request):
 def test_add_image(service_request):
     image_path = os.path.join(
         os.path.dirname(__file__),
-        "b32969aa664e3905c20f865cdd7b921f922678f5c3850c78e4c803fbc1757a8e")
+        "094177fc6c4642f12fbf6dce18f272227ace95576ff1765384902d2abebf09bf")
 
     # Basic
     assert service_request.add_image(image_path, "image_name", "description of image") == {
         'img': {
             'description': 'description of image',
             'name': 'image_name',
-            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329'
+            'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f'
         },
         'thumb': {
             'description': 'description of image (thumbnail)',
             'name': 'image_name.thumb',
-            'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901'
+            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8'
         }
     }
 
@@ -139,7 +139,7 @@ def test_add_image(service_request):
             'is_supplementary': True,
             'name': 'image_name',
             'parent_relation': 'INFORMATION',
-            'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329'
+            'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f'
         },
         {
             'allow_dynamic_recursion': False,
@@ -149,7 +149,7 @@ def test_add_image(service_request):
             'is_supplementary': True,
             'name': 'image_name.thumb',
             'parent_relation': 'INFORMATION',
-            'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901'
+            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8'
         },
     ]
 
@@ -164,31 +164,19 @@ def test_add_image(service_request):
     assert data["img"] == {
         'description': 'description of image',
         'name': 'image_name',
-        'sha256': '09bf99ab5431af13b701a06dc2b04520aea9fd346584fa2a034d6d4af0c57329'
+        'sha256': 'f52a9f1cf33e800e804c100908206525d794f15a92d9637dc03226a84e26810f'
     }
     assert data["thumb"] == {
         'description': 'description of image (thumbnail)',
         'name': 'image_name.thumb',
-        'sha256': '1af0e0d99845493b64cf402b3704170f17ecf15001714016e48f9d4854218901'
+        'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8'
     }
     assert data["ocr_section"].__dict__["section_body"].__dict__ == {
         '_config': {},
         '_data': {
-            'ransomware': [
-                "YOUR FILES HAVE BEEN ENCRYPTED AND YOU WON'T BE "
-                'ABLE TO DECRYPT THEM.',
-                'YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS '
-                'SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA '
-                'AND',
-                'RANSOMWARE FROM YOUR COMPUTER. THE PRICE OF THE '
-                'SOFTWARE IS $.2..%.. PAYMENT CAN BE MADE IN BITCOIN '
-                'OR XMR.',
-                'How 00! PAY, WHERE DO | GET BITCOIN OR XMR?',
-                'YOURSELF TO FIND OUT HOW TO BUY BITCOIN OR XMR.',
-                'PAYMENT INFORMATION: SEND $15, TO ONE OF OUR CRYPTO '
-                'ADDRESSES, THEN SEND US EMAIL WITH PAYMENT',
-                "CONFIRMATION AND YOU'LL GET THE DECRYPTION SOFTWARE IN EMAIL.",
-                "BTC ADDRESS : bciqsht77cpgw7kv420r4secmu88g34wvn96dsyc5s",
+            "ransomware": [
+                "YOU CAN BUY DECRYPTION SOFTWARE FROM US, THIS SOFTWARE WILL ALLOW YOU TO RECOVER ALL OF YOUR DATA AND",
+                "CONFIRMATION AND YOU'LL GET THE DECRYPTION KEY IN EMAIL.",
             ]
         },
         '_format': 'KEY_VALUE'
@@ -197,8 +185,8 @@ def test_add_image(service_request):
     heur_dict = get_heuristic_primitives(data["ocr_section"].__dict__["_heuristic"])
 
     assert heur_dict == {
-        'heur_id': 1, 'score': 1200, 'attack_ids': ['T1005'],
-        'signatures': {'ransomware_strings': 8},
+        'heur_id': 1, 'score': 500, 'attack_ids': ['T1005'],
+        'signatures': {'ransomware_strings': 2},
         'frequency': 0, 'score_map': {}}
 
     assert service_request.temp_submission_data == {}
