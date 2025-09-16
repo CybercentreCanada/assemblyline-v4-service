@@ -1,4 +1,5 @@
 import os
+import shutil
 from logging import getLogger
 
 import certifi
@@ -28,17 +29,8 @@ else:
 
 @pytest.fixture(autouse=True)
 def setup_and_teardown_test():
-    files_or_dirs_to_clean = [INDEX, INDEX_ZIP, INDEX_ZIP_TEXT, INDEX_ZIP_EXTRACT_PATH, DIRECTORY, TAR]
-    while any(os.path.exists(item) for item in files_or_dirs_to_clean):
-        for item in files_or_dirs_to_clean:
-            try:
-                if os.path.isdir(item):
-                    os.rmdir(item)
-                elif os.path.isfile(item):
-                    os.remove(item)
-            except Exception as e:
-                print(e)
-                pass
+    if os.path.exists(DIRECTORY):
+        shutil.rmtree(DIRECTORY)
 
 def test_add_cacert():
     fc = open(certifi.where(), "r").read()
