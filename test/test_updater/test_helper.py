@@ -12,9 +12,7 @@ from assemblyline_v4_service.updater.helper import (
     url_download,
 )
 
-HTML_FILE_REQUEST = "http://www.google.com/index.html"
-ZIP_FILE_REQUEST = "http://www.google.com/index.zip"
-TARGZ_FILE_REQUEST = "http://www.google.com/index.tar.gz"
+FILE_REQUEST_TEMPLATE = "http://www.google.com/{file}"
 
 INDEX = "/tmp/blah/index.html"
 INDEX_ZIP = "/tmp/blah/index.zip"
@@ -77,42 +75,44 @@ def test_url_download():
     log = getLogger()
     os.makedirs(DIRECTORY, exist_ok=True)
 
+    html_file_request = FILE_REQUEST_TEMPLATE.format(file="index.html")
     # URI does not end with file name
     with pytest.raises(ValueError):
         url_download({"name": "blah", "uri": "http://google.com"}, 0, log, DIRECTORY)
 
     with requests_mock.Mocker() as m:
         # Expected
-        m.head(HTML_FILE_REQUEST, text="blah")
-        m.get(HTML_FILE_REQUEST, text="blah")
-        m.post(HTML_FILE_REQUEST, text="blah")
-        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY) == INDEX
-        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "get"}, 0, log, DIRECTORY) == INDEX
-        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "post",
+        m.head(html_file_request, text="blah")
+        m.get(html_file_request, text="blah")
+        m.post(html_file_request, text="blah")
+        assert url_download({"name": "blah", "uri": html_file_request}, 0, log, DIRECTORY) == INDEX
+        assert url_download({"name": "blah", "uri": html_file_request, "fetch_method": "get"}, 0, log, DIRECTORY) == INDEX
+        assert url_download({"name": "blah", "uri": html_file_request, "fetch_method": "post",
                              "data": {"api-key": "123456"}}, 0, log, DIRECTORY) == INDEX
 
         os.remove(INDEX)
 
         # UNKNOWN FETCH METHOD
         with pytest.raises(ValueError, match="Unknown fetch method: test"):
-            url_download({"name": "blah", "uri": HTML_FILE_REQUEST, "fetch_method": "test"}, 0, log, DIRECTORY)
+            url_download({"name": "blah", "uri": html_file_request, "fetch_method": "test"}, 0, log, DIRECTORY)
 
         # NOT_MODIFIED
-        m.get(HTML_FILE_REQUEST, status_code=304)
+        m.get(html_file_request, status_code=304)
         with pytest.raises(SkipSource):
-            url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY)
+            url_download({"name": "blah", "uri": html_file_request}, 0, log, DIRECTORY)
 
         # NOT_FOUND
-        m.get(HTML_FILE_REQUEST, status_code=404)
-        assert url_download({"name": "blah", "uri": HTML_FILE_REQUEST}, 0, log, DIRECTORY) is None
+        m.get(html_file_request, status_code=404)
+        assert url_download({"name": "blah", "uri": html_file_request}, 0, log, DIRECTORY) is None
 
-@pytest.mark.parametrize("uri,filename",
-                         argvalues=[(ZIP_FILE_REQUEST, "test.zip"),(TARGZ_FILE_REQUEST, "test.tar.gz")],
+@pytest.mark.parametrize("filename",
+                         argvalues=["test.zip","test.tar.gz"],
                          ids=["test.zip","test.tar.gz"])
 
-def test_url_download_unpack(uri, filename):
+def test_url_download_unpack(filename):
     log = getLogger()
     os.makedirs(DIRECTORY, exist_ok=True)
+    uri = FILE_REQUEST_TEMPLATE.format(file=filename)
     with requests_mock.Mocker() as m:
         m.head(uri, text="blah")
         fake_zip_path = os.path.join(os.path.dirname(__file__), filename)
