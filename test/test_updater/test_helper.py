@@ -1,6 +1,6 @@
 import os
-import shutil
 from logging import getLogger
+from tempfile import TemporaryDirectory
 
 import certifi
 import pytest
@@ -13,22 +13,6 @@ from assemblyline_v4_service.updater.helper import (
 )
 
 FILE_REQUEST_TEMPLATE = "http://www.google.com/{file}"
-
-INDEX = "/tmp/blah/index.html"
-INDEX_ZIP = "/tmp/blah/index.zip"
-INDEX_ZIP_TEXT = "/tmp/blah/index/test.txt"
-INDEX_ZIP_EXTRACT_PATH = "/tmp/blah/index"
-DIRECTORY = "/tmp/blah"
-if os.getcwd().endswith("/test"):
-    TAR = os.path.join(DIRECTORY, "blah.tar")
-else:
-    TAR = os.path.join(os.getcwd(), "blah.tar")
-
-
-@pytest.fixture(autouse=True)
-def setup_and_teardown_test():
-    if os.path.exists(DIRECTORY):
-        shutil.rmtree(DIRECTORY)
 
 def test_add_cacert():
     fc = open(certifi.where(), "r").read()
@@ -47,20 +31,20 @@ def test_filter_downloads():
     assert filter_downloads("", "pattern") == []
 
     # No pattern
+    with TemporaryDirectory() as tmp_dir:
+        index = os.path.join(tmp_dir, "index.html")
+        with open(index, 'w') as f:
+            f.write("test")
 
-    os.makedirs(DIRECTORY, exist_ok=True)
-    with open(INDEX, 'w') as f:
-        f.write("test")
+        # Output is a file
 
-    # Output is a file
+        assert filter_downloads(index, "") == [(index, '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08')]
 
-    assert filter_downloads(INDEX, "") == [(INDEX, '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08')]
+        # Pattern that hits
+        assert filter_downloads(index, f".*{os.path.basename(tmp_dir)}.*") == [(index, '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08')]
 
-    # Pattern that hits
-    assert filter_downloads(INDEX, ".*blah.*") == [(INDEX, '9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08')]
-
-    # Pattern that misses
-    assert filter_downloads(INDEX, ".*blahblah.*") == []
+        # Pattern that misses
+        assert filter_downloads(index, ".*blahblah.*") == []
 
     # TODO
     # Output is a directory
@@ -73,37 +57,38 @@ def test_filter_downloads():
 
 def test_url_download():
     log = getLogger()
-    os.makedirs(DIRECTORY, exist_ok=True)
+    with TemporaryDirectory() as tmp_dir:
+        index = os.path.join(tmp_dir, "index.html")
 
-    html_file_request = FILE_REQUEST_TEMPLATE.format(file="index.html")
-    # URI does not end with file name
-    with pytest.raises(ValueError):
-        url_download({"name": "blah", "uri": "http://google.com"}, 0, log, DIRECTORY)
+        html_file_request = FILE_REQUEST_TEMPLATE.format(file="index.html")
+        # URI does not end with file name
+        with pytest.raises(ValueError):
+            url_download({"name": "blah", "uri": "http://google.com"}, 0, log, tmp_dir)
 
-    with requests_mock.Mocker() as m:
-        # Expected
-        m.head(html_file_request, text="blah")
-        m.get(html_file_request, text="blah")
-        m.post(html_file_request, text="blah")
-        assert url_download({"name": "blah", "uri": html_file_request}, 0, log, DIRECTORY) == INDEX
-        assert url_download({"name": "blah", "uri": html_file_request, "fetch_method": "get"}, 0, log, DIRECTORY) == INDEX
-        assert url_download({"name": "blah", "uri": html_file_request, "fetch_method": "post",
-                             "data": {"api-key": "123456"}}, 0, log, DIRECTORY) == INDEX
+        with requests_mock.Mocker() as m:
+            # Expected
+            m.head(html_file_request, text="blah")
+            m.get(html_file_request, text="blah")
+            m.post(html_file_request, text="blah")
+            assert url_download({"name": "blah", "uri": html_file_request}, 0, log, tmp_dir) == index
+            assert url_download({"name": "blah", "uri": html_file_request, "fetch_method": "get"}, 0, log, tmp_dir) == index
+            assert url_download({"name": "blah", "uri": html_file_request, "fetch_method": "post",
+                                "data": {"api-key": "123456"}}, 0, log, tmp_dir) == index
 
-        os.remove(INDEX)
+            os.remove(index)
 
-        # UNKNOWN FETCH METHOD
-        with pytest.raises(ValueError, match="Unknown fetch method: test"):
-            url_download({"name": "blah", "uri": html_file_request, "fetch_method": "test"}, 0, log, DIRECTORY)
+            # UNKNOWN FETCH METHOD
+            with pytest.raises(ValueError, match="Unknown fetch method: test"):
+                url_download({"name": "blah", "uri": html_file_request, "fetch_method": "test"}, 0, log, tmp_dir)
 
-        # NOT_MODIFIED
-        m.get(html_file_request, status_code=304)
-        with pytest.raises(SkipSource):
-            url_download({"name": "blah", "uri": html_file_request}, 0, log, DIRECTORY)
+            # NOT_MODIFIED
+            m.get(html_file_request, status_code=304)
+            with pytest.raises(SkipSource):
+                url_download({"name": "blah", "uri": html_file_request}, 0, log, tmp_dir)
 
-        # NOT_FOUND
-        m.get(html_file_request, status_code=404)
-        assert url_download({"name": "blah", "uri": html_file_request}, 0, log, DIRECTORY) is None
+            # NOT_FOUND
+            m.get(html_file_request, status_code=404)
+            assert url_download({"name": "blah", "uri": html_file_request}, 0, log, tmp_dir) is None
 
 @pytest.mark.parametrize("filename",
                          argvalues=["test.zip","test.tar.gz"],
@@ -111,13 +96,13 @@ def test_url_download():
 
 def test_url_download_unpack(filename):
     log = getLogger()
-    os.makedirs(DIRECTORY, exist_ok=True)
-    uri = FILE_REQUEST_TEMPLATE.format(file=filename)
-    with requests_mock.Mocker() as m:
-        m.head(uri, text="blah")
-        fake_zip_path = os.path.join(os.path.dirname(__file__), filename)
-        m.get(uri, content=open(fake_zip_path, "rb").read())
-        assert url_download({"name": "index", "uri": uri}, 0, log, DIRECTORY) == INDEX_ZIP_EXTRACT_PATH
+    with TemporaryDirectory() as tmp_dir:
+        uri = FILE_REQUEST_TEMPLATE.format(file=filename)
+        with requests_mock.Mocker() as m:
+            m.head(uri, text="blah")
+            fake_zip_path = os.path.join(os.path.dirname(__file__), filename)
+            m.get(uri, content=open(fake_zip_path, "rb").read())
+            assert url_download({"name": "index", "uri": uri}, 0, log, tmp_dir) == os.path.join(tmp_dir, "index")
 
 
 def test_git_clone_repo():
