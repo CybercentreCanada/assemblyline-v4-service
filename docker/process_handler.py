@@ -4,8 +4,9 @@ import time
 from os import environ
 from subprocess import Popen, TimeoutExpired
 
-from assemblyline.common import log as al_log
 from assemblyline_v4_service.run_privileged_service import RunPrivilegedService
+
+from assemblyline.common import log as al_log
 
 PRIVILEGED = environ.get('PRIVILEGED', 'false') == 'true'
 
@@ -49,7 +50,7 @@ def run_task_handler():
 
     # Start the two processes
     rs_p = Popen(['python3', '-m', 'assemblyline_v4_service.run_service'])
-    th_p = Popen(['python3', '-m', 'assemblyline_service_client.task_handler'])
+    th_p = Popen(['python3', '-m', 'assemblyline_v4_service.client.task_handler'])
 
     def forward_signal(signal_number, _frame):
         th_p.send_signal(signal_number)

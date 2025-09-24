@@ -15,7 +15,6 @@ RUN touch /tmp/before-pip
 COPY setup.py dist* dist/
 RUN pip install --no-cache-dir -f dist --user \
     assemblyline-core==$version \
-    assemblyline-service-client==$version \
     assemblyline-v4-service[updater]==$version \
     && rm -rf ~/.cache/pip
 
