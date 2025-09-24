@@ -36,19 +36,24 @@ def teardown_module():
     if os.path.exists(TEMP_SERVICE_CONFIG_PATH):
         os.remove(TEMP_SERVICE_CONFIG_PATH)
 
-
-def test_path():
-    # Default
+@pytest.fixture
+def default_th():
     default_th = task_handler.TaskHandler()
+    default_th.load_service_manifest()
+    default_th.session = Session()
+    return default_th
+
+
+
+def test_path(default_th):
+    # Default
     assert default_th._path("blah") == "http://localhost:5003/api/v1/blah/"
 
     # With args
     assert default_th._path("blah", "blah1", "blah2") == "http://localhost:5003/api/v1/blah/blah1/blah2/"
 
 
-def test_load_service_manifest():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
+def test_load_service_manifest(default_th):
     service_object = Service(
         {
             "name": "Sample",
@@ -61,8 +66,7 @@ def test_load_service_manifest():
     assert default_th.service.__dict__ == service_object.__dict__
 
 
-def test_update_service_manifest():
-    default_th = task_handler.TaskHandler()
+def test_update_service_manifest(default_th):
     default_th.update_service_manifest({"version": "pop me!", "other": "stuff"})
     assert default_th.service_manifest_data == {
         'name': 'Sample',
@@ -83,9 +87,7 @@ def test_update_service_manifest():
     }
 
 
-def test_cleanup_working_directory():
-    default_th = task_handler.TaskHandler()
-
+def test_cleanup_working_directory(default_th):
     temp_dir = tempfile.mkdtemp()
     _, temp_abs_pathname = tempfile.mkstemp(dir=temp_dir)
     with open(temp_abs_pathname, "w") as f:
@@ -117,9 +119,7 @@ def test_cleanup_working_directory():
     os.removedirs(temp_dir)
 
 
-def test_request_with_retries():
-    default_th = task_handler.TaskHandler()
-    default_th.session = Session()
+def test_request_with_retries(default_th):
     url = "http://localhost"
 
     with requests_mock.Mocker() as m:
@@ -177,10 +177,7 @@ def test_request_with_retries():
             default_th.request_with_retries("get", url, get_api_response=True)
 
 
-def test_try_run():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-    default_th.session = Session()
+def test_try_run(default_th):
     default_th.headers = dict()
 
     _, default_th.task_fifo_path = tempfile.mkstemp()
@@ -237,8 +234,7 @@ def test_try_run():
         setup_module()
 
 
-def test_connect_pipes():
-    default_th = task_handler.TaskHandler()
+def test_connect_pipes(default_th):
     _, default_th.task_fifo_path = tempfile.mkstemp()
     _, default_th.done_fifo_path = tempfile.mkstemp()
 
@@ -249,11 +245,7 @@ def test_connect_pipes():
     assert os.path.exists(default_th.done_fifo_path)
 
 
-def test_initialize_service():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-    default_th.session = Session()
-
+def test_initialize_service(default_th):
     _, default_th.task_fifo_path = tempfile.mkstemp()
 
     with requests_mock.Mocker() as m:
@@ -294,11 +286,7 @@ def test_initialize_service():
     assert default_th.status == task_handler.STATUSES.INITIALIZING
 
 
-def test_get_task():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-    default_th.session = Session()
-
+def test_get_task(default_th):
     with requests_mock.Mocker() as m:
         # No task
         m.get(default_th._path('task'), json={"api_response": {"task": False}})
@@ -364,10 +352,7 @@ def test_get_task():
         assert default_th.status == task_handler.STATUSES.WAITING_FOR_TASK
 
 
-def test_download_file():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-    default_th.session = Session()
+def test_download_file(default_th):
     default_th.headers = dict()
 
     sha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -395,10 +380,7 @@ def test_download_file():
         assert default_th.status == task_handler.STATUSES.ERROR_FOUND
 
 
-def test_handle_task_result():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-    default_th.session = Session()
+def test_handle_task_result(default_th):
     default_th.headers = dict()
 
     _, result_json_path = tempfile.mkstemp()
@@ -444,8 +426,8 @@ def test_handle_task_result():
         # It works!
         m.post(default_th._path('task'), json={"api_response": {"success": True}})
         assert default_th.handle_task_result(result_json_path, task) is None
-        assert default_th.session.headers["service_tool_version"] == "123"
-        assert default_th.headers["service_tool_version"] == "123"
+        assert default_th.session.headers["Service-Tool-Version"] == "123"
+        assert default_th.headers["Service-Tool-Version"] == "123"
 
         # It doesn't work (the first three times)
         callback_iteration = 0
@@ -459,10 +441,10 @@ def test_handle_task_result():
             return response
 
         m.post(default_th._path('task'), json=json_callback)
-        m.put(default_th._path('file'), json={"api_response": {}}, )
+        m.put(default_th._path('file'), json={"api_response": {}})
 
         assert default_th.handle_task_result(result_json_path, task) is None
-        assert default_th.session.headers["service_tool_version"] == "123"
+        assert default_th.session.headers["Service-Tool-Version"] == "123"
 
         # ServiceServerException!
         m.post(default_th._path('task'), exc=task_handler.ServiceServerException)
@@ -475,11 +457,7 @@ def test_handle_task_result():
             default_th.handle_task_result(result_json_path, task)
 
 
-def test_handle_task_error():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-    default_th.session = Session()
-
+def test_handle_task_error(default_th):
     with requests_mock.Mocker() as m:
         m.get(default_th._path('task'), json={
             "api_response": {
@@ -507,10 +485,7 @@ def test_handle_task_error():
         default_th.handle_task_error(task)
 
 
-def test_stop():
-    default_th = task_handler.TaskHandler()
-    default_th.load_service_manifest()
-
+def test_stop(default_th):
     # WAITING_FOR_TASK
     default_th.status = task_handler.STATUSES.WAITING_FOR_TASK
     default_th.stop()
