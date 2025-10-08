@@ -163,7 +163,7 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
                 format = ident_type.split('archive/')[-1]
 
                 # Make sure identified format is supported by the library
-                format = format if format in ["zip", "tar"] else None
+                format = {"zip": "zip", "tar": "tar", "gzip": "gztar"}.get(format)
                 shutil.unpack_archive(file_path, extract_dir=extract_dir, format=format)
 
                 return extract_dir
