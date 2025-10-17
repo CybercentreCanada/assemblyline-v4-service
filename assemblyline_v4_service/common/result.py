@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from enum import Enum
-from typing import TYPE_CHECKING, Any, Dict, Enum, List, Literal, Optional, TextIO, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
