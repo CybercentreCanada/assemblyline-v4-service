@@ -13,11 +13,17 @@ from assemblyline.odm.randomizer import get_random_host, get_random_ip, get_rand
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import (
     BODY_FORMAT,
+    AnalysisMetadata,
+    ConnectionDirection,
+    ConnectionType,
     DividerSectionBody,
     GraphSectionBody,
     Heuristic,
     KVSectionBody,
+    LookupType,
+    MachineMetadata,
     ProcessItem,
+    RequestMethod,
     Result,
     ResultGraphSection,
     ResultImageSection,
@@ -27,11 +33,18 @@ from assemblyline_v4_service.common.result import (
     ResultMultiSection,
     ResultOrderedKeyValueSection,
     ResultProcessTreeSection,
+    ResultSandboxSection,
     ResultSection,
     ResultTableSection,
     ResultTextSection,
     ResultTimelineSection,
     ResultURLSection,
+    SandboxAttackItem,
+    SandboxNetflowItem,
+    SandboxNetworkDNS,
+    SandboxNetworkHTTP,
+    SandboxProcessItem,
+    SandboxSignatureItem,
     TableRow,
     TextSectionBody,
 )
@@ -321,6 +334,129 @@ class ResultSample(ServiceBase):
             process_tree_section.add_process(benign_process)
 
             result.add_section(process_tree_section)
+
+            # ==================================================================
+            # SANDBOX section:
+            #     This section allows a service writer to structure and enrich sandbox analysis
+            #     results with key metadata, processes, network connections, and detection signatures.
+            #     Each element is represented by its own item class (SandboxProcessItem, SandboxNetflowItem, etc.).
+            # ==================================================================
+            sandbox_section = ResultSandboxSection("Example of a SANDBOX section")
+
+            # Sandbox metadata
+            machine_meta = MachineMetadata(
+                ip="192.168.0.15",
+                hypervisor="KVM",
+                hostname="analysis-vm-01",
+                platform="Windows",
+                version="10.0.19045",
+                architecture="x64"
+            )
+
+            analysis_meta = AnalysisMetadata(
+                task_id="task_001",
+                start_time="2025-10-14T12:00:00Z",
+                end_time="2025-10-14T12:10:30Z",
+                routing="Internet",
+                window_size="1024x768",
+                machine_metadata=machine_meta
+            )
+
+            sandbox_section.body.set_sandbox(
+                name="Cuckoo Sandbox",
+                version="2.0.7",
+                machine_metadata=machine_meta,
+                analysis_metadata=analysis_meta
+            )
+
+            # Processes
+            proc_parent = SandboxProcessItem(
+                image="cmd.exe",
+                start_time="2025-10-14T12:00:05Z",
+                pid=100,
+                ppid=50,
+                command_line="C:\\Windows\\System32\\cmd.exe /c badscript.bat",
+                integrity_level="medium",
+                image_hash="badhash123",
+                signatures={"suspicious_shell": 100},
+                network_count=3,
+                file_count=5
+            )
+
+            proc_child = SandboxProcessItem(
+                image="powershell.exe",
+                start_time="2025-10-14T12:00:10Z",
+                pid=120,
+                ppid=100,
+                command_line="powershell.exe -enc aQBmACgA",
+                integrity_level="high",
+                image_hash="evilhash789",
+                signatures={"powershell_obfuscation": 200, "encoded_command": 150},
+                network_count=2
+            )
+
+            sandbox_section.body.add_process(proc_parent)
+            sandbox_section.body.add_process(proc_child)
+
+            # Network flows
+            http_details = SandboxNetworkHTTP(
+                request_uri="http://malicious.example.com/payload.exe",
+                request_method=RequestMethod.GET,
+                response_status_code=200,
+                response_content_mimetype="application/octet-stream"
+            )
+
+            netflow_http = SandboxNetflowItem(
+                destination_ip="45.83.23.19",
+                destination_port=80,
+                source_ip="192.168.0.15",
+                source_port=54321,
+                pid=120,
+                direction=ConnectionDirection.OUTBOUND,
+                transport_layer_protocol="tcp",
+                http_details=http_details,
+                connection_type=ConnectionType.HTTP
+            )
+
+            dns_details = SandboxNetworkDNS(
+                domain="malicious.example.com",
+                lookup_type=LookupType.A,
+                resolved_ips=["45.83.23.19"]
+            )
+
+            netflow_dns = SandboxNetflowItem(
+                pid=120,
+                direction=ConnectionDirection.OUTBOUND,
+                dns_details=dns_details,
+                connection_type=ConnectionType.DNS
+            )
+
+            sandbox_section.body.add_netflow(netflow_http)
+            sandbox_section.body.add_netflow(netflow_dns)
+
+            # Signatures
+            attack_items = [
+                SandboxAttackItem("T1059.001", "Command and Scripting Interpreter", "PowerShell execution"),
+                SandboxAttackItem("T1055", "Process Injection", "Injecting code into other processes")
+            ]
+
+            signature_item = SandboxSignatureItem(
+                name="Suspicious PowerShell Execution",
+                type="CUCKOO",
+                classification="malicious",
+                attacks=attack_items,
+                actors=["APT29"],
+                malware_families=["Empire"],
+                signature_id="sig_1234",
+                message="PowerShell launched with encoded commands",
+                heuristics={"score": 8.5},
+                pid=120
+            )
+
+            sandbox_section.body.add_signature(signature_item)
+
+            # Add the section to the result
+            result.add_section(sandbox_section)
 
             # ==================================================================
             # TABLE section:
