@@ -770,7 +770,7 @@ class SandboxNetflowItem:
 
     def as_primitives(self) -> Dict:
         """Return a JSON-serializable representation."""
-        return {
+        data: Dict[str, Any] = {
             "destination_ip": self.destination_ip,
             "destination_port": self.destination_port,
             "transport_layer_protocol": self.transport_layer_protocol,
@@ -778,11 +778,19 @@ class SandboxNetflowItem:
             "pid": self.pid,
             "source_ip": self.source_ip,
             "source_port": self.source_port,
-            "http_details": self.http_details.as_primitives() if self.http_details else None,
-            "dns_details": self.dns_details.as_primitives() if self.dns_details else None,
-            "smtp_details": self.smtp_details.as_primitives() if self.smtp_details else None,
             "connection_type": self.connection_type,
         }
+
+        if self.http_details is not None:
+            data["http_details"] = self.http_details.as_primitives()
+
+        if self.dns_details is not None:
+            data["dns_details"] = self.dns_details.as_primitives()
+
+        if self.smtp_details is not None:
+            data["smtp_details"] = self.smtp_details.as_primitives()
+
+        return data
 
 
 class SandboxAttackItem:
@@ -822,13 +830,13 @@ class SandboxSignatureItem:
         classification: str,
 
         # A list of ATT&CK patterns and categories of the signature.
-        attacks: Optional[List[SandboxAttackItem]] = None,
+        attacks: Optional[List[SandboxAttackItem]] = [],
 
         # List of actors of the signature.
-        actors: Optional[List[str]] = None,
+        actors: Optional[List[str]] = [],
 
         # List of malware families of the signature.
-        malware_families: Optional[List[str]] = None,
+        malware_families: Optional[List[str]] = [],
 
         # ID of the signature.
         signature_id: Optional[str] = None,
