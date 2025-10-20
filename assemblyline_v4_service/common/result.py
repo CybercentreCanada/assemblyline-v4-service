@@ -471,9 +471,6 @@ class SandboxAnalysisMetadata:
         # The routing used in the sandbox setup. (e.g., Spoofed, Internet, Tor, VPN)
         routing: Optional[str] = None,
 
-        # The metadata of the analysis machine.
-        machine_metadata: Optional[SandboxMachineMetadata] = None,
-
         # The resolution used for the analysis.
         window_size: Optional[str] = None,
     ):
@@ -481,7 +478,6 @@ class SandboxAnalysisMetadata:
         self.start_time = start_time
         self.end_time = end_time
         self.routing = routing
-        self.machine_metadata = machine_metadata
         self.window_size = window_size
 
     def as_primitives(self) -> Dict:
@@ -491,11 +487,6 @@ class SandboxAnalysisMetadata:
             "start_time": self.start_time,
             "end_time": self.end_time,
             "routing": self.routing,
-            "machine_metadata": (
-                self.machine_metadata.as_primitives()
-                if self.machine_metadata
-                else None
-            ),
             "window_size": self.window_size,
         }
 
