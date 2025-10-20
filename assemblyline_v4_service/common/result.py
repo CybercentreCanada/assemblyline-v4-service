@@ -412,7 +412,7 @@ class ProcessTreeSectionBody(SectionBody):
         self._data.append(process.as_primitives())
 
 
-class MachineMetadata:
+class SandboxMachineMetadata:
     """Metadata about the machine where the sandbox analysis took place."""
 
     def __init__(
@@ -454,7 +454,7 @@ class MachineMetadata:
         }
 
 
-class AnalysisMetadata:
+class SandboxAnalysisMetadata:
     """Metadata regarding the sandbox analysis task."""
 
     def __init__(
@@ -472,7 +472,7 @@ class AnalysisMetadata:
         routing: Optional[str] = None,
 
         # The metadata of the analysis machine.
-        machine_metadata: Optional[MachineMetadata] = None,
+        machine_metadata: Optional[SandboxMachineMetadata] = None,
 
         # The resolution used for the analysis.
         window_size: Optional[str] = None,
@@ -534,14 +534,12 @@ class SandboxProcessItem:
         original_file_name: Optional[str] = None,
 
         # Whether this process was safelisted.
-        safelisted: Optional[str] = None,
+        safelisted: Optional[bool] = False,
 
-        signatures: Optional[Dict[str, int]] = None,
-
-        network_count: int = 0,
-
+        # Number of files this process interacted with
         file_count: int = 0,
 
+        # Number of registries this process interacted with
         registry_count: int = 0,
     ):
         # ----------------------------
@@ -565,8 +563,6 @@ class SandboxProcessItem:
         # ----------------------------
         # Relationships & statistics
         # ----------------------------
-        self.signatures = signatures or {}
-        self.network_count = network_count
         self.file_count = file_count
         self.registry_count = registry_count
 
@@ -583,208 +579,29 @@ class SandboxProcessItem:
             "image_hash": self.image_hash,
             "original_file_name": self.original_file_name,
             "safelisted": self.safelisted,
-            "signatures": self.signatures,
-            "network_count": self.network_count,
             "file_count": self.file_count,
             "registry_count": self.registry_count,
         }
 
 
-class LookupType(str, Enum):
-    """
-    List of supported DNS lookup types.
-    See: https://en.wikipedia.org/wiki/List_of_DNS_record_types
-    """
+LookupType = Literal[
+    "A", "AAAA", "AFSDB", "APL", "CAA", "CDNSKEY", "CDS", "CERT", "CNAME", "CSYNC",
+    "DHCID", "DLV", "DNAME", "DNSKEY", "DS", "EUI48", "EUI64", "HINFO", "HIP",
+    "HTTPS", "IPSECKEY", "KEY", "KX", "LOC", "MX", "NAPTR", "NS", "NSEC", "NSEC3",
+    "NSEC3PARAM", "OPENPGPKEY", "PTR", "RRSIG", "RP", "SIG", "SMIMEA", "SOA",
+    "SRV", "SSHFP", "SVCB", "TA", "TKEY", "TLSA", "TSIG", "TXT", "URI", "ZONEMD"
+]
 
-    # Returns a 32-bit IPv4 address; maps hostnames to IPv4.
-    A = "A"
+RequestMethod = Literal[
+    "GET", "POST", "PUT", "DELETE", "HEAD", "CONNECT", "OPTIONS", "TRACE", "PATCH",
+    "BCOPY", "BDELETE", "BMOVE", "BPROPFIND", "BPROPPATCH", "COPY", "LOCK",
+    "MKCOL", "MOVE", "NOTIFY", "POLL", "PROPFIND", "PROPPATCH", "SEARCH",
+    "SUBSCRIBE", "UNLOCK", "UNSUBSCRIBE", "X-MS-ENUMATTS"
+]
 
-    # Returns a 128-bit IPv6 address; maps hostnames to IPv6.
-    AAAA = "AAAA"
+ConnectionType = Literal["http", "dns", "tls", "smtp"]
 
-    # Location of database servers of an AFS cell (Andrew File System).
-    AFSDB = "AFSDB"
-
-    # Address Prefix List; specifies lists of address ranges (experimental).
-    APL = "APL"
-
-    # Certification Authority Authorization; restricts acceptable CAs for a domain.
-    CAA = "CAA"
-
-    # Child copy of DNSKEY record; used for transfer to parent zone.
-    CDNSKEY = "CDNSKEY"
-
-    # Child DS record; copy of DS record for transfer to parent zone.
-    CDS = "CDS"
-
-    # Certificate record; stores PKIX, SPKI, PGP, or similar certificates.
-    CERT = "CERT"
-
-    # Canonical Name record; alias of one name to another.
-    CNAME = "CNAME"
-
-    # Child-to-Parent Synchronization; sync mechanism for NS and glue records.
-    CSYNC = "CSYNC"
-
-    # DHCP Identifier; used with DHCP FQDN option.
-    DHCID = "DHCID"
-
-    # DNSSEC Lookaside Validation; publishes DNSSEC trust anchors outside delegation chain.
-    DLV = "DLV"
-
-    # Delegation Name record; alias for a name and all its subnames.
-    DNAME = "DNAME"
-
-    # DNSSEC public key record; stores key material for DNSSEC.
-    DNSKEY = "DNSKEY"
-
-    # Delegation Signer; identifies DNSSEC signing key of a delegated zone.
-    DS = "DS"
-
-    # MAC address (EUI-48); 48-bit IEEE Extended Unique Identifier.
-    EUI48 = "EUI48"
-
-    # MAC address (EUI-64); 64-bit IEEE Extended Unique Identifier.
-    EUI64 = "EUI64"
-
-    # Host Information; provides minimal host info (deprecated for ANY queries).
-    HINFO = "HINFO"
-
-    # Host Identity Protocol; separates endpoint identifier from locator roles of IP.
-    HIP = "HIP"
-
-    # HTTPS Binding; provides connection info for HTTPS via DNS.
-    HTTPS = "HTTPS"
-
-    # IPsec Key; contains key material for use with IPsec.
-    IPSECKEY = "IPSECKEY"
-
-    # Key record; used for SIG(0) and TKEY authentication.
-    KEY = "KEY"
-
-    # Key Exchanger record; identifies a key management agent (non-DNSSEC).
-    KX = "KX"
-
-    # Location record; specifies geographical coordinates for a domain.
-    LOC = "LOC"
-
-    # Mail Exchange record; lists mail servers accepting mail for a domain.
-    MX = "MX"
-
-    # Naming Authority Pointer; supports regex-based rewriting into URIs or lookups.
-    NAPTR = "NAPTR"
-
-    # Name Server record; delegates a DNS zone to authoritative name servers.
-    NS = "NS"
-
-    # Next Secure record; proves nonexistence of a name (DNSSEC).
-    NSEC = "NSEC"
-
-    # Next Secure version 3; proves nonexistence without allowing zone walking.
-    NSEC3 = "NSEC3"
-
-    # NSEC3 Parameters; defines parameters used by NSEC3.
-    NSEC3PARAM = "NSEC3PARAM"
-
-    # OpenPGP public key record; publishes OpenPGP keys via DNS (DANE).
-    OPENPGPKEY = "OPENPGPKEY"
-
-    # Pointer record; maps an IP to a canonical name (reverse DNS lookups).
-    PTR = "PTR"
-
-    # DNSSEC Signature; cryptographic signature for a DNSSEC record set.
-    RRSIG = "RRSIG"
-
-    # Responsible Person; provides contact info (usually an email) for a domain.
-    RP = "RP"
-
-    # Signature record; older DNSSEC signature type, replaced by RRSIG.
-    SIG = "SIG"
-
-    # S/MIME certificate association; binds an S/MIME cert to a domain.
-    SMIMEA = "SMIMEA"
-
-    # Start of Authority; defines primary name server and zone parameters.
-    SOA = "SOA"
-
-    # Service Locator; general service discovery (used by SIP, XMPP, etc.).
-    SRV = "SRV"
-
-    # SSH Public Key Fingerprint; publishes SSH host key fingerprints in DNS.
-    SSHFP = "SSHFP"
-
-    # Service Binding; provides connection metadata; base for HTTPS record.
-    SVCB = "SVCB"
-
-    # DNSSEC Trust Anchor; identifies trusted DNSSEC key material.
-    TA = "TA"
-
-    # Transaction Key; used to establish shared keys for TSIG authentication.
-    TKEY = "TKEY"
-
-    # TLSA Certificate Association; associates TLS certs or public keys with domains.
-    TLSA = "TLSA"
-
-    # Transaction Signature; authenticates dynamic updates or responses.
-    TSIG = "TSIG"
-
-    # Text record; carries text or machine-readable data (SPF, DKIM, DMARC, etc.).
-    TXT = "TXT"
-
-    # Uniform Resource Identifier; maps hostnames to URIs.
-    URI = "URI"
-
-    # Zone Message Digest; provides cryptographic digest for DNS zone data at rest.
-    ZONEMD = "ZONEMD"
-
-
-class RequestMethod(str, Enum):
-    """
-    Supported HTTP request methods.
-    Includes both standard and WebDAV methods.
-    """
-    GET = "GET"
-    POST = "POST"
-    PUT = "PUT"
-    DELETE = "DELETE"
-    HEAD = "HEAD"
-    CONNECT = "CONNECT"
-    OPTIONS = "OPTIONS"
-    TRACE = "TRACE"
-    PATCH = "PATCH"
-    BCOPY = "BCOPY"
-    BDELETE = "BDELETE"
-    BMOVE = "BMOVE"
-    BPROPFIND = "BPROPFIND"
-    BPROPPATCH = "BPROPPATCH"
-    COPY = "COPY"
-    LOCK = "LOCK"
-    MKCOL = "MKCOL"
-    MOVE = "MOVE"
-    NOTIFY = "NOTIFY"
-    POLL = "POLL"
-    PROPFIND = "PROPFIND"
-    PROPPATCH = "PROPPATCH"
-    SEARCH = "SEARCH"
-    SUBSCRIBE = "SUBSCRIBE"
-    UNLOCK = "UNLOCK"
-    UNSUBSCRIBE = "UNSUBSCRIBE"
-    X_MS_ENUMATTS = "X-MS-ENUMATTS"
-
-
-class ConnectionType(str, Enum):
-    """Possible types of network connections."""
-    HTTP = "http"
-    DNS = "dns"
-    TLS = "tls"
-    SMTP = "smtp"
-
-
-class ConnectionDirection(str, Enum):
-    """Possible directions of a network connection."""
-    OUTBOUND = "outbound"
-    INBOUND = "inbound"
-    UNKNOWN = "unknown"
+ConnectionDirection = Literal["outbound", "inbound", "unknown"]
 
 
 class SandboxNetworkDNS:
@@ -814,7 +631,7 @@ class SandboxNetworkDNS:
             "domain": self.domain,
             "resolved_ips": self.resolved_ips,
             "resolved_domains": self.resolved_domains,
-            "lookup_type": self.lookup_type.value,
+            "lookup_type": self.lookup_type,
         }
 
 
@@ -864,7 +681,7 @@ class SandboxNetworkHTTP:
         return {
             "request_uri": self.request_uri,
             "request_headers": self.request_headers,
-            "request_method": self.request_method.value if self.request_method else None,
+            "request_method": self.request_method,
             "response_headers": self.response_headers,
             "request_body": self.request_body,
             "response_status_code": self.response_status_code,
@@ -957,14 +774,14 @@ class SandboxNetflowItem:
             "destination_ip": self.destination_ip,
             "destination_port": self.destination_port,
             "transport_layer_protocol": self.transport_layer_protocol,
-            "direction": self.direction.value if self.direction else None,
+            "direction": self.direction,
             "pid": self.pid,
             "source_ip": self.source_ip,
             "source_port": self.source_port,
             "http_details": self.http_details.as_primitives() if self.http_details else None,
             "dns_details": self.dns_details.as_primitives() if self.dns_details else None,
             "smtp_details": self.smtp_details.as_primitives() if self.smtp_details else None,
-            "connection_type": self.connection_type.value if self.connection_type else None,
+            "connection_type": self.connection_type,
         }
 
 
@@ -1019,11 +836,11 @@ class SandboxSignatureItem:
         # Optional human-readable message.
         message: Optional[str] = None,
 
-        # Arbitrary heuristics metadata.
-        heuristics: Optional[Dict[str, Any]] = None,
-
         # PID of the process that generated the signature.
         pid: Optional[int] = None,
+
+        # ID of the heuristic this signature belongs to
+        heuristic: str = None,
     ):
         self.name = name
         self.type = type
@@ -1033,8 +850,8 @@ class SandboxSignatureItem:
         self.malware_families = malware_families
         self.signature_id = signature_id
         self.message = message
-        self.heuristics = heuristics
         self.pid = pid
+        self.heuristic = heuristic
 
     def as_primitives(self) -> Dict[str, Any]:
         return {
@@ -1046,8 +863,42 @@ class SandboxSignatureItem:
             "malware_families": self.malware_families,
             "signature_id": self.signature_id,
             "message": self.message,
-            "heuristics": self.heuristics,
             "pid": self.pid,
+            "heuristic": self.heuristic,
+        }
+
+
+class SandboxHeuristicItem:
+    """
+    Represents a raised heuristic during sandbox analysis.
+    """
+
+    def __init__(
+        self,
+        # Heuristic ID
+        heur_id: str,
+
+        # Score associated with this heuristic
+        score: int,
+
+        # Name of the heuristic
+        name: str,
+
+        # Tags associated with this heuristic
+        tags: Optional[Dict[str, List[Any]]] = None,
+    ):
+        self.heur_id = heur_id
+        self.score = score
+        self.name = name
+        self.tags = tags or {}
+
+    def as_primitives(self) -> Dict[str, Any]:
+        """Return a JSON-serializable representation."""
+        return {
+            "heur_id": self.heur_id,
+            "score": self.score,
+            "name": self.name,
+            "tags": self.tags,
         }
 
 
@@ -1065,10 +916,11 @@ class SandboxSectionBody(SectionBody):
             "analysis_metadata": None,
             "processes": [],
             "netflows": [],
-            "signatures": []
+            "signatures": [],
+            "heuristics": [],
         })
 
-    def set_sandbox(self, name: str, version: Optional[str], machine_metadata: MachineMetadata, analysis_metadata: AnalysisMetadata) -> None:
+    def set_sandbox(self, name: str, version: Optional[str], machine_metadata: SandboxMachineMetadata, analysis_metadata: SandboxAnalysisMetadata) -> None:
         """Set the sandbox metadata (name, version, machine info, and analysis info)."""
         self._data["sandbox_name"] = name
         self._data["sandbox_version"] = version
@@ -1112,6 +964,17 @@ class SandboxSectionBody(SectionBody):
         for sig in signatures:
             self.add_signature(sig)
 
+    def add_heuristic(self, heuristic: SandboxHeuristicItem) -> None:
+        """Add a heuristic to the sandbox result."""
+        if not isinstance(heuristic, SandboxHeuristicItem):
+            raise TypeError("Expected SandboxHeuristicItem")
+        self._data["heuristics"].append(heuristic.as_primitives())
+
+    def add_heuristics(self, heuristics: List[SandboxHeuristicItem]) -> None:
+        """Add multiple heuristics at once."""
+        for h in heuristics:
+            self.add_heuristic(h)
+
     def as_primitives(self) -> Dict[str, Any]:
         """Return a fully JSON-serializable structure."""
         return {
@@ -1122,6 +985,7 @@ class SandboxSectionBody(SectionBody):
             "processes": self._data["processes"],
             "netflows": self._data["netflows"],
             "signatures": self._data["signatures"],
+            "heuristics": self._data["heuristics"],
         }
 
 
@@ -1189,7 +1053,7 @@ class TimelineSectionBody(SectionBody):
     def add_node(self, title: str, content: str, opposite_content: str,
                  icon: str = None, signatures: List[str] = [], score: int = 0) -> None:
         self._data.append(dict(title=title, content=content, opposite_content=opposite_content,
-                          icon=icon, signatures=signatures, score=score))
+                               icon=icon, signatures=signatures, score=score))
 
 
 class ResultSection:
@@ -1511,12 +1375,56 @@ class ResultProcessTreeSection(TypeSpecificResultSection):
 
 
 class ResultSandboxSection(TypeSpecificResultSection):
+    """
+    Represents a result section specifically designed for sandbox analysis data.
+    Provides a typed interface to manipulate the underlying SandboxSectionBody.
+    """
+
     def __init__(self, title_text: Union[str, List], **kwargs):
         self.section_body: SandboxSectionBody
         super().__init__(title_text, SandboxSectionBody(), **kwargs)
 
-    # def add_process(self, process: ProcessItem) -> None:
-    #     self.section_body.add_process(process)
+    def set_sandbox(
+        self,
+        name: str,
+        version: Optional[str],
+        machine_metadata: Optional[SandboxMachineMetadata],
+        analysis_metadata: Optional[SandboxAnalysisMetadata],
+    ) -> None:
+        """Set the sandbox metadata (name, version, machine info, and analysis info)."""
+        self.section_body.set_sandbox(name, version, machine_metadata, analysis_metadata)
+
+    def add_process(self, process: SandboxProcessItem) -> None:
+        """Add a single process to the sandbox result."""
+        self.section_body.add_process(process)
+
+    def add_processes(self, processes: List[SandboxProcessItem]) -> None:
+        """Add multiple processes at once."""
+        self.section_body.add_processes(processes)
+
+    def add_netflow(self, netflow: SandboxNetflowItem) -> None:
+        """Add a single network flow to the sandbox result."""
+        self.section_body.add_netflow(netflow)
+
+    def add_netflows(self, netflows: List[SandboxNetflowItem]) -> None:
+        """Add multiple network flows at once."""
+        self.section_body.add_netflows(netflows)
+
+    def add_signature(self, signature: SandboxSignatureItem) -> None:
+        """Add a detection signature to the sandbox result."""
+        self.section_body.add_signature(signature)
+
+    def add_signatures(self, signatures: List[SandboxSignatureItem]) -> None:
+        """Add multiple detection signatures at once."""
+        self.section_body.add_signatures(signatures)
+
+    def add_heuristic(self, heuristic: SandboxHeuristicItem) -> None:
+        """Add a heuristic to the sandbox result."""
+        self.section_body.add_heuristic(heuristic)
+
+    def add_heuristics(self, heuristics: List[SandboxHeuristicItem]) -> None:
+        """Add multiple heuristics at once."""
+        self.section_body.add_heuristics(heuristics)
 
 
 class ResultTableSection(TypeSpecificResultSection):

@@ -13,17 +13,11 @@ from assemblyline.odm.randomizer import get_random_host, get_random_ip, get_rand
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.result import (
     BODY_FORMAT,
-    AnalysisMetadata,
-    ConnectionDirection,
-    ConnectionType,
     DividerSectionBody,
     GraphSectionBody,
     Heuristic,
     KVSectionBody,
-    LookupType,
-    MachineMetadata,
     ProcessItem,
-    RequestMethod,
     Result,
     ResultGraphSection,
     ResultImageSection,
@@ -39,10 +33,14 @@ from assemblyline_v4_service.common.result import (
     ResultTextSection,
     ResultTimelineSection,
     ResultURLSection,
+    SandboxAnalysisMetadata,
     SandboxAttackItem,
+    SandboxHeuristicItem,
+    SandboxMachineMetadata,
     SandboxNetflowItem,
     SandboxNetworkDNS,
     SandboxNetworkHTTP,
+    SandboxNetworkSMTP,
     SandboxProcessItem,
     SandboxSignatureItem,
     TableRow,
@@ -343,34 +341,29 @@ class ResultSample(ServiceBase):
             # ==================================================================
             sandbox_section = ResultSandboxSection("Example of a SANDBOX section")
 
-            # Sandbox metadata
-            machine_meta = MachineMetadata(
-                ip="192.168.0.15",
-                hypervisor="KVM",
-                hostname="analysis-vm-01",
-                platform="Windows",
-                version="10.0.19045",
-                architecture="x64"
-            )
-
-            analysis_meta = AnalysisMetadata(
-                task_id="task_001",
-                start_time="2025-10-14T12:00:00Z",
-                end_time="2025-10-14T12:10:30Z",
-                routing="Internet",
-                window_size="1024x768",
-                machine_metadata=machine_meta
-            )
-
-            sandbox_section.body.set_sandbox(
+            # Sandbox information
+            sandbox_section.set_sandbox(
                 name="Cuckoo Sandbox",
                 version="2.0.7",
-                machine_metadata=machine_meta,
-                analysis_metadata=analysis_meta
+                machine_metadata=SandboxMachineMetadata(
+                    ip="192.168.0.15",
+                    hypervisor="KVM",
+                    hostname="analysis-vm-01",
+                    platform="Windows",
+                    version="10.0.19045",
+                    architecture="x64"
+                ),
+                analysis_metadata=SandboxAnalysisMetadata(
+                    task_id="task_001",
+                    start_time="2025-10-14T12:00:00Z",
+                    end_time="2025-10-14T12:10:30Z",
+                    routing="Internet",
+                    window_size="1024x768",
+                )
             )
 
             # Processes
-            proc_parent = SandboxProcessItem(
+            sandbox_section.add_process(SandboxProcessItem(
                 image="cmd.exe",
                 start_time="2025-10-14T12:00:05Z",
                 pid=100,
@@ -378,12 +371,14 @@ class ResultSample(ServiceBase):
                 command_line="C:\\Windows\\System32\\cmd.exe /c badscript.bat",
                 integrity_level="medium",
                 image_hash="badhash123",
-                signatures={"suspicious_shell": 100},
-                network_count=3,
-                file_count=5
-            )
+                original_file_name="CMD.EXE",
+                safelisted=False,
+                end_time="2025-10-14T12:00:20Z",
+                file_count=5,
+                registry_count=1,
+            ))
 
-            proc_child = SandboxProcessItem(
+            sandbox_section.add_process(SandboxProcessItem(
                 image="powershell.exe",
                 start_time="2025-10-14T12:00:10Z",
                 pid=120,
@@ -391,69 +386,93 @@ class ResultSample(ServiceBase):
                 command_line="powershell.exe -enc aQBmACgA",
                 integrity_level="high",
                 image_hash="evilhash789",
-                signatures={"powershell_obfuscation": 200, "encoded_command": 150},
-                network_count=2
-            )
+                safelisted=False,
+            ))
 
-            sandbox_section.body.add_process(proc_parent)
-            sandbox_section.body.add_process(proc_child)
-
-            # Network flows
-            http_details = SandboxNetworkHTTP(
-                request_uri="http://malicious.example.com/payload.exe",
-                request_method=RequestMethod.GET,
-                response_status_code=200,
-                response_content_mimetype="application/octet-stream"
-            )
-
-            netflow_http = SandboxNetflowItem(
+            # Network flows (HTTP example)
+            sandbox_section.add_netflow(SandboxNetflowItem(
                 destination_ip="45.83.23.19",
                 destination_port=80,
                 source_ip="192.168.0.15",
                 source_port=54321,
                 pid=120,
-                direction=ConnectionDirection.OUTBOUND,
+                direction="outbound",
                 transport_layer_protocol="tcp",
-                http_details=http_details,
-                connection_type=ConnectionType.HTTP
-            )
+                http_details=SandboxNetworkHTTP(
+                    request_uri="http://malicious.example.com/payload.exe",
+                    request_method="GET",
+                    response_status_code=200,
+                    response_content_mimetype="application/octet-stream",
+                    request_headers={"User-Agent": "PowerShell"},
+                ),
+                connection_type="http"
+            ))
 
-            dns_details = SandboxNetworkDNS(
-                domain="malicious.example.com",
-                lookup_type=LookupType.A,
-                resolved_ips=["45.83.23.19"]
-            )
-
-            netflow_dns = SandboxNetflowItem(
+            # Network flows (DNS example, minimal)
+            sandbox_section.add_netflow(SandboxNetflowItem(
                 pid=120,
-                direction=ConnectionDirection.OUTBOUND,
-                dns_details=dns_details,
-                connection_type=ConnectionType.DNS
-            )
+                direction="outbound",
+                dns_details=SandboxNetworkDNS(
+                    domain="malicious.example.com",
+                    lookup_type="A",
+                    resolved_ips=["45.83.23.19"]
+                ),
+                connection_type="dns"
+            ))
 
-            sandbox_section.body.add_netflow(netflow_http)
-            sandbox_section.body.add_netflow(netflow_dns)
+            # Network flows (SMTP example)
+            sandbox_section.add_netflow(SandboxNetflowItem(
+                destination_ip="203.0.113.55",
+                destination_port=25,
+                source_ip="192.168.0.15",
+                source_port=60000,
+                pid=100,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                smtp_details=SandboxNetworkSMTP(
+                    mail_from="attacker@example.com",
+                    mail_to=["victim@example.com"],
+                    attachments=[{"filename": "payload.docm", "size": 20480}]
+                ),
+                connection_type="smtp"
+            ))
 
-            # Signatures
-            attack_items = [
-                SandboxAttackItem("T1059.001", "Command and Scripting Interpreter", "PowerShell execution"),
-                SandboxAttackItem("T1055", "Process Injection", "Injecting code into other processes")
-            ]
-
-            signature_item = SandboxSignatureItem(
+            # Signatures (multiple referencing the same heuristic CAPE_1013)
+            sandbox_section.add_signature(SandboxSignatureItem(
                 name="Suspicious PowerShell Execution",
                 type="CUCKOO",
                 classification="malicious",
-                attacks=attack_items,
-                actors=["APT29"],
-                malware_families=["Empire"],
                 signature_id="sig_1234",
                 message="PowerShell launched with encoded commands",
-                heuristics={"score": 8.5},
-                pid=120
-            )
+                pid=120,
+                heuristic="CAPE_1013",
+                attacks=[
+                    SandboxAttackItem("T1059.001", "Command and Scripting Interpreter", "PowerShell execution"),
+                    SandboxAttackItem("T1055", "Process Injection", "Injecting code into other processes")
+                ],
+                actors=["APT29"],
+                malware_families=["Empire"],
+            ))
 
-            sandbox_section.body.add_signature(signature_item)
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Encoded Command Execution Detected",
+                type="CUCKOO",
+                classification="malicious",
+                signature_id="sig_5678",
+                message="Base64 encoded command usage identified",
+                pid=120,
+                heuristic="CAPE_1013",
+            ))
+
+            # Heuristic (single heuristic shared by multiple signatures above)
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_1013",
+                name="Unseen IOCs found in API calls",
+                score=1000,
+                tags={
+                    "network.dynamic.ip": ["192.168.0.1"]
+                }
+            ))
 
             # Add the section to the result
             result.add_section(sandbox_section)
@@ -467,7 +486,7 @@ class ResultSample(ServiceBase):
             table_section = ResultTableSection('Example of a TABLE section')
             # Use the TableRow class to help adding row to the Table section
             table_section.add_row(TableRow(a_str="Some string1",
-                                  extra_column_here="confirmed", a_bool=False, an_int=101))
+                                           extra_column_here="confirmed", a_bool=False, an_int=101))
             table_section.add_row(TableRow({"a_str": "Some string2",
                                             "a_bool": True, "an_int": "to_be_overriden_by_kwargs"}, an_int=102))
             table_section.add_row(TableRow(a_str="Some string3", a_bool=False, an_int=103))
