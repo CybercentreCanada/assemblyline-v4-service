@@ -395,6 +395,7 @@ class ResultSample(ServiceBase):
                 destination_port=80,
                 source_ip="192.168.0.15",
                 source_port=54321,
+                time_observed="2025-10-14T12:00:10Z",
                 pid=120,
                 direction="outbound",
                 transport_layer_protocol="tcp",
@@ -412,6 +413,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_netflow(SandboxNetflowItem(
                 pid=120,
                 direction="outbound",
+                time_observed="2025-10-14T12:00:10Z",
                 dns_details=SandboxNetworkDNS(
                     domain="malicious.example.com",
                     lookup_type="A",
@@ -426,6 +428,7 @@ class ResultSample(ServiceBase):
                 destination_port=25,
                 source_ip="192.168.0.15",
                 source_port=60000,
+                time_observed="2025-10-14T12:00:10Z",
                 pid=100,
                 direction="outbound",
                 transport_layer_protocol="tcp",
@@ -447,8 +450,8 @@ class ResultSample(ServiceBase):
                 pid=120,
                 heuristic="CAPE_1013",
                 attacks=[
-                    SandboxAttackItem("T1059.001", "Command and Scripting Interpreter", "PowerShell execution"),
-                    SandboxAttackItem("T1055", "Process Injection", "Injecting code into other processes")
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["Command and Scripting Interpreter"], ),
+                    SandboxAttackItem("T1055", "Injecting code into other processes", ["Process Injection"])
                 ],
                 actors=["APT29"],
                 malware_families=["Empire"],

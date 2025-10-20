@@ -735,6 +735,8 @@ class SandboxNetflowItem:
         # The source port of the connection.
         source_port: Optional[int] = None,
 
+        time_observed: str = None,
+
         # HTTP-specific details of the request.
         http_details: Optional[SandboxNetworkHTTP] = None,
 
@@ -754,6 +756,7 @@ class SandboxNetflowItem:
         self.pid = pid
         self.source_ip = source_ip
         self.source_port = source_port
+        self.time_observed = time_observed
         self.http_details = http_details
         self.dns_details = dns_details
         self.smtp_details = smtp_details
@@ -769,6 +772,7 @@ class SandboxNetflowItem:
             "pid": self.pid,
             "source_ip": self.source_ip,
             "source_port": self.source_port,
+            "time_observed": self.time_observed,
             "connection_type": self.connection_type,
         }
 
@@ -790,18 +794,18 @@ class SandboxAttackItem:
     def __init__(
         self,
         attack_id: str,
-        category: Optional[str] = None,
-        description: Optional[str] = None,
+        pattern: str = None,
+        categories: List[str] = [],
     ):
         self.attack_id = attack_id
-        self.category = category
-        self.description = description
+        self.pattern = pattern
+        self.categories = categories or []
 
     def as_primitives(self) -> Dict[str, Any]:
         return {
             "attack_id": self.attack_id,
-            "category": self.category,
-            "description": self.description,
+            "pattern": self.pattern,
+            "categories": self.categories,
         }
 
 
