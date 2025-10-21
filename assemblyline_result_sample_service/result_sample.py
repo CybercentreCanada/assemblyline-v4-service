@@ -389,6 +389,96 @@ class ResultSample(ServiceBase):
                 safelisted=False,
             ))
 
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Windows\\System32\\svchost.exe",
+                start_time="2025-10-14T12:00:02Z",
+                pid=50,
+                ppid=4,
+                command_line="svchost.exe -k netsvcs",
+                integrity_level="system",
+                image_hash="svchosthash001",
+                original_file_name="svchost.exe",
+                safelisted=True,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Windows\\System32\\explorer.exe",
+                start_time="2025-10-14T12:00:03Z",
+                pid=200,
+                ppid=50,
+                command_line="explorer.exe",
+                integrity_level="medium",
+                image_hash="explorerhash002",
+                original_file_name="EXPLORER.EXE",
+                safelisted=True,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="notepad.exe",
+                start_time="2025-10-14T12:00:25Z",
+                pid=140,
+                ppid=120,
+                command_line="notepad.exe suspicious.txt",
+                integrity_level="medium",
+                image_hash="notehash333",
+                safelisted=False,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Windows\\System32\\wscript.exe",
+                start_time="2025-10-14T12:00:30Z",
+                pid=160,
+                ppid=100,
+                command_line="wscript.exe //B //E:js badscript.js",
+                integrity_level="medium",
+                image_hash="wskripthash444",
+                safelisted=False,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\ProgramData\\malware\\injector.exe",
+                start_time="2025-10-14T12:00:35Z",
+                pid=180,
+                ppid=160,
+                command_line="injector.exe -target svchost.exe",
+                integrity_level="high",
+                image_hash="injectorhash555",
+                safelisted=False,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Temp\\dropper.exe",
+                start_time="2025-10-14T12:00:40Z",
+                pid=220,
+                ppid=120,
+                command_line="dropper.exe --silent",
+                integrity_level="medium",
+                image_hash="drophere666",
+                safelisted=False,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="chrome.exe",
+                start_time="2025-10-14T12:00:45Z",
+                pid=240,
+                ppid=200,
+                command_line="chrome.exe --remote-debugging",
+                integrity_level="medium",
+                image_hash="chromehash777",
+                safelisted=True,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Users\\Public\\payload.exe",
+                start_time="2025-10-14T12:00:50Z",
+                pid=260,
+                ppid=220,
+                command_line="payload.exe --stealth",
+                integrity_level="high",
+                image_hash="payloadhash888",
+                safelisted=False,
+            ))
+
             # Network flows (HTTP example)
             sandbox_section.add_netflow(SandboxNetflowItem(
                 destination_ip="45.83.23.19",
@@ -440,18 +530,85 @@ class ResultSample(ServiceBase):
                 connection_type="smtp"
             ))
 
+            sandbox_section.add_netflow(SandboxNetflowItem(
+                destination_ip="8.8.8.8",
+                destination_port=53,
+                source_ip="192.168.0.15",
+                source_port=50505,
+                time_observed="2025-10-14T12:01:00Z",
+                pid=140,
+                direction="outbound",
+                dns_details=SandboxNetworkDNS(domain="example.org", lookup_type="A", resolved_ips=["93.184.216.34"]),
+                connection_type="dns"
+            ))
+
+            sandbox_section.add_netflow(SandboxNetflowItem(
+                destination_ip="203.0.113.100",
+                destination_port=8080,
+                source_ip="192.168.0.15",
+                source_port=50506,
+                time_observed="2025-10-14T12:01:10Z",
+                pid=160,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                http_details=SandboxNetworkHTTP(
+                    request_uri="http://203.0.113.100/c2",
+                    request_method="POST",
+                    response_status_code=404,
+                    response_content_mimetype="text/plain",
+                    request_headers={"User-Agent": "Mozilla/5.0"},
+                ),
+                connection_type="http"
+            ))
+
+            sandbox_section.add_netflow(SandboxNetflowItem(
+                destination_ip="198.51.100.44",
+                destination_port=443,
+                source_ip="192.168.0.15",
+                source_port=50507,
+                time_observed="2025-10-14T12:01:12Z",
+                pid=180,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                connection_type="https"
+            ))
+
+            sandbox_section.add_netflow(SandboxNetflowItem(
+                destination_ip="10.0.0.5",
+                destination_port=21,
+                source_ip="192.168.0.15",
+                source_port=50508,
+                time_observed="2025-10-14T12:01:15Z",
+                pid=200,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                connection_type="ftp"
+            ))
+
+            sandbox_section.add_netflow(SandboxNetflowItem(
+                destination_ip="172.16.5.7",
+                destination_port=8081,
+                source_ip="192.168.0.15",
+                source_port=50509,
+                time_observed="2025-10-14T12:01:20Z",
+                pid=220,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                connection_type="tcp"
+            ))
+
             # Signatures (multiple referencing the same heuristic CAPE_1013)
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Suspicious PowerShell Execution",
                 type="CUCKOO",
-                classification="malicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_1234",
                 message="PowerShell launched with encoded commands",
                 pid=120,
                 heuristic="CAPE_1013",
                 attacks=[
-                    SandboxAttackItem("T1059.001", "PowerShell execution", ["Command and Scripting Interpreter"], ),
-                    SandboxAttackItem("T1055", "Injecting code into other processes", ["Process Injection"])
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["defense-evasion", "discovery"], ),
+                    SandboxAttackItem("T1055", "Injecting code into other processes", ["discovery"])
                 ],
                 actors=["APT29"],
                 malware_families=["Empire"],
@@ -460,11 +617,121 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Encoded Command Execution Detected",
                 type="CUCKOO",
-                classification="malicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_5678",
                 message="Base64 encoded command usage identified",
                 pid=120,
                 heuristic="CAPE_1013",
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Suspicious DLL Loading",
+                type="YARA",
+                classification="malicious",
+                signature_id="sig_2001",
+                message="Process injected and loaded unexpected DLLs",
+                pid=180,
+                heuristic="CAPE_2001",
+                attacks=[
+                    SandboxAttackItem("T1055", "Process Injection", ["privilege-escalation"])
+                ],
+                actors=["Unknown"],
+                malware_families=["UnknownFamilyA"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="HTTP Beaconing Pattern",
+                type="SIGMA",
+                classification="suspicious",
+                signature_id="sig_2002",
+                message="Periodic small HTTP posts consistent with beaconing",
+                pid=220,
+                heuristic="CAPE_2002",
+                attacks=[
+                    SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"])
+                ],
+                actors=[],
+                malware_families=[],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Domain Generation Algorithm (DGA) Traffic",
+                type="SURICATA",
+                classification="malicious",
+                signature_id="sig_2003",
+                message="High-entropy domain pattern observed",
+                pid=240,
+                heuristic="CAPE_2003",
+                attacks=[
+                    SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"])
+                ],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Email Attachment with Macro",
+                type="CUCKOO",
+                classification="suspicious",
+                signature_id="sig_2004",
+                message="Attachment with embedded macros opened",
+                pid=100,
+                heuristic="CAPE_2004",
+                attacks=[
+                    SandboxAttackItem("T1204.002", "User Execution: Malicious File", ["initial-access"])
+                ],
+                actors=["PhishGroupX"],
+                malware_families=["MacroDropper"]
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Autostart Persistence Created",
+                type="YARA",
+                classification="malicious",
+                signature_id="sig_2005",
+                message="New autorun registry key created",
+                pid=160,
+                heuristic="CAPE_2001",  # reuse CAPE_2001
+                attacks=[
+                    SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"])
+                ],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Credential Dumping Activity",
+                type="CUCKOO",
+                classification="malicious",
+                signature_id="sig_2006",
+                message="Call sequence consistent with credential dumping",
+                pid=180,
+                heuristic="CAPE_2005",
+                attacks=[
+                    SandboxAttackItem("T1003", "OS Credential Dumping", ["credential-access"])
+                ],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="File Write to System Dir",
+                type="SIGMA",
+                classification="suspicious",
+                signature_id="sig_2007",
+                message="Executable written to system directory",
+                pid=260,
+                heuristic="CAPE_2006",
+                attacks=[
+                    SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"])
+                ],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="PowerShell Suspicious Module Load",
+                type="YARA",
+                classification="suspicious",
+                signature_id="sig_2008",
+                message="PowerShell loaded a module from temp path",
+                pid=120,
+                heuristic="CAPE_1013",  # reuse the original heuristic
+                attacks=[
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"])
+                ],
             ))
 
             # Heuristic (single heuristic shared by multiple signatures above)
@@ -474,6 +741,92 @@ class ResultSample(ServiceBase):
                 score=1000,
                 tags={
                     "network.dynamic.ip": ["192.168.0.1"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2001",
+                name="DLL Injection / Suspicious Module Loads",
+                score=800,
+                tags={
+                    "process.name": ["injector.exe", "svchost.exe"],
+                    "behavior.module_load": ["unusual_path"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2002",
+                name="Low-volume periodic HTTP beaconing",
+                score=600,
+                tags={
+                    "network.http.uri": ["*/c2", "/beacon"],
+                    "network.frequency": ["periodic"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2003",
+                name="DGA-like DNS requests",
+                score=900,
+                tags={
+                    "dns.domain_entropy": ["high"],
+                    "network.dynamic.domain": ["dga.example"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2004",
+                name="Macro-laden attachment opened",
+                score=700,
+                tags={
+                    "file.extension": [".docm", ".doc"],
+                    "email.attachment": ["macro"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2005",
+                name="Credential dumping indicators",
+                score=950,
+                tags={
+                    "process.api_calls": ["LSA", "SAM"],
+                    "file.hash": ["abcde12345"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2006",
+                name="Writes to privileged system path",
+                score=750,
+                tags={
+                    "file.path": ["C:\\Windows\\System32", "C:\\Program Files"],
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2007",
+                name="Suspicious child process spawn",
+                score=400,
+                tags={
+                    "process.spawn_chain": ["cmd->powershell->injector"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2008",
+                name="Unusual TLS/HTTPS usage",
+                score=550,
+                tags={
+                    "network.tls": ["sni_unusual"]
+                }
+            ))
+
+            sandbox_section.add_heuristic(SandboxHeuristicItem(
+                heur_id="CAPE_2009",
+                name="Abnormal file creation rates",
+                score=300,
+                tags={
+                    "file.creation_rate": ["high"]
                 }
             ))
 
