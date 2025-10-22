@@ -627,7 +627,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Suspicious DLL Loading",
                 type="YARA",
-                classification="malicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2001",
                 message="Process injected and loaded unexpected DLLs",
                 pid=180,
@@ -642,7 +642,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="HTTP Beaconing Pattern",
                 type="SIGMA",
-                classification="suspicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2002",
                 message="Periodic small HTTP posts consistent with beaconing",
                 pid=220,
@@ -657,7 +657,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Domain Generation Algorithm (DGA) Traffic",
                 type="SURICATA",
-                classification="malicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2003",
                 message="High-entropy domain pattern observed",
                 pid=240,
@@ -670,7 +670,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Email Attachment with Macro",
                 type="CUCKOO",
-                classification="suspicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2004",
                 message="Attachment with embedded macros opened",
                 pid=100,
@@ -685,7 +685,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Autostart Persistence Created",
                 type="YARA",
-                classification="malicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2005",
                 message="New autorun registry key created",
                 pid=160,
@@ -698,7 +698,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Credential Dumping Activity",
                 type="CUCKOO",
-                classification="malicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2006",
                 message="Call sequence consistent with credential dumping",
                 pid=180,
@@ -711,7 +711,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="File Write to System Dir",
                 type="SIGMA",
-                classification="suspicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2007",
                 message="Executable written to system directory",
                 pid=260,
@@ -724,7 +724,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="PowerShell Suspicious Module Load",
                 type="YARA",
-                classification="suspicious",
+                classification=cl_engine.RESTRICTED,
                 signature_id="sig_2008",
                 message="PowerShell loaded a module from temp path",
                 pid=120,
@@ -842,7 +842,7 @@ class ResultSample(ServiceBase):
             table_section = ResultTableSection('Example of a TABLE section')
             # Use the TableRow class to help adding row to the Table section
             table_section.add_row(TableRow(a_str="Some string1",
-                                           extra_column_here="confirmed", a_bool=False, an_int=101))
+                                  extra_column_here="confirmed", a_bool=False, an_int=101))
             table_section.add_row(TableRow({"a_str": "Some string2",
                                             "a_bool": True, "an_int": "to_be_overriden_by_kwargs"}, an_int=102))
             table_section.add_row(TableRow(a_str="Some string3", a_bool=False, an_int=103))
