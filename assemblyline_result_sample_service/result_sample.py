@@ -364,34 +364,9 @@ class ResultSample(ServiceBase):
 
             # Processes
             sandbox_section.add_process(SandboxProcessItem(
-                image="cmd.exe",
-                start_time="2025-10-14T12:00:05Z",
-                pid=100,
-                ppid=50,
-                command_line="C:\\Windows\\System32\\cmd.exe /c badscript.bat",
-                integrity_level="medium",
-                image_hash="badhash123",
-                original_file_name="CMD.EXE",
-                safelisted=False,
-                end_time="2025-10-14T12:00:20Z",
-                file_count=5,
-                registry_count=1,
-            ))
-
-            sandbox_section.add_process(SandboxProcessItem(
-                image="powershell.exe",
-                start_time="2025-10-14T12:00:10Z",
-                pid=120,
-                ppid=100,
-                command_line="powershell.exe -enc aQBmACgA",
-                integrity_level="high",
-                image_hash="evilhash789",
-                safelisted=False,
-            ))
-
-            sandbox_section.add_process(SandboxProcessItem(
                 image="C:\\Windows\\System32\\svchost.exe",
                 start_time="2025-10-14T12:00:02Z",
+                end_time="2025-10-14T12:01:00Z",
                 pid=50,
                 ppid=4,
                 command_line="svchost.exe -k netsvcs",
@@ -402,8 +377,36 @@ class ResultSample(ServiceBase):
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
+                image="cmd.exe",
+                start_time="2025-10-14T12:00:05Z",
+                end_time="2025-10-14T12:00:40Z",
+                pid=100,
+                ppid=50,
+                command_line="C:\\Windows\\System32\\cmd.exe /c badscript.bat",
+                integrity_level="medium",
+                image_hash="badhash123",
+                original_file_name="CMD.EXE",
+                safelisted=False,
+                file_count=5,
+                registry_count=1,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="powershell.exe",
+                start_time="2025-10-14T12:00:10Z",
+                end_time="2025-10-14T12:00:45Z",
+                pid=120,
+                ppid=100,
+                command_line="powershell.exe -enc aQBmACgA",
+                integrity_level="high",
+                image_hash="evilhash789",
+                safelisted=False,
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
                 image="C:\\Windows\\System32\\explorer.exe",
                 start_time="2025-10-14T12:00:03Z",
+                end_time="2025-10-14T12:01:10Z",
                 pid=200,
                 ppid=50,
                 command_line="explorer.exe",
@@ -416,6 +419,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_process(SandboxProcessItem(
                 image="notepad.exe",
                 start_time="2025-10-14T12:00:25Z",
+                end_time="2025-10-14T12:00:55Z",
                 pid=140,
                 ppid=120,
                 command_line="notepad.exe suspicious.txt",
@@ -427,6 +431,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_process(SandboxProcessItem(
                 image="C:\\Windows\\System32\\wscript.exe",
                 start_time="2025-10-14T12:00:30Z",
+                end_time="2025-10-14T12:00:50Z",
                 pid=160,
                 ppid=100,
                 command_line="wscript.exe //B //E:js badscript.js",
@@ -438,6 +443,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_process(SandboxProcessItem(
                 image="C:\\ProgramData\\malware\\injector.exe",
                 start_time="2025-10-14T12:00:35Z",
+                end_time="2025-10-14T12:00:55Z",
                 pid=180,
                 ppid=160,
                 command_line="injector.exe -target svchost.exe",
@@ -449,6 +455,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_process(SandboxProcessItem(
                 image="C:\\Temp\\dropper.exe",
                 start_time="2025-10-14T12:00:40Z",
+                end_time="2025-10-14T12:00:58Z",
                 pid=220,
                 ppid=120,
                 command_line="dropper.exe --silent",
@@ -460,6 +467,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_process(SandboxProcessItem(
                 image="chrome.exe",
                 start_time="2025-10-14T12:00:45Z",
+                end_time="2025-10-14T12:01:15Z",
                 pid=240,
                 ppid=200,
                 command_line="chrome.exe --remote-debugging",
@@ -471,6 +479,7 @@ class ResultSample(ServiceBase):
             sandbox_section.add_process(SandboxProcessItem(
                 image="C:\\Users\\Public\\payload.exe",
                 start_time="2025-10-14T12:00:50Z",
+                end_time="2025-10-14T12:01:05Z",
                 pid=260,
                 ppid=220,
                 command_line="payload.exe --stealth",
