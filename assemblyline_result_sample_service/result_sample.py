@@ -604,7 +604,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_1234",
                 message="PowerShell launched with encoded commands",
-                pid=120,
+                pids=[120],
                 heuristic="CAPE_1013",
                 attacks=[
                     SandboxAttackItem("T1059.001", "PowerShell execution", ["defense-evasion", "discovery"], ),
@@ -620,7 +620,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_5678",
                 message="Base64 encoded command usage identified",
-                pid=120,
+                pids=[120],
                 heuristic="CAPE_1013",
             ))
 
@@ -630,7 +630,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2001",
                 message="Process injected and loaded unexpected DLLs",
-                pid=180,
+                pids=[180],
                 heuristic="CAPE_2001",
                 attacks=[
                     SandboxAttackItem("T1055", "Process Injection", ["privilege-escalation"])
@@ -645,7 +645,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2002",
                 message="Periodic small HTTP posts consistent with beaconing",
-                pid=220,
+                pids=[220],
                 heuristic="CAPE_2002",
                 attacks=[
                     SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"])
@@ -660,7 +660,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2003",
                 message="High-entropy domain pattern observed",
-                pid=240,
+                pids=[240],
                 heuristic="CAPE_2003",
                 attacks=[
                     SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"])
@@ -673,7 +673,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2004",
                 message="Attachment with embedded macros opened",
-                pid=100,
+                pids=[100],
                 heuristic="CAPE_2004",
                 attacks=[
                     SandboxAttackItem("T1204.002", "User Execution: Malicious File", ["initial-access"])
@@ -688,7 +688,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2005",
                 message="New autorun registry key created",
-                pid=160,
+                pids=[160],
                 heuristic="CAPE_2001",  # reuse CAPE_2001
                 attacks=[
                     SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"])
@@ -701,7 +701,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2006",
                 message="Call sequence consistent with credential dumping",
-                pid=180,
+                pids=[180],
                 heuristic="CAPE_2005",
                 attacks=[
                     SandboxAttackItem("T1003", "OS Credential Dumping", ["credential-access"])
@@ -714,7 +714,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2007",
                 message="Executable written to system directory",
-                pid=260,
+                pids=[260],
                 heuristic="CAPE_2006",
                 attacks=[
                     SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"])
@@ -727,7 +727,7 @@ class ResultSample(ServiceBase):
                 classification=cl_engine.RESTRICTED,
                 signature_id="sig_2008",
                 message="PowerShell loaded a module from temp path",
-                pid=120,
+                pids=[120],
                 heuristic="CAPE_1013",  # reuse the original heuristic
                 attacks=[
                     SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"])

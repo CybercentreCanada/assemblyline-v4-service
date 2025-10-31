@@ -839,8 +839,8 @@ class SandboxSignatureItem:
         # Optional human-readable message.
         message: Optional[str] = None,
 
-        # PID of the process that generated the signature.
-        pid: Optional[int] = None,
+        # PIDs of the processes that generated the signature.
+        pids: Optional[List[int]] = [],
 
         # ID of the heuristic this signature belongs to
         heuristic: str = None,
@@ -853,7 +853,7 @@ class SandboxSignatureItem:
         self.malware_families = malware_families
         self.signature_id = signature_id
         self.message = message
-        self.pid = pid
+        self.pids = pids
         self.heuristic = heuristic
 
     def as_primitives(self) -> Dict[str, Any]:
@@ -866,7 +866,7 @@ class SandboxSignatureItem:
             "malware_families": self.malware_families,
             "signature_id": self.signature_id,
             "message": self.message,
-            "pid": self.pid,
+            "pids": self.pids,
             "heuristic": self.heuristic,
         }
 
