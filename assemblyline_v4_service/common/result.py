@@ -842,8 +842,8 @@ class SandboxSignatureItem:
         # PIDs of the processes that generated the signature.
         pids: Optional[List[int]] = [],
 
-        # ID of the heuristic this signature belongs to
-        heuristic: str = None,
+        # Score of the heuristic this signature belongs to
+        score: int = None,
     ):
         self.name = name
         self.type = type
@@ -854,7 +854,7 @@ class SandboxSignatureItem:
         self.signature_id = signature_id
         self.message = message
         self.pids = pids
-        self.heuristic = heuristic
+        self.score = score
 
     def as_primitives(self) -> Dict[str, Any]:
         return {
@@ -867,42 +867,10 @@ class SandboxSignatureItem:
             "signature_id": self.signature_id,
             "message": self.message,
             "pids": self.pids,
-            "heuristic": self.heuristic,
-        }
-
-
-class SandboxHeuristicItem:
-    """
-    Represents a raised heuristic during sandbox analysis.
-    """
-
-    def __init__(
-        self,
-        # Heuristic ID
-        heur_id: str,
-
-        # Score associated with this heuristic
-        score: int,
-
-        # Name of the heuristic
-        name: str,
-
-        # Tags associated with this heuristic
-        tags: Optional[Dict[str, List[Any]]] = None,
-    ):
-        self.heur_id = heur_id
-        self.score = score
-        self.name = name
-        self.tags = tags or {}
-
-    def as_primitives(self) -> Dict[str, Any]:
-        """Return a JSON-serializable representation."""
-        return {
-            "heur_id": self.heur_id,
             "score": self.score,
-            "name": self.name,
-            "tags": self.tags,
         }
+
+
 
 
 class SandboxSectionBody(SectionBody):
@@ -920,7 +888,6 @@ class SandboxSectionBody(SectionBody):
             "processes": [],
             "netflows": [],
             "signatures": [],
-            "heuristics": [],
         })
 
     def set_sandbox(self, name: str, version: Optional[str], machine_metadata: SandboxMachineMetadata, analysis_metadata: SandboxAnalysisMetadata) -> None:
@@ -967,16 +934,6 @@ class SandboxSectionBody(SectionBody):
         for sig in signatures:
             self.add_signature(sig)
 
-    def add_heuristic(self, heuristic: SandboxHeuristicItem) -> None:
-        """Add a heuristic to the sandbox result."""
-        if not isinstance(heuristic, SandboxHeuristicItem):
-            raise TypeError("Expected SandboxHeuristicItem")
-        self._data["heuristics"].append(heuristic.as_primitives())
-
-    def add_heuristics(self, heuristics: List[SandboxHeuristicItem]) -> None:
-        """Add multiple heuristics at once."""
-        for h in heuristics:
-            self.add_heuristic(h)
 
     def as_primitives(self) -> Dict[str, Any]:
         """Return a fully JSON-serializable structure."""
@@ -988,7 +945,6 @@ class SandboxSectionBody(SectionBody):
             "processes": self._data["processes"],
             "netflows": self._data["netflows"],
             "signatures": self._data["signatures"],
-            "heuristics": self._data["heuristics"],
         }
 
 

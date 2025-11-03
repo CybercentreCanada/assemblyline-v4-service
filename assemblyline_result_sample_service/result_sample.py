@@ -35,7 +35,6 @@ from assemblyline_v4_service.common.result import (
     ResultURLSection,
     SandboxAnalysisMetadata,
     SandboxAttackItem,
-    SandboxHeuristicItem,
     SandboxMachineMetadata,
     SandboxNetflowItem,
     SandboxNetworkDNS,
@@ -606,7 +605,7 @@ class ResultSample(ServiceBase):
                 connection_type="tcp"
             ))
 
-            # Signatures (multiple referencing the same heuristic CAPE_1013)
+            # Signatures
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Suspicious PowerShell Execution",
                 type="CUCKOO",
@@ -614,10 +613,10 @@ class ResultSample(ServiceBase):
                 signature_id="sig_1234",
                 message="PowerShell launched with encoded commands",
                 pids=[120],
-                heuristic="CAPE_1013",
+                score=1000,
                 attacks=[
-                    SandboxAttackItem("T1059.001", "PowerShell execution", ["defense-evasion", "discovery"], ),
-                    SandboxAttackItem("T1055", "Injecting code into other processes", ["discovery"])
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["defense-evasion", "discovery"]),
+                    SandboxAttackItem("T1055", "Injecting code into other processes", ["discovery"]),
                 ],
                 actors=["APT29"],
                 malware_families=["Empire"],
@@ -630,7 +629,7 @@ class ResultSample(ServiceBase):
                 signature_id="sig_5678",
                 message="Base64 encoded command usage identified",
                 pids=[120],
-                heuristic="CAPE_1013",
+                score=1000,
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -640,9 +639,9 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2001",
                 message="Process injected and loaded unexpected DLLs",
                 pids=[180],
-                heuristic="CAPE_2001",
+                score=800,
                 attacks=[
-                    SandboxAttackItem("T1055", "Process Injection", ["privilege-escalation"])
+                    SandboxAttackItem("T1055", "Process Injection", ["privilege-escalation"]),
                 ],
                 actors=["Unknown"],
                 malware_families=["UnknownFamilyA"],
@@ -655,12 +654,10 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2002",
                 message="Periodic small HTTP posts consistent with beaconing",
                 pids=[220],
-                heuristic="CAPE_2002",
+                score=600,
                 attacks=[
-                    SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"])
+                    SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"]),
                 ],
-                actors=[],
-                malware_families=[],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -670,9 +667,9 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2003",
                 message="High-entropy domain pattern observed",
                 pids=[240],
-                heuristic="CAPE_2003",
+                score=900,
                 attacks=[
-                    SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"])
+                    SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"]),
                 ],
             ))
 
@@ -683,12 +680,12 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2004",
                 message="Attachment with embedded macros opened",
                 pids=[100],
-                heuristic="CAPE_2004",
+                score=700,
                 attacks=[
-                    SandboxAttackItem("T1204.002", "User Execution: Malicious File", ["initial-access"])
+                    SandboxAttackItem("T1204.002", "User Execution: Malicious File", ["initial-access"]),
                 ],
                 actors=["PhishGroupX"],
-                malware_families=["MacroDropper"]
+                malware_families=["MacroDropper"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -698,9 +695,9 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2005",
                 message="New autorun registry key created",
                 pids=[160],
-                heuristic="CAPE_2001",  # reuse CAPE_2001
+                score=800,
                 attacks=[
-                    SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"])
+                    SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"]),
                 ],
             ))
 
@@ -711,9 +708,9 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2006",
                 message="Call sequence consistent with credential dumping",
                 pids=[180],
-                heuristic="CAPE_2005",
+                score=950,
                 attacks=[
-                    SandboxAttackItem("T1003", "OS Credential Dumping", ["credential-access"])
+                    SandboxAttackItem("T1003", "OS Credential Dumping", ["credential-access"]),
                 ],
             ))
 
@@ -724,9 +721,9 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2007",
                 message="Executable written to system directory",
                 pids=[260],
-                heuristic="CAPE_2006",
+                score=750,
                 attacks=[
-                    SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"])
+                    SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"]),
                 ],
             ))
 
@@ -737,107 +734,12 @@ class ResultSample(ServiceBase):
                 signature_id="sig_2008",
                 message="PowerShell loaded a module from temp path",
                 pids=[120],
-                heuristic="CAPE_1013",  # reuse the original heuristic
+                score=1000,
                 attacks=[
-                    SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"])
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"]),
                 ],
             ))
 
-            # Heuristic (single heuristic shared by multiple signatures above)
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_1013",
-                name="Unseen IOCs found in API calls",
-                score=1000,
-                tags={
-                    "network.dynamic.ip": ["192.168.0.1"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2001",
-                name="DLL Injection / Suspicious Module Loads",
-                score=800,
-                tags={
-                    "process.name": ["injector.exe", "svchost.exe"],
-                    "behavior.module_load": ["unusual_path"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2002",
-                name="Low-volume periodic HTTP beaconing",
-                score=600,
-                tags={
-                    "network.http.uri": ["*/c2", "/beacon"],
-                    "network.frequency": ["periodic"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2003",
-                name="DGA-like DNS requests",
-                score=900,
-                tags={
-                    "dns.domain_entropy": ["high"],
-                    "network.dynamic.domain": ["dga.example"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2004",
-                name="Macro-laden attachment opened",
-                score=700,
-                tags={
-                    "file.extension": [".docm", ".doc"],
-                    "email.attachment": ["macro"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2005",
-                name="Credential dumping indicators",
-                score=950,
-                tags={
-                    "process.api_calls": ["LSA", "SAM"],
-                    "file.hash": ["abcde12345"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2006",
-                name="Writes to privileged system path",
-                score=750,
-                tags={
-                    "file.path": ["C:\\Windows\\System32", "C:\\Program Files"],
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2007",
-                name="Suspicious child process spawn",
-                score=400,
-                tags={
-                    "process.spawn_chain": ["cmd->powershell->injector"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2008",
-                name="Unusual TLS/HTTPS usage",
-                score=550,
-                tags={
-                    "network.tls": ["sni_unusual"]
-                }
-            ))
-
-            sandbox_section.add_heuristic(SandboxHeuristicItem(
-                heur_id="CAPE_2009",
-                name="Abnormal file creation rates",
-                score=300,
-                tags={
-                    "file.creation_rate": ["high"]
-                }
-            ))
 
             # Add the section to the result
             result.add_section(sandbox_section)
