@@ -164,12 +164,11 @@ class PrivilegedServiceAPI:
     def get_safelist(self, tag_list=None):
         if DEVELOPMENT_MODE:
             return {}
-        tag_types = None
 
         if tag_list and not isinstance(tag_list, list):
             raise ValueError("Parameter tag_list should be a list of strings.")
 
-        return self.safelist_client.get_safelisted_tags(tag_types)
+        return self.safelist_client.get_safelisted_tags(tag_list)
 
     def lookup_safelist(self, qhash):
         if DEVELOPMENT_MODE:
