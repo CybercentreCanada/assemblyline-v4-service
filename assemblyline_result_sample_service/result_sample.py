@@ -341,24 +341,24 @@ class ResultSample(ServiceBase):
             sandbox_section = ResultSandboxSection("Example of a SANDBOX section")
 
             # Sandbox information
-            sandbox_section.set_sandbox(
-                name="Cuckoo Sandbox",
-                version="2.0.7",
-                machine_metadata=SandboxMachineMetadata(
-                    ip="192.168.0.15",
-                    hypervisor="KVM",
-                    hostname="analysis-vm-01",
-                    platform="Windows",
-                    version="10.0.19045",
-                    architecture="x64"
-                ),
+            sandbox_section.set_analysis_information(
+                sandbox_name="Cuckoo Sandbox",
+                sandbox_version="2.0.7",
                 analysis_metadata=SandboxAnalysisMetadata(
-                    task_id="task_001",
+                    task_id=1,
                     start_time="2025-10-14T12:00:00Z",
                     end_time="2025-10-14T12:10:30Z",
                     routing="Internet",
                     window_size="1024x768",
-                )
+                    machine_metadata=SandboxMachineMetadata(
+                        ip="192.168.0.15",
+                        hypervisor="KVM",
+                        hostname="analysis-vm-01",
+                        platform="Windows",
+                        version="10.0.19045",
+                        architecture="x64",
+                    ),
+                ),
             )
 
             # Processes
@@ -487,14 +487,14 @@ class ResultSample(ServiceBase):
                 safelisted=False,
             ))
 
-            # Network flows (HTTP example)
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            # Network connections
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="45.83.23.19",
                 destination_port=80,
                 source_ip="192.168.0.15",
                 source_port=54321,
                 time_observed="2025-10-14T12:00:10Z",
-                pid=120,
+                process=120,
                 direction="outbound",
                 transport_layer_protocol="tcp",
                 http_details=SandboxNetworkHTTP(
@@ -504,59 +504,61 @@ class ResultSample(ServiceBase):
                     response_content_mimetype="application/octet-stream",
                     request_headers={"User-Agent": "PowerShell"},
                 ),
-                connection_type="http"
+                connection_type="http",
             ))
 
-            # Network flows (DNS example, minimal)
-            sandbox_section.add_netflow(SandboxNetflowItem(
-                pid=120,
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                process=120,
                 direction="outbound",
                 time_observed="2025-10-14T12:00:10Z",
                 dns_details=SandboxNetworkDNS(
                     domain="malicious.example.com",
                     lookup_type="A",
-                    resolved_ips=["45.83.23.19"]
+                    resolved_ips=["45.83.23.19"],
                 ),
-                connection_type="dns"
+                connection_type="dns",
             ))
 
-            # Network flows (SMTP example)
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="203.0.113.55",
                 destination_port=25,
                 source_ip="192.168.0.15",
                 source_port=60000,
                 time_observed="2025-10-14T12:00:10Z",
-                pid=100,
+                process=100,
                 direction="outbound",
                 transport_layer_protocol="tcp",
                 smtp_details=SandboxNetworkSMTP(
                     mail_from="attacker@example.com",
                     mail_to=["victim@example.com"],
-                    attachments=[{"filename": "payload.docm", "size": 20480}]
+                    attachments=[{"filename": "payload.docm", "size": 20480}],
                 ),
-                connection_type="smtp"
+                connection_type="smtp",
             ))
 
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="8.8.8.8",
                 destination_port=53,
                 source_ip="192.168.0.15",
                 source_port=50505,
                 time_observed="2025-10-14T12:01:00Z",
-                pid=140,
+                process=140,
                 direction="outbound",
-                dns_details=SandboxNetworkDNS(domain="example.org", lookup_type="A", resolved_ips=["93.184.216.34"]),
-                connection_type="dns"
+                dns_details=SandboxNetworkDNS(
+                    domain="example.org",
+                    lookup_type="A",
+                    resolved_ips=["93.184.216.34"],
+                ),
+                connection_type="dns",
             ))
 
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="203.0.113.100",
                 destination_port=8080,
                 source_ip="192.168.0.15",
                 source_port=50506,
                 time_observed="2025-10-14T12:01:10Z",
-                pid=160,
+                process=160,
                 direction="outbound",
                 transport_layer_protocol="tcp",
                 http_details=SandboxNetworkHTTP(
@@ -566,43 +568,43 @@ class ResultSample(ServiceBase):
                     response_content_mimetype="text/plain",
                     request_headers={"User-Agent": "Mozilla/5.0"},
                 ),
-                connection_type="http"
+                connection_type="http",
             ))
 
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="198.51.100.44",
                 destination_port=443,
                 source_ip="192.168.0.15",
                 source_port=50507,
                 time_observed="2025-10-14T12:01:12Z",
-                pid=180,
+                process=180,
                 direction="outbound",
                 transport_layer_protocol="tcp",
-                connection_type="https"
+                connection_type="https",
             ))
 
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="10.0.0.5",
                 destination_port=21,
                 source_ip="192.168.0.15",
                 source_port=50508,
                 time_observed="2025-10-14T12:01:15Z",
-                pid=200,
+                process=200,
                 direction="outbound",
                 transport_layer_protocol="tcp",
-                connection_type="ftp"
+                connection_type="ftp",
             ))
 
-            sandbox_section.add_netflow(SandboxNetflowItem(
+            sandbox_section.add_network_connection(SandboxNetflowItem(
                 destination_ip="172.16.5.7",
                 destination_port=8081,
                 source_ip="192.168.0.15",
                 source_port=50509,
                 time_observed="2025-10-14T12:01:20Z",
-                pid=220,
+                process=220,
                 direction="outbound",
                 transport_layer_protocol="tcp",
-                connection_type="tcp"
+                connection_type="tcp",
             ))
 
             # Signatures
@@ -610,10 +612,9 @@ class ResultSample(ServiceBase):
                 name="Suspicious PowerShell Execution",
                 type="CUCKOO",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_1234",
-                message="PowerShell launched with encoded commands",
-                pids=[120],
+                description="PowerShell launched with encoded commands",
                 score=1000,
+                pid=[120],
                 attacks=[
                     SandboxAttackItem("T1059.001", "PowerShell execution", ["defense-evasion", "discovery"]),
                     SandboxAttackItem("T1055", "Injecting code into other processes", ["discovery"]),
@@ -626,20 +627,18 @@ class ResultSample(ServiceBase):
                 name="Encoded Command Execution Detected",
                 type="CUCKOO",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_5678",
-                message="Base64 encoded command usage identified",
-                pids=[120],
+                description="Base64 encoded command usage identified",
                 score=1000,
+                pid=[120],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
                 name="Suspicious DLL Loading",
                 type="YARA",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2001",
-                message="Process injected and loaded unexpected DLLs",
-                pids=[180],
+                description="Process injected and loaded unexpected DLLs",
                 score=800,
+                pid=[180],
                 attacks=[
                     SandboxAttackItem("T1055", "Process Injection", ["privilege-escalation"]),
                 ],
@@ -651,10 +650,9 @@ class ResultSample(ServiceBase):
                 name="HTTP Beaconing Pattern",
                 type="SIGMA",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2002",
-                message="Periodic small HTTP posts consistent with beaconing",
-                pids=[220],
+                description="Periodic small HTTP posts consistent with beaconing",
                 score=600,
+                pid=[220],
                 attacks=[
                     SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"]),
                 ],
@@ -664,10 +662,9 @@ class ResultSample(ServiceBase):
                 name="Domain Generation Algorithm (DGA) Traffic",
                 type="SURICATA",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2003",
-                message="High-entropy domain pattern observed",
-                pids=[240],
+                description="High-entropy domain pattern observed",
                 score=900,
+                pid=[240],
                 attacks=[
                     SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"]),
                 ],
@@ -677,10 +674,9 @@ class ResultSample(ServiceBase):
                 name="Email Attachment with Macro",
                 type="CUCKOO",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2004",
-                message="Attachment with embedded macros opened",
-                pids=[100],
+                description="Attachment with embedded macros opened",
                 score=700,
+                pid=[100],
                 attacks=[
                     SandboxAttackItem("T1204.002", "User Execution: Malicious File", ["initial-access"]),
                 ],
@@ -692,10 +688,9 @@ class ResultSample(ServiceBase):
                 name="Autostart Persistence Created",
                 type="YARA",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2005",
-                message="New autorun registry key created",
-                pids=[160],
+                description="New autorun registry key created",
                 score=800,
+                pid=[160],
                 attacks=[
                     SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"]),
                 ],
@@ -705,12 +700,11 @@ class ResultSample(ServiceBase):
                 name="Credential Dumping Activity",
                 type="CUCKOO",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2006",
-                message="Call sequence consistent with credential dumping",
-                pids=[180],
+                description="Call sequence consistent with credential dumping",
                 score=950,
+                pid=[180],
                 attacks=[
-                    SandboxAttackItem("T1003", "OS Credential Dumping", ["credential-access"]),
+                    SandboxAttackItem("T1003", "Credential Dumping", ["credential-access"]),
                 ],
             ))
 
@@ -718,9 +712,8 @@ class ResultSample(ServiceBase):
                 name="File Write to System Dir",
                 type="SIGMA",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2007",
-                message="Executable written to system directory",
-                pids=[260],
+                description="Executable written to system directory",
+                pid=[260],
                 score=750,
                 attacks=[
                     SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"]),
@@ -731,9 +724,8 @@ class ResultSample(ServiceBase):
                 name="PowerShell Suspicious Module Load",
                 type="YARA",
                 classification=cl_engine.RESTRICTED,
-                signature_id="sig_2008",
-                message="PowerShell loaded a module from temp path",
-                pids=[120],
+                description="PowerShell loaded a module from temp path",
+                pid=[120],
                 score=1000,
                 attacks=[
                     SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"]),
