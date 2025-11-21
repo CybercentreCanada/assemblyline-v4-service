@@ -17,7 +17,7 @@ from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline_v4_service.common import helper
-from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
+from assemblyline_v4_service.common.api import ServiceAPI
 from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.ocr import update_ocr_config
 from assemblyline_v4_service.common.request import ServiceRequest
@@ -28,7 +28,6 @@ warnings.filterwarnings("ignore")
 
 UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 UPDATES_CA = os.environ.get('UPDATES_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
-PRIVILEGED = os.environ.get('PRIVILEGED', 'false') == 'true'
 MIN_SECONDS_BETWEEN_UPDATES = float(os.environ.get('MIN_SECONDS_BETWEEN_UPDATES', '10.0'))
 SIGNATURES_META_FILENAME = "signatures_meta.json"
 
@@ -143,10 +142,7 @@ class ServiceBase:
 
     def get_api_interface(self):
         if not self._api_interface:
-            if PRIVILEGED:
-                self._api_interface = PrivilegedServiceAPI(self.log)
-            else:
-                self._api_interface = ServiceAPI(self.service_attributes, self.log)
+            self._api_interface = ServiceAPI(self.service_attributes, self.log)
 
         return self._api_interface
 

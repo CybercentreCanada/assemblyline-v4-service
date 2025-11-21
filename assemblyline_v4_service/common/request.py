@@ -1,9 +1,9 @@
 import hashlib
 import logging
 import tempfile
-from typing import Any, Dict, List, Optional, TextIO, Union
+from typing import Any, Dict, List, Optional, TextIO
 
-from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
+from assemblyline_v4_service.common.api import ServiceAPI
 from assemblyline_v4_service.common.ocr import ocr_detections
 from assemblyline_v4_service.common.result import Heuristic, Result, ResultKeyValueSection
 from assemblyline_v4_service.common.task import PARENT_RELATION, MaxExtractedExceeded, Task
@@ -31,7 +31,7 @@ class ServiceRequest:
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
-                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
+                      safelist_interface: Optional[ServiceAPI] = None,
                       allow_dynamic_recursion: bool = False, parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
         """
         Add an extracted file for additional processing.
@@ -148,7 +148,7 @@ class ServiceRequest:
             self, path: str, name: str, description: str,
             classification: Optional[Classification] = None,
             parent_relation: str = PARENT_RELATION.INFORMATION
-        ) -> bool:
+    ) -> bool:
         """
         Add a supplementary file.
 
@@ -159,7 +159,6 @@ class ServiceRequest:
         :param parent_relation: File relation to parent, if any.
         :return: None
         """
-
         return self.task.add_supplementary(
             path, name, description, classification, parent_relation=parent_relation
         )
