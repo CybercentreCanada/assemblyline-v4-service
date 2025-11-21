@@ -2,8 +2,6 @@ import os
 import time
 
 import requests
-from assemblyline_core.badlist_client import BadlistClient
-from assemblyline_core.safelist_client import SafelistClient
 from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
 from assemblyline_v4_service.common.helper import get_service_manifest
 
@@ -129,48 +127,3 @@ class ServiceAPI:
                 return None
             else:
                 raise
-
-
-class PrivilegedServiceAPI:
-    def __init__(self, logger):
-        self.log = logger
-        self.badlist_client = BadlistClient()
-        self.safelist_client = SafelistClient()
-
-    def lookup_badlist_tags(self, tag_map):
-        if DEVELOPMENT_MODE or not tag_map:
-            return []
-
-        if not isinstance(tag_map, dict) and not all([isinstance(x, list) for x in tag_map.values()]):
-            raise ValueError("Parameter tag_list should be a dictionary tag_type mapping to a list of tag_values.")
-
-        return self.badlist_client.exists_tags(tag_map)
-
-    def lookup_badlist(self, qhash):
-        if DEVELOPMENT_MODE or qhash is None:
-            return None
-        return self.badlist_client.exists(qhash)
-
-    def lookup_badlist_ssdeep(self, ssdeep):
-        if DEVELOPMENT_MODE or ssdeep is None:
-            return []
-        return self.badlist_client.find_similar_ssdeep(ssdeep)
-
-    def lookup_badlist_tlsh(self, tlsh):
-        if DEVELOPMENT_MODE or tlsh is None:
-            return []
-        return self.badlist_client.find_similar_tlsh(tlsh)
-
-    def get_safelist(self, tag_list=None):
-        if DEVELOPMENT_MODE:
-            return {}
-
-        if tag_list and not isinstance(tag_list, list):
-            raise ValueError("Parameter tag_list should be a list of strings.")
-
-        return self.safelist_client.get_safelisted_tags(tag_list)
-
-    def lookup_safelist(self, qhash):
-        if DEVELOPMENT_MODE:
-            return None
-        return self.safelist_client.exists(qhash)
