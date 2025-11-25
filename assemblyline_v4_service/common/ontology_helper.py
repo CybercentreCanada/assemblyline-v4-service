@@ -32,6 +32,7 @@ def validate_tags(tag_map: Dict[str, List[str]]) -> Dict[str, List[str]]:
     tag_map = flatten(tag_map.as_primitives(strip_null=True))
     return tag_map
 
+
 # Merge tags
 def merge_tags(tag_a: Dict[str, List[str]], tag_b: Dict[str, List[str]]) -> Dict[str, List[str]]:
     if not tag_a:
@@ -42,6 +43,7 @@ def merge_tags(tag_a: Dict[str, List[str]], tag_b: Dict[str, List[str]]) -> Dict
 
     all_keys = list(tag_a.keys()) + list(tag_b.keys())
     return {key: list(set(tag_a.get(key, []) + tag_b.get(key, []))) for key in all_keys}
+
 
 class OntologyHelper:
     def __init__(self, logger, service_name) -> None:

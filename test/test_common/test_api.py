@@ -118,27 +118,3 @@ def test_serviceapi_lookup_safelist():
 
 # TODO
 # SafelistClient requires forge access
-
-# def test_privilegedserviceapi_init():
-#     log = logging.getLogger('assemblyline')
-#     psa = PrivilegedServiceAPI(log)
-#     assert psa.log == log
-#     assert isinstance(psa.safelist_client, SafelistClient)
-
-
-# def test_privilegedserviceapi_get_safelist():
-#     log = logging.getLogger('assemblyline')
-#     psa = PrivilegedServiceAPI(log)
-#     assert psa.get_safelist() == {}
-
-#     # TODO
-#     # Test not in development mode
-
-
-# def test_privilegedserviceapi_lookup_safelist():
-#     log = logging.getLogger('assemblyline')
-#     psa = PrivilegedServiceAPI(log)
-#     assert psa.lookup_safelist("qhash") is None
-
-    # TODO
-    # Test not in development mode
