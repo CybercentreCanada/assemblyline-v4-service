@@ -2,11 +2,14 @@ import importlib
 import inspect
 import json
 import os
+import shutil
 import tempfile
 import threading
 
 from assemblyline.common.isotime import now_as_iso
 from assemblyline.odm.models.service import SIGNATURE_DELIMITERS
+from assemblyline.odm.models.signature import Signature
+
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.updater.client import (
     BadlistClient,
@@ -30,7 +33,9 @@ class TestSignatureClient(SignatureClient):
     def add_update_many(self, source, sig_type, data, dedup_name=True):
         os.makedirs(os.path.join(self.output_directory, sig_type, source), exist_ok=True)
         for d in data:
-            with open(os.path.join(self.output_directory, sig_type, source, d['name']), 'w') as f:
+            if isinstance(d, Signature):
+                d = d.as_primitives()
+            with open(os.path.join(self.output_directory, sig_type, source, d['signature_id']), 'w') as f:
                 json.dump(d, f)
 
         return {'success': len(data)}
@@ -126,7 +131,7 @@ def load_rules(service: ServiceBase):
 
                         if self.delimiter != "file":
                             # Render the response when calling `client.signature.download`
-                            os.removedirs(sourcepath)
+                            shutil.rmtree(sourcepath)
                             with open(os.path.join(self.latest_updates_dir, source), 'w') as f:
                                 f.write(SIGNATURE_DELIMITERS[self.delimiter].join(signaure_data))
 
