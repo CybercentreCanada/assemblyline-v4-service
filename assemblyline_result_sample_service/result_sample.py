@@ -27,11 +27,21 @@ from assemblyline_v4_service.common.result import (
     ResultMultiSection,
     ResultOrderedKeyValueSection,
     ResultProcessTreeSection,
+    ResultSandboxSection,
     ResultSection,
     ResultTableSection,
     ResultTextSection,
     ResultTimelineSection,
     ResultURLSection,
+    SandboxAnalysisMetadata,
+    SandboxAttackItem,
+    SandboxMachineMetadata,
+    SandboxNetflowItem,
+    SandboxNetworkDNS,
+    SandboxNetworkHTTP,
+    SandboxNetworkSMTP,
+    SandboxProcessItem,
+    SandboxSignatureItem,
     TableRow,
     TextSectionBody,
 )
@@ -321,6 +331,438 @@ class ResultSample(ServiceBase):
             process_tree_section.add_process(benign_process)
 
             result.add_section(process_tree_section)
+
+            # ==================================================================
+            # SANDBOX section:
+            #     This section allows a service writer to structure and enrich sandbox analysis
+            #     results with key metadata, processes, network connections, and detection signatures.
+            #     Each element is represented by its own item class (SandboxProcessItem, SandboxNetflowItem, etc.).
+            # ==================================================================
+            sandbox_section = ResultSandboxSection("Example of a SANDBOX section")
+
+            # Sandbox information
+            sandbox_section.set_analysis_information(
+                sandbox_name="Cuckoo Sandbox",
+                sandbox_version="2.0.7",
+                analysis_metadata=SandboxAnalysisMetadata(
+                    task_id=1,
+                    start_time="2025-10-14T12:00:00Z",
+                    end_time="2025-10-14T12:10:30Z",
+                    routing="Internet",
+                    window_size="1024x768",
+                    machine_metadata=SandboxMachineMetadata(
+                        ip="192.168.0.15",
+                        hypervisor="KVM",
+                        hostname="analysis-vm-01",
+                        platform="Windows",
+                        version="10.0.19045",
+                        architecture="x64",
+                    ),
+                ),
+            )
+
+            # Processes
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Windows\\System32\\svchost.exe",
+                start_time="2025-10-14T12:00:02Z",
+                end_time="2025-10-14T12:01:00Z",
+                pid=50,
+                ppid=4,
+                command_line="svchost.exe -k netsvcs",
+                integrity_level="system",
+                image_hash="svchosthash001",
+                original_file_name="svchost.exe",
+                safelisted=True,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="cmd.exe",
+                start_time="2025-10-14T12:00:05Z",
+                end_time="2025-10-14T12:00:40Z",
+                pid=100,
+                ppid=50,
+                command_line="C:\\Windows\\System32\\cmd.exe /c badscript.bat",
+                integrity_level="medium",
+                image_hash="badhash123",
+                original_file_name="CMD.EXE",
+                safelisted=False,
+                file_count=5,
+                registry_count=1,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="powershell.exe",
+                start_time="2025-10-14T12:00:10Z",
+                end_time="2025-10-14T12:00:45Z",
+                pid=120,
+                ppid=100,
+                command_line="powershell.exe -enc aQBmACgA",
+                integrity_level="high",
+                image_hash="evilhash789",
+                safelisted=False,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Windows\\System32\\explorer.exe",
+                start_time="2025-10-14T12:00:03Z",
+                end_time="2025-10-14T12:01:10Z",
+                pid=200,
+                ppid=50,
+                command_line="explorer.exe",
+                integrity_level="medium",
+                image_hash="explorerhash002",
+                original_file_name="EXPLORER.EXE",
+                safelisted=True,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="notepad.exe",
+                start_time="2025-10-14T12:00:25Z",
+                end_time="2025-10-14T12:00:55Z",
+                pid=140,
+                ppid=120,
+                command_line="notepad.exe suspicious.txt",
+                integrity_level="medium",
+                image_hash="notehash333",
+                safelisted=False,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Windows\\System32\\wscript.exe",
+                start_time="2025-10-14T12:00:30Z",
+                end_time="2025-10-14T12:00:50Z",
+                pid=160,
+                ppid=100,
+                command_line="wscript.exe //B //E:js badscript.js",
+                integrity_level="medium",
+                image_hash="wskripthash444",
+                safelisted=False,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\ProgramData\\malware\\injector.exe",
+                start_time="2025-10-14T12:00:35Z",
+                end_time="2025-10-14T12:00:55Z",
+                pid=180,
+                ppid=160,
+                command_line="injector.exe -target svchost.exe",
+                integrity_level="high",
+                image_hash="injectorhash555",
+                safelisted=False,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Temp\\dropper.exe",
+                start_time="2025-10-14T12:00:40Z",
+                end_time="2025-10-14T12:00:58Z",
+                pid=220,
+                ppid=120,
+                command_line="dropper.exe --silent",
+                integrity_level="medium",
+                image_hash="drophere666",
+                safelisted=False,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="chrome.exe",
+                start_time="2025-10-14T12:00:45Z",
+                end_time="2025-10-14T12:01:15Z",
+                pid=240,
+                ppid=200,
+                command_line="chrome.exe --remote-debugging",
+                integrity_level="medium",
+                image_hash="chromehash777",
+                safelisted=True,
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_process(SandboxProcessItem(
+                image="C:\\Users\\Public\\payload.exe",
+                start_time="2025-10-14T12:00:50Z",
+                end_time="2025-10-14T12:01:05Z",
+                pid=260,
+                ppid=220,
+                command_line="payload.exe --stealth",
+                integrity_level="high",
+                image_hash="payloadhash888",
+                safelisted=False,
+                sources=["capemon"],
+            ))
+
+            # Network connections
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="45.83.23.19",
+                destination_port=80,
+                source_ip="192.168.0.15",
+                source_port=54321,
+                time_observed="2025-10-14T12:00:10Z",
+                process=120,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                http_details=SandboxNetworkHTTP(
+                    request_uri="http://malicious.example.com/payload.exe",
+                    request_method="GET",
+                    response_status_code=200,
+                    response_content_mimetype="application/octet-stream",
+                    request_headers={"User-Agent": "PowerShell"},
+                ),
+                connection_type="http",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                process=120,
+                direction="outbound",
+                time_observed="2025-10-14T12:00:10Z",
+                dns_details=SandboxNetworkDNS(
+                    domain="malicious.example.com",
+                    lookup_type="A",
+                    resolved_ips=["45.83.23.19"],
+                ),
+                connection_type="dns",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="203.0.113.55",
+                destination_port=25,
+                source_ip="192.168.0.15",
+                source_port=60000,
+                time_observed="2025-10-14T12:00:10Z",
+                process=100,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                smtp_details=SandboxNetworkSMTP(
+                    mail_from="attacker@example.com",
+                    mail_to=["victim@example.com"],
+                    attachments=[{"filename": "payload.docm", "size": 20480}],
+                ),
+                connection_type="smtp",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="8.8.8.8",
+                destination_port=53,
+                source_ip="192.168.0.15",
+                source_port=50505,
+                time_observed="2025-10-14T12:01:00Z",
+                process=140,
+                direction="outbound",
+                dns_details=SandboxNetworkDNS(
+                    domain="example.org",
+                    lookup_type="A",
+                    resolved_ips=["93.184.216.34"],
+                ),
+                connection_type="dns",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="203.0.113.100",
+                destination_port=8080,
+                source_ip="192.168.0.15",
+                source_port=50506,
+                time_observed="2025-10-14T12:01:10Z",
+                process=160,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                http_details=SandboxNetworkHTTP(
+                    request_uri="http://203.0.113.100/c2",
+                    request_method="POST",
+                    response_status_code=404,
+                    response_content_mimetype="text/plain",
+                    request_headers={"User-Agent": "Mozilla/5.0"},
+                ),
+                connection_type="http",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="198.51.100.44",
+                destination_port=443,
+                source_ip="192.168.0.15",
+                source_port=50507,
+                time_observed="2025-10-14T12:01:12Z",
+                process=180,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                connection_type="https",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="10.0.0.5",
+                destination_port=21,
+                source_ip="192.168.0.15",
+                source_port=50508,
+                time_observed="2025-10-14T12:01:15Z",
+                process=200,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                connection_type="ftp",
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_network_connection(SandboxNetflowItem(
+                destination_ip="172.16.5.7",
+                destination_port=8081,
+                source_ip="192.168.0.15",
+                source_port=50509,
+                time_observed="2025-10-14T12:01:20Z",
+                process=220,
+                direction="outbound",
+                transport_layer_protocol="tcp",
+                connection_type="tcp",
+                sources=["capemon"],
+            ))
+
+            # Signatures
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Suspicious PowerShell Execution",
+                type="CUCKOO",
+                classification=cl_engine.RESTRICTED,
+                description="PowerShell launched with encoded commands",
+                score=1000,
+                pid=[120],
+                attacks=[
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["defense-evasion", "discovery"]),
+                    SandboxAttackItem("T1055", "Injecting code into other processes", ["discovery"]),
+                ],
+                actors=["APT29"],
+                malware_families=["Empire"],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Encoded Command Execution Detected",
+                type="CUCKOO",
+                classification=cl_engine.RESTRICTED,
+                description="Base64 encoded command usage identified",
+                score=1000,
+                pid=[120],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Suspicious DLL Loading",
+                type="YARA",
+                classification=cl_engine.RESTRICTED,
+                description="Process injected and loaded unexpected DLLs",
+                score=800,
+                pid=[180],
+                attacks=[
+                    SandboxAttackItem("T1055", "Process Injection", ["privilege-escalation"]),
+                ],
+                actors=["Unknown"],
+                malware_families=["UnknownFamilyA"],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="HTTP Beaconing Pattern",
+                type="SIGMA",
+                classification=cl_engine.RESTRICTED,
+                description="Periodic small HTTP posts consistent with beaconing",
+                score=600,
+                pid=[220],
+                attacks=[
+                    SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"]),
+                ],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Domain Generation Algorithm (DGA) Traffic",
+                type="SURICATA",
+                classification=cl_engine.RESTRICTED,
+                description="High-entropy domain pattern observed",
+                score=900,
+                pid=[240],
+                attacks=[
+                    SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"]),
+                ],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Email Attachment with Macro",
+                type="CUCKOO",
+                classification=cl_engine.RESTRICTED,
+                description="Attachment with embedded macros opened",
+                score=700,
+                pid=[100],
+                attacks=[
+                    SandboxAttackItem("T1204.002", "User Execution: Malicious File", ["initial-access"]),
+                ],
+                actors=["PhishGroupX"],
+                malware_families=["MacroDropper"],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Autostart Persistence Created",
+                type="YARA",
+                classification=cl_engine.RESTRICTED,
+                description="New autorun registry key created",
+                score=800,
+                pid=[160],
+                attacks=[
+                    SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"]),
+                ],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="Credential Dumping Activity",
+                type="CUCKOO",
+                classification=cl_engine.RESTRICTED,
+                description="Call sequence consistent with credential dumping",
+                score=950,
+                pid=[180],
+                attacks=[
+                    SandboxAttackItem("T1003", "Credential Dumping", ["credential-access"]),
+                ],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="File Write to System Dir",
+                type="SIGMA",
+                classification=cl_engine.RESTRICTED,
+                description="Executable written to system directory",
+                pid=[260],
+                score=750,
+                attacks=[
+                    SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"]),
+                ],
+                sources=["capemon"],
+            ))
+
+            sandbox_section.add_signature(SandboxSignatureItem(
+                name="PowerShell Suspicious Module Load",
+                type="YARA",
+                classification=cl_engine.RESTRICTED,
+                description="PowerShell loaded a module from temp path",
+                pid=[120],
+                score=1000,
+                attacks=[
+                    SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"]),
+                ],
+                sources=["capemon"],
+            ))
+
+
+            # Add the section to the result
+            result.add_section(sandbox_section)
 
             # ==================================================================
             # TABLE section:
