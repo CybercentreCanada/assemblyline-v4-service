@@ -373,6 +373,7 @@ class ResultSample(ServiceBase):
                 image_hash="svchosthash001",
                 original_file_name="svchost.exe",
                 safelisted=True,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -388,6 +389,7 @@ class ResultSample(ServiceBase):
                 safelisted=False,
                 file_count=5,
                 registry_count=1,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -400,6 +402,7 @@ class ResultSample(ServiceBase):
                 integrity_level="high",
                 image_hash="evilhash789",
                 safelisted=False,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -413,6 +416,7 @@ class ResultSample(ServiceBase):
                 image_hash="explorerhash002",
                 original_file_name="EXPLORER.EXE",
                 safelisted=True,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -425,6 +429,7 @@ class ResultSample(ServiceBase):
                 integrity_level="medium",
                 image_hash="notehash333",
                 safelisted=False,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -437,6 +442,7 @@ class ResultSample(ServiceBase):
                 integrity_level="medium",
                 image_hash="wskripthash444",
                 safelisted=False,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -449,6 +455,7 @@ class ResultSample(ServiceBase):
                 integrity_level="high",
                 image_hash="injectorhash555",
                 safelisted=False,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -461,6 +468,7 @@ class ResultSample(ServiceBase):
                 integrity_level="medium",
                 image_hash="drophere666",
                 safelisted=False,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -473,6 +481,7 @@ class ResultSample(ServiceBase):
                 integrity_level="medium",
                 image_hash="chromehash777",
                 safelisted=True,
+                sources=["capemon"],
             ))
 
             sandbox_section.add_process(SandboxProcessItem(
@@ -485,6 +494,7 @@ class ResultSample(ServiceBase):
                 integrity_level="high",
                 image_hash="payloadhash888",
                 safelisted=False,
+                sources=["capemon"],
             ))
 
             # Network connections
@@ -505,6 +515,7 @@ class ResultSample(ServiceBase):
                     request_headers={"User-Agent": "PowerShell"},
                 ),
                 connection_type="http",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -517,6 +528,7 @@ class ResultSample(ServiceBase):
                     resolved_ips=["45.83.23.19"],
                 ),
                 connection_type="dns",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -534,6 +546,7 @@ class ResultSample(ServiceBase):
                     attachments=[{"filename": "payload.docm", "size": 20480}],
                 ),
                 connection_type="smtp",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -550,6 +563,7 @@ class ResultSample(ServiceBase):
                     resolved_ips=["93.184.216.34"],
                 ),
                 connection_type="dns",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -569,6 +583,7 @@ class ResultSample(ServiceBase):
                     request_headers={"User-Agent": "Mozilla/5.0"},
                 ),
                 connection_type="http",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -581,6 +596,7 @@ class ResultSample(ServiceBase):
                 direction="outbound",
                 transport_layer_protocol="tcp",
                 connection_type="https",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -593,6 +609,7 @@ class ResultSample(ServiceBase):
                 direction="outbound",
                 transport_layer_protocol="tcp",
                 connection_type="ftp",
+                sources=["capemon"],
             ))
 
             sandbox_section.add_network_connection(SandboxNetflowItem(
@@ -605,6 +622,7 @@ class ResultSample(ServiceBase):
                 direction="outbound",
                 transport_layer_protocol="tcp",
                 connection_type="tcp",
+                sources=["capemon"],
             ))
 
             # Signatures
@@ -621,6 +639,7 @@ class ResultSample(ServiceBase):
                 ],
                 actors=["APT29"],
                 malware_families=["Empire"],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -630,6 +649,7 @@ class ResultSample(ServiceBase):
                 description="Base64 encoded command usage identified",
                 score=1000,
                 pid=[120],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -644,6 +664,7 @@ class ResultSample(ServiceBase):
                 ],
                 actors=["Unknown"],
                 malware_families=["UnknownFamilyA"],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -656,6 +677,7 @@ class ResultSample(ServiceBase):
                 attacks=[
                     SandboxAttackItem("T1071.001", "Application layer protocol: Web protocols", ["command-and-control"]),
                 ],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -668,6 +690,7 @@ class ResultSample(ServiceBase):
                 attacks=[
                     SandboxAttackItem("T1483", "Domain Generation Algorithms", ["command-and-control"]),
                 ],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -682,6 +705,7 @@ class ResultSample(ServiceBase):
                 ],
                 actors=["PhishGroupX"],
                 malware_families=["MacroDropper"],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -694,6 +718,7 @@ class ResultSample(ServiceBase):
                 attacks=[
                     SandboxAttackItem("T1547.001", "Registry Run Keys / Startup Folder", ["persistence"]),
                 ],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -706,6 +731,7 @@ class ResultSample(ServiceBase):
                 attacks=[
                     SandboxAttackItem("T1003", "Credential Dumping", ["credential-access"]),
                 ],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -718,6 +744,7 @@ class ResultSample(ServiceBase):
                 attacks=[
                     SandboxAttackItem("T1547", "Boot or Logon Autostart Execution", ["persistence"]),
                 ],
+                sources=["capemon"],
             ))
 
             sandbox_section.add_signature(SandboxSignatureItem(
@@ -730,6 +757,7 @@ class ResultSample(ServiceBase):
                 attacks=[
                     SandboxAttackItem("T1059.001", "PowerShell execution", ["execution"]),
                 ],
+                sources=["capemon"],
             ))
 
 

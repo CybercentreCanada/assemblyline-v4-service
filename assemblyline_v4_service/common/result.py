@@ -567,6 +567,9 @@ class SandboxProcessItem:
         # The timestamp when the process started (ISO 8601 format).
         start_time: str,
 
+        # Name of the sources who identified this information
+        sources: Optional[List[str]],
+
         # The parent process ID (PPID).
         ppid: Optional[int] = None,
 
@@ -599,6 +602,7 @@ class SandboxProcessItem:
     ):
         self.image = image or "<unknown_image>"
         self.start_time = start_time
+        self.sources = sources or []
         self.ppid = ppid
         self.pid = pid
         self.command_line = command_line
@@ -614,6 +618,7 @@ class SandboxProcessItem:
         return {
             "image": self.image,
             "start_time": self.start_time,
+            "sources": self.sources,
             "ppid": self.ppid,
             "pid": self.pid,
             "command_line": self.command_line,
@@ -762,6 +767,9 @@ class SandboxNetflowItem:
         # The process ID that initiated or owned the network connection.
         process: Optional[int] = None,
 
+        # Name of the sources who identified this information
+        sources: Optional[List[str]] = [],
+
         # The source IP address of the connection.
         source_ip: Optional[str] = None,
 
@@ -788,6 +796,7 @@ class SandboxNetflowItem:
         self.transport_layer_protocol = transport_layer_protocol
         self.direction = direction
         self.process = process
+        self.sources = sources or []
         self.source_ip = source_ip
         self.source_port = source_port
         self.time_observed = time_observed
@@ -803,6 +812,7 @@ class SandboxNetflowItem:
             "transport_layer_protocol": self.transport_layer_protocol,
             "direction": self.direction,
             "process": self.process,
+            "sources": self.sources,
             "source_ip": self.source_ip,
             "source_port": self.source_port,
             "time_observed": self.time_observed,
@@ -853,8 +863,11 @@ class SandboxSignatureItem:
         # The name of the detection signature.
         name: str,
 
-        # The source type of the signature (e.g., "CUCKOO", "YARA", "SIGMA", "SURICATA").
-        type: Literal["CUCKOO", "YARA", "SIGMA", "SURICATA"],
+        # The source type of the signature (e.g., "CAPE", "CUCKOO").
+        type: Literal["CAPE", "CUCKOO"],
+
+        # Name of the sources who identified this information
+        sources: Optional[List[str]],
 
         # The classification of the signature (e.g., "malicious", "benign").
         classification: str,
@@ -879,6 +892,7 @@ class SandboxSignatureItem:
     ):
         self.name = name
         self.type = type
+        self.sources = sources or []
         self.classification = classification
         self.attacks = attacks or []
         self.actors = actors or []
@@ -891,6 +905,7 @@ class SandboxSignatureItem:
         return {
             "name": self.name,
             "type": self.type,
+            "sources": self.sources,
             "classification": self.classification,
             "attacks": [a.as_primitives() for a in self.attacks] if self.attacks else [],
             "actors": self.actors,
