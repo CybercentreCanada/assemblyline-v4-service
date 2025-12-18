@@ -568,7 +568,7 @@ class SandboxProcessItem:
         start_time: str,
 
         # Name of the sources who identified this information
-        sources: Optional[List[str]],
+        sources: Optional[List[str]] = [],
 
         # The parent process ID (PPID).
         ppid: Optional[int] = None,
@@ -866,11 +866,11 @@ class SandboxSignatureItem:
         # The source type of the signature (e.g., "CAPE", "CUCKOO").
         type: Literal["CAPE", "CUCKOO"],
 
-        # Name of the sources who identified this information
-        sources: Optional[List[str]],
-
         # The classification of the signature (e.g., "malicious", "benign").
         classification: str,
+
+        # Name of the sources who identified this information
+        sources: Optional[List[str]] = [],
 
         # The list of ATT&CK patterns or related attack metadata linked to this signature.
         attacks: Optional[List[SandboxAttackItem]] = None,
@@ -892,8 +892,8 @@ class SandboxSignatureItem:
     ):
         self.name = name
         self.type = type
-        self.sources = sources or []
         self.classification = classification
+        self.sources = sources or []
         self.attacks = attacks or []
         self.actors = actors or []
         self.malware_families = malware_families or []
