@@ -177,6 +177,17 @@
       },
       {
         "auto_collapse": false,
+        "body": "{\"sandbox_name\": \"Cuckoo Sandbox\", \"sandbox_version\": \"2.0.7\", \"machine_metadata\": {\"ip\": \"192.168.0.15\", \"hypervisor\": \"KVM\", \"hostname\": \"analysis-vm-01\", \"platform\": \"Windows\", \"version\": \"10.0.19045\", \"architecture\": \"x64\"}, \"analysis_metadata\": {\"task_id\": \"task_001\", \"start_time\": \"2025-10-14T12:00:00Z\", \"end_time\": \"2025-10-14T12:10:30Z\", \"routing\": \"Internet\", \"window_size\": \"1024x768\"}, \"processes\": [{\"process_pid\": 123, \"process_name\": \"evil.exe\", \"command_line\": \"c:\\\\evil.exe\", \"sources\": [\"capemon\"], \"signatures\": {}, \"children\": [{\"process_pid\": 321, \"process_name\": \"takeovercomputer.exe\", \"command_line\": \"C:\\\\Temp\\\\takeovercomputer.exe -f do_bad_stuff\", \"sources\": [\"capemon\"], \"signatures\": {\"one\": 250}, \"children\": [{\"process_pid\": 456, \"process_name\": \"evenworsethanbefore.exe\", \"command_line\": \"C:\\\\Temp\\\\evenworsethanbefore.exe -f change_reg_key_cuz_im_bad\", \"sources\": [\"capemon\"], \"signatures\": {\"one\": 10, \"two\": 10, \"three\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 234, \"process_name\": \"badfile.exe\", \"command_line\": \"C:\\\\badfile.exe -k nothing_to_see_here\", \"sources\": [\"capemon\"], \"signatures\": {\"one\": 1000, \"two\": 10, \"three\": 10, \"four\": 10, \"five\": 10}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 345, \"process_name\": \"benignexe.exe\", \"command_line\": \"C:\\\\benignexe.exe -f \\\"just kidding, i'm evil\\\"\", \"sources\": [\"capemon\"], \"signatures\": {\"one\": 2000}, \"children\": [], \"network_count\": 4, \"file_count\": 7000, \"registry_count\": 10, \"safelisted\": false}], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 987, \"process_name\": \"runzeroday.exe\", \"command_line\": \"C:\\\\runzeroday.exe -f insert_bad_spelling\", \"sources\": [\"capemon\"], \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": false}, {\"process_pid\": 678, \"process_name\": \"trustme.exe\", \"command_line\": \"C:\\\\trustme.exe\", \"sources\": [\"capemon\"], \"signatures\": {}, \"children\": [], \"network_count\": 0, \"file_count\": 0, \"registry_count\": 0, \"safelisted\": true}]}",
+        "body_format": "SANDBOX",
+        "classification": "TLP:C",
+        "depth": 0,
+        "heuristic": null,
+        "tags": {},
+        "title_text": "Example of a SANDBOX section",
+        "zeroize_on_tag_safe": false
+      },
+      {
+        "auto_collapse": false,
         "body": "[{\"a_str\": \"Some string1\", \"extra_column_here\": \"confirmed\", \"a_bool\": false, \"an_int\": 101}, {\"a_str\": \"Some string2\", \"a_bool\": true, \"an_int\": 102}, {\"a_str\": \"Some string3\", \"a_bool\": false, \"an_int\": 103}, {\"a_str\": \"Some string4\", \"a_bool\": null, \"an_int\": -1000000000000000000, \"extra_column_there\": \"confirmed\", \"nested_key_value_pair\": {\"a_str\": \"Some string3\", \"a_bool\": false, \"nested_kv_thats_too_deep\": {\"a_str\": \"Some string3\", \"a_bool\": false, \"an_int\": 103}}}]",
         "body_format": "TABLE",
         "classification": "TLP:C",

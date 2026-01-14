@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any, Dict, List, Optional, TextIO, Union
+from enum import Enum
+from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
 from assemblyline.common.attack_map import attack_map, group_map, revoke_map, software_map
@@ -39,7 +40,8 @@ BODY_FORMAT = StringTable('BODY_FORMAT', [
     ('MULTI', 9),
     ('DIVIDER', 10),  # This is not a real result section and can only be use inside a multi section
     ('ORDERED_KEY_VALUE', 11),
-    ('TIMELINE', 12)
+    ('TIMELINE', 12),
+    ('SANDBOX', 13),
 ])
 
 # This is a StringTable representation of the PROMOTE_TO set of keys in
@@ -410,6 +412,584 @@ class ProcessTreeSectionBody(SectionBody):
         self._data.append(process.as_primitives())
 
 
+class SandboxMachineMetadata:
+    """Metadata about the machine where the sandbox analysis took place."""
+
+    def __init__(
+        self,
+        # The IP address of the analysis machine.
+        ip: Optional[str] = None,
+
+        # The hypervisor used by the analysis machine (e.g., VMware, KVM).
+        hypervisor: Optional[str] = None,
+
+        # The hostname of the machine used for analysis.
+        hostname: Optional[str] = None,
+
+        # The platform or operating system name (e.g., Windows, Linux, macOS).
+        platform: Optional[str] = None,
+
+        # The version of the operating system.
+        version: Optional[str] = None,
+
+        # The architecture of the operating system (e.g., x86, x64, ARM).
+        architecture: Optional[str] = None,
+    ):
+        self.ip = ip
+        self.hypervisor = hypervisor
+        self.hostname = hostname
+        self.platform = platform
+        self.version = version
+        self.architecture = architecture
+
+    def as_primitives(self) -> Dict:
+        """Return a JSON-serializable representation."""
+        return {
+            "ip": self.ip,
+            "hypervisor": self.hypervisor,
+            "hostname": self.hostname,
+            "platform": self.platform,
+            "version": self.version,
+            "architecture": self.architecture,
+        }
+
+LookupType = Literal[
+    "A", "AAAA", "AFSDB", "APL", "CAA", "CDNSKEY", "CDS", "CERT", "CNAME", "CSYNC",
+    "DHCID", "DLV", "DNAME", "DNSKEY", "DS", "EUI48", "EUI64", "HINFO", "HIP",
+    "HTTPS", "IPSECKEY", "KEY", "KX", "LOC", "MX", "NAPTR", "NS", "NSEC", "NSEC3",
+    "NSEC3PARAM", "OPENPGPKEY", "PTR", "RRSIG", "RP", "SIG", "SMIMEA", "SOA",
+    "SRV", "SSHFP", "SVCB", "TA", "TKEY", "TLSA", "TSIG", "TXT", "URI", "ZONEMD"
+]
+
+RequestMethod = Literal[
+    "GET", "POST", "PUT", "DELETE", "HEAD", "CONNECT", "OPTIONS", "TRACE", "PATCH",
+    "BCOPY", "BDELETE", "BMOVE", "BPROPFIND", "BPROPPATCH", "COPY", "LOCK",
+    "MKCOL", "MOVE", "NOTIFY", "POLL", "PROPFIND", "PROPPATCH", "SEARCH",
+    "SUBSCRIBE", "UNLOCK", "UNSUBSCRIBE", "X-MS-ENUMATTS"
+]
+
+ConnectionType = Literal["http", "dns", "tls", "smtp"]
+ConnectionDirection = Literal["outbound", "inbound", "unknown"]
+SignatureType = Literal["CUCKOO", "YARA", "SIGMA", "SURICATA"]
+
+class SandboxMachineMetadata:
+    """Information about the sandbox machine used during analysis."""
+
+    def __init__(
+        self,
+        # The IP address of the machine used for analysis.
+        ip: Optional[str] = None,
+
+        # The hypervisor type of the machine used for analysis.
+        hypervisor: Optional[str] = None,
+
+        # The hostname of the machine used for analysis.
+        hostname: Optional[str] = None,
+
+        # The operating system platform of the machine (e.g., "Windows", "Linux").
+        platform: Optional[str] = None,
+
+        # The version of the operating system.
+        version: Optional[str] = None,
+
+        # The system architecture of the machine (e.g., "x64", "arm64").
+        architecture: Optional[str] = None,
+    ):
+        self.ip = ip
+        self.hypervisor = hypervisor
+        self.hostname = hostname
+        self.platform = platform
+        self.version = version
+        self.architecture = architecture
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "ip": self.ip,
+            "hypervisor": self.hypervisor,
+            "hostname": self.hostname,
+            "platform": self.platform,
+            "version": self.version,
+            "architecture": self.architecture,
+        }
+
+
+class SandboxAnalysisMetadata:
+    """Metadata describing the context and configuration of a sandbox analysis."""
+
+    def __init__(
+        self,
+        # The unique identifier of the analysis task.
+        task_id: Optional[int] = None,
+
+        # The timestamp when the analysis started (ISO 8601 format).
+        start_time: str = "",
+
+        # The timestamp when the analysis ended (ISO 8601 format).
+        end_time: Optional[str] = None,
+
+        # The network routing used during analysis (e.g., "Spoofed", "Internet", "Tor", "VPN").
+        routing: Optional[str] = None,
+
+        # The screen resolution or window size used for the sandbox environment.
+        window_size: Optional[str] = None,
+
+        # Metadata describing the machine on which the analysis ran.
+        machine_metadata: Optional[SandboxMachineMetadata] = None,
+    ):
+        self.task_id = task_id
+        self.start_time = start_time
+        self.end_time = end_time
+        self.routing = routing
+        self.window_size = window_size
+        self.machine_metadata = machine_metadata
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "task_id": self.task_id,
+            "start_time": self.start_time,
+            "end_time": self.end_time,
+            "routing": self.routing,
+            "window_size": self.window_size,
+            "machine_metadata": (
+                self.machine_metadata.as_primitives() if self.machine_metadata else None
+            ),
+        }
+
+
+class SandboxProcessItem:
+    """Information about a process observed during sandbox execution."""
+
+    def __init__(
+        self,
+        # The executable image name of the process. Default: "<unknown_image>".
+        image: str,
+
+        # The timestamp when the process started (ISO 8601 format).
+        start_time: str,
+
+        # Name of the sources who identified this information
+        sources: Optional[List[str]] = [],
+
+        # The parent process ID (PPID).
+        ppid: Optional[int] = None,
+
+        # The process ID (PID).
+        pid: Optional[int] = None,
+
+        # The full command line used to start the process.
+        command_line: Optional[str] = None,
+
+        # The timestamp when the process terminated (ISO 8601 format).
+        end_time: Optional[str] = None,
+
+        # The integrity level of the process (e.g., "High", "Medium", "Low").
+        integrity_level: Optional[str] = None,
+
+        # The hash of the executable file for the process (e.g., SHA256).
+        image_hash: Optional[str] = None,
+
+        # The original file name as embedded in the binary metadata.
+        original_file_name: Optional[str] = None,
+
+        # Indicates whether this process was safelisted (whitelisted).
+        safelisted: Optional[bool] = False,
+
+        # The number of file I/O events associated with this process.
+        file_count: Optional[int] = 0,
+
+        # The number of registry modification events associated with this process.
+        registry_count: Optional[int] = 0,
+    ):
+        self.image = image or "<unknown_image>"
+        self.start_time = start_time
+        self.sources = sources or []
+        self.ppid = ppid
+        self.pid = pid
+        self.command_line = command_line
+        self.end_time = end_time
+        self.integrity_level = integrity_level
+        self.image_hash = image_hash
+        self.original_file_name = original_file_name
+        self.safelisted = safelisted
+        self.file_count = file_count
+        self.registry_count = registry_count
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "image": self.image,
+            "start_time": self.start_time,
+            "sources": self.sources,
+            "ppid": self.ppid,
+            "pid": self.pid,
+            "command_line": self.command_line,
+            "end_time": self.end_time,
+            "integrity_level": self.integrity_level,
+            "image_hash": self.image_hash,
+            "original_file_name": self.original_file_name,
+            "safelisted": self.safelisted,
+            "file_count": self.file_count,
+            "registry_count": self.registry_count,
+        }
+
+
+
+
+class SandboxNetworkDNS:
+    """Details of a DNS query observed during sandbox execution."""
+
+    def __init__(
+        self,
+        # The domain name requested (queried).
+        domain: str,
+
+        # The DNS lookup type (e.g., "A", "AAAA", "MX").
+        lookup_type: LookupType,
+
+        # A list of IP addresses returned in the DNS response.
+        resolved_ips: Optional[List[str]] = None,
+
+        # A list of domain names returned in the DNS response (for CNAMEs, etc.).
+        resolved_domains: Optional[List[str]] = None,
+    ):
+        self.domain = domain
+        self.lookup_type = lookup_type
+        self.resolved_ips = resolved_ips or []
+        self.resolved_domains = resolved_domains or []
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "domain": self.domain,
+            "lookup_type": self.lookup_type,
+            "resolved_ips": self.resolved_ips,
+            "resolved_domains": self.resolved_domains,
+        }
+
+
+class SandboxNetworkHTTP:
+    """Details of an HTTP request/response observed during sandbox execution."""
+
+    def __init__(
+        self,
+        # The URI requested by the process.
+        request_uri: str,
+
+        # Headers included in the HTTP request.
+        request_headers: Optional[Dict[str, Any]] = None,
+
+        # The HTTP request method (e.g., "GET", "POST").
+        request_method: Optional[RequestMethod] = None,
+
+        # Headers included in the HTTP response.
+        response_headers: Optional[Dict[str, Any]] = None,
+
+        # The raw body content of the HTTP request.
+        request_body: Optional[str] = None,
+
+        # The HTTP status code of the response (e.g., 200, 404).
+        response_status_code: Optional[int] = None,
+
+        # The raw body content of the HTTP response.
+        response_body: Optional[str] = None,
+
+        # Metadata about any file contained in the HTTP response body.
+        response_content_fileinfo: Optional[Dict[str, Any]] = None,
+
+        # The MIME type of the HTTP response content.
+        response_content_mimetype: Optional[str] = None,
+    ):
+        self.request_uri = request_uri
+        self.request_headers = request_headers or {}
+        self.request_method = request_method
+        self.response_headers = response_headers or {}
+        self.request_body = request_body
+        self.response_status_code = response_status_code
+        self.response_body = response_body
+        self.response_content_fileinfo = response_content_fileinfo
+        self.response_content_mimetype = response_content_mimetype
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "request_uri": self.request_uri,
+            "request_headers": self.request_headers,
+            "request_method": self.request_method,
+            "response_headers": self.response_headers,
+            "request_body": self.request_body,
+            "response_status_code": self.response_status_code,
+            "response_body": self.response_body,
+            "response_content_fileinfo": self.response_content_fileinfo,
+            "response_content_mimetype": self.response_content_mimetype,
+        }
+
+
+class SandboxNetworkSMTP:
+    """Details of an SMTP email transaction observed during sandbox execution."""
+
+    def __init__(
+        self,
+        # The sender email address in the SMTP transaction.
+        mail_from: str,
+
+        # A list of recipient email addresses in the SMTP transaction.
+        mail_to: List[str],
+
+        # Information about any attachments transmitted via SMTP.
+        attachments: Optional[List[Dict[str, Any]]] = None,
+    ):
+        self.mail_from = mail_from
+        self.mail_to = mail_to
+        self.attachments = attachments or []
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "mail_from": self.mail_from,
+            "mail_to": self.mail_to,
+            "attachments": self.attachments,
+        }
+
+
+class SandboxNetflowItem:
+    """Details of a network flow (connection) observed during sandbox execution."""
+
+    def __init__(
+        self,
+        # The destination IP address of the network connection.
+        destination_ip: Optional[str] = None,
+
+        # The destination port number of the connection.
+        destination_port: Optional[int] = None,
+
+        # The transport layer protocol used (e.g., "tcp", "udp").
+        transport_layer_protocol: Optional[Literal["tcp", "udp"]] = None,
+
+        # The direction of the network connection (e.g., "inbound", "outbound").
+        direction: Optional["ConnectionDirection"] = None,
+
+        # The process ID that initiated or owned the network connection.
+        process: Optional[int] = None,
+
+        # Name of the sources who identified this information
+        sources: Optional[List[str]] = [],
+
+        # The source IP address of the connection.
+        source_ip: Optional[str] = None,
+
+        # The source port number of the connection.
+        source_port: Optional[int] = None,
+
+        # The timestamp when the network event was observed (ISO 8601 format).
+        time_observed: Optional[str] = None,
+
+        # Detailed HTTP request/response data, if the flow is HTTP-related.
+        http_details: Optional["SandboxNetworkHTTP"] = None,
+
+        # Detailed DNS query/response data, if the flow is DNS-related.
+        dns_details: Optional["SandboxNetworkDNS"] = None,
+
+        # Detailed SMTP email data, if the flow is SMTP-related.
+        smtp_details: Optional[SandboxNetworkSMTP] = None,
+
+        # The type or category of the connection (e.g., "download", "upload").
+        connection_type: Optional["ConnectionType"] = None,
+    ):
+        self.destination_ip = destination_ip
+        self.destination_port = destination_port
+        self.transport_layer_protocol = transport_layer_protocol
+        self.direction = direction
+        self.process = process
+        self.sources = sources or []
+        self.source_ip = source_ip
+        self.source_port = source_port
+        self.time_observed = time_observed
+        self.http_details = http_details
+        self.dns_details = dns_details
+        self.smtp_details = smtp_details
+        self.connection_type = connection_type
+
+    def as_primitives(self) -> Dict[str, Any]:
+        data: Dict[str, Any] = {
+            "destination_ip": self.destination_ip,
+            "destination_port": self.destination_port,
+            "transport_layer_protocol": self.transport_layer_protocol,
+            "direction": self.direction,
+            "process": self.process,
+            "sources": self.sources,
+            "source_ip": self.source_ip,
+            "source_port": self.source_port,
+            "time_observed": self.time_observed,
+            "connection_type": self.connection_type,
+        }
+
+        if self.http_details is not None:
+            data["http_details"] = self.http_details.as_primitives()
+        if self.dns_details is not None:
+            data["dns_details"] = self.dns_details.as_primitives()
+        if self.smtp_details is not None:
+            data["smtp_details"] = self.smtp_details.as_primitives()
+
+        return data
+
+
+class SandboxAttackItem:
+    """Describes an ATT&CK technique or tactic detected during sandbox execution."""
+
+    def __init__(
+        self,
+        # The MITRE ATT&CK technique ID (e.g., "T1059.001").
+        attack_id: str,
+
+        # The name or pattern describing the attack behavior.
+        pattern: str,
+
+        # The list of categories or tactics associated with this attack.
+        categories: List[str] = [],
+    ):
+        self.attack_id = attack_id
+        self.pattern = pattern
+        self.categories = categories or []
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "attack_id": self.attack_id,
+            "pattern": self.pattern,
+            "categories": self.categories,
+        }
+
+
+class SandboxSignatureItem:
+    """Represents a detection signature triggered during analysis."""
+
+    def __init__(
+        self,
+        # The name of the detection signature.
+        name: str,
+
+        # The source type of the signature (e.g., "CAPE", "CUCKOO").
+        type: Literal["CAPE", "CUCKOO"],
+
+        # The classification of the signature (e.g., "malicious", "benign").
+        classification: str,
+
+        # Name of the sources who identified this information
+        sources: Optional[List[str]] = [],
+
+        # The list of ATT&CK patterns or related attack metadata linked to this signature.
+        attacks: Optional[List[SandboxAttackItem]] = None,
+
+        # The list of threat actors associated with this signature.
+        actors: Optional[List[str]] = None,
+
+        # The list of malware families linked to this signature.
+        malware_families: Optional[List[str]] = None,
+
+        # A human-readable description of what the signature represents.
+        description: Optional[str] = None,
+
+        # The list of process IDs (PIDs) that triggered the signature.
+        pid: Optional[List[int]] = None,
+
+        # The score or weight associated with the heuristic signature.
+        score: Optional[int] = None,
+    ):
+        self.name = name
+        self.type = type
+        self.classification = classification
+        self.sources = sources or []
+        self.attacks = attacks or []
+        self.actors = actors or []
+        self.malware_families = malware_families or []
+        self.description = description
+        self.pid = pid or []
+        self.score = score
+
+    def as_primitives(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "type": self.type,
+            "sources": self.sources,
+            "classification": self.classification,
+            "attacks": [a.as_primitives() for a in self.attacks] if self.attacks else [],
+            "actors": self.actors,
+            "malware_families": self.malware_families,
+            "description": self.description,
+            "pid": self.pid,
+            "score": self.score,
+        }
+
+
+
+
+class SandboxSectionBody(SectionBody):
+    """The main sandbox analysis body containing all observed data and metadata."""
+
+    def __init__(self) -> None:
+        super().__init__(BODY_FORMAT.SANDBOX, body={
+            "analysis_information": None,
+            "processes": [],
+            "network_connections": [],
+            "signatures": [],
+        })
+
+    def set_analysis_information(
+        self,
+        # The name of the sandbox used to perform the analysis.
+        sandbox_name: str,
+
+        # The version of the sandbox software.
+        sandbox_version: str,
+
+        # Metadata about when and how the analysis was executed.
+        analysis_metadata: SandboxAnalysisMetadata,
+    ) -> None:
+        """Set the general analysis information for the sandbox execution."""
+        self._data["analysis_information"] = {
+            "sandbox_name": sandbox_name,
+            "sandbox_version": sandbox_version,
+            "analysis_metadata": analysis_metadata.as_primitives(),
+        }
+
+    def add_process(self, process: SandboxProcessItem) -> None:
+        """Add a single process to the sandbox result."""
+        if not isinstance(process, SandboxProcessItem):
+            raise TypeError("Expected SandboxProcessItem")
+        self._data["processes"].append(process.as_primitives())
+
+    def add_processes(self, processes: List[SandboxProcessItem]) -> None:
+        """Add multiple processes to the sandbox result."""
+        for proc in processes:
+            self.add_process(proc)
+
+    def add_network_connection(self, connection: SandboxNetflowItem) -> None:
+        """Add a single network connection to the sandbox result."""
+        if not isinstance(connection, SandboxNetflowItem):
+            raise TypeError("Expected SandboxNetflowItem")
+        self._data["network_connections"].append(connection.as_primitives())
+
+    def add_network_connections(self, connections: List[SandboxNetflowItem]) -> None:
+        """Add multiple network connections to the sandbox result."""
+        for conn in connections:
+            self.add_network_connection(conn)
+
+    def add_signature(self, signature: SandboxSignatureItem) -> None:
+        """Add a single detection signature to the sandbox result."""
+        if not isinstance(signature, SandboxSignatureItem):
+            raise TypeError("Expected SandboxSignatureItem")
+        self._data["signatures"].append(signature.as_primitives())
+
+    def add_signatures(self, signatures: List[SandboxSignatureItem]) -> None:
+        """Add multiple detection signatures to the sandbox result."""
+        for sig in signatures:
+            self.add_signature(sig)
+
+    def as_primitives(self) -> Dict[str, Any]:
+        """Return a fully JSON-serializable structure."""
+        return {
+            "analysis_information": self._data["analysis_information"],
+            "processes": self._data["processes"],
+            "network_connections": self._data["network_connections"],
+            "signatures": self._data["signatures"],
+        }
+
+
 class TableRow(dict):
     def __init__(self, *args, **kwargs) -> None:
         data = {}
@@ -474,7 +1054,7 @@ class TimelineSectionBody(SectionBody):
     def add_node(self, title: str, content: str, opposite_content: str,
                  icon: str = None, signatures: List[str] = [], score: int = 0) -> None:
         self._data.append(dict(title=title, content=content, opposite_content=opposite_content,
-                          icon=icon, signatures=signatures, score=score))
+                               icon=icon, signatures=signatures, score=score))
 
 
 class ResultSection:
@@ -793,6 +1373,54 @@ class ResultProcessTreeSection(TypeSpecificResultSection):
 
     def add_process(self, process: ProcessItem) -> None:
         self.section_body.add_process(process)
+
+
+class ResultSandboxSection(TypeSpecificResultSection):
+    """
+    Represents a result section specifically designed for sandbox analysis data.
+    Provides a typed interface to manipulate the underlying SandboxSectionBody.
+    """
+
+    def __init__(self, title_text: Union[str, List], **kwargs):
+        self.section_body: SandboxSectionBody
+        super().__init__(title_text, SandboxSectionBody(), **kwargs)
+
+    def set_analysis_information(
+        self,
+        sandbox_name: Optional[str],
+        sandbox_version: Optional[str],
+        analysis_metadata: Optional[SandboxAnalysisMetadata],
+    ) -> None:
+        """Set the general analysis information for the sandbox execution."""
+        self.section_body.set_analysis_information(
+            sandbox_name,
+            sandbox_version,
+            analysis_metadata,
+        )
+
+    def add_process(self, process: SandboxProcessItem) -> None:
+        """Add a single process to the sandbox result."""
+        self.section_body.add_process(process)
+
+    def add_processes(self, processes: List[SandboxProcessItem]) -> None:
+        """Add multiple processes to the sandbox result."""
+        self.section_body.add_processes(processes)
+
+    def add_network_connection(self, connection: SandboxNetflowItem) -> None:
+        """Add a single network connection to the sandbox result."""
+        self.section_body.add_network_connection(connection)
+
+    def add_network_connections(self, connections: List[SandboxNetflowItem]) -> None:
+        """Add multiple network connections to the sandbox result."""
+        self.section_body.add_network_connections(connections)
+
+    def add_signature(self, signature: SandboxSignatureItem) -> None:
+        """Add a single detection signature to the sandbox result."""
+        self.section_body.add_signature(signature)
+
+    def add_signatures(self, signatures: List[SandboxSignatureItem]) -> None:
+        """Add multiple detection signatures to the sandbox result."""
+        self.section_body.add_signatures(signatures)
 
 
 class ResultTableSection(TypeSpecificResultSection):
