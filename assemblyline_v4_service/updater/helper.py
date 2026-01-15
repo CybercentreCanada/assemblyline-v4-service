@@ -2,6 +2,7 @@ import os
 import shutil
 import tempfile
 import time
+from base64 import b64encode
 from logging import Logger
 from shutil import make_archive
 from typing import Any, Dict, List, Optional, Tuple
@@ -11,12 +12,12 @@ import certifi
 import psutil
 import regex as re
 import requests
-from git import Repo
-from azure.identity import DefaultAzureCredential
-
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
 from assemblyline.common.isotime import iso_to_epoch
+from azure.identity import DefaultAzureCredential
+from git import Repo
+
 from assemblyline_v4_service.common.utils import DEVELOPMENT_MODE
 
 BLOCK_SIZE = 64 * 1024
@@ -196,7 +197,6 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
     ignore_ssl_errors = source.get("ssl_ignore_errors", False)
     ca_cert = source.get("ca_cert")
     proxy = source.get('proxy', None)
-    auth = None
     git_env = {}
 
     if use_managed_identity:
@@ -211,15 +211,15 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
 
         git_env['GIT_CONFIG_COUNT'] = '1'
         git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
-        git_env['GIT_CONFIG_VALUE_0'] = f'AUTHORIZATION: bearer {token.token}'
-        auth = None
+        git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Bearer {token.token}'
     elif username and password:
         # Basic authentication scheme
-        auth = f'{username}:{password}@'
+        git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
+        git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Basic {b64encode(f"{username}:{password}".encode()).decode()}'
     elif password:
         # Token-based authentication
-        auth = f'{password}@'
-
+        git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
+        git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Bearer {password}'
     if ignore_ssl_errors:
         git_env['GIT_SSL_NO_VERIFY'] = '1'
 
@@ -231,10 +231,6 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
         logger.info("A CA certificate has been provided with this source.")
         add_cacert(ca_cert)
         git_env['GIT_SSL_CAINFO'] = certifi.where()
-
-    if auth:
-        logger.info("Credentials provided for auth..")
-        url = re.sub(r'^(?P<scheme>https?://)', fr'\g<scheme>{auth}', url)
 
     clone_dir = os.path.join(output_dir, name)
     if os.path.exists(clone_dir):
