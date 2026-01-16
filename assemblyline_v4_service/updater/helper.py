@@ -214,10 +214,12 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
         git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Bearer {token.token}'
     elif username and password:
         # Basic authentication scheme
+        git_env['GIT_CONFIG_COUNT'] = '1'
         git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
         git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Basic {b64encode(f"{username}:{password}".encode()).decode()}'
     elif password:
         # Token-based authentication
+        git_env['GIT_CONFIG_COUNT'] = '1'
         git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
         git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Bearer {password}'
     if ignore_ssl_errors:
