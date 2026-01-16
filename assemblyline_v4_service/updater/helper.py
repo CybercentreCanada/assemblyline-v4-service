@@ -197,7 +197,9 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
     ignore_ssl_errors = source.get("ssl_ignore_errors", False)
     ca_cert = source.get("ca_cert")
     proxy = source.get('proxy', None)
-    git_env = {}
+
+    # Disable any terminal prompts from git
+    git_env = {'GIT_TERMINAL_PROMPT': '0'}
 
     if use_managed_identity:
         # Get Azure managed identity token
@@ -221,7 +223,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
         # Token-based authentication
         git_env['GIT_CONFIG_COUNT'] = '1'
         git_env['GIT_CONFIG_KEY_0'] = 'http.extraheader'
-        git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Bearer {password}'
+        git_env['GIT_CONFIG_VALUE_0'] = f'Authorization: Basic {b64encode(password.encode()).decode()}'
     if ignore_ssl_errors:
         git_env['GIT_SSL_NO_VERIFY'] = '1'
 
