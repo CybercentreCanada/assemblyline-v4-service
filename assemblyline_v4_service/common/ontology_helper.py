@@ -133,6 +133,7 @@ class OntologyHelper:
                         "name": heur.name,
                         "tags": merge_tags(heur_tag_map[key]["tags"], section_tags) if section_tags else {},
                         "score": heur.score,
+                        "attack_ids": section.heuristic.attack_ids,
                         "times_raised": heur_tag_map[key]["times_raised"] + 1
                     })
                     score += section.heuristic.score
