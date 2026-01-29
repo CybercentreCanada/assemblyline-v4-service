@@ -2,9 +2,9 @@ import json
 import logging
 import os
 import tempfile
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Dict, List, Optional
 
-from assemblyline_v4_service.common.api import PrivilegedServiceAPI, ServiceAPI
+from assemblyline_v4_service.common.api import ServiceAPI
 from assemblyline_v4_service.common.helper import get_service_manifest
 from assemblyline_v4_service.common.result import Result
 
@@ -76,7 +76,7 @@ class Task:
         self.service_config: Dict[str, Any] = dict(task.service_config)
         self.service_context: Optional[str] = None
         self.service_debug_info: Optional[str] = None
-        self.service_default_result_classification = None
+        self.service_default_result_classification: Optional[str] = None
         self.service_name: str = task.service_name
         self.service_tool_version: Optional[str] = None
         self.service_version: Optional[str] = None
@@ -88,7 +88,7 @@ class Task:
         }
 
     def _add_file(self, path: str, name: str, description: str,
-                  classification: Optional[Classification] = None,
+                  classification: Optional[str] = None,
                   is_section_image: bool = False,
                   is_supplementary: bool = False,
                   allow_dynamic_recursion: bool = False,
@@ -131,7 +131,7 @@ class Task:
 
     def add_extracted(self, path: str, name: str, description: str,
                       classification: Optional[Classification] = None,
-                      safelist_interface: Optional[Union[ServiceAPI, PrivilegedServiceAPI]] = None,
+                      safelist_interface: Optional[ServiceAPI] = None,
                       allow_dynamic_recursion: bool = False, parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
 
         # Service-based safelisting of files has to be configured at the global configuration
@@ -301,7 +301,7 @@ class Task:
     def set_service_context(self, context: str) -> None:
         self.service_context = context
 
-    def start(self, service_default_result_classification: Classification,
+    def start(self, service_default_result_classification: str,
               service_version: str, service_tool_version: Optional[str] = None) -> None:
         self.service_version = service_version
         self.service_tool_version = service_tool_version

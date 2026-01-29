@@ -1,13 +1,9 @@
 import logging
 import signal
 import time
-from os import environ
 from subprocess import Popen, TimeoutExpired
 
 from assemblyline.common import log as al_log
-from assemblyline_v4_service.run_privileged_service import RunPrivilegedService
-
-PRIVILEGED = environ.get('PRIVILEGED', 'false') == 'true'
 
 
 def check_processes(service_process, task_handler_process, log):
@@ -66,7 +62,4 @@ def run_task_handler():
 
 
 if __name__ == '__main__':
-    if PRIVILEGED:
-        RunPrivilegedService().serve_forever()
-    else:
-        run_task_handler()
+    run_task_handler()
