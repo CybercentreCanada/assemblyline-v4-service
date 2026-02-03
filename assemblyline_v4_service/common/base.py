@@ -16,10 +16,11 @@ import requests
 from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
+
 from assemblyline_v4_service.common import helper
 from assemblyline_v4_service.common.api import ServiceAPI
-from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.ocr import update_ocr_config
+from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.request import ServiceRequest
 from assemblyline_v4_service.common.task import Task
 
@@ -212,6 +213,10 @@ class ServiceBase:
                 self._download_rules()
             except Exception as e:
                 raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
+
+        # Declare that service is ready to accept tasks from task handler
+        with open(f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_ready", 'w'):
+            pass
 
         self.start()
 
