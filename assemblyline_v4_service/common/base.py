@@ -285,7 +285,10 @@ class ServiceBase:
         if os.path.exists(SERVICE_READY_PATH):
             # Mark the service as not ready while updating rules
             self.log.info("Service is marked as not ready while updating rules.")
-            os.remove(SERVICE_READY_PATH)
+            try:
+                os.remove(SERVICE_READY_PATH)
+            except FileNotFoundError:
+                pass
 
         # Dedicated directory for updates
         if not os.path.exists(UPDATES_DIR):
