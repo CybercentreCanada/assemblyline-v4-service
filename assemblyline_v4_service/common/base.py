@@ -31,7 +31,7 @@ UPDATES_DIR = os.environ.get('UPDATES_DIR', '/updates')
 UPDATES_CA = os.environ.get('UPDATES_CA', '/etc/assemblyline/ssl/al_root-ca.crt')
 MIN_SECONDS_BETWEEN_UPDATES = float(os.environ.get('MIN_SECONDS_BETWEEN_UPDATES', '10.0'))
 SIGNATURES_META_FILENAME = "signatures_meta.json"
-
+SERVICE_READY_PATH = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_ready"
 RECOVERABLE_RE_MSG = [
     "cannot schedule new futures after interpreter shutdown",
     "can't register atexit after shutdown",
@@ -213,10 +213,10 @@ class ServiceBase:
                 self._download_rules()
             except Exception as e:
                 raise Exception(f"Something went wrong while trying to load {self.name} rules: {str(e)}")
-
-        # Declare that service is ready to accept tasks from task handler
-        with open(f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_ready", 'w'):
-            pass
+        else:
+            # Declare that service is ready to accept tasks from task handler
+            with open(SERVICE_READY_PATH, 'w'):
+                pass
 
         self.start()
 
@@ -282,6 +282,11 @@ class ServiceBase:
             time.sleep(min(5**retries, 30))
             retries += 1
 
+        if os.path.exists(SERVICE_READY_PATH):
+            # Mark the service as not ready while updating rules
+            self.log.info("Service is marked as not ready while updating rules.")
+            os.remove(SERVICE_READY_PATH)
+
         # Dedicated directory for updates
         if not os.path.exists(UPDATES_DIR):
             os.mkdir(UPDATES_DIR)
@@ -321,6 +326,11 @@ class ServiceBase:
             if temp_directory:
                 self.log.info(f'Removing temp directory: {temp_directory}')
                 shutil.rmtree(temp_directory, ignore_errors=True)
+
+        with open(SERVICE_READY_PATH, 'w'):
+            # Mark the service as ready again
+            self.log.info("Service is marked as ready after updating rules.")
+            pass
 
     # Generate the rules_hash and init rules_list based on the raw files in the rules_directory from updater
     def _gen_rules_hash(self) -> str:
