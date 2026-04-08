@@ -62,6 +62,7 @@ setup(
             "gitpython",
             "git-remote-codecommit",
             "psutil",
+            "Werkzeug==3.1.6"
         ]
     },
     package_data={
