@@ -110,8 +110,8 @@ def test_url_download_unpack(filename):
 
 def test_git_clone_repo():
     log = getLogger()
-    # Set working directory to System.DefaultWorkingDirectory to ensure we have the right permissions for git operations
-    working_dir = os.environ.get("System.DefaultWorkingDirectory")
+    # Set working directory to SYSTEM_DEFAULTWORKINGDIRECTORY to ensure we have the right permissions for git operations inside of Azure Pipelines
+    working_dir = os.environ.get("SYSTEM_DEFAULTWORKINGDIRECTORY")
     with TemporaryDirectory(dir=working_dir) as tmp_dir:
         # Missing 'uri' or 'name' should raise
         with pytest.raises(KeyError):
