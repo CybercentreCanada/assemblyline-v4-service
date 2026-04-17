@@ -179,3 +179,18 @@ def test_git_clone_repo():
             source = {"name": "test_repo", "uri": repo_dir}
             result = git_clone_repo(source, previous_update=0, logger=log, output_dir=tmp_dir)
             assert result == os.path.join(tmp_dir, "test_repo")
+
+        # Even if the commit is one second newer than the last update, it should not skip
+        with TemporaryDirectory() as repo_dir:
+            repo = git.Repo.init(repo_dir)
+            test_file = os.path.join(repo_dir, "test.txt")
+            with open(test_file, "w") as f:
+                f.write("hello")
+            repo.index.add(["test.txt"])
+            repo.index.commit("initial commit")
+
+            source = {"name": "test_repo", "uri": repo_dir}
+
+            previous_update = next(repo.iter_commits()).committed_date - 1
+            result = git_clone_repo(source, previous_update=previous_update, logger=log, output_dir=tmp_dir)
+            assert result == os.path.join(tmp_dir, "test_repo")
