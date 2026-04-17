@@ -1,14 +1,17 @@
 import os
+import time
 from logging import getLogger
 from tempfile import TemporaryDirectory
 
 import certifi
+import git
 import pytest
 import requests_mock
 from assemblyline_v4_service.updater.helper import (
     SkipSource,
     add_cacert,
     filter_downloads,
+    git_clone_repo,
     url_download,
 )
 
@@ -106,5 +109,73 @@ def test_url_download_unpack(filename):
 
 
 def test_git_clone_repo():
-    # TODO
-    pass
+    log = getLogger()
+    with TemporaryDirectory() as tmp_dir:
+        # Missing 'uri' or 'name' should raise
+        with pytest.raises(KeyError):
+            git_clone_repo({}, logger=log, output_dir=tmp_dir)
+
+        # Successful clone
+        with TemporaryDirectory() as repo_dir:
+            # Create a real git repo to clone from
+            repo = git.Repo.init(repo_dir)
+            test_file = os.path.join(repo_dir, "test.txt")
+            with open(test_file, "w") as f:
+                f.write("hello")
+            repo.index.add(["test.txt"])
+            repo.index.commit("initial commit")
+
+            source = {"name": "test_repo", "uri": repo_dir}
+            result = git_clone_repo(source, logger=log, output_dir=tmp_dir)
+            assert result == os.path.join(tmp_dir, "test_repo")
+            assert os.path.isdir(result)
+            assert os.path.isfile(os.path.join(result, "test.txt"))
+
+        # Clone with branch
+        with TemporaryDirectory() as repo_dir:
+            repo = git.Repo.init(repo_dir)
+            test_file = os.path.join(repo_dir, "test.txt")
+            with open(test_file, "w") as f:
+                f.write("main")
+            repo.index.add(["test.txt"])
+            repo.index.commit("main commit")
+            repo.create_head("dev")
+            repo.heads.dev.checkout()
+            with open(test_file, "w") as f:
+                f.write("dev")
+            repo.index.add(["test.txt"])
+            repo.index.commit("dev commit")
+            repo.heads.master.checkout()
+
+            source = {"name": "test_repo", "uri": repo_dir, "git_branch": "dev"}
+            result = git_clone_repo(source, logger=log, output_dir=tmp_dir)
+            with open(os.path.join(result, "test.txt")) as f:
+                assert f.read() == "dev"
+
+        # SkipSource when previous_update is newer than last commit
+        with TemporaryDirectory() as repo_dir:
+            repo = git.Repo.init(repo_dir)
+            test_file = os.path.join(repo_dir, "test.txt")
+            with open(test_file, "w") as f:
+                f.write("hello")
+            repo.index.add(["test.txt"])
+            repo.index.commit("initial commit")
+
+            source = {"name": "test_repo", "uri": repo_dir}
+            # Use a future timestamp so the commit is older than previous_update
+            future_ts = int(time.time()) + 100000
+            with pytest.raises(SkipSource):
+                git_clone_repo(source, previous_update=future_ts, logger=log, output_dir=tmp_dir)
+
+        # No SkipSource when previous_update is older than last commit
+        with TemporaryDirectory() as repo_dir:
+            repo = git.Repo.init(repo_dir)
+            test_file = os.path.join(repo_dir, "test.txt")
+            with open(test_file, "w") as f:
+                f.write("hello")
+            repo.index.add(["test.txt"])
+            repo.index.commit("initial commit")
+
+            source = {"name": "test_repo", "uri": repo_dir}
+            result = git_clone_repo(source, previous_update=0, logger=log, output_dir=tmp_dir)
+            assert result == os.path.join(tmp_dir, "test_repo")
