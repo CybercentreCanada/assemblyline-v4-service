@@ -16,8 +16,6 @@ from queue import Queue
 from typing import Any, List, Optional, Tuple
 from zipfile import ZipFile
 
-from assemblyline_core.server_base import ServiceStage, ThreadedCoreBase
-
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
@@ -25,6 +23,8 @@ from assemblyline.odm.messages.changes import Operation, ServiceChange, Signatur
 from assemblyline.odm.models.service import Service, UpdateSource
 from assemblyline.remote.datatypes.events import EventSender, EventWatcher
 from assemblyline.remote.datatypes.hash import Hash
+from assemblyline_core.server_base import ServiceStage, ThreadedCoreBase
+
 from assemblyline_v4_service.common.base import SIGNATURES_META_FILENAME
 from assemblyline_v4_service.updater.client import UpdaterClient
 from assemblyline_v4_service.updater.helper import (
@@ -36,7 +36,6 @@ from assemblyline_v4_service.updater.helper import (
 
 if typing.TYPE_CHECKING:
     import redis
-
     from assemblyline.datastore.helper import AssemblylineDatastore
     from assemblyline.odm.models.config import Config
     RedisType = redis.Redis[typing.Any]
@@ -119,8 +118,6 @@ class ServiceUpdater(ThreadedCoreBase):
         self.local_update_flag = threading.Event()
         self.local_update_start = threading.Event()
 
-        self._current_source: str = None
-
         # Load threads
         self.expected_threads = {
             'Sync Service Settings': self._sync_settings,
@@ -159,17 +156,17 @@ class ServiceUpdater(ThreadedCoreBase):
     def set_scheduled_update_time(self, update_time):
         return self.update_data_hash.set(SOURCE_UPDATE_TIME_KEY, update_time)
 
-    def get_source_update_time(self) -> float:
-        return self.update_data_hash.get(f"{self._current_source}.{SOURCE_UPDATE_TIME_KEY}") or 0
+    def get_source_update_time(self, source: str) -> float:
+        return self.update_data_hash.get(f"{source}.{SOURCE_UPDATE_TIME_KEY}") or 0
 
-    def set_source_update_time(self, update_time: float):
-        self.update_data_hash.set(f"{self._current_source}.{SOURCE_UPDATE_TIME_KEY}", update_time)
+    def set_source_update_time(self, source: str, update_time: float):
+        self.update_data_hash.set(f"{source}.{SOURCE_UPDATE_TIME_KEY}", update_time)
 
-    def get_source_extra(self) -> dict[str, Any]:
-        return self.update_data_hash.get(f"{self._current_source}.{SOURCE_EXTRA_KEY}") or {}
+    def get_source_extra(self, source: str) -> dict[str, Any]:
+        return self.update_data_hash.get(f"{source}.{SOURCE_EXTRA_KEY}") or {}
 
-    def set_source_extra(self, extra_data: dict[str, Any]):
-        self.update_data_hash.set(f"{self._current_source}.{SOURCE_EXTRA_KEY}", extra_data)
+    def set_source_extra(self, source: str, extra_data: dict[str, Any]):
+        self.update_data_hash.set(f"{source}.{SOURCE_EXTRA_KEY}", extra_data)
 
     def get_local_update_time(self) -> float:
         if self._time_keeper:
@@ -190,10 +187,12 @@ class ServiceUpdater(ThreadedCoreBase):
         }
 
     def stop(self):
-        current_source_state = self.update_data_hash.get(f"{self._current_source}.{SOURCE_STATUS_KEY}") or {}
-        if current_source_state.get("state") == "UPDATING":
-            # Declare the update has failed and will retry again on next boot
-            self.push_status("ERROR", "Update interrupted by server shutdown")
+        # Check all on-going source updates that are updating and declare them as failed since the updater is shutting down before they can complete
+        for source in [s.name for s in self._service.update_config.sources]:
+            current_source_state = self.update_data_hash.get(f"{source}.{SOURCE_STATUS_KEY}") or {}
+            if current_source_state.get("state") == "UPDATING":
+                # Declare the update has failed and will retry again on next boot
+                self.push_status(source, "ERROR", "Update interrupted by server shutdown")
         super().stop()
         self.signature_change_watcher.stop()
         self.service_change_watcher.stop()
@@ -267,10 +266,10 @@ class ServiceUpdater(ThreadedCoreBase):
         if self.config_hash(self._service) != self.get_active_config_hash():
             self.source_update_flag.set()
 
-    def push_status(self, state: str, message: str):
+    def push_status(self, source: str, state: str, message: str):
         # Push current state of updater with source
-        self.log.debug(f"Pushing state for {self._current_source}: [{state}] {message}")
-        self.update_data_hash.set(key=f'{self._current_source}.{SOURCE_STATUS_KEY}',
+        self.log.debug(f"Pushing state for {source}: [{state}] {message}")
+        self.update_data_hash.set(key=f'{source}.{SOURCE_STATUS_KEY}',
                                   value=dict(state=state, message=message, ts=now_as_iso()))
 
     def _set_service_stage(self):
@@ -369,7 +368,6 @@ class ServiceUpdater(ThreadedCoreBase):
         run_time = time.time()
         with tempfile.TemporaryDirectory() as update_dir:
             # Parse updater configuration
-            previous_hashes: dict[str, dict[str, str]] = self.get_source_extra()
             sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
             files_sha256: dict[str, dict[str, str]] = {}
 
@@ -385,15 +383,16 @@ class ServiceUpdater(ThreadedCoreBase):
                     # This source has been removed from the service configuration
                     continue
 
+                previous_hashes: dict[str, str] = self.get_source_extra(source_name)
+
                 while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
                     # Introduce an exponential delay between each attempt
                     time.sleep(SOURCE_UPDATE_ATTEMPT_DELAY_BASE**update_attempt)
                     update_attempt += 1
 
                     # Set current source for pushing state to UI
-                    self._current_source = source_name
                     source_obj = sources[source_name]
-                    old_update_time = self.get_source_update_time()
+                    old_update_time = self.get_source_update_time(source_name)
 
                     # Are we ignoring the cache for this source?
                     if source_obj.ignore_cache:
@@ -415,7 +414,7 @@ class ServiceUpdater(ThreadedCoreBase):
                             raise SkipSource
 
 
-                        self.push_status("UPDATING", "Starting..")
+                        self.push_status(source_name, "UPDATING", "Starting..")
                         fetch_method = source.get('fetch_method', 'GET')
                         default_classification = source.get('default_classification', classification.UNRESTRICTED)
 
@@ -429,7 +428,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         if source.get('override_classification', False):
                             self.client.classification_override = default_classification
 
-                        self.push_status("UPDATING", "Pulling..")
+                        self.push_status(source_name, "UPDATING", "Pulling..")
                         output = None
                         seen_fetch = seen_fetches.get(uri)
                         if seen_fetch == 'skipped':
@@ -463,34 +462,30 @@ class ServiceUpdater(ThreadedCoreBase):
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
                         validated_files = list()
                         for file, sha256 in files:
-                            files_sha256.setdefault(source_name, {})
-                            if previous_hashes.get(
-                                    source_name, {}).get(
-                                    file, None) != sha256 and self.is_valid(file):
-                                files_sha256[source_name][file] = sha256
+                            if previous_hashes.get(file, None) != sha256 and self.is_valid(file):
+                                files_sha256[file] = sha256
                                 validated_files.append((file, sha256))
 
-                        self.push_status("UPDATING", "Importing..")
+                        self.push_status(source_name, "UPDATING", "Importing..")
                         # Import into Assemblyline
                         self.import_update(validated_files, source_name, default_classification,
                                            source.get('configuration') or {})
-                        self.push_status("DONE", "Signature(s) Imported.")
+                        self.push_status(source_name, "DONE", "Signature(s) Imported.")
+                        self.set_source_update_time(source_name, run_time)
                     except SkipSource:
                         # This source hasn't changed, no need to re-import into Assemblyline
                         self.log.info(f'No new {self.updater_type} rule files to process for {source_name}')
-                        if source_name in previous_hashes:
-                            files_sha256[source_name] = previous_hashes[source_name]
+                        files_sha256 = previous_hashes
                         seen_fetches[uri] = "skipped"
-                        self.push_status("DONE", "Skipped.")
+                        self.push_status(source_name, "DONE", "Skipped.")
                         break
                     except Exception as e:
                         # There was an issue with this source, report and continue to the next
                         self.log.error(f"Problem with {source['name']}: {e}")
-                        self.push_status("ERROR", str(e))
+                        self.push_status(source_name, "ERROR", str(e))
                         continue
 
-                    self.set_source_update_time(run_time)
-                    self.set_source_extra(files_sha256)
+                    self.set_source_extra(source_name, files_sha256)
                     break
         self.set_active_config_hash(self.config_hash(service))
         self.local_update_flag.set()
