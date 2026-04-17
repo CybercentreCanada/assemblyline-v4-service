@@ -110,13 +110,15 @@ def test_url_download_unpack(filename):
 
 def test_git_clone_repo():
     log = getLogger()
-    with TemporaryDirectory() as tmp_dir:
+    # Set working directory to System.DefaultWorkingDirectory to ensure we have the right permissions for git operations
+    working_dir = os.environ.get("System.DefaultWorkingDirectory")
+    with TemporaryDirectory(dir=working_dir) as tmp_dir:
         # Missing 'uri' or 'name' should raise
         with pytest.raises(KeyError):
             git_clone_repo({}, logger=log, output_dir=tmp_dir)
 
         # Successful clone
-        with TemporaryDirectory() as repo_dir:
+        with TemporaryDirectory(dir=working_dir) as repo_dir:
             # Create a real git repo to clone from
             repo = git.Repo.init(repo_dir)
             test_file = os.path.join(repo_dir, "test.txt")
@@ -132,7 +134,7 @@ def test_git_clone_repo():
             assert os.path.isfile(os.path.join(result, "test.txt"))
 
         # Clone with branch
-        with TemporaryDirectory() as repo_dir:
+        with TemporaryDirectory(dir=working_dir) as repo_dir:
             repo = git.Repo.init(repo_dir)
             test_file = os.path.join(repo_dir, "test.txt")
             with open(test_file, "w") as f:
@@ -153,7 +155,7 @@ def test_git_clone_repo():
                 assert f.read() == "dev"
 
         # SkipSource when previous_update is newer than last commit
-        with TemporaryDirectory() as repo_dir:
+        with TemporaryDirectory(dir=working_dir) as repo_dir:
             repo = git.Repo.init(repo_dir)
             test_file = os.path.join(repo_dir, "test.txt")
             with open(test_file, "w") as f:
@@ -168,7 +170,7 @@ def test_git_clone_repo():
                 git_clone_repo(source, previous_update=future_ts, logger=log, output_dir=tmp_dir)
 
         # No SkipSource when previous_update is older than last commit
-        with TemporaryDirectory() as repo_dir:
+        with TemporaryDirectory(dir=working_dir) as repo_dir:
             repo = git.Repo.init(repo_dir)
             test_file = os.path.join(repo_dir, "test.txt")
             with open(test_file, "w") as f:
@@ -181,7 +183,7 @@ def test_git_clone_repo():
             assert result == os.path.join(tmp_dir, "test_repo")
 
         # Even if the commit is one second newer than the last update, it should not skip
-        with TemporaryDirectory() as repo_dir:
+        with TemporaryDirectory(dir=working_dir) as repo_dir:
             repo = git.Repo.init(repo_dir)
             test_file = os.path.join(repo_dir, "test.txt")
             with open(test_file, "w") as f:

@@ -99,8 +99,6 @@ jobs:
         displayName: Setup environment for service base
       - script: |
           set -x # echo on
-          git config --global user.email "test@assemblyline.ca"
-          git config --global user.name "AL"
           python -m pytest -p no:cacheprovider --durations=10 -rsx -svvv --disable-warnings
         displayName: Test
         # Run tests from /test directory because that is how the release pipeline runs them
