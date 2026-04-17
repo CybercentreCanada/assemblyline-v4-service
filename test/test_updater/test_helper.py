@@ -2,9 +2,9 @@ import os
 import time
 from logging import getLogger
 from tempfile import TemporaryDirectory
+from unittest.mock import MagicMock, patch
 
 import certifi
-import git
 import pytest
 import requests_mock
 from assemblyline_v4_service.updater.helper import (
@@ -110,89 +110,54 @@ def test_url_download_unpack(filename):
 
 def test_git_clone_repo():
     log = getLogger()
-    # Set working directory to SYSTEM_DEFAULTWORKINGDIRECTORY to ensure we have the right permissions for git operations inside of Azure Pipelines
-    working_dir = os.environ.get("SYSTEM_DEFAULTWORKINGDIRECTORY")
-    with TemporaryDirectory(dir=working_dir) as tmp_dir:
+    with TemporaryDirectory() as tmp_dir:
         # Missing 'uri' or 'name' should raise
         with pytest.raises(KeyError):
             git_clone_repo({}, logger=log, output_dir=tmp_dir)
 
-        # Successful clone
-        with TemporaryDirectory(dir=working_dir) as repo_dir:
-            # Create a real git repo to clone from
-            repo = git.Repo.init(repo_dir)
-            test_file = os.path.join(repo_dir, "test.txt")
-            with open(test_file, "w") as f:
-                f.write("hello")
-            repo.index.add(["test.txt"])
-            repo.index.commit("initial commit")
+        def _make_mock_repo(committed_date):
+            mock_repo = MagicMock()
+            mock_commit = MagicMock()
+            mock_commit.committed_date = committed_date
+            mock_repo.iter_commits.return_value = iter([mock_commit])
+            return mock_repo
 
-            source = {"name": "test_repo", "uri": repo_dir}
+        # Successful clone
+        with patch("assemblyline_v4_service.updater.helper.Repo.clone_from") as mock_clone:
+            mock_clone.return_value = _make_mock_repo(int(time.time()))
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
             result = git_clone_repo(source, logger=log, output_dir=tmp_dir)
             assert result == os.path.join(tmp_dir, "test_repo")
-            assert os.path.isdir(result)
-            assert os.path.isfile(os.path.join(result, "test.txt"))
+            mock_clone.assert_called_once()
+            call_kwargs = mock_clone.call_args
+            assert call_kwargs[0][0] == "http://example.com/repo.git"
+            assert call_kwargs[0][1] == os.path.join(tmp_dir, "test_repo")
 
-        # Clone with branch
-        with TemporaryDirectory(dir=working_dir) as repo_dir:
-            repo = git.Repo.init(repo_dir)
-            test_file = os.path.join(repo_dir, "test.txt")
-            with open(test_file, "w") as f:
-                f.write("main")
-            repo.index.add(["test.txt"])
-            repo.index.commit("main commit")
-            repo.create_head("dev")
-            repo.heads.dev.checkout()
-            with open(test_file, "w") as f:
-                f.write("dev")
-            repo.index.add(["test.txt"])
-            repo.index.commit("dev commit")
-            repo.heads.master.checkout()
-
-            source = {"name": "test_repo", "uri": repo_dir, "git_branch": "dev"}
+            # Clone with branch
+            mock_clone.return_value = _make_mock_repo(int(time.time()))
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git", "git_branch": "dev"}
             result = git_clone_repo(source, logger=log, output_dir=tmp_dir)
-            with open(os.path.join(result, "test.txt")) as f:
-                assert f.read() == "dev"
+            call_kwargs = mock_clone.call_args
+            assert call_kwargs[1]["branch"] == "dev"
 
-        # SkipSource when previous_update is newer than last commit
-        with TemporaryDirectory(dir=working_dir) as repo_dir:
-            repo = git.Repo.init(repo_dir)
-            test_file = os.path.join(repo_dir, "test.txt")
-            with open(test_file, "w") as f:
-                f.write("hello")
-            repo.index.add(["test.txt"])
-            repo.index.commit("initial commit")
-
-            source = {"name": "test_repo", "uri": repo_dir}
-            # Use a future timestamp so the commit is older than previous_update
+            # SkipSource when previous_update is newer than last commit
+            old_commit_time = 1000
+            mock_clone.return_value = _make_mock_repo(old_commit_time)
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
             future_ts = int(time.time()) + 100000
             with pytest.raises(SkipSource):
                 git_clone_repo(source, previous_update=future_ts, logger=log, output_dir=tmp_dir)
 
-        # No SkipSource when previous_update is older than last commit
-        with TemporaryDirectory(dir=working_dir) as repo_dir:
-            repo = git.Repo.init(repo_dir)
-            test_file = os.path.join(repo_dir, "test.txt")
-            with open(test_file, "w") as f:
-                f.write("hello")
-            repo.index.add(["test.txt"])
-            repo.index.commit("initial commit")
-
-            source = {"name": "test_repo", "uri": repo_dir}
+            # No SkipSource when previous_update is older than last commit
+            recent_commit_time = int(time.time())
+            mock_clone.return_value = _make_mock_repo(recent_commit_time)
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
             result = git_clone_repo(source, previous_update=0, logger=log, output_dir=tmp_dir)
             assert result == os.path.join(tmp_dir, "test_repo")
 
-        # Even if the commit is one second newer than the last update, it should not skip
-        with TemporaryDirectory(dir=working_dir) as repo_dir:
-            repo = git.Repo.init(repo_dir)
-            test_file = os.path.join(repo_dir, "test.txt")
-            with open(test_file, "w") as f:
-                f.write("hello")
-            repo.index.add(["test.txt"])
-            repo.index.commit("initial commit")
-
-            source = {"name": "test_repo", "uri": repo_dir}
-
-            previous_update = next(repo.iter_commits()).committed_date - 1
-            result = git_clone_repo(source, previous_update=previous_update, logger=log, output_dir=tmp_dir)
+            # Even if the commit is one second newer than the last update, it should not skip
+            commit_time = 5000
+            mock_clone.return_value = _make_mock_repo(commit_time)
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
+            result = git_clone_repo(source, previous_update=commit_time - 1, logger=log, output_dir=tmp_dir)
             assert result == os.path.join(tmp_dir, "test_repo")
