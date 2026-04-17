@@ -261,10 +261,10 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
             if previous_update:
                 if isinstance(previous_update, str):
                     previous_update = iso_to_epoch(previous_update)
-                for c in repo.iter_commits():
-                    if c.committed_date < previous_update:
-                        raise SkipSource()
-                    break
+
+                # We only need to look at the first commit since we're cloning at depth 1
+                if next(repo.iter_commits()).committed_date < previous_update:
+                    raise SkipSource()
 
         return clone_dir
     except SkipSource:
