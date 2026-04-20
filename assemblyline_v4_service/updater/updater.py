@@ -188,7 +188,8 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def stop(self):
         # Check all on-going source updates that are updating and declare them as failed since the updater is shutting down before they can complete
-        for source in [s.name for s in self._service.update_config.sources]:
+        for s in self._service.update_config.sources:
+            source = s.name
             current_source_state = self.update_data_hash.get(f"{source}.{SOURCE_STATUS_KEY}") or {}
             if current_source_state.get("state") == "UPDATING":
                 # Declare the update has failed and will retry again on next boot
