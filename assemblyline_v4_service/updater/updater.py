@@ -18,6 +18,7 @@ from zipfile import ZipFile
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.odm.models.service import Service, UpdateSource
@@ -439,6 +440,11 @@ class ServiceUpdater(ThreadedCoreBase):
                                 output = uri.split("file://", 1)[1]
                                 if not os.path.exists(output):
                                     raise FileNotFoundError(f"{output} doesn't exist within container.")
+                                elif not source_obj.ignore_cache and \
+                                    get_sha256_for_file(output) == previous_hashes.get(output, None):
+                                    # If the file exists and hasn't changed since last update, skip
+                                    raise SkipSource
+
                             elif fetch_method == "GIT" or uri.endswith('.git'):
                                 # First we'll attempt by performing a Git clone
                                 # (since not all services hint at being a repository in their URL),
@@ -454,6 +460,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
                         validated_files = list()
+
                         for file, sha256 in files:
                             if previous_hashes.get(file, None) != sha256 and self.is_valid(file):
                                 files_sha256[file] = sha256
