@@ -407,14 +407,6 @@ class ServiceUpdater(ThreadedCoreBase):
                         if not source_obj.enabled:
                             raise SkipSource
 
-                        # Is it time for this source to run?
-                        elapsed_time = time.time() - old_update_time
-                        update_interval = source.get('update_interval') or service.update_config.update_interval_seconds
-                        if elapsed_time < update_interval:
-                            # Too early to run the update for this particular source, skip for now
-                            raise SkipSource
-
-
                         self.push_status(source_name, "UPDATING", "Starting..")
                         fetch_method = source.get('fetch_method', 'GET')
                         default_classification = source.get('default_classification', classification.UNRESTRICTED)
@@ -550,6 +542,12 @@ class ServiceUpdater(ThreadedCoreBase):
                 if not self.update_queue.qsize():
                     # Queue all sources to update
                     for source in self._service.update_config.sources:
+                        # Is it time for this source to run?
+                        elapsed_time = time.time() - self.get_source_update_time(source.name)
+                        update_interval = source.get('update_interval') or service.update_config.update_interval_seconds
+                        if elapsed_time < update_interval:
+                            # Too early to run the update for this particular source, skip for now
+                            continue
                         self.update_queue.put(source.name)
                 self.do_source_update(service=service)
                 self.set_scheduled_update_time(update_time=time.time())
