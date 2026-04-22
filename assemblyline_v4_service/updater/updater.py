@@ -370,7 +370,6 @@ class ServiceUpdater(ThreadedCoreBase):
         with tempfile.TemporaryDirectory() as update_dir:
             # Parse updater configuration
             sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
-            files_sha256: dict[str, dict[str, str]] = {}
 
             # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
             seen_fetches = dict()
@@ -385,6 +384,7 @@ class ServiceUpdater(ThreadedCoreBase):
                     continue
 
                 previous_hashes: dict[str, str] = self.get_source_extra(source_name)
+                files_sha256: dict[str, dict[str, str]] = {}
 
                 while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
                     # Introduce an exponential delay between each attempt
