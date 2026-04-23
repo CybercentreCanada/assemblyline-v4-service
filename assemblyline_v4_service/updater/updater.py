@@ -551,7 +551,7 @@ class ServiceUpdater(ThreadedCoreBase):
                     for source in self._service.update_config.sources:
                         # Is it time for this source to run?
                         elapsed_time = time.time() - self.get_source_update_time(source.name)
-                        update_interval = source.get('update_interval') or service.update_config.update_interval_seconds
+                        update_interval = source.update_interval or service.update_config.update_interval_seconds
                         if elapsed_time < update_interval:
                             # Too early to run the update for this particular source, skip for now
                             continue
