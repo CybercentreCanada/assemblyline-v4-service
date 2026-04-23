@@ -1,6 +1,8 @@
 import os
+import time
 from logging import getLogger
 from tempfile import TemporaryDirectory
+from unittest.mock import MagicMock, patch
 
 import certifi
 import pytest
@@ -9,6 +11,7 @@ from assemblyline_v4_service.updater.helper import (
     SkipSource,
     add_cacert,
     filter_downloads,
+    git_clone_repo,
     url_download,
 )
 
@@ -106,5 +109,55 @@ def test_url_download_unpack(filename):
 
 
 def test_git_clone_repo():
-    # TODO
-    pass
+    log = getLogger()
+    with TemporaryDirectory() as tmp_dir:
+        # Missing 'uri' or 'name' should raise
+        with pytest.raises(KeyError):
+            git_clone_repo({}, logger=log, output_dir=tmp_dir)
+
+        def _make_mock_repo(committed_date):
+            mock_repo = MagicMock()
+            mock_commit = MagicMock()
+            mock_commit.committed_date = committed_date
+            mock_repo.iter_commits.return_value = iter([mock_commit])
+            return mock_repo
+
+        # Successful clone
+        with patch("assemblyline_v4_service.updater.helper.Repo.clone_from") as mock_clone:
+            mock_clone.return_value = _make_mock_repo(int(time.time()))
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
+            result = git_clone_repo(source, logger=log, output_dir=tmp_dir)
+            assert result == os.path.join(tmp_dir, "test_repo")
+            mock_clone.assert_called_once()
+            call_kwargs = mock_clone.call_args
+            assert call_kwargs[0][0] == "http://example.com/repo.git"
+            assert call_kwargs[0][1] == os.path.join(tmp_dir, "test_repo")
+
+            # Clone with branch
+            mock_clone.return_value = _make_mock_repo(int(time.time()))
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git", "git_branch": "dev"}
+            result = git_clone_repo(source, logger=log, output_dir=tmp_dir)
+            call_kwargs = mock_clone.call_args
+            assert call_kwargs[1]["branch"] == "dev"
+
+            # SkipSource when previous_update is newer than last commit
+            old_commit_time = 1000
+            mock_clone.return_value = _make_mock_repo(old_commit_time)
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
+            future_ts = int(time.time()) + 100000
+            with pytest.raises(SkipSource):
+                git_clone_repo(source, previous_update=future_ts, logger=log, output_dir=tmp_dir)
+
+            # No SkipSource when previous_update is older than last commit
+            recent_commit_time = int(time.time())
+            mock_clone.return_value = _make_mock_repo(recent_commit_time)
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
+            result = git_clone_repo(source, previous_update=0, logger=log, output_dir=tmp_dir)
+            assert result == os.path.join(tmp_dir, "test_repo")
+
+            # Even if the commit is one second newer than the last update, it should not skip
+            commit_time = 5000
+            mock_clone.return_value = _make_mock_repo(commit_time)
+            source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
+            result = git_clone_repo(source, previous_update=commit_time - 1, logger=log, output_dir=tmp_dir)
+            assert result == os.path.join(tmp_dir, "test_repo")

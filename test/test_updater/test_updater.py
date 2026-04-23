@@ -4,6 +4,11 @@ import random
 import tempfile
 
 import pytest
+from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
+from assemblyline.odm.models.service import Service, UpdateSource
+from assemblyline.odm.models.service_delta import ServiceDelta
+from assemblyline.odm.models.signature import Signature
+from assemblyline.odm.randomizer import random_model_obj
 from assemblyline_v4_service.updater.updater import (
     SERVICE_NAME,
     SIGNATURES_META_FILENAME,
@@ -11,12 +16,6 @@ from assemblyline_v4_service.updater.updater import (
     SOURCE_UPDATE_TIME_KEY,
     ServiceUpdater,
 )
-
-from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
-from assemblyline.odm.models.service import Service, UpdateSource
-from assemblyline.odm.models.service_delta import ServiceDelta
-from assemblyline.odm.models.signature import Signature
-from assemblyline.odm.randomizer import random_model_obj
 
 os.environ['SERVICE_PATH'] = SERVICE_NAME
 
@@ -161,6 +160,7 @@ def test_do_source_update(initialized_updater: ServiceUpdater):
     with tempfile.NamedTemporaryFile() as source_file:
         source.uri = f"file://{source_file.name}"
         source.update_interval = 3600
+        source.pattern = ".*"
 
         # If a source is disabled, we'll skip until it's re-enabled
         update_time, update_state = task_source_update("enabled", False)
