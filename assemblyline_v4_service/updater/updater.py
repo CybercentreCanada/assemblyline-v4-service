@@ -18,6 +18,7 @@ from zipfile import ZipFile
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
 from assemblyline.odm.models.service import Service, UpdateSource
@@ -188,7 +189,8 @@ class ServiceUpdater(ThreadedCoreBase):
 
     def stop(self):
         # Check all on-going source updates that are updating and declare them as failed since the updater is shutting down before they can complete
-        for source in [s.name for s in self._service.update_config.sources]:
+        for s in self._service.update_config.sources:
+            source = s.name
             current_source_state = self.update_data_hash.get(f"{source}.{SOURCE_STATUS_KEY}") or {}
             if current_source_state.get("state") == "UPDATING":
                 # Declare the update has failed and will retry again on next boot
@@ -369,7 +371,6 @@ class ServiceUpdater(ThreadedCoreBase):
         with tempfile.TemporaryDirectory() as update_dir:
             # Parse updater configuration
             sources: dict[str, UpdateSource] = {_s['name']: _s for _s in service.update_config.sources}
-            files_sha256: dict[str, dict[str, str]] = {}
 
             # Map already visited URIs to download paths (avoid re-cloning/re-downloads)
             seen_fetches = dict()
@@ -384,6 +385,7 @@ class ServiceUpdater(ThreadedCoreBase):
                     continue
 
                 previous_hashes: dict[str, str] = self.get_source_extra(source_name)
+                files_sha256: dict[str, dict[str, str]] = {}
 
                 while update_attempt < SOURCE_UPDATE_ATTEMPT_MAX_RETRY:
                     # Introduce an exponential delay between each attempt
@@ -405,14 +407,6 @@ class ServiceUpdater(ThreadedCoreBase):
                         # If source is not currently enabled/active, skip..
                         if not source_obj.enabled:
                             raise SkipSource
-
-                        # Is it time for this source to run?
-                        elapsed_time = time.time() - old_update_time
-                        update_interval = source.get('update_interval') or service.update_config.update_interval_seconds
-                        if elapsed_time < update_interval:
-                            # Too early to run the update for this particular source, skip for now
-                            raise SkipSource
-
 
                         self.push_status(source_name, "UPDATING", "Starting..")
                         fetch_method = source.get('fetch_method', 'GET')
@@ -446,6 +440,11 @@ class ServiceUpdater(ThreadedCoreBase):
                                 output = uri.split("file://", 1)[1]
                                 if not os.path.exists(output):
                                     raise FileNotFoundError(f"{output} doesn't exist within container.")
+                                elif not source_obj.ignore_cache and \
+                                    get_sha256_for_file(output) == previous_hashes.get(output, None):
+                                    # If the file exists and hasn't changed since last update, skip
+                                    raise SkipSource
+
                             elif fetch_method == "GIT" or uri.endswith('.git'):
                                 # First we'll attempt by performing a Git clone
                                 # (since not all services hint at being a repository in their URL),
@@ -461,6 +460,7 @@ class ServiceUpdater(ThreadedCoreBase):
                         # Add to collection of sources for caching purposes
                         self.log.info(f"Found new {self.updater_type} rule files to process for {source_name}!")
                         validated_files = list()
+
                         for file, sha256 in files:
                             if previous_hashes.get(file, None) != sha256 and self.is_valid(file):
                                 files_sha256[file] = sha256
@@ -549,6 +549,12 @@ class ServiceUpdater(ThreadedCoreBase):
                 if not self.update_queue.qsize():
                     # Queue all sources to update
                     for source in self._service.update_config.sources:
+                        # Is it time for this source to run?
+                        elapsed_time = time.time() - self.get_source_update_time(source.name)
+                        update_interval = source.get('update_interval') or service.update_config.update_interval_seconds
+                        if elapsed_time < update_interval:
+                            # Too early to run the update for this particular source, skip for now
+                            continue
                         self.update_queue.put(source.name)
                 self.do_source_update(service=service)
                 self.set_scheduled_update_time(update_time=time.time())
