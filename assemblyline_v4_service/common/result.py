@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 from enum import Enum
+from urllib.parse import urlparse
 from typing import TYPE_CHECKING, Any, Dict, List, Literal, Optional, TextIO, Union
 
 from assemblyline.common import log as al_log
@@ -285,12 +286,20 @@ class MemorydumpSectionBody(SectionBody):
 
 
 class URLSectionBody(SectionBody):
+    _ALLOWED_SCHEMES = {'http', 'https'}
+
     def __init__(self) -> None:
         super().__init__(BODY_FORMAT.URL, body=[])
 
     def add_url(self, url: str, name: Optional[str] = None) -> None:
         if not url:
             raise ValueError("A valid URL is required. An empty URL was passed.")
+
+        parsed = urlparse(url)
+        is_relative = url.startswith('/')
+        is_absolute = parsed.scheme.lower() in self._ALLOWED_SCHEMES and bool(parsed.netloc)
+        if not is_relative and not is_absolute:
+            raise ValueError(f"A valid URL is required. '{url}' is not a valid URL.")
 
         url_data = {'url': url}
         if name:
@@ -429,6 +438,7 @@ RequestMethod = Literal[
 ConnectionType = Literal["http", "dns", "tls", "smtp"]
 ConnectionDirection = Literal["outbound", "inbound", "unknown"]
 SignatureType = Literal["CUCKOO", "YARA", "SIGMA", "SURICATA"]
+
 
 class SandboxMachineMetadata:
     """Information about the sandbox machine used during analysis."""
@@ -588,8 +598,6 @@ class SandboxProcessItem:
             "file_count": self.file_count,
             "registry_count": self.registry_count,
         }
-
-
 
 
 class SandboxNetworkDNS:
@@ -872,8 +880,6 @@ class SandboxSignatureItem:
             "pid": self.pid,
             "score": self.score,
         }
-
-
 
 
 class SandboxSectionBody(SectionBody):

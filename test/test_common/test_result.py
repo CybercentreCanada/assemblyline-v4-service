@@ -322,15 +322,29 @@ def test_urlsectionbody_add_url():
     with pytest.raises(ValueError):
         usb.add_url("")
 
-    # No name
-    assert usb.add_url("blah") is None
-    assert usb._data == [{"url": "blah"}]
+    # Invalid url (not a URL)
+    with pytest.raises(ValueError):
+        usb.add_url("blah")
+
+    # Invalid url (dangerous scheme)
+    with pytest.raises(ValueError):
+        usb.add_url("javascript:alert(1)")
+
+    # No name (absolute URL)
+    assert usb.add_url("https://example.com") is None
+    assert usb._data == [{"url": "https://example.com"}]
 
     usb._data.clear()
 
-    # Name
-    assert usb.add_url("blah", "blah") is None
-    assert usb._data == [{"url": "blah", "name": "blah"}]
+    # Name (absolute URL)
+    assert usb.add_url("https://example.com", "example") is None
+    assert usb._data == [{"url": "https://example.com", "name": "example"}]
+
+    usb._data.clear()
+
+    # Relative URL (starts with /)
+    assert usb.add_url("/file/viewer/abc123") is None
+    assert usb._data == [{"url": "/file/viewer/abc123"}]
 
 
 def test_graphsectionbody_init():
@@ -667,12 +681,12 @@ def test_imagesectionbody_add_image(service_request):
             'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
             'description': 'description of image (thumbnail)'}}]
 
-
     # Ensure that the image files added are marked as `is_image_section`
     image_hashes = [img['sha256'] for img in isb._data[0].values()]
     for file in service_request.task.supplementary:
         if file['sha256'] in image_hashes:
-            assert(file['is_section_image'])
+            assert file['is_section_image']
+
 
 def test_multisectionbody_init():
     msb = MultiSectionBody()
@@ -1128,8 +1142,8 @@ def test_resulturlsection_add_url():
     rux = ResultURLSection("title_text_as_str")
 
     # Name
-    assert rux.add_url("blah", "blah") is None
-    assert rux.section_body._data == [{"url": "blah", "name": "blah"}]
+    assert rux.add_url("https://example.com", "example") is None
+    assert rux.section_body._data == [{"url": "https://example.com", "name": "example"}]
 
 
 def test_resultkeyvaluesection_init():
@@ -1359,7 +1373,7 @@ def test_resultimagesection_add_image(service_request):
     image_hashes = [img['sha256'] for img in ris.section_body._data[0].values()]
     for file in service_request.task.supplementary:
         if file['is_section_image']:
-            assert(file['sha256'] in image_hashes)
+            assert file['sha256'] in image_hashes
 
 
 def test_resulttimelinesection_init():
