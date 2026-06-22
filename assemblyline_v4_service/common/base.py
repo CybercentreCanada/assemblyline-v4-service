@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import shutil
-import tarfile
 import tempfile
 import time
 import warnings
@@ -13,6 +12,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import requests
+from assemblyline.common.safe_archive import safe_extract_tar
 from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -306,8 +306,7 @@ class ServiceBase:
                 for chunk in resp.iter_content(chunk_size=1024):
                     buffer.write(chunk)
 
-            tar_handle = tarfile.open(buffer_name)
-            tar_handle.extractall(temp_directory)
+            safe_extract_tar(buffer_name, temp_directory)
             self.update_time = status['local_update_time']
             self.update_hash = status['local_update_hash']
             self.rules_directory, temp_directory = temp_directory, self.rules_directory
