@@ -15,6 +15,7 @@ import requests
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
 from assemblyline.common.isotime import iso_to_epoch
+from assemblyline.common.path import strip_path_inclusion
 from azure.identity import DefaultAzureCredential
 from git import Repo
 
@@ -236,7 +237,7 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
         add_cacert(ca_cert)
         git_env['GIT_SSL_CAINFO'] = certifi.where()
 
-    clone_dir = os.path.join(output_dir, name)
+    clone_dir = os.path.join(output_dir, strip_path_inclusion(name, output_dir))
     if os.path.exists(clone_dir):
         shutil.rmtree(clone_dir)
 
