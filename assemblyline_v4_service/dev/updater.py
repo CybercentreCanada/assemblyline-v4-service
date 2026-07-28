@@ -94,17 +94,17 @@ def load_rules(service: ServiceBase):
                 self.local_update_flag = threading.Event()
                 self.local_update_start = threading.Event()
 
-            def set_source_update_time(self, update_time: float): ...
+            def set_source_update_time(self, source: str, update_time: float): ...
 
-            def set_source_extra(self, extra_data): ...
+            def set_source_extra(self, source: str, extra_data): ...
 
             def set_active_config_hash(self, config_hash: int): ...
 
             # Keep a record of the source status as a dictionary
-            def push_status(self, state: str, message: str):
+            def push_status(self, source: str, state: str, message: str):
                 # Push current state of updater with source
-                self.log.debug(f"Pushing state for {self._current_source}: [{state}] {message}")
-                self.update_data_hash[f'{self._current_source}.{SOURCE_STATUS_KEY}'] = \
+                self.log.debug(f"Pushing state for {source}: [{state}] {message}")
+                self.update_data_hash[f'{source}.{SOURCE_STATUS_KEY}'] = \
                     dict(state=state, message=message, ts=now_as_iso())
 
             def do_source_update(self):
