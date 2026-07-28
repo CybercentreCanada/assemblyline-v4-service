@@ -57,12 +57,13 @@ class Task:
         self._service_completed: Optional[str] = None
         self._service_started: Optional[str] = None
         self._working_directory: Optional[str] = None
+        self._task_dir: str = os.environ.get("TASKING_DIR", tempfile.gettempdir())
         self.deep_scan = task.deep_scan
         self.depth = task.depth
         self.drop_file: bool = False
         self.error_message: Optional[str] = None
         self.error_status: Optional[str] = None
-        self.error_type: str = 'EXCEPTION'
+        self.error_type: str = "EXCEPTION"
         self.extracted: List[Dict[str, str]] = []
         self.file_name = task.filename
         self.fileinfo = task.fileinfo
@@ -83,24 +84,30 @@ class Task:
         self.sid: str = task.sid
         self.supplementary: List[Dict[str, str]] = []
         self.tags = tags
-        self.temp_submission_data: Dict[str, Any] = {
-            row.name: row.value for row in task.temporary_submission_data
-        }
+        self.temp_submission_data: Dict[str, Any] = {row.name: row.value for row in task.temporary_submission_data}
 
-    def _add_file(self, path: str, name: str, description: str,
-                  classification: Optional[str] = None,
-                  is_section_image: bool = False,
-                  is_supplementary: bool = False,
-                  allow_dynamic_recursion: bool = False,
-                  parent_relation: str = PARENT_RELATION.EXTRACTED) -> Optional[Dict[str, str]]:
+    def _add_file(
+        self,
+        path: str,
+        name: str,
+        description: str,
+        classification: Optional[str] = None,
+        is_section_image: bool = False,
+        is_supplementary: bool = False,
+        allow_dynamic_recursion: bool = False,
+        parent_relation: str = PARENT_RELATION.EXTRACTED,
+    ) -> Optional[Dict[str, str]]:
         # Reject empty files
         if os.path.getsize(path) == 0:
-            self.log.info(f"Adding empty extracted or supplementary files is not allowed. "
-                          f"Empty file ({name}) was ignored.")
+            self.log.info(
+                f"Adding empty extracted or supplementary files is not allowed. " f"Empty file ({name}) was ignored."
+            )
             return
         elif os.path.getsize(path) > MAX_INT:
-            self.log.error(f"Adding file of size {os.path.getsize(path)} is impossible due to ElasticSearch "
-                           f"limitations. File ({name}) was ignored.")
+            self.log.error(
+                f"Adding file of size {os.path.getsize(path)} is impossible due to ElasticSearch "
+                f"limitations. File ({name}) was ignored."
+            )
             return
 
         if parent_relation not in PARENT_RELATION.keys():
@@ -124,15 +131,21 @@ class Task:
             is_section_image=is_section_image,
             is_supplementary=is_supplementary,
             allow_dynamic_recursion=allow_dynamic_recursion,
-            parent_relation=parent_relation
+            parent_relation=parent_relation,
         )
 
         return file
 
-    def add_extracted(self, path: str, name: str, description: str,
-                      classification: Optional[Classification] = None,
-                      safelist_interface: Optional[ServiceAPI] = None,
-                      allow_dynamic_recursion: bool = False, parent_relation: str = PARENT_RELATION.EXTRACTED) -> bool:
+    def add_extracted(
+        self,
+        path: str,
+        name: str,
+        description: str,
+        classification: Optional[Classification] = None,
+        safelist_interface: Optional[ServiceAPI] = None,
+        allow_dynamic_recursion: bool = False,
+        parent_relation: str = PARENT_RELATION.EXTRACTED,
+    ) -> bool:
 
         # Service-based safelisting of files has to be configured at the global configuration
         # Allows the administrator to be selective about the types of hashes to lookup in the safelist
@@ -142,9 +155,9 @@ class Task:
             for hash_type in self.safelist_config.hash_types:
                 qhash = digests[hash_type]
                 resp = safelist_interface.lookup_safelist(qhash)
-                self.log.debug(f'Checking system safelist for {hash_type}: {qhash}')
-                if resp and resp['enabled'] and resp['type'] == 'file':
-                    self.log.info(f'Dropping safelisted, extracted file.. ({hash_type}: {qhash})')
+                self.log.debug(f"Checking system safelist for {hash_type}: {qhash}")
+                if resp and resp["enabled"] and resp["type"] == "file":
+                    self.log.info(f"Dropping safelisted, extracted file.. ({hash_type}: {qhash})")
                     return False
 
         if self.max_extracted and len(self.extracted) >= int(self.max_extracted):
@@ -159,9 +172,14 @@ class Task:
         if not description:
             raise ValueError("Description cannot be empty")
 
-        file = self._add_file(path, name, description, classification,
-                              allow_dynamic_recursion=allow_dynamic_recursion,
-                              parent_relation=parent_relation)
+        file = self._add_file(
+            path,
+            name,
+            description,
+            classification,
+            allow_dynamic_recursion=allow_dynamic_recursion,
+            parent_relation=parent_relation,
+        )
 
         if not file:
             return False
@@ -170,10 +188,13 @@ class Task:
         return True
 
     def add_supplementary(
-        self, path: str, name: str, description: str,
+        self,
+        path: str,
+        name: str,
+        description: str,
         classification: Optional[Classification] = None,
         is_section_image: bool = False,
-        parent_relation: str = PARENT_RELATION.INFORMATION
+        parent_relation: str = PARENT_RELATION.INFORMATION,
     ) -> Optional[dict]:
         if not path:
             raise ValueError("Path cannot be empty")
@@ -184,8 +205,15 @@ class Task:
         if not description:
             raise ValueError("Description cannot be empty")
 
-        file = self._add_file(path, name, description, classification, is_section_image,
-                              is_supplementary=True, parent_relation=parent_relation)
+        file = self._add_file(
+            path,
+            name,
+            description,
+            classification,
+            is_section_image,
+            is_supplementary=True,
+            parent_relation=parent_relation,
+        )
 
         if not file:
             return None
@@ -208,9 +236,9 @@ class Task:
             return param
         else:
             # Check service manifest commited to disk and use param's default, if it exists.
-            for s_param in get_service_manifest().get('config', {}).get('submission_params', []):
-                if s_param.get('name') == name:
-                    return s_param['default']
+            for s_param in get_service_manifest().get("config", {}).get("submission_params", []):
+                if s_param.get("name") == name:
+                    return s_param["default"]
             raise Exception(f"Service submission parameter not found: {name}")
 
     def get_service_error(self) -> Dict[str, Any]:
@@ -230,19 +258,20 @@ class Task:
 
     def get_service_result(self) -> Dict[str, Any]:
         # Default result classification
-        classification = self._classification.max_classification(self.min_classification,
-                                                                 self.service_default_result_classification)
+        classification = self._classification.max_classification(
+            self.min_classification, self.service_default_result_classification
+        )
 
         # Finalise results
         result_obj = self.result.finalize()
 
         # Loop through results to aggregate classification
-        for section in result_obj['sections']:
-            classification = self._classification.max_classification(classification, section['classification'])
+        for section in result_obj["sections"]:
+            classification = self._classification.max_classification(classification, section["classification"])
 
         # Loop through extracted files to aggregate classification
         for ext_file in self.extracted:
-            classification = self._classification.max_classification(classification, ext_file['classification'])
+            classification = self._classification.max_classification(classification, ext_file["classification"])
 
         result = dict(
             classification=classification,
@@ -277,32 +306,32 @@ class Task:
         self.error_message = stack_info
 
         if recoverable:
-            self.error_status = 'FAIL_RECOVERABLE'
+            self.error_status = "FAIL_RECOVERABLE"
         else:
-            self.error_status = 'FAIL_NONRECOVERABLE'
+            self.error_status = "FAIL_NONRECOVERABLE"
 
         error = self.get_service_error()
-        error_path = os.path.join(
-            os.environ.get('TASKING_DIR', tempfile.gettempdir()),
-            f'{self.sid}_{self.sha256}_error.json')
-        with open(error_path, 'w') as f:
+        error_path = os.path.join(self._task_dir, f"{self.sid}_{self.sha256}_error.json")
+        with open(error_path, "w") as f:
             json.dump(error, f, default=str)
         self.log.info(f"[{self.sid}] Saving error to: {error_path}")
 
     def save_result(self) -> None:
         result = self.get_service_result()
-        result_path = os.path.join(
-            os.environ.get('TASKING_DIR', tempfile.gettempdir()),
-            f'{self.sid}_{self.sha256}_result.json')
-        with open(result_path, 'w') as f:
+        result_path = os.path.join(self._task_dir, f"{self.sid}_{self.sha256}_result.json")
+        with open(result_path, "w") as f:
             json.dump(result, f, default=str)
         self.log.info(f"[{self.sid}] Saving result to: {result_path}")
 
     def set_service_context(self, context: str) -> None:
         self.service_context = context
 
-    def start(self, service_default_result_classification: str,
-              service_version: str, service_tool_version: Optional[str] = None) -> None:
+    def start(
+        self,
+        service_default_result_classification: str,
+        service_version: str,
+        service_tool_version: Optional[str] = None,
+    ) -> None:
         self.service_version = service_version
         self.service_tool_version = service_tool_version
         self.service_default_result_classification = service_default_result_classification
@@ -317,25 +346,32 @@ class Task:
         self.save_result()
 
     def validate_file(self) -> str:
-        file_path = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), self.sha256)
+        file_path = os.path.join(self._task_dir, self.sha256)
         if not os.path.exists(file_path):
             raise Exception("File download failed. File not found on local filesystem.")
 
         received_sha256 = get_sha256_for_file(file_path)
         if received_sha256 != self.sha256:
-            raise Exception(f"SHA256 mismatch between requested and "
-                            f"downloaded file. {self.sha256} != {received_sha256}")
+            raise Exception(
+                f"SHA256 mismatch between requested and " f"downloaded file. {self.sha256} != {received_sha256}"
+            )
 
         return file_path
 
     @property
     def working_directory(self) -> str:
-        temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
-        if not os.path.isdir(temp_dir):
-            os.makedirs(temp_dir)
         if self._working_directory is None:
-            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+            self._working_directory = os.path.join(self._task_dir, "working_directory")
+
+        if not os.path.isdir(self._working_directory):
+            os.makedirs(self._working_directory)
+
         return self._working_directory
+
+    def update_task_dir(self, task_dir):
+        if task_dir is not None:
+            self._task_dir = task_dir
+            self._working_directory = os.path.join(self._task_dir, "working_directory")
 
     @property
     def file_type(self) -> str:

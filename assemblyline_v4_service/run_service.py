@@ -23,9 +23,13 @@ class RunService(ServerBase):
 
         self.classification_yml = '/etc/assemblyline/classification.yml'
         self.service_manifest = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
-        self.runtime_service_manifest = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_manifest.yml"
-        self.task_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_task.fifo"
-        self.done_fifo_path = f"/tmp/{os.environ.get('RUNTIME_PREFIX', 'service')}_done.fifo"
+
+        temp_dir = tempfile.gettempdir()
+        runtime_prefix = os.environ.get("RUNTIME_PREFIX", "service")
+
+        self.runtime_service_manifest = os.path.join(temp_dir, f"{runtime_prefix}_manifest.yml")
+        self.task_fifo_path = os.path.join(temp_dir, f"{runtime_prefix}_task.fifo")
+        self.done_fifo_path = os.path.join(temp_dir, f"{runtime_prefix}_done.fifo")
 
         self.status = None
 
@@ -36,7 +40,6 @@ class RunService(ServerBase):
         self.service_file_required = None
         self.task_fifo = None
         self.done_fifo = None
-        self.tasking_dir = os.environ.get('TASKING_DIR', tempfile.gettempdir())
 
     def try_run(self):
         try:
@@ -81,19 +84,24 @@ class RunService(ServerBase):
                     self.log.info('Task fifo is closed. Cleaning up...')
                     return
 
-                task_json_path = self.task_fifo.readline().strip()
-                if not task_json_path:
-                    self.log.info('Received an empty message for Task fifo. Cleaning up...')
+                # service handler sends a tasking dir with the path to task json
+                # [task_dir, task_json_path]
+                task_info = self.task_fifo.readline().strip()
+                if not task_info:
+                    self.log.info("Received an empty message for Task fifo. Cleaning up...")
                     return
 
+                [task_dir, task_json_path] = json.loads(task_info)
+
                 self.log.info(f"Task found in: {task_json_path}")
+                self.log.info(f"Task dir in: {task_dir}")
                 with open(task_json_path, 'r') as f:
                     task = ServiceTask(json.load(f))
-                self.service.handle_task(task)
+                self.service.handle_task(task, task_dir)
 
                 # Notify task handler that processing is done
-                result_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
-                error_json = os.path.join(self.tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
+                result_json = os.path.join(task_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
+                error_json = os.path.join(task_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
                 if os.path.exists(result_json):
                     msg = f"{json.dumps([result_json, SUCCESS])}\n"
                 elif os.path.exists(error_json):

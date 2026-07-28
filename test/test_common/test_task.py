@@ -2,6 +2,7 @@ import json
 import os
 import tempfile
 from logging import Logger
+from pathlib import Path
 
 import pytest
 from assemblyline_v4_service.common import helper
@@ -159,7 +160,7 @@ def test_task_add_file(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
-        'is_supplementary': False,
+        "is_supplementary": False,
         "allow_dynamic_recursion": False,
         "parent_relation": "EXTRACTED",
     }
@@ -174,7 +175,7 @@ def test_task_add_file(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
-        'is_supplementary': False,
+        "is_supplementary": False,
         "allow_dynamic_recursion": True,
         "parent_relation": "DYNAMIC",
     }
@@ -226,7 +227,7 @@ def test_task_add_extracted(servicetask, mocker):
             "classification": "TLP:C",
             "path": path,
             "is_section_image": False,
-            'is_supplementary': False,
+            "is_supplementary": False,
             "allow_dynamic_recursion": False,
             "parent_relation": "EXTRACTED",
         }
@@ -262,7 +263,7 @@ def test_task_add_supplementary(servicetask):
         "classification": "TLP:C",
         "path": path,
         "is_section_image": False,
-        'is_supplementary': True,
+        "is_supplementary": True,
         "allow_dynamic_recursion": False,
         "parent_relation": "INFORMATION",
     }
@@ -274,7 +275,7 @@ def test_task_add_supplementary(servicetask):
             "classification": "TLP:C",
             "path": path,
             "is_section_image": False,
-            'is_supplementary': True,
+            "is_supplementary": True,
             "allow_dynamic_recursion": False,
             "parent_relation": "INFORMATION",
         }
@@ -577,3 +578,29 @@ def test_task_working_directory(servicetask):
     # Subsequent call after _working_directory is set. values stay the same
     new_twd = t.working_directory
     assert new_twd == twd
+
+
+def test_update_task_dir(servicetask):
+    t = Task(servicetask)
+    temp_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
+
+    t.update_task_dir(temp_dir)
+
+    # all the task related files should be saved to this new directory
+    base_path = Path(temp_dir)
+    working_dir_path = Path(t.working_directory)
+
+    # working directory should be inside the task dir
+    assert working_dir_path == Path(os.path.join(base_path, "working_directory"))
+    assert working_dir_path.parent == base_path
+
+    # result json file should be inside the task dir
+    t.result = Result()
+    t.success()
+    result_path = os.path.join(base_path, f"{t.sid}_{t.sha256}_result.json")
+    assert os.path.exists(result_path) is True
+
+    # save error file should be inside the task dir
+    t.save_error("stack_info", True)
+    error_path = os.path.join(base_path, f"{t.sid}_{t.sha256}_error.json")
+    assert os.path.exists(error_path) is True
