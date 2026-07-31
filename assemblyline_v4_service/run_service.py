@@ -24,6 +24,9 @@ class RunService(ServerBase):
         self.classification_yml = '/etc/assemblyline/classification.yml'
         self.service_manifest = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
 
+        # TODO: remove this line when we switched to only using the rust service base.
+        self.default_tasking_dir = self.tasking_dir = os.environ.get("TASKING_DIR", tempfile.gettempdir())
+
         temp_dir = tempfile.gettempdir()
         runtime_prefix = os.environ.get("RUNTIME_PREFIX", "service")
 
@@ -41,6 +44,26 @@ class RunService(ServerBase):
         self.task_fifo = None
         self.done_fifo = None
 
+    def _parse_task_message(self, task_message):
+        # TODO: remove this try except when we switched to only using the rust service base.
+        # [task_dir, task_json_path] => message from rust service base
+        # task_json_path => message from python service base
+        task_dir = None
+        task_json_path = None
+        try:
+            task_arr = json.loads(task_message)
+            task_dir = task_arr[0]
+            task_json_path = task_arr[1]
+        except Exception:
+            task_dir = None
+            task_json_path = task_message
+
+        # try to load service task from file
+        self.log.info(f"Task found in: {task_json_path}")
+        self.log.info(f"Task dir in: {task_dir}")
+
+        return task_json_path, task_dir
+
     def try_run(self):
         try:
             self.service_class = load_module_by_path(SERVICE_PATH)
@@ -50,8 +73,9 @@ class RunService(ServerBase):
 
         if not os.path.exists(self.runtime_service_manifest):
             # In case service tag have not been overwritten we will do it here (This is mainly use during debugging)
-            service_tag = os.environ.get("SERVICE_TAG",
-                                         f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0").encode("utf-8")
+            service_tag = os.environ.get(
+                "SERVICE_TAG", f"{FRAMEWORK_VERSION}.{SYSTEM_VERSION}.{BUILD_MINOR}.dev0"
+            ).encode("utf-8")
 
             with open(self.service_manifest, "rb") as srv_manifest:
                 with open(self.runtime_service_manifest, "wb") as runtime_manifest:
@@ -59,13 +83,13 @@ class RunService(ServerBase):
                         runtime_manifest.write(line.replace(b"$SERVICE_TAG", service_tag))
 
         # Start task receiving fifo
-        self.log.info('Waiting for receive task named pipe to be ready...')
+        self.log.info("Waiting for receive task named pipe to be ready...")
         if not os.path.exists(self.task_fifo_path):
             os.mkfifo(self.task_fifo_path)
         self.task_fifo = open(self.task_fifo_path, "r")
 
         # Start task completing fifo
-        self.log.info('Waiting for complete task named pipe to be ready...')
+        self.log.info("Waiting for complete task named pipe to be ready...")
         if not os.path.exists(self.done_fifo_path):
             os.mkfifo(self.done_fifo_path)
         self.done_fifo = open(self.done_fifo_path, "w")
@@ -81,27 +105,31 @@ class RunService(ServerBase):
                     if not read_ready:
                         continue
                 except ValueError:
-                    self.log.info('Task fifo is closed. Cleaning up...')
+                    self.log.info("Task fifo is closed. Cleaning up...")
                     return
 
-                # service handler sends a tasking dir with the path to task json
-                # [task_dir, task_json_path]
                 task_info = self.task_fifo.readline().strip()
+
                 if not task_info:
                     self.log.info("Received an empty message for Task fifo. Cleaning up...")
                     return
 
-                [task_dir, task_json_path] = json.loads(task_info)
+                task_json_path, task_dir = self._parse_task_message(task_info)
+                try:
+                    with open(task_json_path, "r") as f:
+                        task = ServiceTask(json.load(f))
+                except Exception:
+                    self.log.error(f"Cannot load task at {task_json_path}")
+                    continue
 
-                self.log.info(f"Task found in: {task_json_path}")
-                self.log.info(f"Task dir in: {task_dir}")
-                with open(task_json_path, 'r') as f:
-                    task = ServiceTask(json.load(f))
                 self.service.handle_task(task, task_dir)
 
+                # TODO: remove this line and use only task_dir when we switched to only using the rust service base.
+                tasking_dir = self.default_tasking_dir if task_dir is None else task_dir
+
                 # Notify task handler that processing is done
-                result_json = os.path.join(task_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
-                error_json = os.path.join(task_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
+                result_json = os.path.join(tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_result.json")
+                error_json = os.path.join(tasking_dir, f"{task.sid}_{task.fileinfo.sha256}_error.json")
                 if os.path.exists(result_json):
                     msg = f"{json.dumps([result_json, SUCCESS])}\n"
                 elif os.path.exists(error_json):
