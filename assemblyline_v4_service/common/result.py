@@ -567,6 +567,9 @@ class SandboxProcessItem:
 
         # The number of registry modification events associated with this process.
         registry_count: Optional[int] = 0,
+
+        #Associated memory dumps with the process
+        dumps: Optional[List[str]] = [],
     ):
         self.image = image or "<unknown_image>"
         self.start_time = start_time
@@ -581,6 +584,7 @@ class SandboxProcessItem:
         self.safelisted = safelisted
         self.file_count = file_count
         self.registry_count = registry_count
+        self.dumps = dumps
 
     def as_primitives(self) -> Dict[str, Any]:
         return {
@@ -597,6 +601,7 @@ class SandboxProcessItem:
             "safelisted": self.safelisted,
             "file_count": self.file_count,
             "registry_count": self.registry_count,
+            "dumps": self.dumps
         }
 
 
