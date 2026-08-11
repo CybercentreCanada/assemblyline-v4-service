@@ -5,7 +5,6 @@ import json
 import logging
 import os
 import shutil
-import tarfile
 import tempfile
 import time
 import warnings
@@ -13,6 +12,7 @@ from pathlib import Path
 from typing import Dict, Optional
 
 import requests
+from assemblyline.common.safe_archive import safe_extract_tar
 from assemblyline.common import exceptions, log, version
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.odm.messages.task import Task as ServiceTask
@@ -47,6 +47,7 @@ class ServiceBase:
     def __init__(self, config: Optional[Dict] = None) -> None:
         # Load the service attributes from the service manifest
         self.service_attributes = helper.get_service_attributes()
+        self.tasking_dir = None
 
         # Start with default service parameters and override with anything provided
         self.config = self.service_attributes.config
@@ -166,9 +167,13 @@ class ServiceBase:
     def get_tool_version(self) -> Optional[str]:
         return self.rules_hash
 
-    def handle_task(self, task: ServiceTask) -> None:
+    def handle_task(self, task: ServiceTask, task_dir: Optional[str] = None) -> None:
         try:
             self._task = Task(task)
+
+            if task_dir:
+                self._task.update_task_dir(task_dir)
+
             self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
@@ -235,17 +240,16 @@ class ServiceBase:
 
     @property
     def working_directory(self):
+        if self._task:
+            # Use the working directory provided by the task
+            self._working_directory = self._task.working_directory
         # If no working directory is assigned
-        if not self._working_directory:
-            if self._task:
-                # Then use the working directory provided by the task
-                self._working_directory = self._task.working_directory
-            else:
-                # Or create a new working directory
-                temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
-                if not os.path.isdir(temp_dir):
-                    os.makedirs(temp_dir)
-                self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+        elif not self._working_directory:
+            # Or create a new working directory
+            temp_dir = os.path.join(os.environ.get("TASKING_DIR", tempfile.gettempdir()), "working_directory")
+            if not os.path.isdir(temp_dir):
+                os.makedirs(temp_dir)
+            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
 
         return self._working_directory
 
@@ -306,8 +310,7 @@ class ServiceBase:
                 for chunk in resp.iter_content(chunk_size=1024):
                     buffer.write(chunk)
 
-            tar_handle = tarfile.open(buffer_name)
-            tar_handle.extractall(temp_directory)
+            safe_extract_tar(buffer_name, temp_directory)
             self.update_time = status['local_update_time']
             self.update_hash = status['local_update_hash']
             self.rules_directory, temp_directory = temp_directory, self.rules_directory

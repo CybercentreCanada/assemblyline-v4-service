@@ -16,6 +16,7 @@ from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
 from assemblyline.common.isotime import iso_to_epoch
 from assemblyline.common.path import strip_path_inclusion
+from assemblyline.common.safe_archive import safe_extract_tar, safe_extract_zip
 from azure.identity import DefaultAzureCredential
 from git import Repo
 
@@ -69,11 +70,16 @@ def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[s
         for subdir in subdirs:
             dirpath = f'{os.path.join(path_in_dir, subdir)}/'
             if re.match(pattern, dirpath):
-                f_files.append((dirpath, get_sha256_for_file(make_archive(subdir, 'tar', root_dir=dirpath))))
+                # Create a temporary archive of the subdirectory and calculate its SHA256 hash
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    archive_path = make_archive(os.path.join(temp_dir, 'archive'), 'tar', root_dir=dirpath)
+                    f_files.append((dirpath, get_sha256_for_file(archive_path)))
 
     if re.match(pattern, f"{output_path}/"):
-        f_files.append((f"{output_path}/", get_sha256_for_file(make_archive(
-            os.path.basename(output_path), 'tar', root_dir=output_path))))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a temporary archive of the entire output_path directory and calculate its SHA256 hash
+            archive_path = make_archive(os.path.join(temp_dir, 'archive'), 'tar', root_dir=output_path)
+            f_files.append((f"{output_path}/", get_sha256_for_file(archive_path)))
 
     return f_files
 
@@ -164,9 +170,12 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
                 extract_dir = os.path.join(output_dir, name)
                 format = ident_type.split('archive/')[-1]
 
-                # Make sure identified format is supported by the library
-                format = {"zip": "zip", "tar": "tar", "gzip": "gztar"}.get(format)
-                shutil.unpack_archive(file_path, extract_dir=extract_dir, format=format)
+                if format == "zip":
+                    safe_extract_zip(file_path, extract_dir)
+                elif format in ("tar", "gzip"):
+                    safe_extract_tar(file_path, extract_dir)
+                else:
+                    raise ValueError(f"Unsupported archive type: {ident_type}")
 
                 return extract_dir
             else:
