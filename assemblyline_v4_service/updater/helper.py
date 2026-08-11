@@ -15,6 +15,7 @@ import requests
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
 from assemblyline.common.isotime import iso_to_epoch
+from assemblyline.common.safe_archive import safe_extract_tar, safe_extract_zip
 from azure.identity import DefaultAzureCredential
 from git import Repo
 
@@ -168,9 +169,12 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
                 extract_dir = os.path.join(output_dir, name)
                 format = ident_type.split('archive/')[-1]
 
-                # Make sure identified format is supported by the library
-                format = {"zip": "zip", "tar": "tar", "gzip": "gztar"}.get(format)
-                shutil.unpack_archive(file_path, extract_dir=extract_dir, format=format)
+                if format == "zip":
+                    safe_extract_zip(file_path, extract_dir)
+                elif format in ("tar", "gzip"):
+                    safe_extract_tar(file_path, extract_dir)
+                else:
+                    raise ValueError(f"Unsupported archive type: {ident_type}")
 
                 return extract_dir
             else:
