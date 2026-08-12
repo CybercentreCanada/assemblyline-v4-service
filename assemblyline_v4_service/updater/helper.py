@@ -69,11 +69,16 @@ def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[s
         for subdir in subdirs:
             dirpath = f'{os.path.join(path_in_dir, subdir)}/'
             if re.match(pattern, dirpath):
-                f_files.append((dirpath, get_sha256_for_file(make_archive(subdir, 'tar', root_dir=dirpath))))
+                # Create a temporary archive of the subdirectory and calculate its SHA256 hash
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    archive_path = make_archive(os.path.join(temp_dir, 'archive'), 'tar', root_dir=dirpath)
+                    f_files.append((dirpath, get_sha256_for_file(archive_path)))
 
     if re.match(pattern, f"{output_path}/"):
-        f_files.append((f"{output_path}/", get_sha256_for_file(make_archive(
-            os.path.basename(output_path), 'tar', root_dir=output_path))))
+        with tempfile.TemporaryDirectory() as temp_dir:
+            # Create a temporary archive of the entire output_path directory and calculate its SHA256 hash
+            archive_path = make_archive(os.path.join(temp_dir, 'archive'), 'tar', root_dir=output_path)
+            f_files.append((f"{output_path}/", get_sha256_for_file(archive_path)))
 
     return f_files
 
