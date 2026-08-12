@@ -49,7 +49,7 @@ def dummy_tar_class():
         def extract(self, output, path=None):
             pass
 
-        def extractall(elf, path=".", members=None, *, numeric_owner=False):
+        def extractall(elf, path=".", members=None, *, numeric_owner=False, filter=None):
             pass
 
         def getmembers(self):
@@ -94,7 +94,7 @@ def test_servicebase_init():
     assert isinstance(sb.log, Logger)
     assert sb._task is None
     assert sb._working_directory is None
-    assert sb._api_interface == None
+    assert sb._api_interface is None
     assert sb.dependencies == {}
     assert isinstance(sb.ontology, OntologyHelper)
     assert sb.rules_directory is None
