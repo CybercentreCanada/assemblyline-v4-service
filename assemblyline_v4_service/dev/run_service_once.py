@@ -16,10 +16,11 @@ from assemblyline.common.uid import get_random_id
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.result import Result
 from assemblyline.odm.models.service import Service
+from cart import get_metadata_only, unpack_stream
+
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_manifest
 from assemblyline_v4_service.dev.updater import load_rules
-from cart import get_metadata_only, unpack_stream
 
 
 class RunService:
@@ -138,6 +139,7 @@ class RunService:
                 result.pop('temp_submission_data', None)
                 for file in result['response']['extracted'] + result['response']['supplementary']:
                     file.pop('path', None)
+                    file.pop('is_supplementary', None)
 
                 # Load heuristics
                 heuristics = get_heuristics()
