@@ -12,6 +12,7 @@ setup_module()
 
 import pytest
 import requests_mock
+from unittest.mock import patch
 from assemblyline_v4_service.common.base import *
 from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.result import Result
@@ -21,7 +22,6 @@ from assemblyline.common import exceptions
 from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.service import Service
-
 
 @pytest.fixture
 def dummy_tar_class():
@@ -354,7 +354,6 @@ def test_servicebase_working_directory():
             }
         )
 
-
     # _task and _working_directory is None at initialization
     assert sb._task is None
     assert sb._working_directory is None
@@ -387,6 +386,7 @@ def test_servicebase_working_directory():
     assert sb.working_directory == cur_working_dir
 
 
+@patch("assemblyline_v4_service.common.base.UPDATES_MAX_RETRY", 2)
 def test_servicebase_download_rules(mocker, dummy_tar_class):
     sb = ServiceBase()
     # Fast exit
@@ -413,6 +413,7 @@ def test_servicebase_download_rules(mocker, dummy_tar_class):
             json={"download_available": "blah", "local_update_time": "blah", "local_update_hash": "blah"},
         )
         m.get("https://blah.com:123/tar", status_code=200, json={"download_available": "blah"})
+
         assert sb._download_rules() is None
         assert sb.update_time == "blah"
         assert sb.update_hash == "blah"
@@ -432,6 +433,23 @@ def test_servicebase_download_rules(mocker, dummy_tar_class):
         assert sb.rules_directory == "/updates/blah"
         assert sb.rules_hash is None
         assert sb.rules_list == []
+
+        # Throw exception at /status call to update server
+        m.reset_mock()
+        m.get("https://blah.com:123/status", exc=Exception("Server Error"))
+        sb = ServiceBase()
+        sb.update_check_time = time.time() - 30
+        sb.dependencies["updates"] = {"host": "blah.com", "port": 123, "key": "blah"}
+        sb._load_rules = _load_rules
+
+        result = None
+        try:
+            result = sb._download_rules()
+        except Exception:
+            pass
+
+        assert result is None
+        assert m.call_count == (2 + 1)
 
 
 def test_servicebase_gen_rules_hash():

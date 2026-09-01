@@ -37,6 +37,7 @@ RECOVERABLE_RE_MSG = [
     "can't register atexit after shutdown",
     "cannot schedule new futures after shutdown"
 ]
+UPDATES_MAX_RETRY = int(os.environ.get("UPDATES_MAX_RETRY", "10"))
 
 
 def is_recoverable_runtime_error(error):
@@ -272,16 +273,32 @@ class ServiceBase:
         # Check if there are new signatures
         retries = 0
         while True:
-            resp = requests.get(url_base + 'status', verify=verify)
-            resp.raise_for_status()
-            status = resp.json()
-            if self.update_time is not None and self.update_time >= status['local_update_time'] and \
-                    self.update_hash == status['local_update_hash']:
-                self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
-                return
-            if status['download_available']:
-                self.log.info("A signature update is available, downloading new signatures...")
-                break
+            try:
+                resp = requests.get(url_base + "status", verify=verify)
+                resp.raise_for_status()
+                status = resp.json()
+
+                # no new signature. finished download rules.
+                if (
+                    self.update_time is not None
+                    and self.update_time >= status["local_update_time"]
+                    and self.update_hash == status["local_update_hash"]
+                ):
+                    self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
+                    return
+
+                # proceeds to next phase to download rules
+                if status["download_available"]:
+                    self.log.info("A signature update is available, downloading new signatures...")
+                    break
+                raise Exception("Failed to connect to update server.")
+
+            except Exception as e:
+                # exceeds max number of failures to reach update server. Raise an exception.
+                if retries >= UPDATES_MAX_RETRY:
+                    self.log.error(f"Failed to connect to update server: {e}")
+                    raise e
+
             self.log.warning('Waiting on update server availability...')
             time.sleep(min(5**retries, 30))
             retries += 1
