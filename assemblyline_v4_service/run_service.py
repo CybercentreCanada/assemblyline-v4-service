@@ -25,7 +25,7 @@ class RunService(ServerBase):
         self.service_manifest = os.path.join(os.getcwd(), os.environ.get('MANIFEST_FOLDER', ''), 'service_manifest.yml')
 
         # TODO: remove this line when we switched to only using the rust service base.
-        self.default_tasking_dir = self.tasking_dir = os.environ.get("TASKING_DIR", tempfile.gettempdir())
+        self.default_tasking_dir = os.environ.get("TASKING_DIR", tempfile.gettempdir())
 
         temp_dir = tempfile.gettempdir()
         runtime_prefix = os.environ.get("RUNTIME_PREFIX", "service")

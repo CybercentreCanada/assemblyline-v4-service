@@ -292,12 +292,59 @@ def test_servicebase_handle_task():
             "max_files": 0,
         }
     )
+
+    # handle task with just Task
+    # after task is handled. Everything should be cleaned up
     assert sb.handle_task(st) is None
     assert sb._task is None
     assert sb.ontology._file_info == {}
     assert sb.ontology._result_parts == {}
     assert sb.ontology.results == {}
     assert sb._working_directory is None
+
+
+def test_servicebase_handle_task_with_task_dir():
+    sb = ServiceBase()
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
+
+    # remove cleanup to check end state of handle task
+    def _do_nothing():
+        pass
+
+    sb._cleanup = _do_nothing
+
+    init_task_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
+
+    # handle task with a given task_dir will initialize the task object with the
+    # task dir as the base directory for working_directory and results
+    sb.handle_task(st, init_task_dir)
+
+    # _task, is the current task
+    current_task = sb._task
+
+    # current task should be initialized to the given task dir in handle_task
+    assert current_task._task_dir == init_task_dir
+    assert current_task._working_directory == current_task.working_directory
+
+    new_working_directory = os.path.join(init_task_dir, "working_directory")
+    assert current_task.working_directory == new_working_directory
 
 
 def test_servicebase_start():
