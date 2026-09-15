@@ -1,6 +1,7 @@
 import json
 import os
 import time
+import tempfile
 from logging import Logger
 
 
@@ -11,6 +12,7 @@ setup_module()
 
 import pytest
 import requests_mock
+from unittest.mock import patch
 from assemblyline_v4_service.common.base import *
 from assemblyline_v4_service.common.ontology_helper import OntologyHelper
 from assemblyline_v4_service.common.result import Result
@@ -20,7 +22,6 @@ from assemblyline.common import exceptions
 from assemblyline.common.version import FRAMEWORK_VERSION, SYSTEM_VERSION
 from assemblyline.odm.messages.task import Task as ServiceTask
 from assemblyline.odm.models.service import Service
-
 
 @pytest.fixture
 def dummy_tar_class():
@@ -57,6 +58,7 @@ def dummy_tar_class():
 
         def close(self):
             pass
+
     yield DummyTar
 
 
@@ -72,8 +74,8 @@ def dummy_tar_member_class():
 
         def startswith(self, val):
             return val in self.name
-    yield DummyTarMember
 
+    yield DummyTarMember
 
 def test_is_recoverable_runtime_error():
     assert is_recoverable_runtime_error("blah") is False
@@ -87,8 +89,8 @@ def test_servicebase_init():
     sb = ServiceBase()
     assert isinstance(sb.service_attributes, Service)
     assert sb.config == {
-        'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
-        'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}]
+        "ocr": {"banned": ["donotscanme"], "macros": [], "ransomware": []},
+        "submission_params": [{"default": "blah", "value": "blah", "name": "thing", "type": "str"}],
     }
     assert sb.name == "sample"
     assert isinstance(sb.log, Logger)
@@ -108,9 +110,9 @@ def test_servicebase_init():
     # With config
     sb = ServiceBase({"blah": "blah"})
     assert sb.config == {
-        'ocr': {'banned': ['donotscanme'], 'macros': [], 'ransomware': []},
-        'submission_params': [{'default': 'blah', 'value': 'blah', 'name': 'thing', 'type': 'str'}],
-        'blah': 'blah'
+        "ocr": {"banned": ["donotscanme"], "macros": [], "ransomware": []},
+        "submission_params": [{"default": "blah", "value": "blah", "name": "thing", "type": "str"}],
+        "blah": "blah",
     }
 
 
@@ -134,22 +136,24 @@ def test_servicebase_cleanup():
 
 def test_servicebase_handle_execute_failure():
     sb = ServiceBase()
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
     # Exception is not a RecoverableError
     sb._task = Task(st)
     assert sb._handle_execute_failure("blah", "blah") is None
@@ -170,22 +174,24 @@ def test_servicebase_handle_execute_failure():
 
 def test_servicebase_success():
     sb = ServiceBase()
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
     sb._task = Task(st)
     sb._task.result = Result()
     assert sb._success() is None
@@ -194,44 +200,48 @@ def test_servicebase_success():
 
 def test_servicebase_warning():
     sb = ServiceBase()
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
     sb._task = Task(st)
     assert sb._warning("blah") is None
 
 
 def test_servicebase_error():
     sb = ServiceBase()
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
     sb._task = Task(st)
     assert sb._error("blah") is None
 
@@ -264,28 +274,77 @@ def test_servicebase_get_tool_version():
 
 def test_servicebase_handle_task():
     sb = ServiceBase()
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
+
+    # handle task with just Task
+    # after task is handled. Everything should be cleaned up
     assert sb.handle_task(st) is None
     assert sb._task is None
     assert sb.ontology._file_info == {}
     assert sb.ontology._result_parts == {}
     assert sb.ontology.results == {}
     assert sb._working_directory is None
+
+
+def test_servicebase_handle_task_with_task_dir():
+    sb = ServiceBase()
+    st = ServiceTask(
+        {
+            "service_config": {},
+            "metadata": {},
+            "min_classification": "",
+            "fileinfo": {
+                "magic": "blah",
+                "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                "size": 0,
+                "type": "text/plain",
+            },
+            "filename": "blah",
+            "service_name": "blah",
+            "max_files": 0,
+        }
+    )
+
+    # remove cleanup to check end state of handle task
+    def _do_nothing():
+        pass
+
+    sb._cleanup = _do_nothing
+
+    init_task_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
+
+    # handle task with a given task_dir will initialize the task object with the
+    # task dir as the base directory for working_directory and results
+    sb.handle_task(st, init_task_dir)
+
+    # _task, is the current task
+    current_task = sb._task
+
+    # current task should be initialized to the given task dir in handle_task
+    assert current_task._task_dir == init_task_dir
+    assert current_task._working_directory == current_task.working_directory
+
+    new_working_directory = os.path.join(init_task_dir, "working_directory")
+    assert current_task.working_directory == new_working_directory
 
 
 def test_servicebase_start():
@@ -300,6 +359,7 @@ def test_servicebase_start_service():
     # Mocking this method
     def _download_rules():
         pass
+
     sb._download_rules = _download_rules
 
     assert sb.start_service() is None
@@ -320,39 +380,60 @@ def test_servicebase_stop_service():
 
 def test_servicebase_working_directory():
     sb = ServiceBase()
+    temp_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
 
-    # _working_directory does not exist
+    st = ServiceTask(
+            {
+                "service_config": {},
+                "metadata": {},
+                "min_classification": "",
+                "fileinfo": {
+                    "magic": "blah",
+                    "md5": "d41d8cd98f00b204e9800998ecf8427e",
+                    "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                    "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                    "size": 0,
+                    "type": "text/plain",
+                },
+                "filename": "blah",
+                "service_name": "blah",
+                "max_files": 0,
+            }
+        )
+
+    # _task and _working_directory is None at initialization
+    assert sb._task is None
     assert sb._working_directory is None
-    sb.working_directory
-    assert sb._working_directory is not None and os.path.exists(sb._working_directory)
+    task = Task(st)
+    task._working_directory = temp_dir
 
-    # _working_directory does exist
-    assert sb.working_directory == sb._working_directory
+    # if a task is currently set in service base
+    # then use the working directory of the task
+    sb._task = task
 
-    # _task exists
-    st = ServiceTask({
-        "service_config": {},
-        "metadata": {},
-        "min_classification": "",
-        "fileinfo": {
-            "magic": "blah",
-            "md5": "d41d8cd98f00b204e9800998ecf8427e",
-            "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-            "sha1": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
-            "size": 0,
-            "type": "text/plain",
-        },
-        "filename": "blah",
-        "service_name": "blah",
-        "max_files": 0,
-    })
-    sb._task = Task(st)
-    sb._working_directory = None
-    sb.working_directory
-    assert sb._working_directory is not None and os.path.exists(sb._working_directory)
-    assert sb._working_directory == sb._task.working_directory
+    # assert twice to make sure calling working_directory doesn't create two new temp directory
+    assert sb.working_directory == temp_dir
+    assert sb.working_directory == temp_dir
+
+    # make a new service base
+    sb = ServiceBase()
+    temp_dir = tempfile.mkdtemp(dir=tempfile.gettempdir())
+
+    # _task and _working_directory is None at initialization
+    assert sb._task is None
+    assert sb._working_directory is None
+
+    # calling working directory should create a new directory
+    cur_working_dir = sb.working_directory
+
+    assert cur_working_dir is not None
+    assert os.path.isdir(cur_working_dir) is True
+
+    # making sure calling working_directory again does NOT create a new working directory
+    assert sb.working_directory == cur_working_dir
 
 
+@patch("assemblyline_v4_service.common.base.UPDATES_MAX_RETRY", 2)
 def test_servicebase_download_rules(mocker, dummy_tar_class):
     sb = ServiceBase()
     # Fast exit
@@ -369,12 +450,17 @@ def test_servicebase_download_rules(mocker, dummy_tar_class):
     # Mocking this
     def _load_rules():
         pass
+
     sb._load_rules = _load_rules
 
     with requests_mock.Mocker() as m:
-        m.get("https://blah.com:123/status", status_code=200,
-              json={"download_available": "blah", "local_update_time": "blah", "local_update_hash": "blah"})
+        m.get(
+            "https://blah.com:123/status",
+            status_code=200,
+            json={"download_available": "blah", "local_update_time": "blah", "local_update_hash": "blah"},
+        )
         m.get("https://blah.com:123/tar", status_code=200, json={"download_available": "blah"})
+
         assert sb._download_rules() is None
         assert sb.update_time == "blah"
         assert sb.update_hash == "blah"
@@ -394,6 +480,23 @@ def test_servicebase_download_rules(mocker, dummy_tar_class):
         assert sb.rules_directory == "/updates/blah"
         assert sb.rules_hash is None
         assert sb.rules_list == []
+
+        # Throw exception at /status call to update server
+        m.reset_mock()
+        m.get("https://blah.com:123/status", exc=Exception("Server Error"))
+        sb = ServiceBase()
+        sb.update_check_time = time.time() - 30
+        sb.dependencies["updates"] = {"host": "blah.com", "port": 123, "key": "blah"}
+        sb._load_rules = _load_rules
+
+        result = None
+        try:
+            result = sb._download_rules()
+        except Exception:
+            pass
+
+        assert result is None
+        assert m.call_count == (2 + 1)
 
 
 def test_servicebase_gen_rules_hash():
