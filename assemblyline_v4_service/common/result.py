@@ -420,49 +420,6 @@ class ProcessTreeSectionBody(SectionBody):
     def add_process(self, process: ProcessItem) -> None:
         self._data.append(process.as_primitives())
 
-
-class SandboxMachineMetadata:
-    """Metadata about the machine where the sandbox analysis took place."""
-
-    def __init__(
-        self,
-        # The IP address of the analysis machine.
-        ip: Optional[str] = None,
-
-        # The hypervisor used by the analysis machine (e.g., VMware, KVM).
-        hypervisor: Optional[str] = None,
-
-        # The hostname of the machine used for analysis.
-        hostname: Optional[str] = None,
-
-        # The platform or operating system name (e.g., Windows, Linux, macOS).
-        platform: Optional[str] = None,
-
-        # The version of the operating system.
-        version: Optional[str] = None,
-
-        # The architecture of the operating system (e.g., x86, x64, ARM).
-        architecture: Optional[str] = None,
-    ):
-        self.ip = ip
-        self.hypervisor = hypervisor
-        self.hostname = hostname
-        self.platform = platform
-        self.version = version
-        self.architecture = architecture
-
-    def as_primitives(self) -> Dict:
-        """Return a JSON-serializable representation."""
-        return {
-            "ip": self.ip,
-            "hypervisor": self.hypervisor,
-            "hostname": self.hostname,
-            "platform": self.platform,
-            "version": self.version,
-            "architecture": self.architecture,
-        }
-
-
 LookupType = Literal[
     "A", "AAAA", "AFSDB", "APL", "CAA", "CDNSKEY", "CDS", "CERT", "CNAME", "CSYNC",
     "DHCID", "DLV", "DNAME", "DNSKEY", "DS", "EUI48", "EUI64", "HINFO", "HIP",

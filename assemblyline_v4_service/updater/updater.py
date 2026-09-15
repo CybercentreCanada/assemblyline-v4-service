@@ -18,6 +18,7 @@ from zipfile import ZipFile
 
 from assemblyline.common import forge
 from assemblyline.common import log as al_log
+from assemblyline.common.safe_archive import safe_extract_zip
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.isotime import epoch_to_iso, now_as_iso
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
@@ -354,7 +355,7 @@ class ServiceUpdater(ThreadedCoreBase):
                 self.log.debug(f"{self.updater_type} update available since {epoch_to_iso(old_update_time) or ''}")
 
                 with ZipFile(BytesIO(self.client.signature.download(self.signatures_query)), 'r') as zip_f:
-                    zip_f.extractall(output_directory)
+                    safe_extract_zip(zip_f, output_directory)
                     self.log.info("New ruleset successfully downloaded and ready to use")
                     self.serve_directory(output_directory, time_keeper)
             else:
