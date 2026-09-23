@@ -1,0 +1,83 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "assemblyline-v4-service"
+version = "4.0.0.dev0"
+description = "Assemblyline 4 - Service base"
+readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "CCCS Assemblyline development team", email = "assemblyline@cyber.gc.ca" },
+]
+urls = { Repository = "https://github.com/CybercentreCanada/assemblyline-v4-service/" }
+keywords = [
+    "assemblyline",
+    "automated",
+    "malware",
+    "analysis",
+    "gc",
+    "canada",
+    "cse-cst",
+    "cse",
+    "cst",
+    "cyber",
+    "cccs",
+]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Topic :: Software Development :: Libraries",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+]
+dependencies = [
+    "assemblyline",
+    "assemblyline-core",
+    "cart",
+    "pillow",
+    "regex",
+]
+
+[project.optional-dependencies]
+updater = [
+    "gunicorn[gevent]",
+    "flask",
+    "gitpython",
+    "psutil",
+    "Werkzeug",
+]
+
+test = [
+    "assemblyline-v4-service[updater]",
+    "pytest",
+    "requests-mock",
+    "pytest-mock",
+    "pytesseract",
+]
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.packages.find]
+exclude = [
+    "test*",
+    "docker*",
+    "assemblyline_result_sample_service*",
+    "assemblyline_extra_feature_service*",
+]
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.xml",
+    "VERSION",
+]
+"assemblyline_v4_service" = [
+    "py.typed",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["test"]
