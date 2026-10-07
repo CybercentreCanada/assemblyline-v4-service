@@ -15,8 +15,8 @@ import requests
 from assemblyline.common.digests import get_sha256_for_file
 from assemblyline.common.identify import Identify
 from assemblyline.common.isotime import iso_to_epoch
-from assemblyline.common.safe_archive import safe_extract_tar, safe_extract_zip
 from assemblyline.common.path import strip_path_inclusion
+from assemblyline.common.safe_archive import safe_extract_tar, safe_extract_zip
 from azure.identity import DefaultAzureCredential
 from git import Repo
 
