@@ -63,7 +63,7 @@ test = [
 include-package-data = true
 
 [tool.setuptools.dynamic]
-version = { file = ["VERSION"] }
+version = { file = ["assemblyline_v4_service/VERSION"] }
 
 [tool.setuptools.packages.find]
 exclude = [
