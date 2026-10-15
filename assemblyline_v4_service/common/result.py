@@ -437,7 +437,7 @@ RequestMethod = Literal[
 
 ConnectionType = Literal["http", "dns", "tls", "smtp"]
 ConnectionDirection = Literal["outbound", "inbound", "unknown"]
-SignatureType = Literal["CUCKOO", "YARA", "SIGMA", "SURICATA"]
+SignatureType = Literal["CUCKOO", "YARA", "SIGMA", "SURICATA", "CAPE", "SANDBOX"]
 
 
 class SandboxMachineMetadata:
@@ -830,7 +830,7 @@ class SandboxSignatureItem:
         name: str,
 
         # The source type of the signature (e.g., "CAPE", "CUCKOO").
-        type: Literal["CAPE", "CUCKOO"],
+        type: Literal["CUCKOO", "YARA", "SIGMA", "SURICATA", "CAPE", "SANDBOX"],
 
         # The classification of the signature (e.g., "malicious", "benign").
         classification: str,
