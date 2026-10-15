@@ -4,9 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "assemblyline-v4-service"
-version = "4.0.0.dev0"
 description = "Assemblyline 4 - Service base"
-readme = "README.md"
+readme = { file = "README.md", content-type = "text/markdown" }
+dynamic = ["version"]
 license = "MIT"
 authors = [
     { name = "CCCS Assemblyline development team", email = "assemblyline@cyber.gc.ca" },
@@ -61,6 +61,9 @@ test = [
 
 [tool.setuptools]
 include-package-data = true
+
+[tool.setuptools.dynamic]
+version = { file = ["assemblyline_v4_service/VERSION"] }
 
 [tool.setuptools.packages.find]
 exclude = [
