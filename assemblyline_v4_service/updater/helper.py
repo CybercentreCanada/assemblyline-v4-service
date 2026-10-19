@@ -254,7 +254,9 @@ def git_clone_repo(source: Dict[str, Any], previous_update: int = None, logger=N
         with tempfile.NamedTemporaryFile() as git_ssh_identity_file:
             if key:
                 logger.info(f"key found for {url}")
-                # Save the key to a file
+                # Save the key to a file; OpenSSH rejects a key without a trailing newline
+                if not key.endswith("\n"):
+                    key += "\n"
                 git_ssh_identity_file.write(key.encode())
                 git_ssh_identity_file.seek(0)
                 os.chmod(git_ssh_identity_file.name, 0o0400)
