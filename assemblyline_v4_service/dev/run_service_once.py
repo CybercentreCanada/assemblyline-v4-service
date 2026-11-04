@@ -20,7 +20,6 @@ from cart import get_metadata_only, unpack_stream
 
 from assemblyline_v4_service.common.base import ServiceBase
 from assemblyline_v4_service.common.helper import get_heuristics, get_service_manifest
-from assemblyline_v4_service.dev.updater import load_rules
 
 
 class RunService:
@@ -44,6 +43,7 @@ class RunService:
 
         if self.service.service_attributes.update_config:
             # Download required signatures and process them for the service run
+            from assemblyline_v4_service.dev.updater import load_rules
             load_rules(self.service)
 
         if not os.path.isfile(FILE_PATH):

@@ -1,5 +1,0 @@
-pytest
-requests-mock
-pytest-mock
-Pillow
-pytesseract

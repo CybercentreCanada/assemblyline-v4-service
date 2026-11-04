@@ -12,7 +12,7 @@ RUN apt-get update \
 # install pip packages, as assemblyline so they go into our .local with the ones already there
 USER assemblyline
 RUN touch /tmp/before-pip
-COPY setup.py dist* dist/
+COPY pyproject.toml dist* dist/
 RUN pip install --no-cache-dir -f dist --user \
     assemblyline-core==$version \
     assemblyline-service-client==$version \
