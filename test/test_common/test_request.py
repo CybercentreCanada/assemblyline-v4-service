@@ -124,7 +124,7 @@ def test_add_image(service_request):
         'thumb': {
             'description': 'description of image (thumbnail)',
             'name': 'image_name.thumb',
-            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8'
+            'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98'
         }
     }
 
@@ -149,7 +149,7 @@ def test_add_image(service_request):
             'is_supplementary': True,
             'name': 'image_name.thumb',
             'parent_relation': 'INFORMATION',
-            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8'
+            'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98'
         },
     ]
 
@@ -169,7 +169,7 @@ def test_add_image(service_request):
     assert data["thumb"] == {
         'description': 'description of image (thumbnail)',
         'name': 'image_name.thumb',
-        'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8'
+        'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98'
     }
     assert data["ocr_section"].__dict__["section_body"].__dict__ == {
         '_config': {},
