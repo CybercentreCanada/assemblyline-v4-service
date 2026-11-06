@@ -161,3 +161,28 @@ def test_git_clone_repo():
             source = {"name": "test_repo", "uri": "http://example.com/repo.git"}
             result = git_clone_repo(source, previous_update=commit_time - 1, logger=log, output_dir=tmp_dir)
             assert result == os.path.join(tmp_dir, "test_repo")
+
+
+@pytest.mark.parametrize("key", [
+    "-----BEGIN OPENSSH PRIVATE KEY-----\nNOT-A-KEY\n-----END OPENSSH PRIVATE KEY-----",
+    "-----BEGIN OPENSSH PRIVATE KEY-----\nNOT-A-KEY\n-----END OPENSSH PRIVATE KEY-----\n",
+])
+def test_git_clone_repo_ssh_key_ends_with_newline(key):
+    log = getLogger()
+    written = {}
+
+    def _capture_key(url, path, env, **_):
+        # The identity file only exists while the clone runs
+        identity = env["GIT_SSH_COMMAND"].rsplit(" ", 1)[-1]
+        with open(identity) as f:
+            written["key"] = f.read()
+        repo = MagicMock()
+        repo.iter_commits.return_value = iter([MagicMock(committed_date=int(time.time()))])
+        return repo
+
+    with TemporaryDirectory() as tmp_dir:
+        with patch("assemblyline_v4_service.updater.helper.Repo.clone_from", side_effect=_capture_key):
+            source = {"name": "test_repo", "uri": "git@example.com:org/repo.git", "private_key": key}
+            git_clone_repo(source, logger=log, output_dir=tmp_dir)
+
+    assert written["key"] == key.rstrip("\n") + "\n"
