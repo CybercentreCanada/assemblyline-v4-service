@@ -660,7 +660,7 @@ def test_imagesectionbody_add_image(service_request):
             'description': 'description of image'},
          'thumb': {
              'name': 'image_name.thumb',
-             'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
+             'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98',
              'description': 'description of image (thumbnail)'}}]
 
     isb._data.clear()
@@ -678,7 +678,7 @@ def test_imagesectionbody_add_image(service_request):
             'description': 'description of image'},
          'thumb': {
             'name': 'image_name.thumb',
-            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
+            'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98',
             'description': 'description of image (thumbnail)'}}]
 
     # Ensure that the image files added are marked as `is_image_section`
@@ -1331,7 +1331,7 @@ def test_resultimagesection_add_image(service_request):
                                        'description': 'description of image'},
                                       'thumb':
                                       {'name': 'image_name.thumb',
-                                       'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
+                                       'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98',
                                        'description': 'description of image (thumbnail)'}}]
 
     ris = ResultImageSection(service_request, "title_text_as_str")
@@ -1348,7 +1348,7 @@ def test_resultimagesection_add_image(service_request):
                                        'description': 'description of image'},
                                       'thumb':
                                       {'name': 'image_name.thumb',
-                                       'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
+                                       'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98',
                                        'description': 'description of image (thumbnail)'}}]
 
     ris = ResultImageSection(service_request, "title_text_as_str")
@@ -1366,7 +1366,7 @@ def test_resultimagesection_add_image(service_request):
             'description': 'description of image'},
         'thumb': {
             'name': 'image_name.thumb',
-            'sha256': '00b5239a2d010b64e2a35fae38671bdda44c60cc4008af361d98bb1d12a845e8',
+            'sha256': '31f6986d6af9f8b8277d3fedbb36ed95a5d8d1823aae8a43d70fdfb180f18b98',
             'description': 'description of image (thumbnail)'}}]
 
     # Ensure that the image files added are marked as `is_image_section`
