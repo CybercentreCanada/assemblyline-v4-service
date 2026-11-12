@@ -37,6 +37,7 @@ RECOVERABLE_RE_MSG = [
     "can't register atexit after shutdown",
     "cannot schedule new futures after shutdown"
 ]
+UPDATES_MAX_RETRY = int(os.environ.get("UPDATES_MAX_RETRY", "10"))
 
 
 def is_recoverable_runtime_error(error):
@@ -47,6 +48,7 @@ class ServiceBase:
     def __init__(self, config: Optional[Dict] = None) -> None:
         # Load the service attributes from the service manifest
         self.service_attributes = helper.get_service_attributes()
+        self.tasking_dir = None
 
         # Start with default service parameters and override with anything provided
         self.config = self.service_attributes.config
@@ -166,9 +168,13 @@ class ServiceBase:
     def get_tool_version(self) -> Optional[str]:
         return self.rules_hash
 
-    def handle_task(self, task: ServiceTask) -> None:
+    def handle_task(self, task: ServiceTask, task_dir: Optional[str] = None) -> None:
         try:
             self._task = Task(task)
+
+            if task_dir:
+                self._task.update_task_dir(task_dir)
+
             self.log.info(f"[{self._task.sid}] Starting task for file: {self._task.sha256} ({self._task.type})")
             self._task.start(self.service_attributes.default_result_classification,
                              self.service_attributes.version, self.get_tool_version())
@@ -235,17 +241,16 @@ class ServiceBase:
 
     @property
     def working_directory(self):
+        if self._task:
+            # Use the working directory provided by the task
+            self._working_directory = self._task.working_directory
         # If no working directory is assigned
-        if not self._working_directory:
-            if self._task:
-                # Then use the working directory provided by the task
-                self._working_directory = self._task.working_directory
-            else:
-                # Or create a new working directory
-                temp_dir = os.path.join(os.environ.get('TASKING_DIR', tempfile.gettempdir()), 'working_directory')
-                if not os.path.isdir(temp_dir):
-                    os.makedirs(temp_dir)
-                self._working_directory = tempfile.mkdtemp(dir=temp_dir)
+        elif not self._working_directory:
+            # Or create a new working directory
+            temp_dir = os.path.join(os.environ.get("TASKING_DIR", tempfile.gettempdir()), "working_directory")
+            if not os.path.isdir(temp_dir):
+                os.makedirs(temp_dir)
+            self._working_directory = tempfile.mkdtemp(dir=temp_dir)
 
         return self._working_directory
 
@@ -268,16 +273,32 @@ class ServiceBase:
         # Check if there are new signatures
         retries = 0
         while True:
-            resp = requests.get(url_base + 'status', verify=verify)
-            resp.raise_for_status()
-            status = resp.json()
-            if self.update_time is not None and self.update_time >= status['local_update_time'] and \
-                    self.update_hash == status['local_update_hash']:
-                self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
-                return
-            if status['download_available']:
-                self.log.info("A signature update is available, downloading new signatures...")
-                break
+            try:
+                resp = requests.get(url_base + "status", verify=verify)
+                resp.raise_for_status()
+                status = resp.json()
+
+                # no new signature. finished download rules.
+                if (
+                    self.update_time is not None
+                    and self.update_time >= status["local_update_time"]
+                    and self.update_hash == status["local_update_hash"]
+                ):
+                    self.log.info(f"There are no new signatures. ({self.update_time} >= {status['local_update_time']})")
+                    return
+
+                # proceeds to next phase to download rules
+                if status["download_available"]:
+                    self.log.info("A signature update is available, downloading new signatures...")
+                    break
+                raise Exception("Failed to connect to update server.")
+
+            except Exception as e:
+                # exceeds max number of failures to reach update server. Raise an exception.
+                if retries >= UPDATES_MAX_RETRY:
+                    self.log.error(f"Failed to connect to update server: {e}")
+                    raise e
+
             self.log.warning('Waiting on update server availability...')
             time.sleep(min(5**retries, 30))
             retries += 1
