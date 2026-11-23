@@ -5,7 +5,7 @@ import time
 from base64 import b64encode
 from logging import Logger
 from shutil import make_archive
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 from urllib.parse import urlparse
 
 import certifi
@@ -84,7 +84,7 @@ def filter_downloads(output_path, pattern, default_pattern=".*") -> List[Tuple[s
     return f_files
 
 
-def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, output_dir: str) -> Optional[str]:
+def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, output_dir: str) -> str:
     name = source['name']
     uri = source['uri']
 
@@ -182,7 +182,8 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
                 return file_path
         else:
             logger.warning(f"Download not successful: {response.content}")
-            return None
+            raise requests.HTTPError(f"Download not successful: {response.status_code} {response.reason}",
+                                     response=response)
 
     except SkipSource:
         # Raise to calling function for handling
