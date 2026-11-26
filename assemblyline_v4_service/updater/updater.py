@@ -312,15 +312,26 @@ class ServiceUpdater(ThreadedCoreBase):
             if not missing_sources:
                 break
 
+        # Disabled sources are never fetched, so re-tasking them would loop without producing updates
+        enabled_sources = {_s.name for _s in self._service.update_config.sources if _s.enabled}
+        missing_sources = [_s for _s in missing_sources if _s in enabled_sources]
+
         if missing_sources and not self.source_update_flag.is_set():
             # If sources are missing, then clear caching from Redis and trigger source updates
+            retasked = False
+            never_attempted = False
             for source in missing_sources:
                 source_status = self.update_data_hash.get(f"{source}.{SOURCE_STATUS_KEY}")
                 if source_status and source_status["state"] != "ERROR":
                     # Re-task missing sources that aren't known to have a critical error
                     self.update_data_hash.set(f"{source}.{SOURCE_UPDATE_TIME_KEY}", 0)
                     self.update_queue.put(source)
-            self.trigger_update()
+                    retasked = True
+                elif not source_status:
+                    # Never attempted: its first update sets a status, so this can't loop
+                    never_attempted = True
+            if retasked or never_attempted:
+                self.trigger_update()
 
         return check_passed
 

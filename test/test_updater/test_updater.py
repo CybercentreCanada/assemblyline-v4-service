@@ -70,6 +70,9 @@ def initialized_updater(updater: ServiceUpdater):
                                      dict(state='TESTING', message='Queued for update..', ts=0))
     yield updater
 
+    # ERROR/UPDATING statuses left in Redis are queued by the next updater's constructor
+    updater.update_data_hash.delete()
+
 
 
 def test_init(updater: ServiceUpdater):
@@ -99,12 +102,86 @@ def test_inventory_check(initialized_updater: ServiceUpdater):
         # Simulate if the source update thread is idle
         initialized_updater.source_update_flag.clear()
 
-        # Expect the inventory check to fail and there should be tasking for all the sources to be fetched
-        assert not initialized_updater._inventory_check() and initialized_updater.update_queue.qsize() == len(initialized_updater._service.update_config.sources)
+        # Expect the inventory check to fail and there should be tasking for all the enabled sources to be fetched
+        enabled_sources = {s.name for s in initialized_updater._service.update_config.sources if s.enabled}
+        assert not initialized_updater._inventory_check()
+        assert initialized_updater.update_queue.qsize() == len(enabled_sources)
 
         # Simulate a scenario where the inventory check will pass (there is at least one update available for distribution)
         with tempfile.NamedTemporaryFile(dir=dir, suffix=random.choice(initialized_updater._service.update_config.sources).name):
             assert initialized_updater._inventory_check()
+
+
+def test_inventory_check_retasks_missing_sources(initialized_updater: ServiceUpdater):
+    sources = initialized_updater._service.update_config.sources
+    for source in sources:
+        source.enabled = True
+    initialized_updater.source_update_flag.clear()
+
+    with tempfile.TemporaryDirectory() as dir:
+        initialized_updater._update_dir = dir
+
+        # Missing sources that are enabled and not in error are re-tasked and an update is triggered
+        assert not initialized_updater._inventory_check()
+        assert set(initialized_updater.update_queue.queue) == {s.name for s in sources}
+        assert all(initialized_updater.update_data_hash.get(f"{s.name}.{SOURCE_UPDATE_TIME_KEY}") == 0 for s in sources)
+        assert initialized_updater.source_update_flag.is_set()
+
+
+def test_inventory_check_ignores_disabled_sources(initialized_updater: ServiceUpdater):
+    sources = initialized_updater._service.update_config.sources
+    for source in sources:
+        source.enabled = False
+    initialized_updater.source_update_flag.clear()
+
+    with tempfile.TemporaryDirectory() as dir:
+        initialized_updater._update_dir = dir
+
+        # Disabled sources are never fetched, so their absence shouldn't cause any tasking
+        assert not initialized_updater._inventory_check()
+        assert not initialized_updater.update_queue.qsize() and not initialized_updater.source_update_flag.is_set()
+
+        # Only the enabled sources get re-tasked
+        disabled = sources[0]
+        for source in sources[1:]:
+            source.enabled = True
+        initialized_updater._inventory_check()
+        assert set(initialized_updater.update_queue.queue) == {s.name for s in sources[1:]} - {disabled.name}
+
+
+def test_inventory_check_ignores_errored_sources(initialized_updater: ServiceUpdater):
+    sources = initialized_updater._service.update_config.sources
+    for source in sources:
+        source.enabled = True
+        initialized_updater.update_data_hash.set(f"{source.name}.{SOURCE_STATUS_KEY}",
+                                                 dict(state='ERROR', message='Failed', ts=0))
+        initialized_updater.update_data_hash.set(f"{source.name}.{SOURCE_UPDATE_TIME_KEY}", 100)
+    initialized_updater.source_update_flag.clear()
+
+    with tempfile.TemporaryDirectory() as dir:
+        initialized_updater._update_dir = dir
+
+        # Sources known to be in error aren't re-tasked, so there's nothing to trigger an update for
+        assert not initialized_updater._inventory_check()
+        assert not initialized_updater.update_queue.qsize() and not initialized_updater.source_update_flag.is_set()
+        assert all(initialized_updater.update_data_hash.get(f"{s.name}.{SOURCE_UPDATE_TIME_KEY}") == 100
+                   for s in sources)
+
+
+def test_inventory_check_triggers_for_never_attempted_sources(initialized_updater: ServiceUpdater):
+    sources = initialized_updater._service.update_config.sources
+    for source in sources:
+        source.enabled = True
+        initialized_updater.update_data_hash.pop(f"{source.name}.{SOURCE_STATUS_KEY}")
+    initialized_updater.source_update_flag.clear()
+
+    with tempfile.TemporaryDirectory() as dir:
+        initialized_updater._update_dir = dir
+
+        # Sources without a status haven't been attempted yet, so an update is still triggered for them
+        assert not initialized_updater._inventory_check()
+        assert not initialized_updater.update_queue.qsize() and initialized_updater.source_update_flag.is_set()
+
 
 @pytest.mark.parametrize("generates_signatures", [True, False], ids=["generates_signatures=True", "generates_signatures=False"])
 def test_do_local_update(initialized_updater, generates_signatures):
