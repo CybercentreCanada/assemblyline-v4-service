@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 
 import certifi
 import pytest
+import requests
 import requests_mock
 from assemblyline_v4_service.updater.helper import (
     SkipSource,
@@ -89,9 +90,21 @@ def test_url_download():
             with pytest.raises(SkipSource):
                 url_download({"name": "blah", "uri": html_file_request}, 0, log, tmp_dir)
 
-            # NOT_FOUND
-            m.get(html_file_request, status_code=404)
-            assert url_download({"name": "blah", "uri": html_file_request}, 0, log, tmp_dir) is None
+
+@pytest.mark.parametrize("status_code, reason", [(404, "Not Found"), (410, "Gone"), (500, "Internal Server Error")])
+def test_url_download_unsuccessful(status_code, reason):
+    log = getLogger()
+    with TemporaryDirectory() as tmp_dir:
+        uri = "http://user:secret@www.google.com/index.html"
+        with requests_mock.Mocker() as m:
+            m.head(uri, text="blah")
+            m.get(uri, status_code=status_code, reason=reason)
+            with pytest.raises(requests.HTTPError, match=f"^Download not successful: {status_code} {reason}$") as e:
+                url_download({"name": "blah", "uri": uri}, 0, log, tmp_dir)
+
+    assert e.value.response.status_code == status_code
+    assert "secret" not in str(e.value) and "google.com" not in str(e.value)
+
 
 @pytest.mark.parametrize("filename",
                          argvalues=["test.zip","test.tar.gz"],
