@@ -2,6 +2,7 @@ import json
 import os
 import random
 import tempfile
+import time
 
 import pytest
 from assemblyline.odm.messages.changes import Operation, ServiceChange, SignatureChange
@@ -12,6 +13,7 @@ from assemblyline.odm.randomizer import random_model_obj
 from assemblyline_v4_service.updater.updater import (
     SERVICE_NAME,
     SIGNATURES_META_FILENAME,
+    SOURCE_RETASK_TIME_KEY,
     SOURCE_STATUS_KEY,
     SOURCE_UPDATE_TIME_KEY,
     ServiceUpdater,
@@ -116,6 +118,7 @@ def test_inventory_check_retasks_missing_sources(initialized_updater: ServiceUpd
     sources = initialized_updater._service.update_config.sources
     for source in sources:
         source.enabled = True
+        source.update_interval = 3600
     initialized_updater.source_update_flag.clear()
 
     with tempfile.TemporaryDirectory() as dir:
@@ -126,6 +129,43 @@ def test_inventory_check_retasks_missing_sources(initialized_updater: ServiceUpd
         assert set(initialized_updater.update_queue.queue) == {s.name for s in sources}
         assert all(initialized_updater.update_data_hash.get(f"{s.name}.{SOURCE_UPDATE_TIME_KEY}") == 0 for s in sources)
         assert initialized_updater.source_update_flag.is_set()
+
+        # A source that is still missing after its re-task isn't re-tasked again within its update interval
+        initialized_updater.update_queue.queue.clear()
+        initialized_updater.source_update_flag.clear()
+        for source in sources:
+            initialized_updater.update_data_hash.set(f"{source.name}.{SOURCE_UPDATE_TIME_KEY}", 100)
+        assert not initialized_updater._inventory_check()
+        assert not initialized_updater.update_queue.qsize() and not initialized_updater.source_update_flag.is_set()
+        assert all(initialized_updater.update_data_hash.get(f"{s.name}.{SOURCE_UPDATE_TIME_KEY}") == 100
+                   for s in sources)
+
+
+@pytest.mark.parametrize("source_interval", [3600, None])
+def test_inventory_check_retasks_again_after_update_interval(initialized_updater: ServiceUpdater, source_interval):
+    initialized_updater._service.update_config.update_interval_seconds = 3600
+    sources = initialized_updater._service.update_config.sources
+    for source in sources:
+        source.enabled = True
+        source.update_interval = source_interval
+        initialized_updater.update_data_hash.set(f"{source.name}.{SOURCE_RETASK_TIME_KEY}", time.time() - 3500)
+    initialized_updater.source_update_flag.clear()
+
+    with tempfile.TemporaryDirectory() as dir:
+        initialized_updater._update_dir = dir
+
+        # Re-tasked less than an interval ago (the source's own, else the service default): wait
+        assert not initialized_updater._inventory_check()
+        assert not initialized_updater.update_queue.qsize() and not initialized_updater.source_update_flag.is_set()
+
+        # Once the interval has elapsed the source is re-tasked again
+        for source in sources:
+            initialized_updater.update_data_hash.set(f"{source.name}.{SOURCE_RETASK_TIME_KEY}", time.time() - 3700)
+        assert not initialized_updater._inventory_check()
+        assert set(initialized_updater.update_queue.queue) == {s.name for s in sources}
+        assert initialized_updater.source_update_flag.is_set()
+        assert all(initialized_updater.update_data_hash.get(f"{s.name}.{SOURCE_RETASK_TIME_KEY}") > time.time() - 60
+                   for s in sources)
 
 
 def test_inventory_check_ignores_disabled_sources(initialized_updater: ServiceUpdater):

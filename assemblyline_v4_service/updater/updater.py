@@ -50,6 +50,7 @@ SOURCE_UPDATE_TIME_KEY = 'update_time'
 LOCAL_UPDATE_TIME_KEY = 'local_update_time'
 SOURCE_EXTRA_KEY = 'source_extra'
 SOURCE_STATUS_KEY = 'status'
+SOURCE_RETASK_TIME_KEY = 'retask_time'
 SOURCE_UPDATE_ATTEMPT_DELAY_BASE = int(os.environ.get("SOURCE_UPDATE_ATTEMPT_DELAY_BASE", "5"))
 SOURCE_UPDATE_ATTEMPT_MAX_RETRY = int(os.environ.get("SOURCE_UPDATE_ATTEMPT_MAX_RETRY", "3"))
 UPDATER_DIR = os.getenv('UPDATER_DIR', os.path.join(tempfile.gettempdir(), 'updater'))
@@ -313,17 +314,26 @@ class ServiceUpdater(ThreadedCoreBase):
                 break
 
         # Disabled sources are never fetched, so re-tasking them would loop without producing updates
-        enabled_sources = {_s.name for _s in self._service.update_config.sources if _s.enabled}
+        enabled_sources = {_s.name: _s for _s in self._service.update_config.sources if _s.enabled}
         missing_sources = [_s for _s in missing_sources if _s in enabled_sources]
 
         if missing_sources and not self.source_update_flag.is_set():
             # If sources are missing, then clear caching from Redis and trigger source updates
             retasked = False
             never_attempted = False
+            now = time.time()
             for source in missing_sources:
                 source_status = self.update_data_hash.get(f"{source}.{SOURCE_STATUS_KEY}")
                 if source_status and source_status["state"] != "ERROR":
+                    # A source can succeed without producing files; re-task it at most once per update interval
+                    retask_interval = enabled_sources[source].update_interval or \
+                        self._service.update_config.update_interval_seconds
+                    retask_time = self.update_data_hash.get(f"{source}.{SOURCE_RETASK_TIME_KEY}") or 0
+                    if now - retask_time < retask_interval:
+                        continue
+
                     # Re-task missing sources that aren't known to have a critical error
+                    self.update_data_hash.set(f"{source}.{SOURCE_RETASK_TIME_KEY}", now)
                     self.update_data_hash.set(f"{source}.{SOURCE_UPDATE_TIME_KEY}", 0)
                     self.update_queue.put(source)
                     retasked = True
