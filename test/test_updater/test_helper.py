@@ -59,6 +59,19 @@ def test_filter_downloads():
     # assert len(output) == 2
 
 
+@pytest.mark.parametrize("uri", [
+    "https://user:secret@example.com:8443/feeds/?token=secret#secret",
+    "https://secret@example.com:8443/feeds/",
+])
+def test_url_download_omits_credentials_from_file_name_error(uri):
+    with TemporaryDirectory() as tmp_dir:
+        with pytest.raises(ValueError, match="does not end with a file name") as exc_info:
+            url_download({"name": "blah", "uri": uri}, 0, getLogger(), tmp_dir)
+
+    assert "secret" not in str(exc_info.value)
+    assert "https://example.com:8443/feeds/" in str(exc_info.value)
+
+
 def test_url_download():
     log = getLogger()
     with TemporaryDirectory() as tmp_dir:

@@ -89,8 +89,11 @@ def url_download(source: Dict[str, Any], previous_update: int, logger: Logger, o
     uri = source['uri']
 
     # A file_name in the path is expected and required
-    if not os.path.basename(urlparse(uri).path):
-        raise ValueError(f"Provided source uri does not end with a file name: '{uri}'")
+    parsed_uri = urlparse(uri)
+    if not os.path.basename(parsed_uri.path):
+        # Drop userinfo, query and fragment, which can carry credentials
+        safe_uri = parsed_uri._replace(netloc=parsed_uri.netloc.rpartition("@")[2], query="", fragment="").geturl()
+        raise ValueError(f"Provided source uri does not end with a file name: '{safe_uri}'")
 
     username = source.get('username', None)
     password = source.get('password', None)
